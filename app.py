@@ -7,17 +7,16 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from compraslab.business import comparar_ofertas, formatar_brl
-from compraslab.data import buscar_productos, crear_catalogo, ofertas_producto
-from compraslab.memory import nueva_sesion
+from compraslab.data import abrir_catalogo, buscar_productos, crear_catalogo, ofertas_producto
+from compraslab.memory import listar_sesiones, mensajes_sesion, nueva_sesion
 from compraslab.schemas import Evidencia, RespuestaCompra, SolicitudCompra
 from compraslab.verification import verificar
 from compraslab.memory import HistorialSQLite
 
 BASE = Path("storage")
 load_dotenv()
-st.set_page_config(page_title="Pedro — Asistente de Compras", page_icon="🛒")
-st.title("Pedro — Asistente de Compras")
-st.caption("Datos ficticios. Las políticas originales siguen pendientes.")
+st.set_page_config(page_title="Pedro — Asistente de Compras", page_icon=":material/chat:",
+                   layout="wide", initial_sidebar_state="expanded")
 
 if "catalogo" not in st.session_state:
     st.session_state.catalogo = crear_catalogo(BASE / "catalogos")
@@ -25,36 +24,85 @@ if "session_id" not in st.session_state:
     st.session_state.session_id = nueva_sesion(BASE / "memoria.sqlite3", "usuario-demo",
                                               st.session_state.catalogo.dataset_id)
 
-col1, col2 = st.columns(2)
-if col1.button("Nuevo chat"):
-    st.session_state.session_id = nueva_sesion(BASE / "memoria.sqlite3", "usuario-demo",
-                                              st.session_state.catalogo.dataset_id)
-    st.rerun()
-if col2.button("Nuevo escenario"):
-    st.session_state.catalogo = crear_catalogo(BASE / "catalogos")
-    st.session_state.session_id = nueva_sesion(BASE / "memoria.sqlite3", "usuario-demo",
-                                              st.session_state.catalogo.dataset_id)
-    st.rerun()
 
-modo = st.radio("Modo", ["Comparación local", "Chat con agente"], horizontal=True)
-if modo == "Chat con agente":
+def iniciar_chat() -> None:
+    if st.session_state.catalogo is None:
+        st.session_state.catalogo = crear_catalogo(BASE / "catalogos")
+    st.session_state.session_id = nueva_sesion(BASE / "memoria.sqlite3", "usuario-demo",
+                                              st.session_state.catalogo.dataset_id)
+    st.session_state.vista = "Chat"
+
+
+def nuevo_escenario() -> None:
+    st.session_state.catalogo = crear_catalogo(BASE / "catalogos")
+    iniciar_chat()
+
+
+def abrir_sesion(session_id: str, dataset_id: str) -> None:
+    st.session_state.session_id = session_id
+    try:
+        st.session_state.catalogo = abrir_catalogo(BASE / "catalogos" / dataset_id)
+    except (FileNotFoundError, ValueError):
+        st.session_state.catalogo = None
+    st.session_state.vista = "Chat"
+
+
+with st.sidebar:
+    st.title("Pedro")
+    st.caption("Asistente de compras")
+    vista = st.segmented_control("Vista", ["Chat", "Comparación local"],
+                                key="vista", default="Chat", width="stretch")
+    st.button("Nuevo chat", icon=":material/edit_square:", width="stretch",
+              on_click=iniciar_chat)
+    st.button("Nuevo escenario", icon=":material/refresh:", width="stretch",
+              on_click=nuevo_escenario)
+    st.subheader("Conversaciones")
+    st.html("""<style>
+        .st-key-chat_list button {
+            border: 0;
+            box-shadow: none;
+            justify-content: flex-start;
+            text-align: left;
+            min-height: 2.25rem;
+        }
+        .st-key-chat_list button p { width: 100%; text-align: left; }
+        .st-key-chat_list button[kind="secondary"] { background: transparent; }
+        .st-key-chat_list button[kind="primary"] {
+            background: #E8E8F7;
+            color: #3F427F;
+        }
+    </style>""")
+    with st.container(key="chat_list"):
+        for sesion in listar_sesiones(BASE / "memoria.sqlite3", "usuario-demo"):
+            activa = sesion["session_id"] == st.session_state.session_id
+            st.button(sesion["titulo"], key=f"chat_{sesion['session_id']}",
+                      type="primary" if activa else "secondary", width="stretch",
+                      on_click=abrir_sesion, args=(sesion["session_id"], sesion["dataset_id"]))
+
+if vista == "Chat":
+    st.subheader("Pedro")
+    st.caption("Asistente de compras · Datos ficticios")
+    catalogo_disponible = st.session_state.catalogo is not None
+    if not catalogo_disponible:
+        st.warning("El catálogo de esta conversación ya no está disponible. Puede consultar el historial.")
+    for mensaje in mensajes_sesion(BASE / "memoria.sqlite3", st.session_state.session_id,
+                                   "usuario-demo"):
+        with st.chat_message("user" if mensaje.type == "human" else "assistant",
+                             avatar=":material/person:" if mensaje.type == "human" else ":material/smart_toy:"):
+            st.write(mensaje.content)
     if not os.getenv("OPENAI_API_KEY"):
-        st.info("Configure OPENAI_API_KEY para el chat con modelo real.")
-    else:
+        st.info("Configure OPENAI_API_KEY para conversar con Pedro.")
+    pregunta = st.chat_input("Escribe un mensaje a Pedro", key="mensaje_chat",
+                             disabled=not os.getenv("OPENAI_API_KEY") or not catalogo_disponible)
+    if pregunta:
         from langchain_openai import ChatOpenAI
         from compraslab.agent import crear_agente, crear_integrador
         from compraslab.nli import NLIConModelo, verificar_nli
 
         modelo = os.getenv("COMPRASLAB_MODEL", "gpt-4.1-mini")
-        historial_actual = HistorialSQLite(BASE / "memoria.sqlite3",
-                                          st.session_state.session_id, "usuario-demo")
-        for mensaje in historial_actual.messages:
-            with st.chat_message("user" if mensaje.type == "human" else "assistant"):
-                st.write(mensaje.content)
-        pregunta = st.chat_input("Describe tu solicitud de compra")
-        if pregunta:
-            with st.chat_message("user"):
-                st.write(pregunta)
+        with st.chat_message("user", avatar=":material/person:"):
+            st.write(pregunta)
+        with st.chat_message("assistant", avatar=":material/smart_toy:"):
             with st.status("Consultando y verificando", expanded=False):
                 llm = ChatOpenAI(model=modelo)
                 indice = None
@@ -88,10 +136,14 @@ if modo == "Chat con agente":
                     texto_salida = salida.content
                 except Exception as exc:
                     texto_salida = f"No se pudo completar la consulta: {type(exc).__name__}."
-            with st.chat_message("assistant"):
-                st.write(texto_salida)
+            st.write(texto_salida)
 
-if modo == "Comparación local":
+if vista == "Comparación local":
+    st.title("Comparación local")
+    st.caption("Datos ficticios. Las políticas originales siguen pendientes.")
+    if st.session_state.catalogo is None:
+        st.warning("El catálogo de esta conversación ya no está disponible. Cree un escenario nuevo.")
+        st.stop()
     st.subheader("Comparar ofertas del catálogo activo")
     with st.form("solicitud"):
 

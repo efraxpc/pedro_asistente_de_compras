@@ -44,6 +44,41 @@ def nueva_sesion(ruta: Path, user_id: str, dataset_id: str) -> str:
     return session_id
 
 
+def listar_sesiones(ruta: Path, user_id: str) -> list[dict[str, str]]:
+    """Return this user's chats, most recently active first."""
+    preparar_memoria(ruta)
+    with sqlite3.connect(ruta) as db:
+        sesiones = db.execute("""
+            SELECT s.session_id, s.dataset_id
+            FROM sesiones AS s
+            LEFT JOIN mensajes_lc AS m ON m.session_id = s.session_id
+            WHERE s.user_id = ?
+            GROUP BY s.rowid
+            ORDER BY COALESCE(MAX(m.id), 0) DESC, s.rowid DESC
+        """, (user_id,)).fetchall()
+        resultado = []
+        for session_id, dataset_id in sesiones:
+            fila = db.execute("SELECT mensaje FROM mensajes_lc WHERE session_id=? "
+                              "ORDER BY id LIMIT 1", (session_id,)).fetchone()
+            titulo = "Nuevo chat"
+            if fila:
+                contenido = json.loads(fila[0]).get("data", {}).get("content", "")
+                if isinstance(contenido, str) and contenido.strip():
+                    titulo = contenido.strip().replace("\n", " ")[:48]
+            resultado.append({"session_id": session_id, "dataset_id": dataset_id,
+                              "titulo": titulo})
+    return resultado
+
+
+def mensajes_sesion(ruta: Path, session_id: str, user_id: str) -> list[BaseMessage]:
+    """Read the full UI history without changing the agent's 12-message window."""
+    HistorialSQLite(ruta, session_id, user_id)
+    with sqlite3.connect(ruta) as db:
+        filas = db.execute("SELECT mensaje FROM mensajes_lc WHERE session_id=? ORDER BY id",
+                           (session_id,)).fetchall()
+    return messages_from_dict([json.loads(fila[0]) for fila in filas])
+
+
 def guardar_preferencia(ruta: Path, user_id: str, clave: str, valor: str,
                         *, explicita: bool) -> None:
     if not explicita or not clave.strip() or not valor.strip():
