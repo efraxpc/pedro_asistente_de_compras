@@ -1,9 +1,12 @@
 import sqlite3
 import runpy
+import json
 from pathlib import Path
 
+import pytest
+
 from compraslab.agent import responder_consulta_catalogo
-from compraslab.data import buscar_productos, crear_catalogo, listar_productos, ofertas_producto
+from compraslab.data import abrir_catalogo, buscar_productos, crear_catalogo, listar_productos, ofertas_producto
 from compraslab.part_catalog import detalle_pieza, listar_piezas
 from compraslab.query import text_to_query
 
@@ -44,7 +47,7 @@ def test_generador_reproduce_precios_y_proveedores(tmp_path):
 
 
 def test_escenario_de_piezas_conserva_ofertas_verificables(tmp_path):
-    catalogo = crear_catalogo(tmp_path, modo="piezas", cantidad=4)
+    catalogo = crear_catalogo(tmp_path, cantidad=4)
     productos = buscar_productos(catalogo, "PROD-0001")
     assert len(productos) == 1
     assert productos[0].unidad == "pieza"
@@ -54,7 +57,7 @@ def test_escenario_de_piezas_conserva_ofertas_verificables(tmp_path):
 
 
 def test_lectura_completa_de_piezas_y_detalles_desde_sqlite(tmp_path):
-    catalogo = crear_catalogo(tmp_path, modo="piezas", cantidad=3000)
+    catalogo = crear_catalogo(tmp_path, cantidad=3000)
     piezas = listar_piezas(catalogo)
     assert len(piezas) == 2640
     assert len({p["category"] for p in piezas}) == 11
@@ -69,7 +72,7 @@ def test_lectura_completa_de_piezas_y_detalles_desde_sqlite(tmp_path):
 
 
 def test_chat_pagina_catalogo_y_detalle(tmp_path):
-    catalogo = crear_catalogo(tmp_path, modo="piezas", cantidad=3000)
+    catalogo = crear_catalogo(tmp_path, cantidad=3000)
     primera = responder_consulta_catalogo(catalogo, "Muéstrame todas las piezas")
     segunda = responder_consulta_catalogo(catalogo, "Lista piezas página 2")
     assert "2640 en total; página 1/132" in primera
@@ -82,3 +85,9 @@ def test_chat_pagina_catalogo_y_detalle(tmp_path):
     ficha = responder_consulta_catalogo(catalogo, f"Detalle de {producto['product_id']}")
     assert producto["sku"] in ficha
     assert "Ofertas ficticias" in ficha
+
+
+def test_catalogo_anterior_no_se_reactiva(tmp_path):
+    (tmp_path / "manifest.json").write_text(json.dumps({"modo": "dummyjson"}))
+    with pytest.raises(ValueError, match="base SQLite de piezas"):
+        abrir_catalogo(tmp_path)

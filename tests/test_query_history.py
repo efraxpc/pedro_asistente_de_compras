@@ -7,14 +7,14 @@ from compraslab.query import PlanConsulta, ejecutar_plan, text_to_query
 
 
 def test_consulta_parametrizada_y_acotada(tmp_path):
-    catalogo = crear_catalogo(tmp_path / "catalogos", cantidad=4, semilla=42)
-    resultado = text_to_query(catalogo, "¿Qué ofertas tiene PROD-003?")
+    catalogo = crear_catalogo(tmp_path / "catalogos", cantidad=4)
+    resultado = text_to_query(catalogo, "¿Qué ofertas tiene PROD-0003?")
     assert resultado.estado == "ok"
     assert resultado.datos["validacion"] == "plantilla permitida"
     assert resultado.datos["parametros"][0] == catalogo.dataset_id
     assert len(resultado.datos["filas"]) == 3
     assert text_to_query(catalogo, "DROP TABLE producto").estado == "invalido"
-    assert len(ejecutar_plan(catalogo, PlanConsulta(objetivo="ofertas", producto_id="PROD-003", limite=1)).datos["filas"]) == 1
+    assert len(ejecutar_plan(catalogo, PlanConsulta(objetivo="ofertas", producto_id="PROD-0003", limite=1)).datos["filas"]) == 1
 
 
 def test_historial_langchain_persistente_y_aislado(tmp_path):

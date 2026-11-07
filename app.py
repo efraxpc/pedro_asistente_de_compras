@@ -4,12 +4,11 @@ import sqlite3
 from pathlib import Path
 from decimal import Decimal
 
-import httpx
 import streamlit as st
 from dotenv import load_dotenv
 
 from compraslab.business import comparar_ofertas, formatar_brl
-from compraslab.data import (Catalogo, abrir_catalogo, buscar_productos, crear_catalogo,
+from compraslab.data import (Catalogo, abrir_catalogo, crear_catalogo,
                              listar_productos, ofertas_producto, PIEZAS_DB)
 from compraslab.part_catalog import detalle_pieza, listar_piezas
 from compraslab.memory import listar_sesiones, mensajes_sesion, nueva_sesion
@@ -24,12 +23,10 @@ st.set_page_config(page_title="Pedro — Asistente de Compras", page_icon=":mate
 
 
 def crear_catalogo_app():
-    modo = os.getenv("COMPRASLAB_CATALOG_SOURCE", "piezas").lower()
     try:
-        return crear_catalogo(BASE / "catalogos", modo=modo,
-                              cantidad=3000 if modo == "piezas" else 1000)
-    except (httpx.HTTPError, ValueError, FileNotFoundError, sqlite3.DatabaseError) as exc:
-        st.error(f"No se pudo cargar el catálogo de {modo}: {type(exc).__name__}. Intente de nuevo.")
+        return crear_catalogo(BASE / "catalogos")
+    except (ValueError, FileNotFoundError, sqlite3.DatabaseError) as exc:
+        st.error(f"No se pudo cargar la base SQLite de piezas: {type(exc).__name__}. Intente de nuevo.")
         st.stop()
 
 
@@ -40,6 +37,12 @@ def piezas_para_vista(catalogo: Catalogo, version_db: int) -> list[dict]:
 
 if "catalogo" not in st.session_state:
     st.session_state.catalogo = crear_catalogo_app()
+elif (st.session_state.catalogo is not None and
+      st.session_state.catalogo.modo != "piezas"):
+    st.session_state.catalogo = crear_catalogo_app()
+    st.session_state.session_id = nueva_sesion(BASE / "memoria.sqlite3", "usuario-demo",
+                                              st.session_state.catalogo.dataset_id)
+    st.session_state.vista = "Chat"
 if "session_id" not in st.session_state:
     st.session_state.session_id = nueva_sesion(BASE / "memoria.sqlite3", "usuario-demo",
                                               st.session_state.catalogo.dataset_id)
@@ -73,13 +76,8 @@ with st.sidebar:
     st.title("Pedro")
     st.caption("Asistente de compras")
     if st.session_state.catalogo is not None:
-        fuente = {"dummyjson": "DummyJSON", "piezas": "piezas ficticias"}.get(
-            st.session_state.catalogo.modo, "catálogo local")
-        st.caption(f"Productos: {fuente} · ofertas simuladas")
-    vistas = ["Chat", "Comparación local"]
-    if st.session_state.catalogo is not None and st.session_state.catalogo.modo == "piezas":
-        vistas.insert(1, "Catálogo de piezas")
-    vista = st.segmented_control("Vista", vistas,
+        st.caption("Productos: base SQLite de piezas · ofertas simuladas")
+    vista = st.segmented_control("Vista", ["Chat", "Catálogo de piezas", "Comparación local"],
                                 key="vista", width="stretch")
     st.button("Nuevo chat", icon=":material/edit_square:", width="stretch",
               on_click=iniciar_chat)
@@ -182,6 +180,9 @@ if vista == "Catálogo de piezas":
     catalogo = st.session_state.catalogo
     st.title("Catálogo de piezas")
     st.caption("Datos ficticios de la base SQLite local · precios en BRL estimados")
+    if catalogo is None:
+        st.warning("El catálogo de esta conversación ya no está disponible. Cree un escenario nuevo.")
+        st.stop()
     piezas = piezas_para_vista(catalogo, PIEZAS_DB.stat().st_mtime_ns)
     categorias = sorted({pieza["category"] for pieza in piezas})
     categoria = st.selectbox("Categoría", ["Todas", *categorias], key="categoria_piezas")
@@ -258,23 +259,17 @@ if vista == "Comparación local":
         st.stop()
     st.subheader("Comparar ofertas del catálogo activo")
     with st.form("solicitud"):
-        producto_seleccionado = None
-        texto = ""
-        if st.session_state.catalogo.modo in ("dummyjson", "piezas"):
-            producto_seleccionado = st.selectbox(
-                "Producto o modelo", listar_productos(st.session_state.catalogo), index=None,
-                placeholder="Busca o selecciona un producto",
-                format_func=lambda p: f"{p.nombre} · {p.modelo}")
-        else:
-            texto = st.text_input("Producto o modelo")
+        producto_seleccionado = st.selectbox(
+            "Producto o modelo", listar_productos(st.session_state.catalogo), index=None,
+            placeholder="Busca o selecciona un producto",
+            format_func=lambda p: f"{p.nombre} · {p.modelo}")
         cantidad = st.number_input("Cantidad", min_value=1, value=20, step=1)
         presupuesto = st.number_input("Presupuesto máximo (R$)", min_value=0.0, value=12000.0, step=100.0)
         plazo = st.number_input("Plazo máximo (días corridos)", min_value=0, value=7, step=1)
         enviar = st.form_submit_button("Comparar")
 
     if enviar:
-        candidatos = ([producto_seleccionado] if producto_seleccionado else
-                      buscar_productos(st.session_state.catalogo, texto) if texto.strip() else [])
+        candidatos = [producto_seleccionado] if producto_seleccionado else []
         if not candidatos:
             st.info("Indique un producto presente en el catálogo.")
         elif len(candidatos) > 1:

@@ -32,17 +32,10 @@ def responder_consulta_catalogo(catalogo: Catalogo, pregunta: str) -> str | None
                     if not unicodedata.combining(c))
     if (re.search(r"\b(fuente|origen|de donde)\b", texto) and
             re.search(r"\b(datos?|productos?|catalogo)\b", texto)):
-        if catalogo.modo == "piezas":
-            return ("Este escenario usa la base SQLite local de piezas ficticias de "
-                    "electrodomésticos. Los proveedores, compatibilidades, existencias, "
-                    "precios y conversiones a BRL son simulados.")
-        if catalogo.modo == "dummyjson":
-            return ("Los productos de este escenario provienen de DummyJSON "
-                    "(https://dummyjson.com/products) y están guardados en una instantánea local. "
-                    "Los proveedores, precios en R$, stock, flete y plazos son simulados.")
-        return ("Este chat usa un catálogo generado localmente, con productos y ofertas "
-                "ficticios. Para cargar la fuente actual, pulse «Nuevo escenario».")
-    if catalogo.modo == "piezas" and re.search(
+        return ("Este escenario usa la base SQLite local de piezas ficticias de "
+                "electrodomésticos. Los proveedores, compatibilidades, existencias, "
+                "precios y conversiones a BRL son simulados.")
+    if re.search(
             r"\b(detalle|detalles|ficha|informacion|datos|compatibilidad|proveedores|ofertas)\b", texto):
         productos = listar_productos(catalogo)
         producto = next((p for p in productos if p.id.lower() in texto or
@@ -65,32 +58,23 @@ def responder_consulta_catalogo(catalogo: Catalogo, pregunta: str) -> str | None
                 return "\n".join(lineas)
     if (re.search(r"\b(productos?|piezas?|catalogo)\b", texto) and
             re.search(r"\b(muestrame|muestra|mostrar|lista|listar|ver|cuales|que|tienes|hay|todas|todos)\b", texto)):
-        if catalogo.modo == "piezas":
-            piezas = listar_piezas(catalogo)
-            categorias = {"".join(c for c in unicodedata.normalize("NFKD", p["category"].lower())
-                                   if not unicodedata.combining(c)): p["category"] for p in piezas}
-            categoria = next((nombre for normalizada, nombre in categorias.items()
-                              if re.search(rf"\b{re.escape(normalizada)}\b", texto)), None)
-            if categoria:
-                piezas = [p for p in piezas if p["category"] == categoria]
-            pagina_match = re.search(r"\bpagina\s+(\d+)\b", texto)
-            pagina = int(pagina_match.group(1)) if pagina_match else 1
-            paginas = max(1, (len(piezas) + 19) // 20)
-            if pagina < 1 or pagina > paginas:
-                return f"Página fuera de rango. Hay {paginas} páginas para esta consulta."
-            inicio = (pagina - 1) * 20
-            lineas = [f"Piezas del escenario activo ({len(piezas)} en total; página {pagina}/{paginas}):"]
-            lineas.extend(f"- {p['name']} ({p['product_id']}, SKU {p['sku']})"
-                          for p in piezas[inicio:inicio + 20])
-            lineas.append("Pida «página 2» junto con la categoría o abra «Catálogo de piezas» para verlas todas.")
-            return "\n".join(lineas)
-        productos = sorted(listar_productos(catalogo), key=lambda p: p.nombre.casefold())
-        lineas = [f"Productos del escenario activo ({len(productos)} en total):"]
-        lineas.extend(f"- {p.nombre} ({p.id})" for p in productos[:12])
-        if len(productos) > 12:
-            lineas.append("Se muestran 12. La lista completa está en «Comparación local».")
-        if catalogo.modo == "random":
-            lineas.append("Este chat usa el catálogo local anterior; pulse «Nuevo escenario» para cargar la fuente actual.")
+        piezas = listar_piezas(catalogo)
+        categorias = {"".join(c for c in unicodedata.normalize("NFKD", p["category"].lower())
+                               if not unicodedata.combining(c)): p["category"] for p in piezas}
+        categoria = next((nombre for normalizada, nombre in categorias.items()
+                          if re.search(rf"\b{re.escape(normalizada)}\b", texto)), None)
+        if categoria:
+            piezas = [p for p in piezas if p["category"] == categoria]
+        pagina_match = re.search(r"\bpagina\s+(\d+)\b", texto)
+        pagina = int(pagina_match.group(1)) if pagina_match else 1
+        paginas = max(1, (len(piezas) + 19) // 20)
+        if pagina < 1 or pagina > paginas:
+            return f"Página fuera de rango. Hay {paginas} páginas para esta consulta."
+        inicio = (pagina - 1) * 20
+        lineas = [f"Piezas del escenario activo ({len(piezas)} en total; página {pagina}/{paginas}):"]
+        lineas.extend(f"- {p['name']} ({p['product_id']}, SKU {p['sku']})"
+                      for p in piezas[inicio:inicio + 20])
+        lineas.append("Pida «página 2» junto con la categoría o abra «Catálogo de piezas» para verlas todas.")
         return "\n".join(lineas)
     return None
 

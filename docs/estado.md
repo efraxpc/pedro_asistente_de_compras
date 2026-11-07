@@ -2,7 +2,7 @@
 
 ## Implementado y probado localmente
 
-- Catálogo aleatorio SQLite versionado con semilla y tres ofertas por producto.
+- Catálogo SQLite local de 2.640 piezas, con tres ofertas por producto y escenarios independientes.
 - Reglas deterministas de comparación, contratos Pydantic y verificación contra todas las ofertas activas.
 - Text-to-query por plan tipado y SQL parametrizado de solo lectura.
 - Memoria SQLite por usuario/sesión, episodios con recuperación vectorial de demostración y `RunnableWithMessageHistory` como escritor de respuestas finales.

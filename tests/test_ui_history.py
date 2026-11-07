@@ -1,4 +1,5 @@
 from pathlib import Path
+from dataclasses import replace
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
@@ -29,7 +30,7 @@ def test_lista_y_historial_completo_aislados(tmp_path: Path):
 def test_app_muestra_chat_y_comparacion_sin_clave(tmp_path: Path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("OPENAI_API_KEY", "")
-    monkeypatch.setenv("COMPRASLAB_CATALOG_SOURCE", "random")
+    monkeypatch.setenv("COMPRASLAB_CATALOG_SOURCE", "dummyjson")
     app = Path(__file__).resolve().parents[1] / "app.py"
     at = AppTest.from_file(str(app), default_timeout=20).run()
 
@@ -41,7 +42,8 @@ def test_app_muestra_chat_y_comparacion_sin_clave(tmp_path: Path, monkeypatch):
     assert not at.exception
     mensajes = HistorialSQLite(tmp_path / "storage" / "memoria.sqlite3",
                               at.session_state["session_id"], "usuario-demo").messages
-    assert "catálogo generado localmente" in mensajes[-1].content
+    assert "base SQLite local" in mensajes[-1].content
+    assert at.session_state["catalogo"].modo == "piezas"
     primera = at.session_state["session_id"]
     dataset = at.session_state["catalogo"].dataset_id
     at.sidebar.button[0].click().run()
@@ -79,3 +81,17 @@ def test_app_permite_ver_todas_las_piezas_y_sus_detalles(tmp_path: Path, monkeyp
     assert len(at.dataframe) == 5
     assert at.dataframe[3].value.shape[0] == 3
     assert at.dataframe[4].value.shape[0] == 18
+
+
+def test_sesion_activa_anterior_se_reemplaza_por_sqlite(tmp_path: Path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    app = Path(__file__).resolve().parents[1] / "app.py"
+    at = AppTest.from_file(str(app), default_timeout=20).run()
+    anterior = at.session_state["catalogo"].dataset_id
+    at.session_state["catalogo"] = replace(at.session_state["catalogo"], modo="dummyjson")
+    at.run()
+    assert not at.exception
+    assert at.session_state["catalogo"].modo == "piezas"
+    assert at.session_state["catalogo"].dataset_id != anterior
+    assert at.session_state["vista"] == "Chat"

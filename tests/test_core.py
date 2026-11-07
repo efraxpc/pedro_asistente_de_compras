@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from compraslab.business import comparar_ofertas, formatar_brl
-from compraslab.data import crear_catalogo, buscar_productos, ofertas_producto
+from compraslab.data import crear_catalogo, buscar_productos, listar_productos, ofertas_producto
 from compraslab.memory import guardar_preferencia, nueva_sesion, preferencias
 from compraslab.schemas import Evidencia, Oferta, RespuestaCompra, SolicitudCompra
 from compraslab.verification import verificar
@@ -37,13 +37,13 @@ def test_regla_referencia_suministrada_en_prompt():
     assert not verificar(respuesta.model_copy(update={"total_centavos": 1054000})).aprobado
 
 
-def test_dataset_semilla_e_identidades(tmp_path: Path):
-    a = crear_catalogo(tmp_path, cantidad=20, semilla=27)
-    b = crear_catalogo(tmp_path, cantidad=20, semilla=27)
+def test_escenarios_sqlite_e_identidades(tmp_path: Path):
+    a = crear_catalogo(tmp_path, cantidad=20)
+    b = crear_catalogo(tmp_path, cantidad=20)
     assert a.dataset_id != b.dataset_id
-    assert [x.model_dump(exclude={"dataset_id"}) for x in ofertas_producto(a, "PROD-003")] == [
-        x.model_dump(exclude={"dataset_id"}) for x in ofertas_producto(b, "PROD-003")]
-    assert len(buscar_productos(a, "monitor")) >= 1
+    assert [x.model_dump(exclude={"dataset_id"}) for x in ofertas_producto(a, "PROD-0003")] == [
+        x.model_dump(exclude={"dataset_id"}) for x in ofertas_producto(b, "PROD-0003")]
+    assert len(buscar_productos(a, listar_productos(a)[0].modelo)) == 1
     ruta = tmp_path / "memoria.sqlite3"
     assert nueva_sesion(ruta, "usuario-1", a.dataset_id) != nueva_sesion(ruta, "usuario-1", a.dataset_id)
     guardar_preferencia(ruta, "usuario-1", "marca", "Demo", explicita=True)
