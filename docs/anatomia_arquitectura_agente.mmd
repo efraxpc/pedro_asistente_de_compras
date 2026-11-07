@@ -1,0 +1,72 @@
+flowchart LR
+    %% ComprasLab: arquitectura de componentes y anatomía de un turno del chat.
+    %% El chat con modelo y NLI requiere OPENAI_API_KEY; FAISS es opcional y hoy está ausente.
+
+    U[Usuario] --> APP[Streamlit<br/>app.py]
+
+    subgraph INTERFAZ[Entradas de la aplicación]
+        APP --> CHAT[Chat con agente<br/>usuario, sesión y dataset activo]
+        APP --> LOCAL[Comparación local<br/>formulario sin LLM]
+        LOCAL --> LOCAL_CHECK[Verificación exacta local<br/>solo si hay oferta válida]
+    end
+
+    subgraph ANATOMIA[Anatomía de un turno del agente]
+        CHAT --> HIST[RunnableWithMessageHistory<br/>lee historial de la sesión]
+        HIST --> INTEG[Integrador<br/>recupera contexto y gestiona hasta 2 propuestas]
+        INTEG --> EXEC[AgentExecutor<br/>máximo 6 iteraciones por propuesta]
+        EXEC --> PROMPT[Prompt PTCF + ejemplos<br/>historial + scratchpad]
+        PROMPT --> LLM[ChatOpenAI<br/>selecciona herramientas y redacta JSON]
+        LLM -->|llamada de herramienta| TOOLS
+        TOOLS -->|datos y evidencias| EXEC
+        LLM -->|RespuestaCompra JSON| PARSER[Parser Pydantic<br/>contrato estructurado]
+        PARSER --> EXACT[Verificación exacta<br/>dataset, ofertas, totales y fuentes]
+        EXACT -->|aclaración o sin oferta aprobada| RENDER[Renderizador<br/>texto desde datos verificados]
+        EXACT -->|recomendación aprobada| NLI[NLI triclase<br/>proveedor, stock y plazo]
+        NLI -->|entailment| RENDER
+        EXACT -->|rechazo| RETRY[Corrección con errores<br/>una vez como máximo]
+        NLI -->|sin respaldo| RETRY
+        RETRY -->|queda un intento| EXEC
+        RETRY -->|agotado| FALLBACK[Respuesta de imposibilidad de confirmar]
+        RENDER --> FINAL[Respuesta final]
+        FALLBACK --> FINAL
+        FINAL --> HIST_WRITE[Historial SQLite<br/>guarda usuario y respuesta final]
+        HIST_WRITE --> APP
+    end
+
+    subgraph HERRAMIENTAS[Seis herramientas registradas en el agente]
+        TOOLS{Herramientas} --> BUSCAR[buscar_productos]
+        TOOLS --> CATALOGO[consultar_catalogo<br/>text-to-query acotado]
+        TOOLS --> COMPARAR[comparar_ofertas]
+        TOOLS --> POLITICAS[consultar_politicas]
+        TOOLS --> CEP[consultar_cep]
+        TOOLS --> PREF[guardar_preferencia<br/>solo petición explícita]
+    end
+
+    subgraph RECURSOS[Datos, reglas e integraciones]
+        DB[(Catálogo SQLite activo<br/>productos, proveedores y ofertas)]
+        RULES[Reglas deterministas<br/>stock, presupuesto, plazo y total]
+        MEM[(Memoria SQLite<br/>historial, preferencias y episodios)]
+        FAISS[(Índice FAISS de políticas<br/>opcional; pendiente de recibir)]
+        VIA[ViaCEP<br/>real o adaptador simulado]
+        API[API OpenAI<br/>modelo de chat y NLI]
+    end
+
+    BUSCAR --> DB
+    CATALOGO -->|plan tipado + SQL parametrizado| DB
+    COMPARAR --> RULES
+    COMPARAR --> DB
+    POLITICAS -.-> FAISS
+    CEP --> VIA
+    PREF --> MEM
+    HIST --> MEM
+    INTEG -->|lee preferencias y episodios;<br/>guarda episodio elegible| MEM
+    HIST_WRITE --> MEM
+    EXACT --> DB
+    EXACT --> RULES
+    LLM --> API
+    NLI --> API
+
+    LOCAL --> DB
+    LOCAL --> RULES
+    LOCAL_CHECK --> APP
+    LOCAL -->|muestra alternativas| APP

@@ -1,0 +1,12 @@
+[
+  {"id":"MEM-01","grupo":"memoria","entrada":"Guardar preferencia explícita y reiniciar","esperado":"Preferencia persiste para el mismo user_id"},
+  {"id":"MEM-02","grupo":"memoria","entrada":"Consultar preferencia desde otro usuario","esperado":"No se filtra la preferencia"},
+  {"id":"MEM-03","grupo":"memoria","entrada":"Abrir otro dataset y pedir recomendación","esperado":"Usa catálogo activo, conserva historial como histórico"},
+  {"id":"API-01","grupo":"api","entrada":"CEP 01001000 con ViaCEP real","esperado":"Ciudad y UF reales con simulado=false"},
+  {"id":"API-02","grupo":"api","entrada":"CEP 123","esperado":"Rechazo local de formato"},
+  {"id":"API-03","grupo":"api","entrada":"CEP 99999999","esperado":"No encontrado o indisponibilidad diferenciados"},
+  {"id":"RAG-01","grupo":"recuperacion","entrada":"Consulta con documento pertinente omitido en primera búsqueda","esperado":"Mismo índice, documento presente, recuperación antes/después conservada"},
+  {"id":"NLI-01","grupo":"nli","entrada":"Afirmación sustentada por oferta","esperado":"entailment"},
+  {"id":"NLI-02","grupo":"nli","entrada":"Afirmación contraria a oferta","esperado":"contradiction"},
+  {"id":"NLI-03","grupo":"nli","entrada":"Afirmación sin dato en oferta","esperado":"neutral"}
+]
