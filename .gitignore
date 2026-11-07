@@ -1,4 +1,6 @@
 .venv/
+.agents/
+.claude/
 .env
 storage/
 __pycache__/
