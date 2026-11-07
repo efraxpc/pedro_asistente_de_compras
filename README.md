@@ -2,6 +2,8 @@
 
 Pedro es un asistente académico de compras ficticias. **Estado actual:** núcleo determinista, seis herramientas del agente, text-to-query acotado, persistencia, verificación, cinco notebooks y Streamlit con comparación local y chat online. La interfaz obtiene los nombres y SKU de los productos desde DummyJSON al crear cada escenario y guarda una instantánea SQLite; las tres ofertas por producto (precio en R$, stock, flete y plazo) siguen siendo simuladas. El chat online necesita credenciales y todavía no tiene evidencia de ejecución con un modelo real. Consulte el [estado verificable](docs/estado.md), la [arquitectura](docs/pedro_asistente_de_compras.mmd) y la [revisión EGM](docs/goldfish_review_report.md).
 
+El repositorio también incluye un [catálogo ficticio de piezas de electrodomésticos](datasets/README.md) con 2.640 piezas y ofertas de proveedores nacionales e internacionales, generado de forma reproducible en SQLite.
+
 El repositorio se llama `pedro_asistente_de_compras`. El paquete Python conserva el nombre interno `compraslab` y las variables `COMPRASLAB_*` siguen vigentes para mantener compatibles los imports, notebooks y configuraciones existentes.
 
 ## Desarrollo local

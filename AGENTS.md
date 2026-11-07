@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-`app.py` is the Streamlit entry point. Reusable shopping logic lives in `src/compraslab/`: `data.py` and `business.py` handle the fictional catalog and comparisons; `agent.py`, `tools.py`, `rag.py`, and `nli.py` support the agent; `memory.py` and `verification.py` handle persistence and answer checks. Add focused unit tests under `tests/test_*.py`. `notebooks/` contains the numbered demos, `evals/` contains optional component evaluation, `docs/` records design and evidence, and `knowledge/` documents the optional policy index. Runtime files belong in ignored `storage/`.
+`app.py` is the Streamlit entry point. Reusable shopping logic lives in `src/compraslab/`: `data.py` and `business.py` handle the fictional catalog and comparisons; `agent.py`, `tools.py`, `rag.py`, and `nli.py` support the agent; `memory.py` and `verification.py` handle persistence and answer checks. Add focused unit tests under `tests/test_*.py`. `datasets/` holds the appliance parts SQLite sample; `scripts/` holds its generator. `notebooks/` contains demos, `evals/` optional evaluation, `docs/` design and evidence, and `knowledge/` the optional policy index. Runtime files belong in ignored `storage/`.
 
 ## Build, Test, and Development Commands
 
