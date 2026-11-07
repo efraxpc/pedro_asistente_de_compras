@@ -8,6 +8,7 @@
 
 - `uv sync --python 3.13 --all-extras --locked`: create `.venv` from `uv.lock` with UI, agent, notebook, and development dependencies.
 - `uv run pytest -q`: run the test suite.
+- `uv run python scripts/generar_catalogo_piezas.py`: regenerate the committed fictional parts database.
 - `uv run streamlit run app.py`: run the app locally at `http://localhost:8501`.
 - `./project.sh start` (also `status`, `restart`, `stop`): manage the local Streamlit process; set `COMPRASLAB_PORT=8765` to use another port.
 - `uv run jupyter lab notebooks`: open the demos. `uv run python evals/evaluar_componentes.py` runs the optional LangSmith component evaluation when configured.

@@ -1,5 +1,6 @@
 """Interfaz local y chat online. La respuesta online solo aparece tras verificar."""
 import os
+import sqlite3
 from pathlib import Path
 from decimal import Decimal
 
@@ -22,10 +23,11 @@ st.set_page_config(page_title="Pedro — Asistente de Compras", page_icon=":mate
 
 
 def crear_catalogo_app():
-    modo = os.getenv("COMPRASLAB_CATALOG_SOURCE", "dummyjson").lower()
+    modo = os.getenv("COMPRASLAB_CATALOG_SOURCE", "piezas").lower()
     try:
-        return crear_catalogo(BASE / "catalogos", modo=modo)
-    except (httpx.HTTPError, ValueError) as exc:
+        return crear_catalogo(BASE / "catalogos", modo=modo,
+                              cantidad=3000 if modo == "piezas" else 1000)
+    except (httpx.HTTPError, ValueError, FileNotFoundError, sqlite3.DatabaseError) as exc:
         st.error(f"No se pudo cargar el catálogo de {modo}: {type(exc).__name__}. Intente de nuevo.")
         st.stop()
 
@@ -65,7 +67,8 @@ with st.sidebar:
     st.title("Pedro")
     st.caption("Asistente de compras")
     if st.session_state.catalogo is not None:
-        fuente = "DummyJSON" if st.session_state.catalogo.modo == "dummyjson" else "catálogo local"
+        fuente = {"dummyjson": "DummyJSON", "piezas": "piezas ficticias"}.get(
+            st.session_state.catalogo.modo, "catálogo local")
         st.caption(f"Productos: {fuente} · ofertas simuladas")
     vista = st.segmented_control("Vista", ["Chat", "Comparación local"],
                                 key="vista", width="stretch")
@@ -176,7 +179,7 @@ if vista == "Comparación local":
     with st.form("solicitud"):
         producto_seleccionado = None
         texto = ""
-        if st.session_state.catalogo.modo == "dummyjson":
+        if st.session_state.catalogo.modo in ("dummyjson", "piezas"):
             producto_seleccionado = st.selectbox(
                 "Producto o modelo", listar_productos(st.session_state.catalogo), index=None,
                 placeholder="Busca o selecciona un producto",

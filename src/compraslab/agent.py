@@ -31,12 +31,16 @@ def responder_consulta_catalogo(catalogo: Catalogo, pregunta: str) -> str | None
                     if not unicodedata.combining(c))
     if (re.search(r"\b(fuente|origen|de donde)\b", texto) and
             re.search(r"\b(datos?|productos?|catalogo)\b", texto)):
+        if catalogo.modo == "piezas":
+            return ("Este escenario usa la base SQLite local de piezas ficticias de "
+                    "electrodomésticos. Los proveedores, compatibilidades, existencias, "
+                    "precios y conversiones a BRL son simulados.")
         if catalogo.modo == "dummyjson":
             return ("Los productos de este escenario provienen de DummyJSON "
                     "(https://dummyjson.com/products) y están guardados en una instantánea local. "
                     "Los proveedores, precios en R$, stock, flete y plazos son simulados.")
         return ("Este chat usa un catálogo generado localmente, con productos y ofertas "
-                "ficticios. Para cargar productos de DummyJSON, pulse «Nuevo escenario».")
+                "ficticios. Para cargar la fuente actual, pulse «Nuevo escenario».")
     if (re.search(r"\b(productos?|catalogo)\b", texto) and
             re.search(r"\b(muestrame|muestra|mostrar|lista|listar|ver|cuales|que|tienes|hay)\b", texto)):
         productos = sorted(listar_productos(catalogo), key=lambda p: p.nombre.casefold())
@@ -44,8 +48,8 @@ def responder_consulta_catalogo(catalogo: Catalogo, pregunta: str) -> str | None
         lineas.extend(f"- {p.nombre} ({p.id})" for p in productos[:12])
         if len(productos) > 12:
             lineas.append("Se muestran 12. La lista completa está en «Comparación local».")
-        if catalogo.modo != "dummyjson":
-            lineas.append("Este chat usa el catálogo local; pulse «Nuevo escenario» para cargar DummyJSON.")
+        if catalogo.modo == "random":
+            lineas.append("Este chat usa el catálogo local anterior; pulse «Nuevo escenario» para cargar la fuente actual.")
         return "\n".join(lineas)
     return None
 

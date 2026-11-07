@@ -14,6 +14,7 @@ from .schemas import Oferta, Producto
 
 GENERATOR_VERSION = "1"
 PROVEEDORES = (("DEMO-A", "Demo A"), ("DEMO-B", "Demo B"), ("DEMO-C", "Demo C"))
+PIEZAS_DB = Path(__file__).resolve().parents[2] / "datasets/piezas_electrodomesticos.sqlite3"
 
 
 @dataclass(frozen=True)
@@ -54,6 +55,8 @@ def crear_esquema(db: sqlite3.Connection) -> None:
 
 def crear_catalogo(base: Path, *, modo: str = "random", cantidad: int = 1000,
                    semilla: int | None = None, cliente: httpx.Client | None = None) -> Catalogo:
+    if modo == "piezas":
+        return crear_catalogo_piezas(base, cantidad=cantidad)
     if modo not in ("random", "dummyjson"):
         raise ValueError("modo de catálogo desconocido")
     if cantidad < 1:
@@ -108,6 +111,47 @@ def crear_catalogo(base: Path, *, modo: str = "random", cantidad: int = 1000,
         "ofertas": "simuladas",
         "sqlite": str(ruta)}, indent=2), encoding="utf-8")
     return Catalogo(dataset_id, ruta, semilla, modo)
+
+
+def crear_catalogo_piezas(base: Path, *, cantidad: int = 3000) -> Catalogo:
+    """Copy fictional appliance parts and their offers into an immutable scenario."""
+    if cantidad < 1:
+        raise ValueError("cantidad debe ser positiva")
+    if not PIEZAS_DB.is_file():
+        raise FileNotFoundError(PIEZAS_DB)
+    with sqlite3.connect(PIEZAS_DB) as origen:
+        piezas = origen.execute("SELECT id, sku, name FROM parts ORDER BY id LIMIT ?",
+                               (cantidad,)).fetchall()
+        proveedores = origen.execute("SELECT id, name FROM suppliers ORDER BY id").fetchall()
+        ofertas = origen.execute("SELECT part_id, supplier_id, estimated_brl_cents, "
+                                 "shipping_brl_cents, stock_qty, lead_days FROM offers").fetchall()
+        fecha = origen.execute("SELECT value FROM metadata WHERE key='as_of'").fetchone()[0]
+    if not piezas:
+        raise ValueError("catálogo de piezas vacío")
+    dataset_id = str(uuid.uuid4())
+    carpeta = base / dataset_id
+    carpeta.mkdir(parents=True, exist_ok=False)
+    ruta = carpeta / "catalogo.sqlite3"
+    ids = {part_id: f"PROD-{i:04d}" for i, (part_id, _, _) in enumerate(piezas, 1)}
+    with conectar(ruta) as db:
+        crear_esquema(db)
+        db.execute("INSERT INTO dataset VALUES (?,?,?,?)", (dataset_id, "piezas", None, "parts-v1"))
+        db.executemany("INSERT INTO proveedor VALUES (?,?,?)",
+                       [(dataset_id, sid, name) for sid, name in proveedores])
+        db.executemany("INSERT INTO producto VALUES (?,?,?,?,?)",
+                       [(dataset_id, ids[part_id], name, sku, "pieza")
+                        for part_id, sku, name in piezas])
+        db.executemany("INSERT INTO oferta VALUES (?,?,?,?,?,?,?,?)", [
+            (dataset_id, f"{ids[part_id]}-{supplier_id}", ids[part_id], supplier_id,
+             price, shipping, stock, lead)
+            for part_id, supplier_id, price, shipping, stock, lead in ofertas if part_id in ids])
+    (carpeta / "manifest.json").write_text(json.dumps({
+        "dataset_id": dataset_id, "modo": "piezas", "semilla": None,
+        "cantidad_productos": len(piezas), "generador": "parts-v1",
+        "fuente_productos": str(PIEZAS_DB), "capturado_en": fecha,
+        "ofertas": "ficticias; conversiones BRL estimadas",
+        "sqlite": str(ruta)}, indent=2), encoding="utf-8")
+    return Catalogo(dataset_id, ruta, None, "piezas")
 
 
 def abrir_catalogo(carpeta: Path) -> Catalogo:
