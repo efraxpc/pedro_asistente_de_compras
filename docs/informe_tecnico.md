@@ -1,4 +1,4 @@
-# Informe técnico — ComprasLab
+# Informe técnico — Pedro — Asistente de Compras
 
 ## Estado del informe
 
@@ -6,7 +6,7 @@ Borrador editable. No se ha generado PDF final ni se han inventado métricas. El
 
 ## Objetivo y arquitectura
 
-ComprasLab estudia interpretación de solicitudes, agentes con herramientas, memoria, RAG, verificación y evaluación. Véase [diagrama](diagramas.md) y [matriz provisional](matriz_R01_R29.md).
+Pedro — Asistente de Compras estudia interpretación de solicitudes, agentes con herramientas, memoria, RAG, verificación y evaluación. Véase [diagrama](diagramas.md) y [matriz provisional](matriz_R01_R29.md).
 
 ## Resultados observados
 

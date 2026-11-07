@@ -504,56 +504,6 @@ wheels = [
 ]
 
 [[package]]
-name = "compraslab"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "httpx" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-]
-
-[package.optional-dependencies]
-agent = [
-    { name = "faiss-cpu" },
-    { name = "langchain-classic" },
-    { name = "langchain-community" },
-    { name = "langchain-core" },
-    { name = "langchain-openai" },
-    { name = "langsmith" },
-]
-dev = [
-    { name = "nbformat" },
-    { name = "pytest" },
-]
-notebooks = [
-    { name = "ipykernel" },
-    { name = "jupyterlab" },
-]
-ui = [
-    { name = "streamlit" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "faiss-cpu", marker = "extra == 'agent'", specifier = ">=1.13,<2" },
-    { name = "httpx", specifier = ">=0.28,<1" },
-    { name = "ipykernel", marker = "extra == 'notebooks'", specifier = ">=6,<8" },
-    { name = "jupyterlab", marker = "extra == 'notebooks'", specifier = ">=4,<5" },
-    { name = "langchain-classic", marker = "extra == 'agent'", specifier = ">=1,<2" },
-    { name = "langchain-community", marker = "extra == 'agent'", specifier = ">=0.4,<1" },
-    { name = "langchain-core", marker = "extra == 'agent'", specifier = ">=1,<2" },
-    { name = "langchain-openai", marker = "extra == 'agent'", specifier = ">=1,<2" },
-    { name = "langsmith", marker = "extra == 'agent'", specifier = ">=0.4,<1" },
-    { name = "nbformat", marker = "extra == 'dev'", specifier = ">=5,<6" },
-    { name = "pydantic", specifier = ">=2.10,<3" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8,<10" },
-    { name = "python-dotenv", specifier = ">=1,<2" },
-    { name = "streamlit", marker = "extra == 'ui'", specifier = ">=1.50,<2" },
-]
-provides-extras = ["agent", "ui", "dev", "notebooks"]
-
-[[package]]
 name = "debugpy"
 version = "1.8.22"
 source = { registry = "https://pypi.org/simple" }
@@ -1835,6 +1785,56 @@ sdist = { url = "https://files.pythonhosted.org/packages/30/4b/90c937815137d43ce
 wheels = [
     { url = "https://files.pythonhosted.org/packages/99/5d/8268b644392ee874ee82a635cd0df1773de230bde356c38de28e298392cc/parso-0.8.7-py2.py3-none-any.whl", hash = "sha256:a8926eb2a1b915486941fdbd31e86a4baf88fe8c210f25f2f35ecec5b574ca1c", size = 107025, upload-time = "2026-05-01T23:12:58.867Z" },
 ]
+
+[[package]]
+name = "pedro-asistente-de-compras"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+]
+
+[package.optional-dependencies]
+agent = [
+    { name = "faiss-cpu" },
+    { name = "langchain-classic" },
+    { name = "langchain-community" },
+    { name = "langchain-core" },
+    { name = "langchain-openai" },
+    { name = "langsmith" },
+]
+dev = [
+    { name = "nbformat" },
+    { name = "pytest" },
+]
+notebooks = [
+    { name = "ipykernel" },
+    { name = "jupyterlab" },
+]
+ui = [
+    { name = "streamlit" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "faiss-cpu", marker = "extra == 'agent'", specifier = ">=1.13,<2" },
+    { name = "httpx", specifier = ">=0.28,<1" },
+    { name = "ipykernel", marker = "extra == 'notebooks'", specifier = ">=6,<8" },
+    { name = "jupyterlab", marker = "extra == 'notebooks'", specifier = ">=4,<5" },
+    { name = "langchain-classic", marker = "extra == 'agent'", specifier = ">=1,<2" },
+    { name = "langchain-community", marker = "extra == 'agent'", specifier = ">=0.4,<1" },
+    { name = "langchain-core", marker = "extra == 'agent'", specifier = ">=1,<2" },
+    { name = "langchain-openai", marker = "extra == 'agent'", specifier = ">=1,<2" },
+    { name = "langsmith", marker = "extra == 'agent'", specifier = ">=0.4,<1" },
+    { name = "nbformat", marker = "extra == 'dev'", specifier = ">=5,<6" },
+    { name = "pydantic", specifier = ">=2.10,<3" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8,<10" },
+    { name = "python-dotenv", specifier = ">=1,<2" },
+    { name = "streamlit", marker = "extra == 'ui'", specifier = ">=1.50,<2" },
+]
+provides-extras = ["agent", "ui", "dev", "notebooks"]
 
 [[package]]
 name = "pexpect"

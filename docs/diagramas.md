@@ -1,6 +1,6 @@
 # Arquitectura ejecutada y pendiente
 
-El [diagrama detallado de anatomía y arquitectura](anatomia_arquitectura_agente.mmd) muestra el flujo del chat, las seis herramientas, las fuentes de datos y la verificación previa a la respuesta.
+El [diagrama detallado de anatomía y arquitectura](pedro_asistente_de_compras.mmd) muestra el flujo del chat, las seis herramientas, las fuentes de datos y la verificación previa a la respuesta.
 
 ```mermaid
 flowchart LR

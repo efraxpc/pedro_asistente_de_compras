@@ -70,7 +70,7 @@ def crear_agente(catalogo: Catalogo, model: str = "gpt-4.1-mini", *, indice=None
                     StructuredTool.from_function(preferencia_herramienta, name="guardar_preferencia")]
     parser = PydanticOutputParser(pydantic_object=RespuestaCompra)
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "Persona: asistente de compras ficticias. Task: entender, aclarar, consultar, "
+        ("system", "Persona: Pedro, asistente de compras ficticias. Task: entender, aclarar, consultar, "
                    "comparar y explicar. Context: catálogo activo {dataset_id}, políticas y memoria; "
                    "el requisito actual prevalece sobre preferencias. Format: RespuestaCompra JSON. "
                    "Pide aclaración si falta información o hay ambigüedad. No inventes fuentes. "
@@ -132,7 +132,7 @@ def crear_integrador(executor: AgentExecutor, catalogo: Catalogo, memoria_db: Pa
                 entrada += "\nPreferencias guardadas, subordinadas al mensaje actual: " + str(preferencias_usuario)
             try:
                 salida = executor.invoke({"input": entrada, "chat_history": dato["chat_history"]},
-                    config={"tags": ["compraslab", f"propuesta-{intento + 1}"],
+                    config={"tags": ["pedro-asistente-de-compras", f"propuesta-{intento + 1}"],
                             "metadata": {"dataset_id": catalogo.dataset_id,
                                          "session_id": sesion, "user_id": usuario}})
                 propuesta = parser.parse(salida["output"])

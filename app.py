@@ -15,8 +15,8 @@ from compraslab.memory import HistorialSQLite
 
 BASE = Path("storage")
 load_dotenv()
-st.set_page_config(page_title="ComprasLab", page_icon="🛒")
-st.title("ComprasLab — MVP local")
+st.set_page_config(page_title="Pedro — Asistente de Compras", page_icon="🛒")
+st.title("Pedro — Asistente de Compras")
 st.caption("Datos ficticios. Las políticas originales siguen pendientes.")
 
 if "catalogo" not in st.session_state:

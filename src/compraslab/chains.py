@@ -8,7 +8,7 @@ from .schemas import SolicitudCompra
 
 PROMPT_TEXTO = PromptTemplate.from_template("Compra ficticia: {solicitud}")
 PROMPT_CHAT = ChatPromptTemplate.from_messages([
-    ("system", "Persona: asistente de compras ficticias. Task: aclarar, consultar, comparar y explicar. "
+    ("system", "Persona: Pedro, asistente de compras ficticias. Task: aclarar, consultar, comparar y explicar. "
                "Context: catálogo activo y fuentes. Format: JSON validado."),
     ("human", "{solicitud}"),
 ])

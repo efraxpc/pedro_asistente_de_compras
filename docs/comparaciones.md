@@ -2,11 +2,11 @@
 
 ## LangChain y Semantic Kernel
 
-Ambos permiten que un modelo solicite funciones y que la aplicación ejecute código con argumentos estructurados. [Semantic Kernel](https://learn.microsoft.com/en-us/semantic-kernel/concepts/ai-services/chat-completion/function-calling) organiza funciones como plugins de un `Kernel`; LangChain usa `Runnable`, prompts, herramientas y agentes. ComprasLab usa LangChain porque la consigna exige sus APIs concretas y los notebooks deben demostrar sus cadenas, agentes y memoria. Semantic Kernel se documenta como alternativa arquitectónica; no se presenta como implementación del requisito.
+Ambos permiten que un modelo solicite funciones y que la aplicación ejecute código con argumentos estructurados. [Semantic Kernel](https://learn.microsoft.com/en-us/semantic-kernel/concepts/ai-services/chat-completion/function-calling) organiza funciones como plugins de un `Kernel`; LangChain usa `Runnable`, prompts, herramientas y agentes. Pedro — Asistente de Compras usa LangChain porque la consigna exige sus APIs concretas y los notebooks deben demostrar sus cadenas, agentes y memoria. Semantic Kernel se documenta como alternativa arquitectónica; no se presenta como implementación del requisito.
 
 ## LangMem y Mem0
 
-| Aspecto | LangMem | Mem0 | Decisión en ComprasLab |
+| Aspecto | LangMem | Mem0 | Decisión en Pedro — Asistente de Compras |
 |---|---|---|---|
 | Arquitectura | Herramientas y gestores de memoria, con integración nativa a LangGraph | Capa de memoria que extrae, deduplica y recupera recuerdos | SQLite y un índice de recuerdos propio para distinguir explícitamente los tipos CoALA |
 | Persistencia | Usa el almacén conectado; no obliga a un backend único | Ofrece plataforma administrada y opción abierta con almacenamiento configurable | SQLite local fuera de los catálogos |

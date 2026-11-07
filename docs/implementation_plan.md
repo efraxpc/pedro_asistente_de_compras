@@ -1,4 +1,4 @@
-# ComprasLab — plan de implementación
+# Pedro — Asistente de Compras — plan de implementación
 
 ## Estado y prioridades
 

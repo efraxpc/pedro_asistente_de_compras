@@ -1,6 +1,8 @@
-# ComprasLab
+# Pedro — Asistente de Compras
 
-Agente académico de compras ficticias. **Estado actual:** núcleo determinista, seis herramientas del agente, text-to-query acotado, persistencia, verificación, cinco notebooks y Streamlit con comparación local y chat online. El chat online necesita credenciales y todavía no tiene evidencia de ejecución con un modelo real. Consulte el [estado verificable](docs/estado.md) y la [revisión EGM](docs/goldfish_review_report.md).
+Pedro es un asistente académico de compras ficticias. **Estado actual:** núcleo determinista, seis herramientas del agente, text-to-query acotado, persistencia, verificación, cinco notebooks y Streamlit con comparación local y chat online. El chat online necesita credenciales y todavía no tiene evidencia de ejecución con un modelo real. Consulte el [estado verificable](docs/estado.md), la [arquitectura](docs/pedro_asistente_de_compras.mmd) y la [revisión EGM](docs/goldfish_review_report.md).
+
+El repositorio se llama `pedro_asistente_de_compras`. El paquete Python conserva el nombre interno `compraslab` y las variables `COMPRASLAB_*` siguen vigentes para mantener compatibles los imports, notebooks y configuraciones existentes.
 
 ## Desarrollo local
 

@@ -33,5 +33,5 @@ def crear_react_textual(llm):
     agente = initialize_agent([herramienta], llm,
         agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, memory=memoria,
         agent_kwargs={"prefix": "Historial previo: {chat_history}\n"
-                                "Eres un asistente de compras ficticias. Usa herramientas si hace falta."})
+                                "Eres Pedro, un asistente de compras ficticias. Usa herramientas si hace falta."})
     return agente, memoria

@@ -61,7 +61,7 @@ def main() -> None:
                         outputs=esperado, created_at=ahora, metadata={"grupo": grupo})
                 for grupo, entrada, esperado in casos]
     filas = list(evaluate(objetivo, data=ejemplos, evaluators=[evaluador],
-                          upload_results=False, experiment_prefix="compraslab-componentes"))
+                          upload_results=False, experiment_prefix="pedro-asistente-de-compras-componentes"))
     registro = [{"grupo": fila["example"].metadata["grupo"],
                  "salida": fila["run"].outputs,
                  "esperado": fila["example"].outputs,

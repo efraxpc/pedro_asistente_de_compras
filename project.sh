@@ -48,7 +48,7 @@ start() {
     local pid current
     current="$(project_pid)"
     if [[ -n "$current" ]]; then
-        echo "ComprasLab ya está activo en http://localhost:$PORT (PID $current)."
+        echo "Pedro — Asistente de Compras ya está activo en http://localhost:$PORT (PID $current)."
         return
     fi
     if [[ -n "$(listening_pid)" ]]; then
@@ -69,18 +69,18 @@ start() {
     for ((i=0; i<40; i++)); do
         if ! kill -0 "$pid" 2>/dev/null; then
             rm -f -- "$PID_FILE"
-            echo "ComprasLab no pudo iniciar. Revise $LOG_FILE" >&2
+            echo "Pedro — Asistente de Compras no pudo iniciar. Revise $LOG_FILE" >&2
             exit 1
         fi
         if "$PYTHON" -c 'import sys, urllib.request; sys.exit(0 if urllib.request.urlopen(sys.argv[1], timeout=1).read().strip() == b"ok" else 1)' \
             "http://127.0.0.1:$PORT/_stcore/health" >/dev/null 2>&1; then
-            echo "ComprasLab activo en http://localhost:$PORT (PID $pid)."
+            echo "Pedro — Asistente de Compras activo en http://localhost:$PORT (PID $pid)."
             echo "Registro: $LOG_FILE"
             return
         fi
         sleep 0.25
     done
-    echo "ComprasLab no respondió a tiempo. Revise $LOG_FILE" >&2
+    echo "Pedro — Asistente de Compras no respondió a tiempo. Revise $LOG_FILE" >&2
     exit 1
 }
 
@@ -88,19 +88,19 @@ stop() {
     local pid
     pid="$(project_pid)"
     if [[ -z "$pid" ]]; then
-        echo "ComprasLab no está activo en el puerto $PORT."
+        echo "Pedro — Asistente de Compras no está activo en el puerto $PORT."
         return
     fi
     kill "$pid"
     for ((i=0; i<40; i++)); do
         if ! is_project_process "$pid"; then
             rm -f -- "$PID_FILE"
-            echo "ComprasLab detenido (PID $pid)."
+            echo "Pedro — Asistente de Compras detenido (PID $pid)."
             return
         fi
         sleep 0.25
     done
-    echo "ComprasLab no se detuvo a tiempo (PID $pid)." >&2
+    echo "Pedro — Asistente de Compras no se detuvo a tiempo (PID $pid)." >&2
     exit 1
 }
 
@@ -111,9 +111,9 @@ case "${1:-}" in
     status)
         pid="$(project_pid)"
         if [[ -n "$pid" ]]; then
-            echo "ComprasLab activo en http://localhost:$PORT (PID $pid)."
+            echo "Pedro — Asistente de Compras activo en http://localhost:$PORT (PID $pid)."
         else
-            echo "ComprasLab no está activo en el puerto $PORT."
+            echo "Pedro — Asistente de Compras no está activo en el puerto $PORT."
         fi
         ;;
     *)

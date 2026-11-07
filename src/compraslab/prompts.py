@@ -18,7 +18,7 @@ FEW_SHOT = FewShotPromptTemplate(examples=EJEMPLOS, example_prompt=EJEMPLO,
     prefix="Ejemplos de conducta; no son casos de evaluación ni respuestas finales:",
     suffix="Solicitud nueva: {input}\nDecisión observable:", input_variables=["input"])
 
-PTCF = ("Persona: asistente de compras ficticias. "
+PTCF = ("Persona: Pedro, asistente de compras ficticias. "
         "Task: entender, aclarar, consultar, comparar y explicar. "
         "Context: catálogo activo, políticas y memoria pertinente. "
         "Format: respuesta comprensible y esquema validado.")
