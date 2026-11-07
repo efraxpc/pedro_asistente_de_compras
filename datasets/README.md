@@ -4,7 +4,7 @@
 
 Todos los nombres de proveedores, compatibilidades, existencias, precios y conversiones a BRL son **ficticios**. No utilice esta base para comprar piezas reales ni suponga que un modelo indicado es compatible con un aparato físico.
 
-La app usa esta base como fuente predeterminada. Al pulsar «Nuevo escenario», copia las 2.640 piezas y sus ofertas a una instantánea independiente en `storage/catalogos/`; los IDs del chat son `PROD-####`, mientras que el SKU original de la pieza permanece en el campo `modelo`. Los chats ya existentes mantienen su fuente anterior.
+La app usa esta base como fuente predeterminada. Al pulsar «Nuevo escenario», copia las 2.640 piezas y sus ofertas a una instantánea independiente en `storage/catalogos/`; los IDs del chat son `PROD-####`, mientras que el SKU original de la pieza permanece en el campo `modelo`. Los chats ya existentes mantienen su fuente anterior. La vista «Catálogo de piezas» lee los detalles de esta base SQLite y limita los resultados a los SKU del escenario activo; permite buscar y filtrar las piezas y consultar compatibilidades, ofertas e historial. El chat ofrece listados paginados y fichas por ID o SKU.
 
 ## Tablas
 

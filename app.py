@@ -9,8 +9,9 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from compraslab.business import comparar_ofertas, formatar_brl
-from compraslab.data import (abrir_catalogo, buscar_productos, crear_catalogo,
-                             listar_productos, ofertas_producto)
+from compraslab.data import (Catalogo, abrir_catalogo, buscar_productos, crear_catalogo,
+                             listar_productos, ofertas_producto, PIEZAS_DB)
+from compraslab.part_catalog import detalle_pieza, listar_piezas
 from compraslab.memory import listar_sesiones, mensajes_sesion, nueva_sesion
 from compraslab.schemas import Evidencia, RespuestaCompra, SolicitudCompra
 from compraslab.verification import verificar
@@ -30,6 +31,11 @@ def crear_catalogo_app():
     except (httpx.HTTPError, ValueError, FileNotFoundError, sqlite3.DatabaseError) as exc:
         st.error(f"No se pudo cargar el catálogo de {modo}: {type(exc).__name__}. Intente de nuevo.")
         st.stop()
+
+
+@st.cache_data(show_spinner=False, max_entries=8)
+def piezas_para_vista(catalogo: Catalogo, version_db: int) -> list[dict]:
+    return listar_piezas(catalogo)
 
 
 if "catalogo" not in st.session_state:
@@ -70,7 +76,10 @@ with st.sidebar:
         fuente = {"dummyjson": "DummyJSON", "piezas": "piezas ficticias"}.get(
             st.session_state.catalogo.modo, "catálogo local")
         st.caption(f"Productos: {fuente} · ofertas simuladas")
-    vista = st.segmented_control("Vista", ["Chat", "Comparación local"],
+    vistas = ["Chat", "Comparación local"]
+    if st.session_state.catalogo is not None and st.session_state.catalogo.modo == "piezas":
+        vistas.insert(1, "Catálogo de piezas")
+    vista = st.segmented_control("Vista", vistas,
                                 key="vista", width="stretch")
     st.button("Nuevo chat", icon=":material/edit_square:", width="stretch",
               on_click=iniciar_chat)
@@ -111,7 +120,7 @@ if vista == "Chat":
                              avatar=":material/person:" if mensaje.type == "human" else ":material/smart_toy:"):
             st.write(mensaje.content)
     if not os.getenv("OPENAI_API_KEY"):
-        st.info("Puede consultar productos y su fuente. Configure OPENAI_API_KEY para recomendaciones.")
+        st.info("Puede consultar piezas, detalles y su fuente. Configure OPENAI_API_KEY para recomendaciones.")
     pregunta = st.chat_input("Escribe un mensaje a Pedro", key="mensaje_chat",
                              disabled=not catalogo_disponible)
     if pregunta:
@@ -168,6 +177,78 @@ if vista == "Chat":
                 except Exception as exc:
                     texto_salida = f"No se pudo completar la consulta: {type(exc).__name__}."
             st.write(texto_salida)
+
+if vista == "Catálogo de piezas":
+    catalogo = st.session_state.catalogo
+    st.title("Catálogo de piezas")
+    st.caption("Datos ficticios de la base SQLite local · precios en BRL estimados")
+    piezas = piezas_para_vista(catalogo, PIEZAS_DB.stat().st_mtime_ns)
+    categorias = sorted({pieza["category"] for pieza in piezas})
+    categoria = st.selectbox("Categoría", ["Todas", *categorias], key="categoria_piezas")
+    busqueda = st.text_input("Buscar por nombre, SKU, ID o tipo", key="buscar_piezas")
+    termino = busqueda.strip().casefold()
+    filtradas = [pieza for pieza in piezas
+                 if (categoria == "Todas" or pieza["category"] == categoria)
+                 and (not termino or any(termino in str(pieza[campo]).casefold()
+                                        for campo in ("name", "sku", "product_id", "part_kind")))]
+    st.caption(f"{len(filtradas)} de {len(piezas)} piezas del escenario activo")
+    st.dataframe([{
+        "ID": p["product_id"], "SKU": p["sku"], "Pieza": p["name"],
+        "Categoría": p["category"], "Tipo": p["part_kind"],
+        "Fabricante": p["manufacturer"],
+        "Desde (R$)": p["min_price_brl_cents"] / 100 if p["min_price_brl_cents"] is not None else None,
+        "Stock total": p["total_stock"], "Ofertas": p["offer_count"]
+    } for p in filtradas], hide_index=True, width="stretch",
+        alt="Todas las piezas del escenario activo con precio mínimo, stock y ofertas")
+    etiquetas = {p["sku"]: f"{p['name']} · {p['sku']}" for p in filtradas}
+    sku = st.selectbox("Ver detalles de una pieza", list(etiquetas),
+                       index=None, placeholder="Seleccione un SKU", key="detalle_sku",
+                       format_func=lambda value: etiquetas[value])
+    if sku:
+        detalle = detalle_pieza(catalogo, sku)
+        if detalle is None:
+            st.warning("La pieza ya no está disponible en este escenario.")
+        else:
+            st.subheader(f"{detalle['name']} · {detalle['product_id']}")
+            st.write(detalle["description"])
+            st.dataframe([{
+                "SKU": detalle["sku"], "Categoría": detalle["category"],
+                "Familia": detalle["family"], "Fabricante": detalle["manufacturer"],
+                "Tipo": detalle["part_kind"], "Material": detalle["material"],
+                "Color": detalle["color"], "Voltaje (V)": detalle["voltage_v"],
+                "Potencia (W)": detalle["power_w"],
+                "Dimensiones (mm)": f"{detalle['length_mm']} × {detalle['width_mm']} × {detalle['height_mm']}",
+                "Peso (g)": detalle["weight_g"], "Garantía (meses)": detalle["warranty_months"],
+                "Origen": detalle["origin_country"], "Estado": detalle["condition"]
+            }], hide_index=True, width="stretch", alt="Especificaciones de la pieza seleccionada")
+            st.write("Especificaciones adicionales", detalle["technical_specs"])
+            st.subheader("Compatibilidad ficticia")
+            st.dataframe([{"Marca": c["brand"], "Modelo": c["model_code"],
+                           "Desde año": c["year_from"], "Hasta año": c["year_to"]}
+                          for c in detalle["compatibility"]], hide_index=True, width="stretch",
+                         alt="Modelos y años compatibles con la pieza seleccionada")
+            st.subheader("Ofertas ficticias")
+            st.dataframe([{
+                "Proveedor": o["supplier_name"], "País": o["country_code"],
+                "Ámbito": "Nacional" if o["domestic"] else "Internacional",
+                "Precio origen": f"{o['unit_price_minor'] / 100:.2f} {o['currency']}",
+                "Estimado BRL": formatar_brl(o["estimated_brl_cents"]),
+                "Stock": o["stock_qty"], "Disponibilidad": o["availability"],
+                "Reposición": o["restock_date"],
+                "Flete": formatar_brl(o["shipping_brl_cents"]),
+                "Plazo (días)": o["lead_days"], "Pedido mínimo": o["min_order_qty"],
+                "Actualizado": o["updated_on"], "Sitio": o["website"]
+            } for o in detalle["offers"]], hide_index=True, width="stretch",
+                alt="Precios, disponibilidad y proveedores de la pieza seleccionada")
+            st.subheader("Historial de precios")
+            proveedores_por_oferta = {o["id"]: o for o in detalle["offers"]}
+            st.dataframe([{
+                "Proveedor": proveedores_por_oferta[offer_id]["supplier_name"],
+                "Fecha": h["observed_on"],
+                "Precio origen": f"{h['unit_price_minor'] / 100:.2f} {proveedores_por_oferta[offer_id]['currency']}",
+                "Estimado BRL": formatar_brl(h["estimated_brl_cents"])
+            } for offer_id, history in detalle["price_history"].items() for h in history],
+                hide_index=True, width="stretch", alt="Historial de precios de todas las ofertas")
 
 if vista == "Comparación local":
     st.title("Comparación local")

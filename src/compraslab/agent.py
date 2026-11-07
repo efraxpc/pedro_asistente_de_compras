@@ -14,6 +14,7 @@ from langchain_core.tools import StructuredTool
 from langchain_openai import ChatOpenAI
 
 from .data import Catalogo, listar_productos
+from .part_catalog import detalle_pieza, listar_piezas
 from .business import formatar_brl
 from .integrations import consultar_cep
 from .memory import (HistorialSQLite, guardar_episodio, guardar_preferencia,
@@ -41,8 +42,48 @@ def responder_consulta_catalogo(catalogo: Catalogo, pregunta: str) -> str | None
                     "Los proveedores, precios en R$, stock, flete y plazos son simulados.")
         return ("Este chat usa un catálogo generado localmente, con productos y ofertas "
                 "ficticios. Para cargar la fuente actual, pulse «Nuevo escenario».")
-    if (re.search(r"\b(productos?|catalogo)\b", texto) and
-            re.search(r"\b(muestrame|muestra|mostrar|lista|listar|ver|cuales|que|tienes|hay)\b", texto)):
+    if catalogo.modo == "piezas" and re.search(
+            r"\b(detalle|detalles|ficha|informacion|datos|compatibilidad|proveedores|ofertas)\b", texto):
+        productos = listar_productos(catalogo)
+        producto = next((p for p in productos if p.id.lower() in texto or
+                         p.modelo.lower() in pregunta.lower()), None)
+        if producto is not None:
+            pieza = detalle_pieza(catalogo, producto.modelo)
+            if pieza is not None:
+                lineas = [f"{pieza['name']} ({pieza['product_id']}, SKU {pieza['sku']})",
+                          pieza["description"],
+                          f"Categoría: {pieza['category']}; fabricante: {pieza['manufacturer']}; "
+                          f"tipo: {pieza['part_kind']}; garantía: {pieza['warranty_months']} meses.",
+                          "Compatibilidad ficticia: " + ", ".join(
+                              f"{c['brand']} {c['model_code']} ({c['year_from']}–{c['year_to']})"
+                              for c in pieza["compatibility"]), "Ofertas ficticias:"]
+                lineas.extend(f"- {o['supplier_name']} ({o['country_code']}): "
+                              f"{formatar_brl(o['estimated_brl_cents'])}, "
+                              f"stock {o['stock_qty']}, plazo {o['lead_days']} días."
+                              for o in pieza["offers"])
+                lineas.append("Todos los datos técnicos y el historial de precios están en «Catálogo de piezas».")
+                return "\n".join(lineas)
+    if (re.search(r"\b(productos?|piezas?|catalogo)\b", texto) and
+            re.search(r"\b(muestrame|muestra|mostrar|lista|listar|ver|cuales|que|tienes|hay|todas|todos)\b", texto)):
+        if catalogo.modo == "piezas":
+            piezas = listar_piezas(catalogo)
+            categorias = {"".join(c for c in unicodedata.normalize("NFKD", p["category"].lower())
+                                   if not unicodedata.combining(c)): p["category"] for p in piezas}
+            categoria = next((nombre for normalizada, nombre in categorias.items()
+                              if re.search(rf"\b{re.escape(normalizada)}\b", texto)), None)
+            if categoria:
+                piezas = [p for p in piezas if p["category"] == categoria]
+            pagina_match = re.search(r"\bpagina\s+(\d+)\b", texto)
+            pagina = int(pagina_match.group(1)) if pagina_match else 1
+            paginas = max(1, (len(piezas) + 19) // 20)
+            if pagina < 1 or pagina > paginas:
+                return f"Página fuera de rango. Hay {paginas} páginas para esta consulta."
+            inicio = (pagina - 1) * 20
+            lineas = [f"Piezas del escenario activo ({len(piezas)} en total; página {pagina}/{paginas}):"]
+            lineas.extend(f"- {p['name']} ({p['product_id']}, SKU {p['sku']})"
+                          for p in piezas[inicio:inicio + 20])
+            lineas.append("Pida «página 2» junto con la categoría o abra «Catálogo de piezas» para verlas todas.")
+            return "\n".join(lineas)
         productos = sorted(listar_productos(catalogo), key=lambda p: p.nombre.casefold())
         lineas = [f"Productos del escenario activo ({len(productos)} en total):"]
         lineas.extend(f"- {p.nombre} ({p.id})" for p in productos[:12])

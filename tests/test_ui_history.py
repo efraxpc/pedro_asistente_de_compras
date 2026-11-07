@@ -59,3 +59,23 @@ def test_app_muestra_chat_y_comparacion_sin_clave(tmp_path: Path, monkeypatch):
     assert not at.exception
     assert at.session_state["catalogo"].dataset_id != dataset
     assert at.session_state["vista"] == "Chat"
+
+
+def test_app_permite_ver_todas_las_piezas_y_sus_detalles(tmp_path: Path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    monkeypatch.setenv("COMPRASLAB_CATALOG_SOURCE", "piezas")
+    app = Path(__file__).resolve().parents[1] / "app.py"
+    at = AppTest.from_file(str(app), default_timeout=20).run()
+    at.sidebar.segmented_control[0].set_value("Catálogo de piezas").run()
+    assert not at.exception
+    assert at.dataframe[0].value.shape[0] == 2640
+    at.selectbox[0].select("Neveras").run()
+    assert not at.exception
+    assert at.dataframe[0].value.shape[0] == 240
+    sku = at.dataframe[0].value.iloc[0]["SKU"]
+    at.selectbox[1].select(sku).run()
+    assert not at.exception
+    assert len(at.dataframe) == 5
+    assert at.dataframe[3].value.shape[0] == 3
+    assert at.dataframe[4].value.shape[0] == 18

@@ -2,7 +2,9 @@ import sqlite3
 import runpy
 from pathlib import Path
 
-from compraslab.data import buscar_productos, crear_catalogo, ofertas_producto
+from compraslab.agent import responder_consulta_catalogo
+from compraslab.data import buscar_productos, crear_catalogo, listar_productos, ofertas_producto
+from compraslab.part_catalog import detalle_pieza, listar_piezas
 from compraslab.query import text_to_query
 
 generator = runpy.run_path(str(Path(__file__).resolve().parents[1] /
@@ -46,5 +48,37 @@ def test_escenario_de_piezas_conserva_ofertas_verificables(tmp_path):
     productos = buscar_productos(catalogo, "PROD-0001")
     assert len(productos) == 1
     assert productos[0].unidad == "pieza"
+    assert len(listar_piezas(catalogo)) == 4
     assert len(ofertas_producto(catalogo, "PROD-0001")) == 3
     assert text_to_query(catalogo, "ofertas PROD-0001").estado == "ok"
+
+
+def test_lectura_completa_de_piezas_y_detalles_desde_sqlite(tmp_path):
+    catalogo = crear_catalogo(tmp_path, modo="piezas", cantidad=3000)
+    piezas = listar_piezas(catalogo)
+    assert len(piezas) == 2640
+    assert len({p["category"] for p in piezas}) == 11
+    assert {p["sku"] for p in piezas} == {p.modelo for p in listar_productos(catalogo)}
+    detalle = detalle_pieza(catalogo, piezas[0]["sku"])
+    assert detalle["product_id"] == piezas[0]["product_id"]
+    assert len(detalle["compatibility"]) == 3
+    assert len(detalle["offers"]) == 3
+    assert all(len(history) == 6 for history in detalle["price_history"].values())
+    assert detalle["technical_specs"]
+    assert detalle_pieza(catalogo, "SKU-INEXISTENTE") is None
+
+
+def test_chat_pagina_catalogo_y_detalle(tmp_path):
+    catalogo = crear_catalogo(tmp_path, modo="piezas", cantidad=3000)
+    primera = responder_consulta_catalogo(catalogo, "Muéstrame todas las piezas")
+    segunda = responder_consulta_catalogo(catalogo, "Lista piezas página 2")
+    assert "2640 en total; página 1/132" in primera
+    assert "2640 en total; página 2/132" in segunda
+    assert "Catálogo de piezas" in primera
+    assert "240 en total; página 1/12" in responder_consulta_catalogo(
+        catalogo, "Lista piezas de neveras")
+    assert "fuera de rango" in responder_consulta_catalogo(catalogo, "Lista piezas página 999")
+    producto = listar_piezas(catalogo)[0]
+    ficha = responder_consulta_catalogo(catalogo, f"Detalle de {producto['product_id']}")
+    assert producto["sku"] in ficha
+    assert "Ofertas ficticias" in ficha
