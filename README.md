@@ -12,12 +12,13 @@ Para administrar la interfaz en Linux:
 
 ```bash
 ./project.sh start
+./project.sh logs
 ./project.sh status
 ./project.sh restart
 ./project.sh stop
 ```
 
-La app abre en `http://localhost:8501`. El script guarda el PID y el registro en `storage/run/`, y reconoce una instancia del mismo proyecto ya iniciada manualmente en ese puerto. Para usar otro puerto, anteponga `COMPRASLAB_PORT=8765` a cada comando. Debe existir `.venv/`; créelo con el comando `uv sync` indicado abajo.
+La app abre en `http://localhost:8501`. `./project.sh` equivale a `./project.sh start`: inicia la app y muestra su registro continuamente en la consola. `Ctrl+C` deja de seguir los logs; la app continúa activa hasta `./project.sh stop`. `./project.sh logs` vuelve a mostrar el registro. El script guarda el PID y el registro en `storage/run/`; para usar otro puerto, anteponga `COMPRASLAB_PORT=8765` a cada comando. Debe existir `.venv/`; créelo con el comando `uv sync` indicado abajo.
 
 También puede ejecutar las herramientas directamente:
 

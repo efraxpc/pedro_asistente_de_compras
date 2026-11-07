@@ -44,11 +44,22 @@ project_pid() {
     fi
 }
 
+follow_logs() {
+    local pid="$1"
+    if [[ ! -f "$LOG_FILE" ]]; then
+        echo "No hay un registro en $LOG_FILE; esta instancia pudo iniciarse fuera de project.sh." >&2
+        return 1
+    fi
+    echo "Mostrando el registro en vivo. Ctrl+C deja de mostrarlo; la app sigue activa."
+    tail -n +1 -F --pid="$pid" "$LOG_FILE"
+}
+
 start() {
     local pid current
     current="$(project_pid)"
     if [[ -n "$current" ]]; then
         echo "Pedro — Asistente de Compras ya está activo en http://localhost:$PORT (PID $current)."
+        follow_logs "$current"
         return
     fi
     if [[ -n "$(listening_pid)" ]]; then
@@ -59,9 +70,13 @@ start() {
         echo "Falta .venv. Ejecute: uv sync --python 3.13 --all-extras --locked" >&2
         exit 1
     fi
+    if ! command -v setsid >/dev/null 2>&1; then
+        echo "Falta setsid para mantener la app activa al cerrar los logs." >&2
+        exit 1
+    fi
     mkdir -p -- "$RUN_DIR"
     cd -- "$ROOT_DIR"
-    nohup "$PYTHON" -m streamlit run "$APP" \
+    setsid "$PYTHON" -m streamlit run "$APP" \
         --server.headless=true --server.address=127.0.0.1 --server.port="$PORT" \
         >"$LOG_FILE" 2>&1 </dev/null &
     pid=$!
@@ -76,6 +91,7 @@ start() {
             "http://127.0.0.1:$PORT/_stcore/health" >/dev/null 2>&1; then
             echo "Pedro — Asistente de Compras activo en http://localhost:$PORT (PID $pid)."
             echo "Registro: $LOG_FILE"
+            follow_logs "$pid"
             return
         fi
         sleep 0.25
@@ -104,10 +120,18 @@ stop() {
     exit 1
 }
 
-case "${1:-}" in
+case "${1:-start}" in
     start) start ;;
     stop) stop ;;
     restart) stop; start ;;
+    logs)
+        pid="$(project_pid)"
+        if [[ -z "$pid" ]]; then
+            echo "Pedro — Asistente de Compras no está activo en el puerto $PORT." >&2
+            exit 1
+        fi
+        follow_logs "$pid"
+        ;;
     status)
         pid="$(project_pid)"
         if [[ -n "$pid" ]]; then
@@ -117,7 +141,7 @@ case "${1:-}" in
         fi
         ;;
     *)
-        echo "Uso: $0 {start|stop|restart|status}" >&2
+        echo "Uso: $0 {start|stop|restart|status|logs}" >&2
         exit 2
         ;;
 esac
