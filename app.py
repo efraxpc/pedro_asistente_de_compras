@@ -35,6 +35,8 @@ if "catalogo" not in st.session_state:
 if "session_id" not in st.session_state:
     st.session_state.session_id = nueva_sesion(BASE / "memoria.sqlite3", "usuario-demo",
                                               st.session_state.catalogo.dataset_id)
+if "vista" not in st.session_state:
+    st.session_state.vista = "Chat"
 
 
 def iniciar_chat() -> None:
@@ -66,7 +68,7 @@ with st.sidebar:
         fuente = "DummyJSON" if st.session_state.catalogo.modo == "dummyjson" else "catálogo local"
         st.caption(f"Productos: {fuente} · ofertas simuladas")
     vista = st.segmented_control("Vista", ["Chat", "Comparación local"],
-                                key="vista", default="Chat", width="stretch")
+                                key="vista", width="stretch")
     st.button("Nuevo chat", icon=":material/edit_square:", width="stretch",
               on_click=iniciar_chat)
     st.button("Nuevo escenario", icon=":material/refresh:", width="stretch",
