@@ -37,6 +37,7 @@ En Windows PowerShell, active con `.venv\Scripts\Activate.ps1`; al terminar use 
 Para el chat online, ejecute `cp .env.example .env`, configure `OPENAI_API_KEY` y vuelva a iniciar Streamlit; la aplicación carga `.env` al arrancar. `LANGSMITH_TRACING=true` y `LANGSMITH_API_KEY` habilitan trazas reales cuando se configuren. En modo simulado, solo ViaCEP se sustituye por un adaptador identificado; las respuestas del modelo no se simulan en la interfaz.
 
 La fuente de productos de la interfaz es DummyJSON (`COMPRASLAB_CATALOG_SOURCE=dummyjson`, valor predeterminado). Requiere conexión al crear un escenario; si falla, la app muestra el error y permite reintentar. Para trabajar sin red o ejecutar las pruebas de interfaz, use `COMPRASLAB_CATALOG_SOURCE=random`. Cada escenario guarda su origen y fecha de captura en `storage/catalogos/<dataset_id>/manifest.json`.
+Los chats anteriores conservan el catálogo con el que se crearon; pulse «Nuevo escenario» para cargar DummyJSON en un chat nuevo. Preguntas como «¿Cuál es tu fuente de datos?» y «Muéstrame los productos» se responden desde la instantánea activa, incluso sin clave de OpenAI.
 
 Si se recibe el índice FAISS preconstruido, guárdelo en `knowledge/politicas/` junto con `index.faiss`, `index.pkl` y un `manifest.json` con `embedding_model`, `dimension`, `origen` y `documentos`. Revise su procedencia antes de establecer `COMPRASLAB_TRUST_POLICY_INDEX=true`: el docstore usa pickle. El adaptador actual acepta modelos OpenAI `text-embedding-*` que coincidan con el índice.
 

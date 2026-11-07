@@ -108,17 +108,28 @@ if vista == "Chat":
                              avatar=":material/person:" if mensaje.type == "human" else ":material/smart_toy:"):
             st.write(mensaje.content)
     if not os.getenv("OPENAI_API_KEY"):
-        st.info("Configure OPENAI_API_KEY para conversar con Pedro.")
+        st.info("Puede consultar productos y su fuente. Configure OPENAI_API_KEY para recomendaciones.")
     pregunta = st.chat_input("Escribe un mensaje a Pedro", key="mensaje_chat",
-                             disabled=not os.getenv("OPENAI_API_KEY") or not catalogo_disponible)
+                             disabled=not catalogo_disponible)
     if pregunta:
+        from compraslab.agent import crear_integrador, responder_consulta_catalogo
         from langchain_openai import ChatOpenAI
-        from compraslab.agent import crear_agente, crear_integrador
-        from compraslab.nli import NLIConModelo, verificar_nli
 
         modelo = os.getenv("COMPRASLAB_MODEL", "gpt-4.1-mini")
         with st.chat_message("user", avatar=":material/person:"):
             st.write(pregunta)
+        if (responder_consulta_catalogo(st.session_state.catalogo, pregunta) is not None
+                or not os.getenv("OPENAI_API_KEY")):
+            integrador = crear_integrador(None, st.session_state.catalogo,
+                                         BASE / "memoria.sqlite3")
+            salida = integrador.invoke({"input": pregunta}, config={"configurable": {
+                "user_id": "usuario-demo", "session_id": st.session_state.session_id}})
+            with st.chat_message("assistant", avatar=":material/smart_toy:"):
+                st.write(salida.content)
+            st.rerun()
+        from compraslab.agent import crear_agente
+        from compraslab.nli import NLIConModelo, verificar_nli
+
         with st.chat_message("assistant", avatar=":material/smart_toy:"):
             with st.status("Consultando y verificando", expanded=False):
                 llm = ChatOpenAI(model=modelo)

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Callable
 import json
 import re
+import unicodedata
 
 from langchain_classic.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -12,7 +13,7 @@ from langchain_core.runnables import ConfigurableFieldSpec, RunnableLambda, Runn
 from langchain_core.tools import StructuredTool
 from langchain_openai import ChatOpenAI
 
-from .data import Catalogo
+from .data import Catalogo, listar_productos
 from .business import formatar_brl
 from .integrations import consultar_cep
 from .memory import (HistorialSQLite, guardar_episodio, guardar_preferencia,
@@ -22,6 +23,31 @@ from .prompts import EJEMPLOS_TEXTO
 from .schemas import RespuestaCompra, SolicitudCompra
 from .tools import buscar_productos, comparar, consultar_politicas
 from .verification import verificar
+
+
+def responder_consulta_catalogo(catalogo: Catalogo, pregunta: str) -> str | None:
+    """Answer catalog browsing questions from the active, verified snapshot."""
+    texto = "".join(c for c in unicodedata.normalize("NFKD", pregunta.lower())
+                    if not unicodedata.combining(c))
+    if (re.search(r"\b(fuente|origen|de donde)\b", texto) and
+            re.search(r"\b(datos?|productos?|catalogo)\b", texto)):
+        if catalogo.modo == "dummyjson":
+            return ("Los productos de este escenario provienen de DummyJSON "
+                    "(https://dummyjson.com/products) y están guardados en una instantánea local. "
+                    "Los proveedores, precios en R$, stock, flete y plazos son simulados.")
+        return ("Este chat usa un catálogo generado localmente, con productos y ofertas "
+                "ficticios. Para cargar productos de DummyJSON, pulse «Nuevo escenario».")
+    if (re.search(r"\b(productos?|catalogo)\b", texto) and
+            re.search(r"\b(muestrame|muestra|mostrar|lista|listar|ver|cuales|que|tienes|hay)\b", texto)):
+        productos = sorted(listar_productos(catalogo), key=lambda p: p.nombre.casefold())
+        lineas = [f"Productos del escenario activo ({len(productos)} en total):"]
+        lineas.extend(f"- {p.nombre} ({p.id})" for p in productos[:12])
+        if len(productos) > 12:
+            lineas.append("Se muestran 12. La lista completa está en «Comparación local».")
+        if catalogo.modo != "dummyjson":
+            lineas.append("Este chat usa el catálogo local; pulse «Nuevo escenario» para cargar DummyJSON.")
+        return "\n".join(lineas)
+    return None
 
 
 def crear_agente(catalogo: Catalogo, model: str = "gpt-4.1-mini", *, indice=None,
@@ -111,12 +137,17 @@ def renderizar(respuesta: RespuestaCompra) -> str:
     return "\n".join(lineas)
 
 
-def crear_integrador(executor: AgentExecutor, catalogo: Catalogo, memoria_db: Path,
+def crear_integrador(executor: AgentExecutor | None, catalogo: Catalogo, memoria_db: Path,
                      *, nli: Callable[[RespuestaCompra], bool] | None = None):
     """Persiste solo la respuesta final; dos propuestas como máximo por turno."""
     parser = PydanticOutputParser(pydantic_object=RespuestaCompra)
 
     def turno(dato: dict, config: dict) -> AIMessage:
+        respuesta_catalogo = responder_consulta_catalogo(catalogo, dato["input"])
+        if respuesta_catalogo is not None:
+            return AIMessage(content=respuesta_catalogo)
+        if executor is None:
+            return AIMessage(content="Configure OPENAI_API_KEY para solicitar recomendaciones al agente.")
         errores = []
         usuario = config.get("configurable", {}).get("user_id", "")
         sesion = config.get("configurable", {}).get("session_id", "")

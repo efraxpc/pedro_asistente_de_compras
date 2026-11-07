@@ -1,4 +1,4 @@
-from compraslab.agent import crear_integrador
+from compraslab.agent import crear_integrador, responder_consulta_catalogo
 from compraslab.business import comparar_ofertas
 from compraslab.data import crear_catalogo, ofertas_producto
 from compraslab.memory import HistorialSQLite, nueva_sesion
@@ -73,3 +73,24 @@ def test_sin_oferta_explica_descartes_verificados(tmp_path):
     assert "descartada por" in renderizar(respuesta)
     assert "texto libre" not in renderizar(respuesta)
     assert not verificar(respuesta.model_copy(update={"alternativas": alternativas[:1]}), catalogo).aprobado
+
+
+def test_consultas_catalogo_sin_modelo_usan_escenario_activo(tmp_path):
+    catalogo = crear_catalogo(tmp_path / "catalogos", cantidad=20, semilla=1)
+    memoria = tmp_path / "memoria.sqlite3"
+    sesion = nueva_sesion(memoria, "u1", catalogo.dataset_id)
+    integrador = crear_integrador(None, catalogo, memoria)
+    config = {"configurable": {"user_id": "u1", "session_id": sesion}}
+
+    fuente = integrador.invoke({"input": "¿Cuál es tu fuente de datos?"}, config=config)
+    productos = integrador.invoke({"input": "Muéstrame los productos"}, config=config)
+    recomendacion = integrador.invoke({"input": "Quiero comprar un monitor"}, config=config)
+
+    assert "catálogo generado localmente" in fuente.content
+    assert "Productos del escenario activo (20 en total)" in productos.content
+    assert "PROD-003" in productos.content
+    assert "Configure OPENAI_API_KEY" in recomendacion.content
+    assert len(HistorialSQLite(memoria, sesion, "u1").messages) == 6
+    from dataclasses import replace
+    assert "DummyJSON" in responder_consulta_catalogo(
+        replace(catalogo, modo="dummyjson"), "¿De dónde salen los productos?")

@@ -35,8 +35,13 @@ def test_app_muestra_chat_y_comparacion_sin_clave(tmp_path: Path, monkeypatch):
 
     assert not at.exception
     assert any("Pedro" in title.value for title in at.title)
-    assert at.chat_input[0].disabled
+    assert not at.chat_input[0].disabled
     assert len(at.sidebar.button) >= 3
+    at.chat_input[0].set_value("¿Cuál es tu fuente de datos?").run()
+    assert not at.exception
+    mensajes = HistorialSQLite(tmp_path / "storage" / "memoria.sqlite3",
+                              at.session_state["session_id"], "usuario-demo").messages
+    assert "catálogo generado localmente" in mensajes[-1].content
     primera = at.session_state["session_id"]
     dataset = at.session_state["catalogo"].dataset_id
     at.sidebar.button[0].click().run()
