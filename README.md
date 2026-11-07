@@ -1,6 +1,6 @@
 # Pedro — Asistente de Compras
 
-Pedro es un asistente académico de compras ficticias. **Estado actual:** núcleo determinista, seis herramientas del agente, text-to-query acotado, persistencia, verificación, cinco notebooks y Streamlit con comparación local y chat online. El chat online necesita credenciales y todavía no tiene evidencia de ejecución con un modelo real. Consulte el [estado verificable](docs/estado.md), la [arquitectura](docs/pedro_asistente_de_compras.mmd) y la [revisión EGM](docs/goldfish_review_report.md).
+Pedro es un asistente académico de compras ficticias. **Estado actual:** núcleo determinista, seis herramientas del agente, text-to-query acotado, persistencia, verificación, cinco notebooks y Streamlit con comparación local y chat online. La interfaz obtiene los nombres y SKU de los productos desde DummyJSON al crear cada escenario y guarda una instantánea SQLite; las tres ofertas por producto (precio en R$, stock, flete y plazo) siguen siendo simuladas. El chat online necesita credenciales y todavía no tiene evidencia de ejecución con un modelo real. Consulte el [estado verificable](docs/estado.md), la [arquitectura](docs/pedro_asistente_de_compras.mmd) y la [revisión EGM](docs/goldfish_review_report.md).
 
 El repositorio se llama `pedro_asistente_de_compras`. El paquete Python conserva el nombre interno `compraslab` y las variables `COMPRASLAB_*` siguen vigentes para mantener compatibles los imports, notebooks y configuraciones existentes.
 
@@ -34,6 +34,8 @@ deactivate
 En Windows PowerShell, active con `.venv\Scripts\Activate.ps1`; al terminar use `deactivate`. Si prefiere no activar el entorno, ejecute `uv run pytest -q`, `uv run streamlit run app.py` o `uv run jupyter lab notebooks`.
 
 Para el chat online, ejecute `cp .env.example .env`, configure `OPENAI_API_KEY` y vuelva a iniciar Streamlit; la aplicación carga `.env` al arrancar. `LANGSMITH_TRACING=true` y `LANGSMITH_API_KEY` habilitan trazas reales cuando se configuren. En modo simulado, solo ViaCEP se sustituye por un adaptador identificado; las respuestas del modelo no se simulan en la interfaz.
+
+La fuente de productos de la interfaz es DummyJSON (`COMPRASLAB_CATALOG_SOURCE=dummyjson`, valor predeterminado). Requiere conexión al crear un escenario; si falla, la app muestra el error y permite reintentar. Para trabajar sin red o ejecutar las pruebas de interfaz, use `COMPRASLAB_CATALOG_SOURCE=random`. Cada escenario guarda su origen y fecha de captura en `storage/catalogos/<dataset_id>/manifest.json`.
 
 Si se recibe el índice FAISS preconstruido, guárdelo en `knowledge/politicas/` junto con `index.faiss`, `index.pkl` y un `manifest.json` con `embedding_model`, `dimension`, `origen` y `documentos`. Revise su procedencia antes de establecer `COMPRASLAB_TRUST_POLICY_INDEX=true`: el docstore usa pickle. El adaptador actual acepta modelos OpenAI `text-embedding-*` que coincidan con el índice.
 

@@ -29,6 +29,7 @@ def test_lista_y_historial_completo_aislados(tmp_path: Path):
 def test_app_muestra_chat_y_comparacion_sin_clave(tmp_path: Path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("OPENAI_API_KEY", "")
+    monkeypatch.setenv("COMPRASLAB_CATALOG_SOURCE", "random")
     app = Path(__file__).resolve().parents[1] / "app.py"
     at = AppTest.from_file(str(app), default_timeout=20).run()
 

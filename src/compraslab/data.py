@@ -5,7 +5,10 @@ import secrets
 import sqlite3
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
+
+import httpx
 
 from .schemas import Oferta, Producto
 
@@ -50,14 +53,29 @@ def crear_esquema(db: sqlite3.Connection) -> None:
 
 
 def crear_catalogo(base: Path, *, modo: str = "random", cantidad: int = 1000,
-                   semilla: int | None = None) -> Catalogo:
-    if modo != "random":
-        raise ValueError("modo referencia requiere el kit original")
+                   semilla: int | None = None, cliente: httpx.Client | None = None) -> Catalogo:
+    if modo not in ("random", "dummyjson"):
+        raise ValueError("modo de catálogo desconocido")
     if cantidad < 1:
         raise ValueError("cantidad debe ser positiva")
     semilla = secrets.randbelow(2**63) if semilla is None else semilla
     if not 0 <= semilla < 2**63:
         raise ValueError("semilla fuera de rango")
+    productos_remotos = None
+    if modo == "dummyjson":
+        if cliente is None:
+            with httpx.Client(timeout=10.0) as temporal:
+                respuesta = temporal.get("https://dummyjson.com/products", params={"limit": 0})
+        else:
+            respuesta = cliente.get("https://dummyjson.com/products", params={"limit": 0})
+        respuesta.raise_for_status()
+        productos_remotos = respuesta.json().get("products")
+        if not isinstance(productos_remotos, list) or not productos_remotos:
+            raise ValueError("DummyJSON no devolvió productos")
+        productos_remotos = productos_remotos[:cantidad]
+        for producto in productos_remotos:
+            if not isinstance(producto, dict) or not producto.get("id") or not producto.get("title"):
+                raise ValueError("Producto de DummyJSON incompleto")
     dataset_id = str(uuid.uuid4())
     carpeta = base / dataset_id
     carpeta.mkdir(parents=True, exist_ok=False)
@@ -68,11 +86,14 @@ def crear_catalogo(base: Path, *, modo: str = "random", cantidad: int = 1000,
         db.execute("INSERT INTO dataset VALUES (?,?,?,?)", (dataset_id, modo, semilla, GENERATOR_VERSION))
         db.executemany("INSERT INTO proveedor VALUES (?,?,?)",
                        [(dataset_id, id_, nombre) for id_, nombre in PROVEEDORES])
-        for n in range(1, cantidad + 1):
-            pid = f"PROD-{n:03d}"
-            nombre = "Monitor" if n % 17 == 3 else ("Notebook" if n % 2 else "Teclado")
+        for n, remoto in enumerate(productos_remotos or range(1, cantidad + 1), start=1):
+            pid = f"PROD-{int(remoto['id']):03d}" if modo == "dummyjson" else f"PROD-{n:03d}"
+            nombre = str(remoto["title"]).strip() if modo == "dummyjson" else (
+                "Monitor" if n % 17 == 3 else ("Notebook" if n % 2 else "Teclado"))
+            modelo = (str(remoto.get("sku") or remoto.get("brand") or nombre)
+                      if modo == "dummyjson" else f"Modelo {n:04d}")
             db.execute("INSERT INTO producto VALUES (?,?,?,?,?)",
-                       (dataset_id, pid, nombre, f"Modelo {n:04d}", "unidade"))
+                       (dataset_id, pid, nombre, modelo, "unidade"))
             for proveedor_id, _ in PROVEEDORES:
                 db.execute("INSERT INTO oferta VALUES (?,?,?,?,?,?,?,?)",
                            (dataset_id, f"{pid}-{proveedor_id}", pid, proveedor_id,
@@ -80,7 +101,11 @@ def crear_catalogo(base: Path, *, modo: str = "random", cantidad: int = 1000,
                             rng.randint(0, 100), rng.randint(1, 20)))
     (carpeta / "manifest.json").write_text(json.dumps({
         "dataset_id": dataset_id, "modo": modo, "semilla": semilla,
-        "cantidad_productos": cantidad, "generador": GENERATOR_VERSION,
+        "cantidad_productos": len(productos_remotos) if productos_remotos is not None else cantidad,
+        "generador": GENERATOR_VERSION,
+        "fuente_productos": "https://dummyjson.com/products" if modo == "dummyjson" else "local",
+        "capturado_en": datetime.now(timezone.utc).isoformat(),
+        "ofertas": "simuladas",
         "sqlite": str(ruta)}, indent=2), encoding="utf-8")
     return Catalogo(dataset_id, ruta, semilla, modo)
 
@@ -102,6 +127,14 @@ def buscar_productos(catalogo: Catalogo, texto: str, limite: int = 10) -> list[P
                            "ORDER BY id LIMIT ?",
                            (catalogo.dataset_id, f"%{texto.lower()}%", f"%{texto.lower()}%",
                             texto.lower(), min(max(limite, 1), 50))).fetchall()
+    return [Producto(**dict(f)) for f in filas]
+
+
+def listar_productos(catalogo: Catalogo) -> list[Producto]:
+    """List the products in the active snapshot for the local comparison picker."""
+    with conectar(catalogo.ruta) as db:
+        filas = db.execute("SELECT * FROM producto WHERE dataset_id=? ORDER BY id",
+                           (catalogo.dataset_id,)).fetchall()
     return [Producto(**dict(f)) for f in filas]
 
 
