@@ -1804,6 +1804,7 @@ agent = [
     { name = "langchain-core" },
     { name = "langchain-openai" },
     { name = "langsmith" },
+    { name = "numpy" },
 ]
 dev = [
     { name = "nbformat" },
@@ -1829,6 +1830,7 @@ requires-dist = [
     { name = "langchain-openai", marker = "extra == 'agent'", specifier = ">=1,<2" },
     { name = "langsmith", marker = "extra == 'agent'", specifier = ">=0.4,<1" },
     { name = "nbformat", marker = "extra == 'dev'", specifier = ">=5,<6" },
+    { name = "numpy", marker = "extra == 'agent'", specifier = ">=2,<3" },
     { name = "pydantic", specifier = ">=2.10,<3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8,<10" },
     { name = "python-dotenv", specifier = ">=1,<2" },

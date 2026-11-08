@@ -85,7 +85,7 @@ def crear_agente(catalogo: Catalogo, model: str = "gpt-4.1-mini", *, indice=None
     llm = llm or ChatOpenAI(model=model)
 
     def buscar_herramienta(texto: str) -> str:
-        """Busca productos por nombre o modelo en el catálogo activo."""
+        """Busca piezas por ID/SKU exacto o por significado en el catálogo activo; devuelve candidatos, no compatibilidad confirmada."""
         return buscar_productos(catalogo, texto).model_dump_json()
 
     def catalogo_herramienta(producto_id: str) -> str:

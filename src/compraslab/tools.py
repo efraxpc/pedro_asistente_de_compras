@@ -1,19 +1,48 @@
 """Adaptadores con resultados explícitos y acceso al dataset fijado por la aplicación."""
 import json
+import logging
+import os
 import uuid
 from pathlib import Path
+
+from langchain_openai import OpenAIEmbeddings
+
 from .business import comparar_ofertas
 from .data import Catalogo, buscar_productos as buscar, ofertas_producto
 from .integrations import consultar_cep
 from .schemas import Evidencia, ResultadoHerramienta, SolicitudCompra, RespuestaCompra
+from .semantic_parts import (INDEX_DIR, MODEL, buscar_piezas_semanticas,
+                             indice_disponible)
 from .verification import verificar
 
+LOGGER = logging.getLogger(__name__)
 
-def buscar_productos(catalogo: Catalogo, texto: str) -> ResultadoHerramienta:
+
+def buscar_productos(catalogo: Catalogo, texto: str, *, embeddings=None,
+                     index_dir: Path = INDEX_DIR) -> ResultadoHerramienta:
     try:
-        productos = buscar(catalogo, texto)
+        exactos = buscar(catalogo, texto, limite=10)
     except ValueError as exc:
         return ResultadoHerramienta(nombre="buscar_productos", estado="invalido", error=str(exc))
+    termino = texto.strip().casefold()
+    identificados = [p for p in exactos if p.id.casefold() == termino or
+                     p.modelo.casefold() == termino]
+    if identificados:
+        productos = identificados
+    elif indice_disponible(index_dir) and (embeddings is not None or os.getenv("OPENAI_API_KEY")):
+        try:
+            motor = embeddings or OpenAIEmbeddings(model=MODEL)
+            semanticos = buscar_piezas_semanticas(catalogo, texto, motor,
+                                                  index_dir=index_dir, limite=10)
+            productos = list(dict.fromkeys([p.id for p in exactos[:5]] +
+                                            [p.id for p in semanticos]))[:10]
+            por_id = {p.id: p for p in exactos + semanticos}
+            productos = [por_id[pid] for pid in productos]
+        except Exception as exc:
+            LOGGER.warning("Búsqueda semántica no disponible: %s", type(exc).__name__)
+            productos = exactos
+    else:
+        productos = exactos
     return ResultadoHerramienta(nombre="buscar_productos",
         estado="ok" if productos else "no_encontrado",
         datos=[p.model_dump() for p in productos],
