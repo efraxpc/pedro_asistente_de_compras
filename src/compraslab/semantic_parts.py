@@ -1,23 +1,45 @@
-"""Índice semántico local de piezas, generado con embeddings de OpenAI."""
+"""Índice FAISS y embeddings multilingües locales para piezas ficticias."""
 import hashlib
 import json
 import os
 import tempfile
+from functools import lru_cache
 from pathlib import Path
 
 import faiss
 import numpy as np
+from fastembed import TextEmbedding
 
 from .data import Catalogo, PIEZAS_DB, conectar, listar_productos
 from .schemas import Producto
 
-MODEL = "text-embedding-3-small"
+MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+MODEL_CACHE_DIR = Path("storage/models")
 INDEX_DIR = Path("storage/indices/piezas")
-INDEX_VERSION = 1
+INDEX_VERSION = 2
 
 
 class IndiceNoDisponible(RuntimeError):
     pass
+
+
+class EmbeddingsLocales:
+    """Adaptador compatible con la indexación y consulta actuales."""
+
+    def __init__(self) -> None:
+        self.model = TextEmbedding(model_name=MODEL, cache_dir=str(MODEL_CACHE_DIR))
+
+    def embed_documents(self, texts: list[str]) -> list[np.ndarray]:
+        return list(self.model.embed(texts))
+
+    def embed_query(self, text: str) -> np.ndarray:
+        return next(iter(self.model.embed([text])))
+
+
+@lru_cache(maxsize=1)
+def embeddings_locales() -> EmbeddingsLocales:
+    """Keep the ONNX model loaded across local searches."""
+    return EmbeddingsLocales()
 
 
 def _sha256(path: Path) -> str:

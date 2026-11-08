@@ -1,18 +1,15 @@
 """Adaptadores con resultados explícitos y acceso al dataset fijado por la aplicación."""
 import json
 import logging
-import os
 import uuid
 from pathlib import Path
-
-from langchain_openai import OpenAIEmbeddings
 
 from .business import comparar_ofertas
 from .data import Catalogo, buscar_productos as buscar, ofertas_producto
 from .integrations import consultar_cep
 from .schemas import Evidencia, ResultadoHerramienta, SolicitudCompra, RespuestaCompra
-from .semantic_parts import (INDEX_DIR, MODEL, buscar_piezas_semanticas,
-                             indice_disponible)
+from .semantic_parts import (INDEX_DIR, buscar_piezas_semanticas,
+                             embeddings_locales, indice_disponible)
 from .verification import verificar
 
 LOGGER = logging.getLogger(__name__)
@@ -29,9 +26,9 @@ def buscar_productos(catalogo: Catalogo, texto: str, *, embeddings=None,
                      p.modelo.casefold() == termino]
     if identificados:
         productos = identificados
-    elif indice_disponible(index_dir) and (embeddings is not None or os.getenv("OPENAI_API_KEY")):
+    elif indice_disponible(index_dir):
         try:
-            motor = embeddings or OpenAIEmbeddings(model=MODEL)
+            motor = embeddings if embeddings is not None else embeddings_locales()
             semanticos = buscar_piezas_semanticas(catalogo, texto, motor,
                                                   index_dir=index_dir, limite=10)
             productos = list(dict.fromkeys([p.id for p in exactos[:5]] +

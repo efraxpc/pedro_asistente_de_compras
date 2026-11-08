@@ -64,8 +64,10 @@ def test_indice_desactualizado_y_falta_de_indice_usan_sql(tmp_path, monkeypatch)
 
     indexar_piezas(embeddings, index_dir=index_dir)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setattr("compraslab.tools.embeddings_locales", lambda: embeddings)
     sin_clave = buscar_productos(catalogo, "NEVE-TERM", index_dir=index_dir)
-    assert [p["id"] for p in sin_clave.datos] == ["PROD-0002"]
+    assert sin_clave.datos[0]["id"] == "PROD-0002"
+    assert embeddings.consultas == 1
 
     class EmbeddingsFallidos(EmbeddingsFicticios):
         def embed_query(self, text):
