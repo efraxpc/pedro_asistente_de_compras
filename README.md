@@ -1,47 +1,38 @@
-# Pedro — Asistente de Compras
+# Pedro Infnet reconstruido
 
-Pedro es un asistente académico de compras ficticias. **Estado actual:** núcleo determinista, seis herramientas del agente, text-to-query acotado, persistencia, verificación, cinco notebooks y Streamlit con comparación local y chat online. La interfaz crea escenarios únicamente desde la base SQLite local de piezas de electrodomésticos. Los productos y ofertas del escenario se guardan en una instantánea verificable. El chat online necesita credenciales y todavía no tiene evidencia de ejecución con un modelo real. Consulte el [estado verificable](docs/estado.md), la [arquitectura](docs/pedro_asistente_de_compras.mmd) y la [revisión EGM](docs/goldfish_review_report.md).
+Proyecto independiente en Python 3.13 para consultar piezas ficticias, comparar ofertas y ensayar un agente con publicación verificada. El catálogo, los proveedores, las compatibilidades, el stock y los precios son sintéticos. El generador y la base sintética se tomaron del repositorio de referencia; el paquete de aplicación se construyó en este workspace.
 
-El repositorio también incluye un [catálogo ficticio de piezas de electrodomésticos](datasets/README.md) con 2.640 piezas y ofertas de proveedores nacionales e internacionales, generado de forma reproducible en SQLite.
-
-El repositorio se llama `pedro_asistente_de_compras`. El paquete Python conserva el nombre interno `compraslab` y las variables `COMPRASLAB_*` siguen vigentes para mantener compatibles los imports, notebooks y configuraciones existentes.
-
-## Desarrollo local
-
-El proyecto usa Python 3.13 y un entorno aislado en `.venv/`.
-
-Para administrar la interfaz en Linux:
-
-```bash
-./project.sh start
-./project.sh logs
-./project.sh status
-./project.sh restart
-./project.sh stop
-```
-
-La app abre en `http://localhost:8501`. `./project.sh` equivale a `./project.sh start`: inicia la app y muestra su registro continuamente en la consola. `Ctrl+C` deja de seguir los logs; la app continúa activa hasta `./project.sh stop`. `./project.sh logs` vuelve a mostrar el registro. El script guarda el PID y el registro en `storage/run/`; para usar otro puerto, anteponga `COMPRASLAB_PORT=8765` a cada comando. Debe existir `.venv/`; créelo con el comando `uv sync` indicado abajo.
-
-También puede ejecutar las herramientas directamente:
+## Reproducir
 
 ```bash
 uv sync --python 3.13 --all-extras --locked
-source .venv/bin/activate
-python --version
-python -m pytest -q
-streamlit run app.py
-jupyter lab notebooks
-deactivate
+uv run pytest -q
+uv run python scripts/generar_catalogo_piezas.py
+uv run python scripts/crear_notebooks.py
+uv run python scripts/ejecutar_notebooks.py
+uv run streamlit run app.py
 ```
 
-En Windows PowerShell, active con `.venv\Scripts\Activate.ps1`; al terminar use `deactivate`. Si prefiere no activar el entorno, ejecute `uv run pytest -q`, `uv run streamlit run app.py` o `uv run jupyter lab notebooks`.
+La app inicia en http://localhost:8501. Copie .env.example a .env para el agente OpenAI y LangSmith. Sin clave funcionan el listado paginado, la ficha y la comparación local. El chat sin clave lista piezas y muestra fichas. Las recomendaciones del agente pasan por verificación exacta y NLI local antes de mostrarse.
 
-Para el chat online, ejecute `cp .env.example .env`, configure `OPENAI_API_KEY` y vuelva a iniciar Streamlit; la aplicación carga `.env` al arrancar. `LANGSMITH_TRACING=true` y `LANGSMITH_API_KEY` habilitan trazas reales cuando se configuren. En modo simulado, solo ViaCEP se sustituye por un adaptador identificado; las respuestas del modelo no se simulan en la interfaz.
+El primer acceso crea un escenario con dataset_id UUID, una copia de datasets/piezas_electrodomesticos.sqlite3 y un manifiesto con huella SHA-256, fecha, semilla y recuentos. Nuevo chat conserva escenario; nuevo escenario crea un chat. Reabrir una conversación restaura su dataset o avisa si falta. Los archivos de ejecución van en storage/ y no se versionan.
 
-La única fuente de productos es `datasets/piezas_electrodomesticos.sqlite3`, sin necesidad de red. Cada escenario guarda una copia de sus productos y ofertas y la fecha de captura en `storage/catalogos/<dataset_id>/manifest.json`. Los chats antiguos de otras fuentes conservan su historial, pero sus catálogos no se reactivan; pulse «Nuevo escenario» para usar SQLite. La vista «Catálogo de piezas» muestra las 2.640 piezas, con filtros, ficha técnica, compatibilidades, ofertas e historial de precios. En el chat, «Muéstrame todas las piezas», «Lista piezas página 2» y «Detalle de PROD-0001» funcionan sin clave de OpenAI; las listas se presentan en páginas de 20.
+## Componentes
 
-Para activar la búsqueda semántica de la tool `buscar_productos`, ejecute `uv run python scripts/indexar_piezas.py`. El comando descarga una vez el modelo multilingüe local de FastEmbed a `storage/models/` y guarda el índice FAISS en `storage/indices/piezas/`. Ni la indexación ni las consultas semánticas de piezas requieren `OPENAI_API_KEY`. Si falta el índice o este no coincide con la base SQLite, la tool conserva la búsqueda SQL exacta. El índice ofrece candidatos: la compatibilidad y las ofertas se verifican por separado. El chat con modelo y el índice opcional de políticas conservan su configuración propia de OpenAI.
+- src/pedro/catalog.py: escenario y consultas SQLite de solo lectura.
+- src/pedro/contracts.py y business.py: contratos y decisión en centavos.
+- src/pedro/query.py: plan Pydantic a SELECT parametrizado con traza.
+- src/pedro/memory.py: mensajes completos, ventana de 12, preferencias y episodios FastEmbed por usuario.
+- src/pedro/prompts.py: PTCF y ejemplos con acciones observables.
+- src/pedro/agent.py: seis herramientas, un create_openai_tools_agent, una corrección interna y RunnableWithMessageHistory que guarda solo la respuesta pública.
+- src/pedro/verification.py y nli.py: comprobación exacta y puerta NLI triclase.
+- src/pedro/rag.py: inspección de manifiesto y hashes antes de permitir deserialización FAISS.
+- notebooks/01–05: prácticas ejecutables. Los dobles se identifican explícitamente. Las comparaciones didácticas están en docs/comparaciones.md.
 
-Si se recibe el índice FAISS preconstruido, guárdelo en `knowledge/politicas/` junto con `index.faiss`, `index.pkl` y un `manifest.json` con `embedding_model`, `dimension`, `origen` y `documentos`. Revise su procedencia antes de establecer `COMPRASLAB_TRUST_POLICY_INDEX=true`: el docstore usa pickle. El adaptador actual acepta modelos OpenAI `text-embedding-*` que coincidan con el índice.
+Para el índice de políticas se requieren knowledge/politicas/index.faiss, index.pkl y manifest.json con origen, embedding_model, dimension, metrica, documentos y sha256 por archivo. Revise su procedencia antes de establecer PEDRO_TRUST_POLICY_INDEX=true. El docstore pickle exige confianza explícita. Sin el índice, no se acredita recuperación de políticas.
 
-El kit, la rúbrica del profesor y el índice FAISS de compras no estaban disponibles al iniciar. La prueba de Demo B usa únicamente los valores proporcionados en la solicitud y **no sustituye la referencia original**.
+## Evaluación y entregables
+
+La matriz provisional de 30 identificadores está en docs/matriz.md. El registro de comprobaciones está en docs/evidencias.md y el informe editable y PDF en docs/informe.md y docs/informe.pdf. Hay 30 casos derivados y congelados en evals/casos_derivados.json; no equivalen a los casos oficiales. Para evaluar el mismo flujo final con LangSmith: uv run python evals/evaluar_flujo.py. El script exige OPENAI_API_KEY y LANGSMITH_API_KEY; no publica métricas simuladas.
+
+Faltan el PDF oficial de Infnet para cotejar 29 criterios, el índice FAISS autorizado y credenciales para el chat y LangSmith remotos. La grabación con webcam, subida a Drive institucional y verificación del enlace requieren el acceso del alumno.

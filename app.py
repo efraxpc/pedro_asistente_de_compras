@@ -1,301 +1,183 @@
-"""Interfaz local y chat online. La respuesta online solo aparece tras verificar."""
+"""Interfaz local: chat, catálogo y comparación de piezas ficticias."""
 import os
-import sqlite3
-from pathlib import Path
+import json
 from decimal import Decimal
+from pathlib import Path
 
 import streamlit as st
 from dotenv import load_dotenv
 
-from compraslab.business import comparar_ofertas, formatar_brl
-from compraslab.data import (Catalogo, abrir_catalogo, crear_catalogo,
-                             listar_productos, ofertas_producto, PIEZAS_DB)
-from compraslab.part_catalog import detalle_pieza, listar_piezas
-from compraslab.memory import listar_sesiones, mensajes_sesion, nueva_sesion
-from compraslab.schemas import Evidencia, RespuestaCompra, SolicitudCompra
-from compraslab.verification import verificar
-from compraslab.memory import HistorialSQLite
+from pedro.agent import crear_flujo
+from pedro.business import brl
+from pedro.catalog import abrir_escenario, crear_escenario, ficha, listar, ofertas
+from pedro.contracts import Solicitud
+from pedro.memory import Historial, nueva_sesion, sesiones
+from pedro.verification import respuesta_local, verificar
 
-BASE = Path("storage")
 load_dotenv()
-st.set_page_config(page_title="Pedro — Asistente de Compras", page_icon=":material/chat:",
-                   layout="wide", initial_sidebar_state="expanded")
+BASE = Path("storage")
+CATALOGOS = BASE / "catalogos"
+MEMORIA = BASE / "memoria.sqlite3"
+USUARIO = "usuario-demo"
+st.set_page_config(page_title="Pedro · compras ficticias", page_icon=":material/shopping_cart:",
+                   layout="wide")
 
 
-def crear_catalogo_app():
-    try:
-        return crear_catalogo(BASE / "catalogos")
-    except (ValueError, FileNotFoundError, sqlite3.DatabaseError) as exc:
-        st.error(f"No se pudo cargar la base SQLite de piezas: {type(exc).__name__}. Intente de nuevo.")
-        st.stop()
+@st.cache_resource(show_spinner=False, max_entries=1)
+def modelo_nli():
+    from pedro.nli import ModeloNLI
+    return ModeloNLI()
 
 
-@st.cache_data(show_spinner=False, max_entries=8)
-def piezas_para_vista(catalogo: Catalogo, version_db: int) -> list[dict]:
-    return listar_piezas(catalogo)
-
-
-if "catalogo" not in st.session_state:
-    st.session_state.catalogo = crear_catalogo_app()
-elif (st.session_state.catalogo is not None and
-      st.session_state.catalogo.modo != "piezas"):
-    st.session_state.catalogo = crear_catalogo_app()
-    st.session_state.session_id = nueva_sesion(BASE / "memoria.sqlite3", "usuario-demo",
-                                              st.session_state.catalogo.dataset_id)
-    st.session_state.vista = "Chat"
-if "session_id" not in st.session_state:
-    st.session_state.session_id = nueva_sesion(BASE / "memoria.sqlite3", "usuario-demo",
-                                              st.session_state.catalogo.dataset_id)
-if "vista" not in st.session_state:
-    st.session_state.vista = "Chat"
-
-
-def iniciar_chat() -> None:
-    if st.session_state.catalogo is None:
-        st.session_state.catalogo = crear_catalogo_app()
-    st.session_state.session_id = nueva_sesion(BASE / "memoria.sqlite3", "usuario-demo",
-                                              st.session_state.catalogo.dataset_id)
-    st.session_state.vista = "Chat"
+@st.cache_resource(show_spinner=False, max_entries=2)
+def indice_politicas(carpeta: str, huella_contenido: str, modelo: str):
+    from langchain_openai import OpenAIEmbeddings
+    from pedro.rag import cargar_indice
+    return cargar_indice(Path(carpeta), OpenAIEmbeddings(model=modelo),
+                         origen_confiable=True)[0]
 
 
 def nuevo_escenario() -> None:
-    st.session_state.catalogo = crear_catalogo_app()
-    iniciar_chat()
+    st.session_state.escenario = crear_escenario(CATALOGOS)
+    st.session_state.sesion = nueva_sesion(MEMORIA, USUARIO, st.session_state.escenario.dataset_id)
 
 
-def abrir_sesion(session_id: str, dataset_id: str) -> None:
-    st.session_state.session_id = session_id
+def nuevo_chat() -> None:
+    st.session_state.sesion = nueva_sesion(MEMORIA, USUARIO, st.session_state.escenario.dataset_id)
+
+
+def reabrir(session_id: str, dataset_id: str) -> None:
+    st.session_state.sesion = session_id
     try:
-        st.session_state.catalogo = abrir_catalogo(BASE / "catalogos" / dataset_id)
+        st.session_state.escenario = abrir_escenario(CATALOGOS, dataset_id)
+        st.session_state.error_escenario = None
     except (FileNotFoundError, ValueError):
-        st.session_state.catalogo = None
-    st.session_state.vista = "Chat"
+        st.session_state.escenario = None
+        st.session_state.error_escenario = "El escenario de esta conversación ya no está disponible."
 
+
+if "escenario" not in st.session_state:
+    nuevo_escenario()
+if "error_escenario" not in st.session_state:
+    st.session_state.error_escenario = None
 
 with st.sidebar:
     st.title("Pedro")
-    st.caption("Asistente de compras")
-    if st.session_state.catalogo is not None:
-        st.caption("Productos: base SQLite de piezas · ofertas simuladas")
+    st.caption("Compras ficticias · usuario-demo")
     vista = st.segmented_control("Vista", ["Chat", "Catálogo de piezas", "Comparación local"],
-                                key="vista", width="stretch")
-    st.button("Nuevo chat", icon=":material/edit_square:", width="stretch",
-              on_click=iniciar_chat)
-    st.button("Nuevo escenario", icon=":material/refresh:", width="stretch",
-              on_click=nuevo_escenario)
+                                default="Chat", key="vista", width="stretch")
+    st.button("Nuevo chat", on_click=nuevo_chat, icon=":material/edit_square:", width="stretch")
+    st.button("Nuevo escenario", on_click=nuevo_escenario, icon=":material/refresh:", width="stretch")
     st.subheader("Conversaciones")
-    st.html("""<style>
-        .st-key-chat_list button {
-            border: 0;
-            box-shadow: none;
-            justify-content: flex-start;
-            text-align: left;
-            min-height: 2.25rem;
-        }
-        .st-key-chat_list button p { width: 100%; text-align: left; }
-        .st-key-chat_list button[kind="secondary"] { background: transparent; }
-        .st-key-chat_list button[kind="primary"] {
-            background: #E8E8F7;
-            color: #3F427F;
-        }
-    </style>""")
-    with st.container(key="chat_list"):
-        for sesion in listar_sesiones(BASE / "memoria.sqlite3", "usuario-demo"):
-            activa = sesion["session_id"] == st.session_state.session_id
-            st.button(sesion["titulo"], key=f"chat_{sesion['session_id']}",
-                      type="primary" if activa else "secondary", width="stretch",
-                      on_click=abrir_sesion, args=(sesion["session_id"], sesion["dataset_id"]))
+    for sesion in sesiones(MEMORIA, USUARIO):
+        st.button(f"{sesion['id'][:8]} · {sesion['dataset_id'][:8]}", key=f"sesion_{sesion['id']}",
+                  on_click=reabrir, args=(sesion["id"], sesion["dataset_id"]), width="stretch")
+
+escenario = st.session_state.escenario
+if escenario is None:
+    st.warning(st.session_state.error_escenario or "Escenario ausente")
+    st.stop()
 
 if vista == "Chat":
-    st.subheader("Pedro")
-    st.caption("Asistente de compras · Datos ficticios")
-    catalogo_disponible = st.session_state.catalogo is not None
-    if not catalogo_disponible:
-        st.warning("El catálogo de esta conversación ya no está disponible. Puede consultar el historial.")
-    for mensaje in mensajes_sesion(BASE / "memoria.sqlite3", st.session_state.session_id,
-                                   "usuario-demo"):
-        with st.chat_message("user" if mensaje.type == "human" else "assistant",
-                             avatar=":material/person:" if mensaje.type == "human" else ":material/smart_toy:"):
-            st.write(mensaje.content)
+    st.title("Chat")
+    st.caption(f"Escenario {escenario.dataset_id[:8]} · datos comerciales ficticios")
+    for mensaje in Historial(MEMORIA, USUARIO, st.session_state.sesion).todos():
+        with st.chat_message("user" if mensaje.type == "human" else "assistant"):
+            st.markdown(str(mensaje.content))
     if not os.getenv("OPENAI_API_KEY"):
-        st.info("Puede consultar piezas, detalles y su fuente. Configure OPENAI_API_KEY para recomendaciones.")
-    pregunta = st.chat_input("Escribe un mensaje a Pedro", key="mensaje_chat",
-                             disabled=not catalogo_disponible)
+        st.info("Sin clave puede listar piezas y pedir fichas. La comparación funciona en la vista local.")
+    pregunta = st.chat_input("Pregunta por piezas, ofertas o políticas", key="pregunta")
     if pregunta:
-        from compraslab.agent import crear_integrador, responder_consulta_catalogo
-        from langchain_openai import ChatOpenAI
-
-        modelo = os.getenv("COMPRASLAB_MODEL", "gpt-4.1-mini")
-        with st.chat_message("user", avatar=":material/person:"):
-            st.write(pregunta)
-        if (responder_consulta_catalogo(st.session_state.catalogo, pregunta) is not None
-                or not os.getenv("OPENAI_API_KEY")):
-            integrador = crear_integrador(None, st.session_state.catalogo,
-                                         BASE / "memoria.sqlite3")
-            salida = integrador.invoke({"input": pregunta}, config={"configurable": {
-                "user_id": "usuario-demo", "session_id": st.session_state.session_id}})
-            with st.chat_message("assistant", avatar=":material/smart_toy:"):
-                st.write(salida.content)
-            st.rerun()
-        from compraslab.agent import crear_agente
-        from compraslab.nli import NLIConModelo, verificar_nli
-
-        with st.chat_message("assistant", avatar=":material/smart_toy:"):
+        with st.chat_message("user"):
+            st.markdown(pregunta)
+        with st.chat_message("assistant"):
             with st.status("Consultando y verificando", expanded=False):
-                llm = ChatOpenAI(model=modelo)
+                llm = None
+                clasificador = None
+                if os.getenv("OPENAI_API_KEY"):
+                    from langchain_openai import ChatOpenAI
+                    llm = ChatOpenAI(model=os.getenv("PEDRO_MODEL", "gpt-4.1-mini"))
+                    try:
+                        clasificador = modelo_nli()
+                    except Exception:
+                        st.warning("NLI no disponible; las recomendaciones quedarán bloqueadas.")
                 indice = None
-                carpeta_indice = Path("knowledge/politicas")
-                if (carpeta_indice / "manifest.json").is_file():
-                    if os.getenv("COMPRASLAB_TRUST_POLICY_INDEX", "false").lower() != "true":
-                        st.warning("El índice de políticas existe, pero su origen debe verificarse antes de cargar el docstore.")
+                carpeta = Path("knowledge/politicas")
+                if (carpeta / "manifest.json").is_file() and llm is not None:
+                    if os.getenv("PEDRO_TRUST_POLICY_INDEX", "false").lower() != "true":
+                        st.warning("Revise la procedencia del índice antes de habilitar su docstore.")
                     else:
                         try:
-                            import json
-                            from langchain_openai import OpenAIEmbeddings
-                            from compraslab.rag import cargar_indice_politicas
-                            meta = json.loads((carpeta_indice / "manifest.json").read_text(encoding="utf-8"))
-                            modelo_embeddings = meta.get("embedding_model", "")
-                            if not modelo_embeddings.startswith("text-embedding-"):
-                                raise ValueError("modelo de embeddings no admitido")
-                            indice, _ = cargar_indice_politicas(carpeta_indice,
-                                OpenAIEmbeddings(model=modelo_embeddings), origen_confiable=True)
-                        except (ValueError, FileNotFoundError) as exc:
-                            st.warning(f"Índice de políticas no disponible: {exc}")
-                executor = crear_agente(st.session_state.catalogo, model=modelo,
-                    simulado=os.getenv("COMPRASLAB_INTEGRATION_MODE") == "simulated", llm=llm,
-                    memoria_db=BASE / "memoria.sqlite3", user_id="usuario-demo", mensaje_actual=pregunta,
-                    indice=indice)
-                clasificador = NLIConModelo(llm)
-                integrador = crear_integrador(executor, st.session_state.catalogo,
-                    BASE / "memoria.sqlite3", nli=lambda r: verificar_nli(r, clasificador))
+                            from pedro.rag import inspeccionar_indice
+                            meta = inspeccionar_indice(carpeta)
+                            indice = indice_politicas(str(carpeta),
+                                                       json.dumps(meta["sha256"], sort_keys=True),
+                                                       meta["embedding_model"])
+                        except (ValueError, FileNotFoundError, PermissionError, KeyError) as exc:
+                            st.warning(f"Índice de políticas no disponible: {type(exc).__name__}")
+                flujo = crear_flujo(escenario, MEMORIA, llm=llm,
+                                   clasificador=clasificador, indice=indice)
                 try:
-                    salida = integrador.invoke({"input": pregunta}, config={"configurable": {
-                        "user_id": "usuario-demo", "session_id": st.session_state.session_id}})
-                    texto_salida = salida.content
+                    salida = flujo.invoke({"input": pregunta}, config={"configurable": {
+                        "user_id": USUARIO, "session_id": st.session_state.sesion}})
+                    st.markdown(str(salida.content))
                 except Exception as exc:
-                    texto_salida = f"No se pudo completar la consulta: {type(exc).__name__}."
-            st.write(texto_salida)
+                    st.error(f"Consulta no completada: {type(exc).__name__}")
 
-if vista == "Catálogo de piezas":
-    catalogo = st.session_state.catalogo
+elif vista == "Catálogo de piezas":
     st.title("Catálogo de piezas")
-    st.caption("Datos ficticios de la base SQLite local · precios en BRL estimados")
-    if catalogo is None:
-        st.warning("El catálogo de esta conversación ya no está disponible. Cree un escenario nuevo.")
-        st.stop()
-    piezas = piezas_para_vista(catalogo, PIEZAS_DB.stat().st_mtime_ns)
-    categorias = sorted({pieza["category"] for pieza in piezas})
-    categoria = st.selectbox("Categoría", ["Todas", *categorias], key="categoria_piezas")
-    busqueda = st.text_input("Buscar por nombre, SKU, ID o tipo", key="buscar_piezas")
-    termino = busqueda.strip().casefold()
-    filtradas = [pieza for pieza in piezas
-                 if (categoria == "Todas" or pieza["category"] == categoria)
-                 and (not termino or any(termino in str(pieza[campo]).casefold()
-                                        for campo in ("name", "sku", "product_id", "part_kind")))]
-    st.caption(f"{len(filtradas)} de {len(piezas)} piezas del escenario activo")
-    st.dataframe([{
-        "ID": p["product_id"], "SKU": p["sku"], "Pieza": p["name"],
-        "Categoría": p["category"], "Tipo": p["part_kind"],
-        "Fabricante": p["manufacturer"],
-        "Desde (R$)": p["min_price_brl_cents"] / 100 if p["min_price_brl_cents"] is not None else None,
-        "Stock total": p["total_stock"], "Ofertas": p["offer_count"]
-    } for p in filtradas], hide_index=True, width="stretch",
-        alt="Todas las piezas del escenario activo con precio mínimo, stock y ofertas")
-    etiquetas = {p["sku"]: f"{p['name']} · {p['sku']}" for p in filtradas}
-    sku = st.selectbox("Ver detalles de una pieza", list(etiquetas),
-                       index=None, placeholder="Seleccione un SKU", key="detalle_sku",
-                       format_func=lambda value: etiquetas[value])
-    if sku:
-        detalle = detalle_pieza(catalogo, sku)
-        if detalle is None:
-            st.warning("La pieza ya no está disponible en este escenario.")
-        else:
-            st.subheader(f"{detalle['name']} · {detalle['product_id']}")
-            st.write(detalle["description"])
-            st.dataframe([{
-                "SKU": detalle["sku"], "Categoría": detalle["category"],
-                "Familia": detalle["family"], "Fabricante": detalle["manufacturer"],
-                "Tipo": detalle["part_kind"], "Material": detalle["material"],
-                "Color": detalle["color"], "Voltaje (V)": detalle["voltage_v"],
-                "Potencia (W)": detalle["power_w"],
-                "Dimensiones (mm)": f"{detalle['length_mm']} × {detalle['width_mm']} × {detalle['height_mm']}",
-                "Peso (g)": detalle["weight_g"], "Garantía (meses)": detalle["warranty_months"],
-                "Origen": detalle["origin_country"], "Estado": detalle["condition"]
-            }], hide_index=True, width="stretch", alt="Especificaciones de la pieza seleccionada")
-            st.write("Especificaciones adicionales", detalle["technical_specs"])
-            st.subheader("Compatibilidad ficticia")
-            st.dataframe([{"Marca": c["brand"], "Modelo": c["model_code"],
-                           "Desde año": c["year_from"], "Hasta año": c["year_to"]}
-                          for c in detalle["compatibility"]], hide_index=True, width="stretch",
-                         alt="Modelos y años compatibles con la pieza seleccionada")
-            st.subheader("Ofertas ficticias")
-            st.dataframe([{
-                "Proveedor": o["supplier_name"], "País": o["country_code"],
-                "Ámbito": "Nacional" if o["domestic"] else "Internacional",
-                "Precio origen": f"{o['unit_price_minor'] / 100:.2f} {o['currency']}",
-                "Estimado BRL": formatar_brl(o["estimated_brl_cents"]),
-                "Stock": o["stock_qty"], "Disponibilidad": o["availability"],
-                "Reposición": o["restock_date"],
-                "Flete": formatar_brl(o["shipping_brl_cents"]),
-                "Plazo (días)": o["lead_days"], "Pedido mínimo": o["min_order_qty"],
-                "Actualizado": o["updated_on"], "Sitio": o["website"]
-            } for o in detalle["offers"]], hide_index=True, width="stretch",
-                alt="Precios, disponibilidad y proveedores de la pieza seleccionada")
-            st.subheader("Historial de precios")
-            proveedores_por_oferta = {o["id"]: o for o in detalle["offers"]}
-            st.dataframe([{
-                "Proveedor": proveedores_por_oferta[offer_id]["supplier_name"],
-                "Fecha": h["observed_on"],
-                "Precio origen": f"{h['unit_price_minor'] / 100:.2f} {proveedores_por_oferta[offer_id]['currency']}",
-                "Estimado BRL": formatar_brl(h["estimated_brl_cents"])
-            } for offer_id, history in detalle["price_history"].items() for h in history],
-                hide_index=True, width="stretch", alt="Historial de precios de todas las ofertas")
+    st.caption("Fuente: copia SQLite sintética del escenario activo. Ofertas y compatibilidades ficticias.")
+    termino = st.text_input("Buscar por nombre, SKU o ID", key="termino")
+    pagina = st.number_input("Página", min_value=1, value=1, step=1, key="pagina")
+    total, piezas = listar(escenario, int(pagina), termino)
+    st.caption(f"{total} piezas · hasta 20 por página")
+    st.dataframe(piezas, hide_index=True, width="stretch", alt="Piezas del escenario activo")
+    ids = [p["id"] for p in piezas]
+    producto_id = st.selectbox("Ficha técnica", ids, index=None, key="ficha_id")
+    if producto_id:
+        dato = ficha(escenario, producto_id)
+        if dato is None:
+            st.warning("La pieza ya no está disponible.")
+            st.stop()
+        st.subheader(dato["name"])
+        st.markdown(dato["description"])
+        st.dataframe([{"SKU": dato["sku"], "Material": dato["material"],
+                       "Voltaje V": dato["voltage_v"], "Garantía meses": dato["warranty_months"]}],
+                     hide_index=True, alt="Ficha técnica de la pieza")
+        st.dataframe(dato["compatibility"], hide_index=True, alt="Compatibilidades ficticias")
+        st.dataframe([o.model_dump(exclude={"dataset_id"}) for o in ofertas(escenario, producto_id)],
+                     hide_index=True, alt="Ofertas vigentes del escenario")
 
-if vista == "Comparación local":
+else:
     st.title("Comparación local")
-    st.caption("Datos ficticios. Las políticas originales siguen pendientes.")
-    if st.session_state.catalogo is None:
-        st.warning("El catálogo de esta conversación ya no está disponible. Cree un escenario nuevo.")
-        st.stop()
-    st.subheader("Comparar ofertas del catálogo activo")
-    with st.form("solicitud"):
-        producto_seleccionado = st.selectbox(
-            "Producto o modelo", listar_productos(st.session_state.catalogo), index=None,
-            placeholder="Busca o selecciona un producto",
-            format_func=lambda p: f"{p.nombre} · {p.modelo}")
-        cantidad = st.number_input("Cantidad", min_value=1, value=20, step=1)
-        presupuesto = st.number_input("Presupuesto máximo (R$)", min_value=0.0, value=12000.0, step=100.0)
+    st.caption("Cálculo determinista en centavos sobre ofertas ficticias del escenario activo.")
+    with st.form("comparacion"):
+        producto_id = st.text_input("ID de pieza", placeholder="PEC-01-0001")
+        cantidad = st.number_input("Cantidad", min_value=1, value=2, step=1)
+        presupuesto = st.number_input("Presupuesto máximo (R$)", min_value=0.0, value=1000.0, step=10.0)
         plazo = st.number_input("Plazo máximo (días corridos)", min_value=0, value=7, step=1)
-        enviar = st.form_submit_button("Comparar")
-
-    if enviar:
-        candidatos = [producto_seleccionado] if producto_seleccionado else []
-        if not candidatos:
-            st.info("Indique un producto presente en el catálogo.")
-        elif len(candidatos) > 1:
-            st.info("Hay varios productos posibles. Especifique el ID o modelo: " +
-                    ", ".join(f"{p.id} ({p.modelo})" for p in candidatos))
-        else:
-            producto = candidatos[0]
-            solicitud = SolicitudCompra(producto_id=producto.id, cantidad=int(cantidad),
-            presupuesto_centavos=int(Decimal(str(presupuesto)) * 100), plazo_max_dias=int(plazo))
-            alternativas = comparar_ofertas(solicitud, ofertas_producto(st.session_state.catalogo, producto.id))
-            validas = [a for a in alternativas if a.cumple]
-            if not validas:
-                st.warning("Ninguna oferta cumple todas las restricciones.")
+        enviado = st.form_submit_button("Comparar", width="stretch")
+    if enviado:
+        try:
+            solicitud = Solicitud(producto_id=producto_id.upper().strip(), cantidad=int(cantidad),
+                                 presupuesto_centavos=int(Decimal(str(presupuesto)) * 100),
+                                 plazo_max_dias=int(plazo))
+            if solicitud.producto_id is None or ficha(escenario, solicitud.producto_id) is None:
+                st.warning("ID de pieza no encontrado.")
             else:
-                ganadora = validas[0]
-                respuesta = RespuestaCompra(estado="recomendacion", mensaje="Oferta calculada", dataset_id=producto.dataset_id,
-                    solicitud=solicitud, producto_id=producto.id, proveedor_id=ganadora.oferta.proveedor_id,
-                    total_centavos=ganadora.total_centavos, alternativas=alternativas,
-                    evidencias=[Evidencia(tipo="catalogo", fuente_id=a.oferta.id,
-                                          dataset_id=producto.dataset_id, texto=a.oferta.proveedor_nombre)
-                                for a in alternativas])
-                verificacion = verificar(respuesta, st.session_state.catalogo)
-                if verificacion.aprobado:
-                    st.success(f"{ganadora.oferta.proveedor_nombre}: {formatar_brl(ganadora.total_centavos)}")
-                else:
-                    st.error("La recomendación no superó la verificación.")
-            for a in alternativas:
-                st.write(a.oferta.proveedor_nombre, formatar_brl(a.total_centavos),
-                         "cumple" if a.cumple else "descartada: " + ", ".join(a.motivos))
+                respuesta = respuesta_local(escenario, solicitud)
+                errores = verificar(respuesta, escenario)
+                if errores:
+                    st.error("La comparación no superó la verificación: " + ", ".join(errores))
+                elif respuesta.estado == "sin_oferta":
+                    st.warning("Ninguna oferta cumple todas las restricciones.")
+                elif respuesta.total_centavos is not None:
+                    st.success(f"{respuesta.proveedor_id}: {brl(respuesta.total_centavos)}")
+                if not errores:
+                    st.dataframe([{"Proveedor": a.oferta.proveedor_nombre,
+                                   "Total": brl(a.total_centavos), "Cumple": a.cumple,
+                                   "Descartes": ", ".join(a.motivos), "Fuente": a.oferta.id}
+                                  for a in respuesta.alternativas], hide_index=True,
+                                 alt="Todas las ofertas, totales y descartes")
+        except ValueError as exc:
+            st.error(str(exc))

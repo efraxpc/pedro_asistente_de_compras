@@ -1,12 +1,10 @@
-# Guion de video para la entrega
+# Guion de vídeo de entrega
 
-1. Mostrar pantalla y webcam; identificarse y presentar que las compras son ficticias.
-2. Enseñar el README, arquitectura y matriz cotejada con la consigna del profesor.
-3. Ejecutar `uv run pytest -q` y mostrar los resultados observados.
-4. Abrir los cinco notebooks en orden y ejecutar sus celdas con los requisitos previos configurados.
-5. Mostrar catálogo de referencia, caso PROD-003, aclaración por ambigüedad y motivos de descarte.
-6. Mostrar ViaCEP real, RAG antes/después sobre el índice recibido, verificación y trazas reales de LangSmith.
-7. Abrir Streamlit y completar un diálogo con memoria; mostrar nuevo chat y nuevo escenario.
-8. Explicar límites: no se compran productos ni se envían mensajes.
+Duración sugerida: 4–6 minutos. Requiere webcam y cuenta institucional del alumno.
 
-**Pendiente:** grabar el video real. Subirlo mediante Google Drive institucional de Infnet y configurar exactamente el permiso de visualización indicado en el enunciado; verificar el enlace antes de entregar. El permiso concreto no se puede fijar hasta recibir la consigna.
+1. Mostrar README, semilla 20261107, manifiesto del escenario y catálogo de piezas. Buscar PEC-01-0001 y abrir su ficha.
+2. En Comparación local elegir PEC-01-0001, dos unidades, presupuesto R$ 100000 y plazo 60 días. Mostrar las tres ofertas, el ganador y descartes.
+3. Con OPENAI_API_KEY, pedir la misma comparación en Chat y mostrar la traza de herramientas, verificación exacta y puerta NLI. Cambiar a tres unidades conservando presupuesto y plazo; enseñar continuidad y nueva comparación. Este paso aún no tiene evidencia real.
+4. Consultar CEP 01001000 y mostrar la respuesta de ViaCEP São Paulo/SP. Distinguir ubicación real de ofertas ficticias.
+5. Mostrar las cinco prácticas, dieciocho pruebas y la matriz. Si se incorpora FAISS, enseñar consulta fallida y reescritura en el mismo corpus/top-k. Si no, indicar pendiente.
+6. Mostrar experimento LangSmith remoto con denominadores y trazas solo después de ejecutarlo; presentar informe PDF. Subir vídeo al Drive institucional y verificar que el enlace abre con los permisos indicados por la rúbrica.

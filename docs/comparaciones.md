@@ -1,16 +1,23 @@
-# Comparaciones técnicas
+# Comparaciones didácticas
 
-## LangChain y Semantic Kernel
+## Agentes y composición
 
-Ambos permiten que un modelo solicite funciones y que la aplicación ejecute código con argumentos estructurados. [Semantic Kernel](https://learn.microsoft.com/en-us/semantic-kernel/concepts/ai-services/chat-completion/function-calling) organiza funciones como plugins de un `Kernel`; LangChain usa `Runnable`, prompts, herramientas y agentes. Pedro — Asistente de Compras usa LangChain porque la consigna exige sus APIs concretas y los notebooks deben demostrar sus cadenas, agentes y memoria. Semantic Kernel se documenta como alternativa arquitectónica; no se presenta como implementación del requisito.
+| Aspecto | LangChain clásico / LCEL en este proyecto | AutoGen |
+|---|---|---|
+| Unidad demostrada | Un agente con herramientas tipadas y una cadena de publicación | Conversaciones coordinadas entre agentes |
+| Traza visible | Nombre, argumentos y resultado de herramientas; parser y verificador | Mensajes y acciones entre participantes |
+| Uso en Pedro | El integrador necesita un solo agente y una puerta determinista | Se estudia como alternativa; no se ejecutó aquí |
+| Límite de evidencia | ReAct clásico se probó con FakeListLLM; agente final remoto pendiente | Sin experimento ejecutado |
 
-## LangMem y Mem0
+La composición secuencial encadena parser, modelo y validación; RunnableParallel consulta ramas independientes. RouterCompras envía consultas reales a catálogo o comparación. Estos ejemplos están en notebooks 01 y 02. No se solicita ni conserva razonamiento privado; los planes del prompt describen llamadas observables.
 
-| Aspecto | LangMem | Mem0 | Decisión en Pedro — Asistente de Compras |
-|---|---|---|---|
-| Arquitectura | Herramientas y gestores de memoria, con integración nativa a LangGraph | Capa de memoria que extrae, deduplica y recupera recuerdos | SQLite y un índice de recuerdos propio para distinguir explícitamente los tipos CoALA |
-| Persistencia | Usa el almacén conectado; no obliga a un backend único | Ofrece plataforma administrada y opción abierta con almacenamiento configurable | SQLite local fuera de los catálogos |
-| Recuperación | Búsqueda y gestión de recuerdos mediante herramientas/gestores | Búsqueda semántica e híbrida según configuración | Recuperación vectorial separada del índice de políticas, aún pendiente |
-| Integración | Cercana al ecosistema LangChain/LangGraph | API de memoria independiente del agente | Ninguna dependencia adicional hasta validar el flujo base |
+## Memoria
 
-Fuentes primarias: [LangMem](https://github.com/langchain-ai/langmem/blob/main/README.md), [Mem0](https://github.com/mem0ai/mem0/blob/main/skills/mem0/references/architecture.md). La comparación describe sus interfaces documentadas; no es una medición de calidad.
+| Capa | Pedro | Mem0 / Letta como referencia |
+|---|---|---|
+| Trabajo | Últimos 12 mensajes de la sesión | Gestión de contexto propia de cada sistema |
+| Episódica | SQLite con vectores FastEmbed, modelo y versión; recuperación entre sesiones del mismo usuario | Abstracciones de memoria de terceros |
+| Preferencias | Solo cambios explícitos, aislados por user_id | Su política concreta requeriría integración y evaluación |
+| Procedimental | Prompt, herramientas y reglas de verificación | Configuración de agente propia |
+
+La comparación es arquitectónica. La única recuperación medida en este workspace es la de Pedro con FastEmbed. Los precios y el stock de episodios se tratan como históricos; la petición actual y el escenario activo gobiernan la decisión.

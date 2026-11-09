@@ -1,26 +1,22 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
+## Structure
 
-`app.py` is the Streamlit entry point. Reusable shopping logic lives in `src/compraslab/`: `data.py` and `business.py` handle the fictional catalog and comparisons; `agent.py`, `tools.py`, `rag.py`, and `nli.py` support the agent; `memory.py` and `verification.py` handle persistence and answer checks. Add focused unit tests under `tests/test_*.py`. `datasets/` holds the appliance parts SQLite sample; `scripts/` holds its generator. `notebooks/` contains demos, `evals/` optional evaluation, `docs/` design and evidence, and `knowledge/` the optional policy index. Runtime files belong in ignored `storage/`.
+`app.py` is the Streamlit entry point. Reusable logic lives in `src/pedro/`: `catalog.py` and `business.py` handle scenarios and exact comparisons; `agent.py`, `query.py`, `rag.py`, and `nli.py` handle the agent and verification; `memory.py` persists sessions and preferences. Add focused tests in `tests/test_*.py`. `datasets/` contains the synthetic SQLite catalog, `scripts/` its generator and artifact scripts, `notebooks/` the five teaching demos, `evals/` the derived cases and LangSmith runner, and `docs/` the report and evidence. Runtime files belong in ignored `storage/`.
 
-## Build, Test, and Development Commands
+## Commands
 
-- `uv sync --python 3.13 --all-extras --locked`: create `.venv` from `uv.lock` with UI, agent, notebook, and development dependencies.
-- `uv run pytest -q`: run the test suite.
-- `uv run python scripts/generar_catalogo_piezas.py`: regenerate the committed fictional parts database.
-- `uv run streamlit run app.py`: run the app locally at `http://localhost:8501`.
-- `./project.sh start` (also `status`, `restart`, `stop`): manage the local Streamlit process; set `COMPRASLAB_PORT=8765` to use another port.
-- `uv run jupyter lab notebooks`: open the demos. `uv run python evals/evaluar_componentes.py` runs the optional LangSmith component evaluation when configured.
+- `uv sync --python 3.13 --all-extras --locked`: install locked dependencies.
+- `uv run pytest -q`: run tests.
+- `uv run python scripts/generar_catalogo_piezas.py`: regenerate the synthetic catalog.
+- `uv run python scripts/ejecutar_notebooks.py`: execute and save the notebook outputs.
+- `uv run streamlit run app.py`: run the UI at `http://localhost:8501`.
+- `uv run python evals/evaluar_flujo.py`: evaluate the final flow when OpenAI and LangSmith credentials are configured.
 
-## Coding Style & Naming Conventions
+## Style and Tests
 
-Use Python 3.13, four-space indentation, `snake_case` for modules/functions/variables, and `PascalCase` for classes. Follow the existing Portuguese domain names and keep UI code in `app.py` while placing reusable rules in `src/compraslab/`. Add type hints to new public functions. No formatter or linter is configured; match nearby code and keep imports grouped by standard library, third party, and local package.
+Use Python 3.13, four-space indentation, `snake_case` names, and type hints on public functions. Keep UI in `app.py` and reusable rules in `src/pedro/`. Use `tmp_path` for file-backed tests and deterministic fixtures for comparison rules. Run the full test suite before submitting changes. Type-check edited code with `ty` when available.
 
-## Testing Guidelines
+## Data, Secrets, and Evidence
 
-Tests use `pytest` and names such as `test_core.py` and `test_dataset_semilla_e_identidades`. Add a focused regression test when changing catalog rules, memory, verification, or agent behavior. Use `tmp_path` for file-backed tests and deterministic fixtures for business rules. Run `uv run pytest -q` before submitting; no coverage threshold is configured.
-
-## Commits, Pull Requests & Configuration
-
-Recent commits use short English summaries such as `Rename project...` and `Refactor code structure...`; keep messages concise and action oriented. Pull requests should explain the behavior changed, list test commands and results, link a relevant issue when available, and include screenshots for visible UI changes. Copy `.env.example` to `.env` for local credentials; never commit `.env`, `storage/`, or API keys. Only enable `COMPRASLAB_TRUST_POLICY_INDEX` after checking the source of a FAISS index, because its docstore uses pickle.
+Never commit `.env`, `storage/`, or API keys. The SQLite catalog and offers are fictitious. Preserve `dataset_id` isolation and compare integer centavos, not floats. Keep external calls and test doubles labeled separately in `docs/evidencias.md`. Only enable `PEDRO_TRUST_POLICY_INDEX` after verifying the FAISS index source, manifest, hashes, model, dimension, metric, and document metadata; its docstore uses pickle. The provisional matrix must not be called official until the Infnet PDF is supplied and checked.
