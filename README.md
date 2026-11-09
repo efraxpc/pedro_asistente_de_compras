@@ -45,6 +45,6 @@ Para el índice de políticas se requieren knowledge/politicas/index.faiss, inde
 
 ## Evaluación y entregables
 
-La matriz provisional de 30 identificadores está en docs/matriz.md. El registro de comprobaciones está en docs/evidencias.md y el informe editable y PDF en docs/informe.md y docs/informe.pdf. Hay 30 casos derivados y congelados en evals/casos_derivados.json; no equivalen a los casos oficiales. Para evaluar el mismo flujo final con LangSmith: uv run python evals/evaluar_flujo.py. El script exige OPENAI_API_KEY y LANGSMITH_API_KEY; no publica métricas simuladas.
+La matriz provisional de 30 identificadores está en docs/matriz.md y su mapa visual en [Mermaid](docs/rubricas_proyecto.mmd) y [SVG](docs/rubricas_proyecto.svg). El registro de comprobaciones está en docs/evidencias.md y el informe editable y PDF en docs/informe.md y docs/informe.pdf. Hay 30 casos derivados y congelados en evals/casos_derivados.json; no equivalen a los casos oficiales. Para evaluar el mismo flujo final con LangSmith: uv run python evals/evaluar_flujo.py. El script exige OPENAI_API_KEY y LANGSMITH_API_KEY; no publica métricas simuladas.
 
 Faltan el PDF oficial de Infnet para cotejar 29 criterios, el índice FAISS autorizado y credenciales para el chat y LangSmith remotos. La grabación con webcam, subida a Drive institucional y verificación del enlace requieren el acceso del alumno.

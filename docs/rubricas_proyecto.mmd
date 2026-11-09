@@ -1,0 +1,121 @@
+%% Mapa de implementación y evidencia. IDs provisionales: falta cotejar infnet_agentes.pdf.
+%% R4.6 es la fila provisional adicional de la matriz de 30 IDs; no se afirma que sea oficial.
+flowchart TB
+    USUARIO([Usuario]) --> UI
+
+    subgraph DATOS["Datos y contratos"]
+        direction TB
+        GEN["R1.1 · LOCAL<br/>Generador y SQLite sintético<br/>scripts/generar_catalogo_piezas.py<br/>datasets/piezas_electrodomesticos.sqlite3"]
+        ESC["R1.2 · LOCAL<br/>Escenarios UUID y manifiesto<br/>src/pedro/catalog.py · tests/test_core.py"]
+        DB[("Catálogo del escenario<br/>storage/catalogos/")]
+        CONTRATO["R1.3 · LOCAL<br/>Solicitud y RespuestaCompra Pydantic<br/>src/pedro/contracts.py · tests/test_core.py"]
+        GEN --> ESC --> DB
+    end
+
+    subgraph CONVERSACION["Contexto por usuario y sesión"]
+        direction TB
+        MEM["R3.1–R3.3 · LOCAL<br/>Sesiones, 12 mensajes, preferencias explícitas<br/>src/pedro/memory.py · tests/test_memory_nli.py"]
+        EPIS["R3.4 · REAL LOCAL<br/>FastEmbed y recuperación de episodios<br/>src/pedro/memory.py · notebooks/03_memoria_chatbot.ipynb"]
+        BORRADOR["R3.5 · PARCIAL<br/>Corrección y precedencia de la petición<br/>src/pedro/dialogue.py · tests/test_dialogue.py"]
+        MEM --> EPIS
+        MEM --> BORRADOR
+    end
+
+    subgraph EJECUCION["Flujo de la aplicación"]
+        direction TB
+        UI["R5.5 · PARCIAL<br/>Streamlit: Chat, catálogo y comparación<br/>app.py · prueba con Agent API"]
+        FLUJO["R5.1 · PARCIAL<br/>create_openai_tools_agent + AgentExecutor<br/>src/pedro/agent.py"]
+        LOCAL["Comparación sin clave<br/>respuesta_local + verificación exacta<br/>src/pedro/verification.py"]
+        HERR["R4.1 · LOCAL<br/>Seis herramientas tipadas<br/>src/pedro/agent.py · tests/test_tools_flow.py"]
+        SQL["R4.2 · LOCAL<br/>PlanConsulta → SELECT parametrizado<br/>src/pedro/query.py · tests/test_tools_flow.py"]
+        CALC["R2.1 · LOCAL<br/>Centavos, stock, límites y desempates<br/>src/pedro/business.py · tests/test_core.py"]
+        CEP["R2.4 · REAL PUNTUAL<br/>ViaCEP real y doble offline<br/>src/pedro/integrations.py · docs/evidencias.md"]
+        RAG["R4.3 · PARCIAL<br/>Puerta de procedencia y confianza FAISS<br/>src/pedro/rag.py · tests/test_rag_integrations.py"]
+        UI --> FLUJO
+        FLUJO --> HERR
+        FLUJO --> LOCAL
+        HERR --> SQL
+        HERR --> CALC
+        HERR --> CEP
+        HERR --> RAG
+        HERR --> DB
+        SQL --> DB
+        LOCAL --> CALC
+    end
+
+    subgraph PUBLICACION["Respuesta pública"]
+        direction TB
+        VER["R5.2 · LOCAL<br/>Todas las ofertas, ganador y evidencias<br/>src/pedro/verification.py · tests/test_core.py"]
+        NLI["R5.3 · REAL LOCAL<br/>NLI triclase fijado; recomendación y política<br/>src/pedro/nli.py · docs/evidencias.md"]
+        SALIDA["Respuesta verificada e historial<br/>src/pedro/agent.py · src/pedro/memory.py"]
+        VER --> NLI --> SALIDA
+        VER -->|otros estados| SALIDA
+    end
+
+    CONTRATO --> FLUJO
+    MEM --> FLUJO
+    BORRADOR --> FLUJO
+    EPIS --> FLUJO
+    FLUJO --> VER
+    LOCAL --> VER
+    SALIDA --> UI
+
+    subgraph DEMOS["Material didáctico y control de ejecución"]
+        direction TB
+        EXTR["R1.4–R1.5 · DOBLE<br/>@chain, LCEL, invoke, batch y stream<br/>src/pedro/chains.py · notebooks/01_chain_mvp.ipynb"]
+        REACT["R2.2 · DOBLE<br/>ReAct clásico y ConversationBufferMemory<br/>src/pedro/legacy.py · notebooks/02_react_herramientas.ipynb"]
+        ROUTER["R2.3 · LOCAL DIDÁCTICO<br/>Secuencia, paralelo y RouterChain<br/>src/pedro/chains.py · src/pedro/legacy.py"]
+        PROMPT["R2.5 · PARCIAL<br/>PTCF, parser y reparación controlada<br/>src/pedro/prompts.py · src/pedro/agent.py"]
+        TRAZA["R2.6 · IMPLEMENTADO<br/>BaseCallbackHandler; prueba remota pendiente<br/>src/pedro/agent.py · tests/test_tools_flow.py"]
+        COALA["R3.6 · PARCIAL<br/>CoALA, Mem0 y Letta: comparación documental<br/>notebooks/03_memoria_chatbot.ipynb · docs/comparaciones.md"]
+        REPARA["R5.4 · LOCAL CON DOBLE<br/>Un reintento y solo respuesta final<br/>src/pedro/agent.py · tests/test_tools_flow.py"]
+        EVAL["R5.5 · PARCIAL<br/>30 casos derivados; LangSmith remoto pendiente<br/>evals/casos_derivados.json · evals/evaluar_flujo.py"]
+        DOC["R5.6 · PARCIAL<br/>Matriz, informe PDF y guion<br/>docs/matriz.md · docs/informe.pdf · docs/guion_video.md"]
+    end
+
+    EXTR -.-> FLUJO
+    REACT -.-> FLUJO
+    ROUTER -.-> FLUJO
+    PROMPT -.-> FLUJO
+    TRAZA -.-> FLUJO
+    COALA -.-> MEM
+    REPARA -.-> FLUJO
+    EVAL -.-> FLUJO
+    DOC -.-> EVAL
+
+    subgraph PENDIENTES["Dependencias y pruebas pendientes"]
+        direction TB
+        EXTR_REAL["R1.6 · PENDIENTE<br/>Extracción con modelo real<br/>OPENAI_API_KEY"]
+        RAG_PRUEBA["R4.4–R4.5 · PENDIENTE EXTERNO<br/>Reescritura top-k y consulta sin cobertura<br/>índice FAISS autorizado"]
+        SEM["R4.6 · PENDIENTE PROVISIONAL<br/>Búsqueda semántica opcional de piezas"]
+        OFICIAL["Cotejo oficial pendiente<br/>infnet_agentes.pdf, páginas 1–8"]
+        REMOTO["R5.1 / R5.5 · PENDIENTE REAL<br/>Chat OpenAI y evaluación LangSmith<br/>credenciales y trazas remotas"]
+        ENTREGA["R5.6 · PENDIENTE EXTERNO<br/>Vídeo con webcam y enlace Drive verificado"]
+    end
+
+    EXTR_REAL -.-> EXTR
+    RAG_PRUEBA -.-> RAG
+    SEM -.-> DB
+    OFICIAL -.-> DOC
+    REMOTO -.-> EVAL
+    ENTREGA -.-> DOC
+
+    subgraph LEYENDA["Estado de la evidencia"]
+        direction TB
+        L1["LOCAL: código probado en este repositorio"]
+        L2["REAL: integración o modelo ejecutado localmente"]
+        L3["DOBLE: demostración o prueba guionada"]
+        L4["PARCIAL: implementado sin toda la evidencia exigida"]
+        L5["PENDIENTE: falta insumo o ejecución"]
+    end
+
+    classDef local fill:#dcfce7,stroke:#166534,color:#12351f
+    classDef real fill:#dbeafe,stroke:#1d4ed8,color:#102f63
+    classDef doble fill:#ede9fe,stroke:#6d28d9,color:#321260
+    classDef parcial fill:#fef3c7,stroke:#b45309,color:#56310a
+    classDef pendiente fill:#fee2e2,stroke:#b91c1c,color:#681515
+    class GEN,ESC,CONTRATO,MEM,HERR,SQL,CALC,VER,ROUTER,L1 local
+    class EPIS,CEP,NLI,L2 real
+    class EXTR,REACT,REPARA,L3 doble
+    class BORRADOR,UI,FLUJO,RAG,PROMPT,TRAZA,COALA,EVAL,DOC,L4 parcial
+    class EXTR_REAL,RAG_PRUEBA,SEM,OFICIAL,REMOTO,ENTREGA,L5 pendiente

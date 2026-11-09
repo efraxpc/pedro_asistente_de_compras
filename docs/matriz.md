@@ -2,6 +2,8 @@
 
 El plan recibido afirma 30 identificadores R1.1–R5.6, mientras sus fases enumeran 29; R4.6 se conserva como fila provisional. El PDF oficial aún no está disponible. Ninguna fila representa un criterio oficial hasta cotejar las páginas 1–8 y remapear los 29 criterios conservando las evidencias.
 
+El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubricas_proyecto.svg) sitúan estos IDs provisionales en el flujo de la aplicación y distinguen evidencia local, real puntual, con dobles y pendiente.
+
 | ID provisional | Exigencia de trabajo | Ubicación | Evidencia o condición | Estado |
 |---|---|---|---|---|
 | R1.1 | Catálogo sintético reproducible | scripts/generar_catalogo_piezas.py; catalog.py | prueba local | Local |
