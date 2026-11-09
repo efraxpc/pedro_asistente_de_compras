@@ -12,17 +12,15 @@ def comparar(solicitud: Solicitud, ofertas: list[Oferta]) -> list[Alternativa]:
     if solicitud.faltantes():
         raise ValueError("faltan: " + ", ".join(solicitud.faltantes()))
     assert solicitud.cantidad is not None
-    assert solicitud.presupuesto_centavos is not None
-    assert solicitud.plazo_max_dias is not None
     resultado = []
     for oferta in ofertas:
         total = solicitud.cantidad * oferta.precio_unitario_centavos + oferta.flete_centavos
         motivos: list[Literal["stock", "plazo", "presupuesto"]] = []
         if oferta.stock < solicitud.cantidad:
             motivos.append("stock")
-        if oferta.plazo_dias > solicitud.plazo_max_dias:
+        if solicitud.plazo_max_dias is not None and oferta.plazo_dias > solicitud.plazo_max_dias:
             motivos.append("plazo")
-        if total > solicitud.presupuesto_centavos:
+        if solicitud.presupuesto_centavos is not None and total > solicitud.presupuesto_centavos:
             motivos.append("presupuesto")
         resultado.append(Alternativa(oferta=oferta, total_centavos=total,
                                      cumple=not motivos, motivos=motivos))

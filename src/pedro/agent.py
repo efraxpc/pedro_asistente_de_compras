@@ -15,14 +15,16 @@ from langchain_core.tools import StructuredTool
 from .business import brl
 from .catalog import Escenario, buscar, ficha, listar, ofertas
 from .contracts import RespuestaCompra, Solicitud
+from .dialogue import EstadoCompra, interpretar_compra
 from .integrations import consultar_cep
-from .memory import (FastEmbedder, Historial, dataset_sesion, guardar_episodio,
-                     guardar_preferencia, preferencias, recuperar, tiene_episodios)
+from .memory import (FastEmbedder, Historial, dataset_sesion, guardar_borrador,
+                     guardar_episodio, guardar_preferencia, leer_borrador,
+                     preferencias, recuperar, tiene_episodios)
 from .nli import Clasificador, verificar_nli
 from .prompts import EJEMPLOS_ACCIONES
 from .query import ejecutar, planear
 from .rag import consultar
-from .verification import verificar
+from .verification import respuesta_local, verificar
 
 
 class Traza(BaseCallbackHandler):
@@ -66,8 +68,9 @@ def herramientas(escenario: Escenario, memoria_db: Path, user_id: str,
         """Consulta ficha u ofertas mediante plan SQL tipado y auditable."""
         return json.dumps(ejecutar(escenario, pregunta, planear(pregunta)), ensure_ascii=False)
 
-    def comparar_ofertas(producto_id: str, cantidad: int, presupuesto_centavos: int,
-                         plazo_max_dias: int) -> str:
+    def comparar_ofertas(producto_id: str, cantidad: int,
+                         presupuesto_centavos: int | None = None,
+                         plazo_max_dias: int | None = None) -> str:
         """Calcula todas las ofertas y sus descartes exactos en centavos."""
         from .verification import respuesta_local
         solicitud = Solicitud(producto_id=producto_id, cantidad=cantidad,
@@ -106,7 +109,8 @@ def crear_agente(escenario: Escenario, memoria_db: Path, user_id: str,
     parser = PydanticOutputParser(pydantic_object=RespuestaCompra)
     prompt = ChatPromptTemplate.from_messages([
         ("system", "Persona: Pedro, asistente de compras ficticias. "
-         "Tarea: aclara datos, consulta herramientas y compara ofertas del dataset {dataset_id}. "
+         "Tarea: aclara solo producto y cantidad cuando falten; presupuesto y plazo son filtros opcionales. "
+         "Consulta herramientas y compara ofertas del dataset {dataset_id}. "
          "Contexto: los mensajes anteriores y recuerdos son históricos; la solicitud actual prevalece. "
          "Formato: JSON RespuestaCompra válido. No inventes datos ni fuentes. "
          "Plan visible: usa buscar_productos para resolver ID, consultar_catalogo para ofertas y "
@@ -127,7 +131,11 @@ def crear_agente(escenario: Escenario, memoria_db: Path, user_id: str,
 
 def renderizar(respuesta: RespuestaCompra) -> str:
     if respuesta.estado == "aclaracion":
-        return "Necesito: " + ", ".join(respuesta.solicitud.faltantes()) if respuesta.solicitud.faltantes() else "Indique el ID exacto de la pieza."
+        if not (respuesta.solicitud.producto_id or respuesta.solicitud.producto):
+            return "¿Qué pieza necesitas? Indica su ID o SKU."
+        if respuesta.solicitud.cantidad is None:
+            return "¿Cuántas unidades necesitas?"
+        return "¿Cuál es el ID exacto de la pieza?"
     if respuesta.estado == "sin_evidencia":
         return "No puedo confirmar la respuesta con las fuentes disponibles."
     if respuesta.estado == "cep":
@@ -137,7 +145,7 @@ def renderizar(respuesta: RespuestaCompra) -> str:
         return respuesta.mensaje + "\nFuentes: " + ", ".join(
             e.fuente_id for e in respuesta.evidencias if e.tipo == "politica")
     if respuesta.estado == "sin_oferta":
-        inicio = "Ninguna oferta cumple stock, presupuesto y plazo."
+        inicio = "Ninguna oferta cumple las restricciones indicadas."
     else:
         ganadora = next(a for a in respuesta.alternativas if a.oferta.proveedor_id == respuesta.proveedor_id)
         inicio = (f"{ganadora.oferta.proveedor_nombre}: {brl(ganadora.total_centavos)} "
@@ -186,8 +194,24 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
         directa = consulta_directa(escenario, pregunta)
         if directa is not None:
             return AIMessage(content=directa)
+        borrador = leer_borrador(memoria_db, usuario, sesion)
+        previo = EstadoCompra.model_validate(borrador) if borrador is not None else None
+        compra = interpretar_compra(escenario, previo, pregunta)
+        solicitud_actual = None
+        if compra is not None:
+            estado, aclaracion = compra
+            guardar_borrador(memoria_db, usuario, sesion, estado.model_dump())
+            if aclaracion is not None:
+                return AIMessage(content=aclaracion)
+            solicitud_actual = estado.solicitud
+            if llm is None:
+                propuesta = respuesta_local(escenario, solicitud_actual)
+                errores = verificar(propuesta, escenario)
+                if errores:
+                    return AIMessage(content="No puedo confirmar una recomendación con las evidencias disponibles.")
+                return AIMessage(content=renderizar(propuesta))
         if llm is None:
-            return AIMessage(content="Use Comparación local o configure OPENAI_API_KEY para el agente.")
+            return AIMessage(content="Puedo comparar piezas aquí. Indica un ID o SKU y la cantidad; para políticas o CEP configura OPENAI_API_KEY.")
         recuerdos = []
         if tiene_episodios(memoria_db, usuario):
             try:
@@ -199,6 +223,9 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
         errores = []
         for intento in range(2):
             entrada = pregunta
+            if solicitud_actual is not None:
+                entrada += ("\nSolicitud estructurada vigente (la petición actual ya prevaleció sobre el "
+                            "historial; respétala exactamente): " + solicitud_actual.model_dump_json())
             if contexto:
                 entrada += "\n" + contexto + "\nNo uses precios o stock históricos."
             if pref:
@@ -221,6 +248,13 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                         pass
                 errores = verificar(propuesta, escenario, indice=indice,
                                     observaciones=observaciones)
+                if solicitud_actual is not None and propuesta.estado not in (
+                        "recomendacion", "sin_oferta", "sin_evidencia"):
+                    errores.append("respuesta ajena a la comparación solicitada")
+                if solicitud_actual is not None and propuesta.estado in ("recomendacion", "sin_oferta"):
+                    campos = ("producto_id", "cantidad", "presupuesto_centavos", "plazo_max_dias")
+                    if any(getattr(propuesta.solicitud, c) != getattr(solicitud_actual, c) for c in campos):
+                        errores.append("solicitud distinta de la petición vigente")
                 if not errores and propuesta.estado in ("recomendacion", "politica"):
                     if clasificador is None or not verificar_nli(propuesta, clasificador):
                         errores = ["NLI sin entailment"]

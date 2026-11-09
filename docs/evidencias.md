@@ -18,8 +18,9 @@ Fecha de ejecución: 2026-11-08, America/Sao_Paulo. Plataforma: Linux 6.6.114.1 
 | R5.2–R5.3 | real local | RespuestaCompra calculada para 2 × PEC-01-0001, presupuesto R$ 100000 y plazo 60 días | verificador sin errores; BR-06; NLI true | modelo NLI fijado y escenario activo; consola local |
 | R5.3 | prueba | clasificador guionado con tres etiquetas | solo entailment permite publicar recomendación | tests/test_memory_nli.py |
 | R5.5 | local | Streamlit Agent API en 127.0.0.1:8767; chat «lista piezas»; catálogo; comparación PEC-01-0001, 2 unidades, R$ 100000, 60 días | status ready en tres vistas; listado 20; BR-06 R$ 2.963,07; sin excepciones | snapshot de Agent API; consola Streamlit |
+| R3.1, R5.5 | local y prueba | Agent API: «Compara PEC-01-0001» → «2» → «ahora 3 unidades»; uv run pytest -q | pregunta solo cantidad; BR-06 R$ 2.963,07 para dos y R$ 4.401,99 para tres; borrador aislado por sesión; 24/24 pruebas | snapshot Agent API; tests/test_dialogue.py; tests/test_tools_flow.py |
 | R4.3–R5.5 | prueba | 30 referencias derivadas; verificación de políticas y CEP con dobles | 30 casos preparados (14 recomendaciones, 5 sin oferta, 4 aclaraciones, 3 catálogo, 2 CEP, 2 políticas sin índice); ningún resultado remoto | evals/casos_derivados.json; tests/test_policy_cep.py; tests/test_evals.py |
-| R1–R5 | local | uv sync --python 3.13 --all-extras --locked; uv run pytest -q; ejecución NotebookClient | sincronización correcta; 18/18 pruebas; 5/5 notebooks | uv.lock; tests/; notebooks/ |
+| R1–R5 | local | uv sync --python 3.13 --all-extras --locked; uv run pytest -q; ejecución NotebookClient | sincronización correcta; 24/24 pruebas actuales; 5/5 notebooks en la ejecución anterior | uv.lock; tests/; notebooks/ |
 
 La prueba NLI real verifica solo tres pares ilustrativos; no mide exactitud general. La clasificación real y la verificación exacta son puertas separadas. El modelo y la revisión corresponden a la ficha oficial: https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-mnli-xnli .
 

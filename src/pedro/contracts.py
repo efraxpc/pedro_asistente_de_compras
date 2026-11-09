@@ -22,9 +22,8 @@ class Solicitud(BaseModel):
         faltan = []
         if not (self.producto_id or self.producto):
             faltan.append("producto")
-        for campo in ("cantidad", "presupuesto_centavos", "plazo_max_dias"):
-            if getattr(self, campo) is None:
-                faltan.append(campo)
+        if self.cantidad is None:
+            faltan.append("cantidad")
         return faltan
 
 

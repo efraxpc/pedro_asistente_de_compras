@@ -1,7 +1,7 @@
 """Interfaz local: chat, catálogo y comparación de piezas ficticias."""
 import os
 import json
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 import streamlit as st
@@ -85,7 +85,7 @@ if vista == "Chat":
         with st.chat_message("user" if mensaje.type == "human" else "assistant"):
             st.markdown(str(mensaje.content))
     if not os.getenv("OPENAI_API_KEY"):
-        st.info("Sin clave puede listar piezas y pedir fichas. La comparación funciona en la vista local.")
+        st.info("Puedes listar piezas, pedir fichas y comparar ofertas aquí sin clave. Para políticas y CEP se requiere el agente.")
     pregunta = st.chat_input("Pregunta por piezas, ofertas o políticas", key="pregunta")
     if pregunta:
         with st.chat_message("user"):
@@ -154,14 +154,23 @@ else:
     with st.form("comparacion"):
         producto_id = st.text_input("ID de pieza", placeholder="PEC-01-0001")
         cantidad = st.number_input("Cantidad", min_value=1, value=2, step=1)
-        presupuesto = st.number_input("Presupuesto máximo (R$)", min_value=0.0, value=1000.0, step=10.0)
-        plazo = st.number_input("Plazo máximo (días corridos)", min_value=0, value=7, step=1)
+        presupuesto = st.text_input("Presupuesto máximo opcional (R$)", placeholder="Sin límite")
+        plazo = st.text_input("Plazo máximo opcional (días corridos)", placeholder="Sin límite")
         enviado = st.form_submit_button("Comparar", width="stretch")
     if enviado:
         try:
+            cifra = presupuesto.strip()
+            if "," in cifra:
+                cifra = cifra.replace(".", "").replace(",", ".")
+            elif "." in cifra and len(cifra.rsplit(".", 1)[1]) == 3:
+                cifra = cifra.replace(".", "")
+            importe = Decimal(cifra) if cifra else None
+            if importe is not None and (not importe.is_finite() or importe < 0 or
+                                       int(importe.as_tuple().exponent) < -2):
+                raise ValueError("Presupuesto inválido; indique hasta dos decimales.")
             solicitud = Solicitud(producto_id=producto_id.upper().strip(), cantidad=int(cantidad),
-                                 presupuesto_centavos=int(Decimal(str(presupuesto)) * 100),
-                                 plazo_max_dias=int(plazo))
+                                 presupuesto_centavos=int(importe * 100) if importe is not None else None,
+                                 plazo_max_dias=int(plazo) if plazo.strip() else None)
             if solicitud.producto_id is None or ficha(escenario, solicitud.producto_id) is None:
                 st.warning("ID de pieza no encontrado.")
             else:
@@ -179,5 +188,5 @@ else:
                                    "Descartes": ", ".join(a.motivos), "Fuente": a.oferta.id}
                                   for a in respuesta.alternativas], hide_index=True,
                                  alt="Todas las ofertas, totales y descartes")
-        except ValueError as exc:
+        except (ValueError, InvalidOperation) as exc:
             st.error(str(exc))

@@ -57,6 +57,9 @@ def preparar(ruta: Path) -> None:
           session_id TEXT NOT NULL, dataset_id TEXT NOT NULL, texto TEXT NOT NULL,
           vector TEXT NOT NULL, modelo TEXT NOT NULL, version TEXT NOT NULL,
           FOREIGN KEY(session_id) REFERENCES sesiones(id));
+        CREATE TABLE IF NOT EXISTS borradores (
+          session_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, dataset_id TEXT NOT NULL,
+          dato TEXT NOT NULL, FOREIGN KEY(session_id) REFERENCES sesiones(id));
         CREATE INDEX IF NOT EXISTS episodios_usuario ON episodios(user_id,id);
         """)
 
@@ -86,6 +89,23 @@ def dataset_sesion(ruta: Path, user_id: str, session_id: str) -> str:
     if fila is None:
         raise ValueError("sesión ajena o inexistente")
     return fila[0]
+
+
+def leer_borrador(ruta: Path, user_id: str, session_id: str) -> dict | None:
+    dataset_id = dataset_sesion(ruta, user_id, session_id)
+    with sqlite3.connect(ruta) as db:
+        fila = db.execute("SELECT dato FROM borradores WHERE session_id=? AND user_id=? "
+                          "AND dataset_id=?", (session_id, user_id, dataset_id)).fetchone()
+    return json.loads(fila[0]) if fila else None
+
+
+def guardar_borrador(ruta: Path, user_id: str, session_id: str, dato: dict) -> None:
+    dataset_id = dataset_sesion(ruta, user_id, session_id)
+    with sqlite3.connect(ruta) as db:
+        db.execute("INSERT INTO borradores(session_id,user_id,dataset_id,dato) VALUES (?,?,?,?) "
+                   "ON CONFLICT(session_id) DO UPDATE SET dato=excluded.dato, "
+                   "user_id=excluded.user_id,dataset_id=excluded.dataset_id",
+                   (session_id, user_id, dataset_id, json.dumps(dato, ensure_ascii=False)))
 
 
 class Historial(BaseChatMessageHistory):

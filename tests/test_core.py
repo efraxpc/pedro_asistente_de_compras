@@ -40,11 +40,19 @@ def test_limites_empate_y_flete_unico():
 
 
 def test_faltante_no_es_cero_y_json_invalido():
-    assert Solicitud(producto_id="p").faltantes() == ["cantidad", "presupuesto_centavos", "plazo_max_dias"]
+    assert Solicitud(producto_id="p").faltantes() == ["cantidad"]
     with pytest.raises(ValidationError):
         Solicitud.model_validate_json('{"producto_id":"p","cantidad":0}')
     with pytest.raises(ValidationError):
         RespuestaCompra.model_validate_json("no es json")
+
+
+def test_comparar_sin_limites_opcionales():
+    oferta = Oferta(dataset_id="d", id="a", producto_id="p", proveedor_id="A",
+                    proveedor_nombre="x", precio_unitario_centavos=100,
+                    flete_centavos=20, stock=2, plazo_dias=30)
+    alternativa = comparar(Solicitud(producto_id="p", cantidad=2), [oferta])[0]
+    assert alternativa.cumple and alternativa.total_centavos == 220
 
 
 def test_verificador_rechaza_omisiones_y_dataset(escenario):

@@ -24,7 +24,7 @@ Para administrar la app en segundo plano:
 
 El puerto predeterminado es 8501; use `PEDRO_PORT=8765 ./project.sh start` para iniciarlo en otro puerto, o `PEDRO_PORT=8765 ./project.sh restart` si ya está activo. El PID y el registro se guardan en `storage/run/`.
 
-La app inicia en http://localhost:8501. Copie .env.example a .env para el agente OpenAI y LangSmith. Sin clave funcionan el listado paginado, la ficha y la comparación local. El chat sin clave lista piezas y muestra fichas. Las recomendaciones del agente pasan por verificación exacta y NLI local antes de mostrarse.
+La app inicia en http://localhost:8501. Copie .env.example a .env para el agente OpenAI y LangSmith. Sin clave funcionan el listado paginado, la ficha, la comparación local y el chat de comparación. En el chat basta indicar pieza y cantidad; presupuesto y plazo son filtros opcionales. Si falta la cantidad, Pedro la pregunta una vez y conserva la respuesta en la sesión. Puede decir «ahora 3 unidades» para recalcular con los límites indicados antes, o «sin presupuesto y sin plazo» para quitarlos. Las recomendaciones del agente pasan por verificación exacta y NLI local antes de mostrarse.
 
 El primer acceso crea un escenario con dataset_id UUID, una copia de datasets/piezas_electrodomesticos.sqlite3 y un manifiesto con huella SHA-256, fecha, semilla y recuentos. Nuevo chat conserva escenario; nuevo escenario crea un chat. Reabrir una conversación restaura su dataset o avisa si falta. Los archivos de ejecución van en storage/ y no se versionan.
 
@@ -33,7 +33,8 @@ El primer acceso crea un escenario con dataset_id UUID, una copia de datasets/pi
 - src/pedro/catalog.py: escenario y consultas SQLite de solo lectura.
 - src/pedro/contracts.py y business.py: contratos y decisión en centavos.
 - src/pedro/query.py: plan Pydantic a SELECT parametrizado con traza.
-- src/pedro/memory.py: mensajes completos, ventana de 12, preferencias y episodios FastEmbed por usuario.
+- src/pedro/memory.py: mensajes completos, ventana de 12, borradores de compra por sesión, preferencias y episodios FastEmbed por usuario.
+- src/pedro/dialogue.py: extracción de restricciones por turno y preguntas solo para datos bloqueantes.
 - src/pedro/prompts.py: PTCF y ejemplos con acciones observables.
 - src/pedro/agent.py: seis herramientas, un create_openai_tools_agent, una corrección interna y RunnableWithMessageHistory que guarda solo la respuesta pública.
 - src/pedro/verification.py y nli.py: comprobación exacta y puerta NLI triclase.

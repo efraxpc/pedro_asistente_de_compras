@@ -48,14 +48,14 @@ for producto_id in ids[:5]:
     })
 
 for pregunta in [
-    "Quiero 2 unidades de PEC-01-0001 con presupuesto R$ 100000. ¿Qué falta?",
-    "Quiero PEC-02-0001 con presupuesto R$ 100000 y plazo 60 días. ¿Qué falta?",
-    "Quiero 2 unidades de PEC-03-0001 en 60 días. ¿Qué falta?",
-    "Quiero 2 repuestos con presupuesto R$ 100000 y plazo 60 días. ¿Cuál pieza?",
+    "Quiero PEC-01-0001.",
+    "Compara PEC-02-0001 con presupuesto R$ 100000 y plazo 60 días.",
+    "Necesito 2 repuestos con presupuesto R$ 100000 y plazo 60 días. ¿Cuál pieza?",
+    "Quiero comparar ofertas, pero aún no sé la pieza ni la cantidad.",
 ]:
     casos.append({"id": f"acl-{len(casos)+1:02d}", "grupo": "aclaracion",
                   "pregunta": pregunta,
-                  "esperado": {"estado": "aclaracion", "contiene": "Necesito",
+                  "esperado": {"estado": "aclaracion", "contiene": "¿",
                                "herramientas": []}})
 
 for pregunta, contiene in [

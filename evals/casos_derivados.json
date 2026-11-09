@@ -294,40 +294,40 @@
     {
       "id": "acl-20",
       "grupo": "aclaracion",
-      "pregunta": "Quiero 2 unidades de PEC-01-0001 con presupuesto R$ 100000. ¿Qué falta?",
+      "pregunta": "Quiero PEC-01-0001.",
       "esperado": {
         "estado": "aclaracion",
-        "contiene": "Necesito",
+        "contiene": "¿",
         "herramientas": []
       }
     },
     {
       "id": "acl-21",
       "grupo": "aclaracion",
-      "pregunta": "Quiero PEC-02-0001 con presupuesto R$ 100000 y plazo 60 días. ¿Qué falta?",
+      "pregunta": "Compara PEC-02-0001 con presupuesto R$ 100000 y plazo 60 días.",
       "esperado": {
         "estado": "aclaracion",
-        "contiene": "Necesito",
+        "contiene": "¿",
         "herramientas": []
       }
     },
     {
       "id": "acl-22",
       "grupo": "aclaracion",
-      "pregunta": "Quiero 2 unidades de PEC-03-0001 en 60 días. ¿Qué falta?",
+      "pregunta": "Necesito 2 repuestos con presupuesto R$ 100000 y plazo 60 días. ¿Cuál pieza?",
       "esperado": {
         "estado": "aclaracion",
-        "contiene": "Necesito",
+        "contiene": "¿",
         "herramientas": []
       }
     },
     {
       "id": "acl-23",
       "grupo": "aclaracion",
-      "pregunta": "Quiero 2 repuestos con presupuesto R$ 100000 y plazo 60 días. ¿Cuál pieza?",
+      "pregunta": "Quiero comparar ofertas, pero aún no sé la pieza ni la cantidad.",
       "esperado": {
         "estado": "aclaracion",
-        "contiene": "Necesito",
+        "contiene": "¿",
         "herramientas": []
       }
     },
