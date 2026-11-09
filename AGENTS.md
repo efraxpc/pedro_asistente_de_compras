@@ -11,6 +11,7 @@
 - `uv run python scripts/generar_catalogo_piezas.py`: regenerate the synthetic catalog.
 - `uv run python scripts/ejecutar_notebooks.py`: execute and save the notebook outputs.
 - `uv run streamlit run app.py`: run the UI at `http://localhost:8501`.
+- `./project.sh start` (also `restart`, `stop`, `status`): manage the local app; set `PEDRO_PORT=8765` for another port.
 - `uv run python evals/evaluar_flujo.py`: evaluate the final flow when OpenAI and LangSmith credentials are configured.
 
 ## Style and Tests

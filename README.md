@@ -13,6 +13,17 @@ uv run python scripts/ejecutar_notebooks.py
 uv run streamlit run app.py
 ```
 
+Para administrar la app en segundo plano:
+
+```bash
+./project.sh start
+./project.sh status
+./project.sh restart
+./project.sh stop
+```
+
+El puerto predeterminado es 8501; use `PEDRO_PORT=8765 ./project.sh start` para iniciarlo en otro puerto, o `PEDRO_PORT=8765 ./project.sh restart` si ya está activo. El PID y el registro se guardan en `storage/run/`.
+
 La app inicia en http://localhost:8501. Copie .env.example a .env para el agente OpenAI y LangSmith. Sin clave funcionan el listado paginado, la ficha y la comparación local. El chat sin clave lista piezas y muestra fichas. Las recomendaciones del agente pasan por verificación exacta y NLI local antes de mostrarse.
 
 El primer acceso crea un escenario con dataset_id UUID, una copia de datasets/piezas_electrodomesticos.sqlite3 y un manifiesto con huella SHA-256, fecha, semilla y recuentos. Nuevo chat conserva escenario; nuevo escenario crea un chat. Reabrir una conversación restaura su dataset o avisa si falta. Los archivos de ejecución van en storage/ y no se versionan.
