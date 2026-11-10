@@ -26,7 +26,7 @@ from .policy_demo import (FRAGMENTO_T24_ESPERADO, ORIGEN as ORIGEN_DEMO,
 from .prompts import EJEMPLOS_ACCIONES, PLANTILLA_AGENTE
 from .query import ejecutar, planear
 from .rag import consultar, diagnosticar_reescritura
-from .verification import anclar_citas, respuesta_local, verificar
+from .verification import anclar_cep, anclar_citas, respuesta_local, verificar
 
 
 class Traza(BaseCallbackHandler):
@@ -399,6 +399,7 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
         pref = preferencias(memoria_db, usuario)
         errores = []
         extractiva = None
+        cep_fallido = None
         for intento in range(2):
             entrada = pregunta
             if solicitud_actual is not None:
@@ -424,9 +425,15 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                         observaciones.append((accion.tool, json.loads(str(resultado_tool))))
                     except (ValueError, TypeError, AttributeError):
                         pass
+                cep_fallido = next((dato for nombre, dato in observaciones
+                                    if nombre == "consultar_cep" and dato.get("estado") != "ok"),
+                                   cep_fallido)
                 citas = anclar_citas(propuesta, observaciones)
+                cep = anclar_cep(propuesta, observaciones, escenario.dataset_id)
                 if traza:
                     traza.registrar_citas(citas)
+                    if cep:
+                        traza.eventos.append({"evento": "cep_anclado", **cep})
                 errores = verificar(propuesta, escenario, indice=indice,
                                     observaciones=observaciones)
                 if solicitud_actual is not None and propuesta.estado not in (
@@ -468,6 +475,13 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                     traza.registrar_verificacion(intento + 1, None, errores)
         if extractiva is not None:
             return AIMessage(content=renderizar_citas(extractiva, indice=indice))
+        if cep_fallido is not None:
+            # La API respondió, pero sin ciudad: se dice lo que pasó en vez de inventar un destino.
+            motivos = {"no_encontrado": f"ViaCEP no tiene registrado el CEP {cep_fallido.get('cep')}.",
+                       "invalido": "Un CEP debe tener ocho dígitos.",
+                       "indisponible": "ViaCEP no respondió; inténtalo de nuevo más tarde."}
+            return AIMessage(content=motivos.get(cep_fallido.get("estado"),
+                                                 "No pude confirmar ese CEP con ViaCEP."))
         if indice is not None and re.search(r"\b(pol[ií]tica|entrega|devoluci[oó]n|garant[ií]a)\b",
                                             pregunta, re.I):
             return AIMessage(content="No pude verificar la respuesta sobre políticas. "

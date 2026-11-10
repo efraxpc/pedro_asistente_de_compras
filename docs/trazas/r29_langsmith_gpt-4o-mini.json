@@ -1,0 +1,917 @@
+{
+  "fecha_utc": "2026-11-10T22:51:22.618139+00:00",
+  "modo": "real",
+  "modelo_llm": "gpt-4o-mini",
+  "experimento_langsmith": "pedro-infnet-flujo-gpt-4o-mini-70ed80d8",
+  "dataset_langsmith": "pedro-infnet-casos-derivados-7610315f",
+  "dataset_id": "13005309-3574-4d87-b537-54ef4cd5142a",
+  "resumen": {
+    "contenido": {
+      "aciertos": 14,
+      "total": 16,
+      "tasa": 0.875
+    },
+    "trayectoria": {
+      "aciertos": 15,
+      "total": 30,
+      "tasa": 0.5
+    },
+    "herramienta_decisiva": {
+      "aciertos": 23,
+      "total": 23,
+      "tasa": 1.0
+    },
+    "primera_propuesta": {
+      "aciertos": 17,
+      "total": 23,
+      "tasa": 0.7391304347826086
+    },
+    "ganador": {
+      "aciertos": 10,
+      "total": 14,
+      "tasa": 0.7142857142857143
+    },
+    "importe": {
+      "aciertos": 10,
+      "total": 14,
+      "tasa": 0.7142857142857143
+    }
+  },
+  "por_grupo": {
+    "cep": {
+      "contenido": "0/2",
+      "trayectoria": "2/2",
+      "herramienta_decisiva": "2/2",
+      "primera_propuesta": "1/2"
+    },
+    "catalogo": {
+      "contenido": "3/3",
+      "trayectoria": "3/3"
+    },
+    "recomendacion": {
+      "ganador": "10/14",
+      "importe": "10/14",
+      "trayectoria": "3/14",
+      "herramienta_decisiva": "14/14",
+      "primera_propuesta": "9/14"
+    },
+    "sin_oferta": {
+      "contenido": "5/5",
+      "trayectoria": "1/5",
+      "herramienta_decisiva": "5/5",
+      "primera_propuesta": "5/5"
+    },
+    "aclaracion": {
+      "contenido": "4/4",
+      "trayectoria": "4/4"
+    },
+    "politica_sin_indice": {
+      "contenido": "2/2",
+      "trayectoria": "2/2",
+      "herramienta_decisiva": "2/2",
+      "primera_propuesta": "2/2"
+    }
+  },
+  "casos": [
+    {
+      "caso_id": "cep-28",
+      "pregunta": "¿A qué ciudad corresponde 01001000?",
+      "grupo": "cep",
+      "run_id": "01a1c7a8-b2b8-7565-8e44-1e5dc91bf451",
+      "salida": {
+        "respuesta": "No puedo confirmar una recomendación con las evidencias disponibles.",
+        "herramientas": [
+          "consultar_cep",
+          "consultar_cep"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": null,
+            "errores": [
+              "OutputParserException"
+            ]
+          },
+          {
+            "intento": 2,
+            "estado": null,
+            "errores": [
+              "OutputParserException"
+            ]
+          }
+        ]
+      },
+      "scores": {
+        "contenido": 0,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 0
+      }
+    },
+    {
+      "caso_id": "cat-26",
+      "pregunta": "ficha PEC-01-0001",
+      "grupo": "catalogo",
+      "run_id": "01a1c7a8-ccac-7d99-9f31-184ba7fa4bb2",
+      "salida": {
+        "respuesta": "Compresor para Neveras NEVE-COMP-0001 (PEC-01-0001, SKU NEVE-COMP-0001). Peça fictícia de reposição para neveras; confira o modelo compatível. Compatibilidad ficticia: Brisa NEV-3742, Domus NEV-5724, Solare NEV-1434",
+        "herramientas": [],
+        "verificaciones": []
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": null,
+        "primera_propuesta": null
+      }
+    },
+    {
+      "caso_id": "rec-03",
+      "pregunta": "Compara 2 unidades de PEC-03-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7a8-ccd1-7d13-8f9f-ea965aba8ee7",
+      "salida": {
+        "respuesta": "EuroSpare Components: R$ 716,33 para 2 unidades; plazo 16 días.\n- EuroSpare Components: R$ 716,33; cumple [PEC-03-0001-INT-02]\n- Casa Técnica Brasil: R$ 2.546,74; cumple [PEC-03-0001-BR-04]\n- Norte Reposição: R$ 2.735,10; cumple [PEC-03-0001-BR-03]\nFuentes: PEC-03-0001-INT-02, PEC-03-0001-BR-04, PEC-03-0001-BR-03",
+        "herramientas": [
+          "buscar_productos",
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 1,
+        "importe": 1,
+        "trayectoria": 1,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "rec-06",
+      "pregunta": "Compara 2 unidades de PEC-06-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7a9-0441-75d0-a090-0392727b7107",
+      "salida": {
+        "respuesta": "Casa Técnica Brasil: R$ 877,79 para 2 unidades; plazo 6 días.\n- Casa Técnica Brasil: R$ 877,79; cumple [PEC-06-0001-BR-04]\n- TecnoParts Italia: R$ 862,82; descartada por stock [PEC-06-0001-INT-03]\n- Sul Componentes: R$ 1.418,25; descartada por stock [PEC-06-0001-BR-02]\nFuentes: PEC-06-0001-BR-04, PEC-06-0001-INT-03, PEC-06-0001-BR-02",
+        "herramientas": [
+          "buscar_productos",
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 1,
+        "importe": 1,
+        "trayectoria": 1,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "sin-17",
+      "pregunta": "Compara 1000 unidades de PEC-03-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "sin_oferta",
+      "run_id": "01a1c7a9-41f0-7d7d-b113-22476a58e572",
+      "salida": {
+        "respuesta": "Ninguna oferta cumple las restricciones indicadas.\n- EuroSpare Components: R$ 277.960,73; descartada por stock, presupuesto [PEC-03-0001-INT-02]\n- Casa Técnica Brasil: R$ 1.228.090,74; descartada por stock, presupuesto [PEC-03-0001-BR-04]\n- Norte Reposição: R$ 1.345.564,06; descartada por stock, presupuesto [PEC-03-0001-BR-03]\nFuentes: PEC-03-0001-INT-02, PEC-03-0001-BR-04, PEC-03-0001-BR-03",
+        "herramientas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "sin_oferta",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "cat-25",
+      "pregunta": "lista piezas página 2",
+      "grupo": "catalogo",
+      "run_id": "01a1c7a9-8f2b-71c6-bab5-44af0e66ee1f",
+      "salida": {
+        "respuesta": "Piezas del escenario (2640; página 2):\n- PEC-01-0021 · NEVE-COMP-0021 · Compresor para Neveras NEVE-COMP-0021\n- PEC-01-0022 · NEVE-TERM-0022 · Termostato para Neveras NEVE-TERM-0022\n- PEC-01-0023 · NEVE-EVAP-0023 · Evaporador para Neveras NEVE-EVAP-0023\n- PEC-01-0024 · NEVE-COND-0024 · Condensador para Neveras NEVE-COND-0024\n- PEC-01-0025 · NEVE-PLAC-0025 · Placa para Neveras NEVE-PLAC-0025\n- PEC-01-0026 · NEVE-SENS-0026 · Sensor para Neveras NEVE-SENS-0026\n- PEC-01-0027 · NEVE-PUER-0027 · Puerta para Neveras NEVE-PUER-0027\n- PEC-01-0028 · NEVE-SELL-0028 · Sello para Neveras NEVE-SELL-0028\n- PEC-01-0029 · NEVE-VENT-0029 · Ventilador para Neveras NEVE-VENT-0029\n- PEC-01-0030 · NEVE-FILT-0030 · Filtro para Neveras NEVE-FILT-0030\n- PEC-01-0031 · NEVE-COMP-0031 · Compresor para Neveras NEVE-COMP-0031\n- PEC-01-0032 · NEVE-TERM-0032 · Termostato para Neveras NEVE-TERM-0032\n- PEC-01-0033 · NEVE-EVAP-0033 · Evaporador para Neveras NEVE-EVAP-0033\n- PEC-01-0034 · NEVE-COND-0034 · Condensador para Neveras NEVE-COND-0034\n- PEC-01-0035 · NEVE-PLAC-0035 · Placa para Neveras NEVE-PLAC-0035\n- PEC-01-0036 · NEVE-SENS-0036 · Sensor para Neveras NEVE-SENS-0036\n- PEC-01-0037 · NEVE-PUER-0037 · Puerta para Neveras NEVE-PUER-0037\n- PEC-01-0038 · NEVE-SELL-0038 · Sello para Neveras NEVE-SELL-0038\n- PEC-01-0039 · NEVE-VENT-0039 · Ventilador para Neveras NEVE-VENT-0039\n- PEC-01-0040 · NEVE-FILT-0040 · Filtro para Neveras NEVE-FILT-0040",
+        "herramientas": [],
+        "verificaciones": []
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": null,
+        "primera_propuesta": null
+      }
+    },
+    {
+      "caso_id": "acl-23",
+      "pregunta": "Quiero comparar ofertas, pero aún no sé la pieza ni la cantidad.",
+      "grupo": "aclaracion",
+      "run_id": "01a1c7a9-8f61-7fd3-8c5a-a48e4d35c8cb",
+      "salida": {
+        "respuesta": "¿Qué pieza necesitas? Indica su ID o SKU; puedo buscarla por nombre.",
+        "herramientas": [],
+        "verificaciones": []
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": null,
+        "primera_propuesta": null
+      }
+    },
+    {
+      "caso_id": "rec-08",
+      "pregunta": "Compara 2 unidades de PEC-08-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7a9-8f9b-70fd-b4c7-427bafa7f5f6",
+      "salida": {
+        "respuesta": "Litoral Parts: R$ 1.755,58 para 2 unidades; plazo 2 días.\n- Litoral Parts: R$ 1.755,58; cumple [PEC-08-0001-BR-05]\n- Sul Componentes: R$ 2.469,72; cumple [PEC-08-0001-BR-02]\n- EuroSpare Components: R$ 2.705,51; descartada por stock [PEC-08-0001-INT-02]\nFuentes: PEC-08-0001-BR-05, PEC-08-0001-BR-02, PEC-08-0001-INT-02",
+        "herramientas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 1,
+        "importe": 1,
+        "trayectoria": 1,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "acl-20",
+      "pregunta": "Quiero PEC-01-0001.",
+      "grupo": "aclaracion",
+      "run_id": "01a1c7a9-c55c-745e-9459-79069fd2cf7c",
+      "salida": {
+        "respuesta": "¿Cuántas unidades de PEC-01-0001 necesitas? Puedo comparar sin presupuesto o plazo máximo si no tienes esos límites.",
+        "herramientas": [],
+        "verificaciones": []
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": null,
+        "primera_propuesta": null
+      }
+    },
+    {
+      "caso_id": "acl-22",
+      "pregunta": "Necesito 2 repuestos con presupuesto R$ 100000 y plazo 60 días. ¿Cuál pieza?",
+      "grupo": "aclaracion",
+      "run_id": "01a1c7a9-c58a-7cf0-85c1-f21f961a5ffe",
+      "salida": {
+        "respuesta": "¿Qué pieza necesitas? Indica su ID o SKU; puedo buscarla por nombre.",
+        "herramientas": [],
+        "verificaciones": []
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": null,
+        "primera_propuesta": null
+      }
+    },
+    {
+      "caso_id": "rec-14",
+      "pregunta": "Compara 2 unidades de PEC-03-0002; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7a9-c5ad-7dce-b44a-766088fe2bd1",
+      "salida": {
+        "respuesta": "Brava Peças: R$ 792,35 para 2 unidades; plazo 11 días.\n- Brava Peças: R$ 792,35; cumple [PEC-03-0002-BR-01]\n- Pacific Appliance Supply: R$ 1.477,02; descartada por stock [PEC-03-0002-INT-04]\n- CentroPeças: R$ 2.433,36; descartada por stock [PEC-03-0002-BR-06]\nFuentes: PEC-03-0002-BR-01, PEC-03-0002-INT-04, PEC-03-0002-BR-06",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 1,
+        "importe": 1,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "rec-05",
+      "pregunta": "Compara 2 unidades de PEC-05-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7a9-f720-7665-8c1c-b965db4701f0",
+      "salida": {
+        "respuesta": "Brava Peças: R$ 715,45 para 2 unidades; plazo 5 días.\n- Brava Peças: R$ 715,45; cumple [PEC-05-0001-BR-01]\n- Sul Componentes: R$ 1.069,98; cumple [PEC-05-0001-BR-02]\n- North Parts Trading: R$ 2.740,98; cumple [PEC-05-0001-INT-01]\nFuentes: PEC-05-0001-BR-01, PEC-05-0001-BR-02, PEC-05-0001-INT-01",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 1,
+        "importe": 1,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "rec-10",
+      "pregunta": "Compara 2 unidades de PEC-10-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7aa-2cf3-70d7-a0b2-d7164468497b",
+      "salida": {
+        "respuesta": "Casa Técnica Brasil: R$ 958,03 para 2 unidades; plazo 2 días.\n- Casa Técnica Brasil: R$ 958,03; cumple [PEC-10-0001-BR-04]\n- North Parts Trading: R$ 1.940,58; cumple [PEC-10-0001-INT-01]\n- Sul Componentes: R$ 2.330,78; descartada por stock [PEC-10-0001-BR-02]\nFuentes: PEC-10-0001-BR-04, PEC-10-0001-INT-01, PEC-10-0001-BR-02",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 1,
+        "importe": 1,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "rec-12",
+      "pregunta": "Compara 2 unidades de PEC-01-0002; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7aa-615c-7140-922f-8092fc4f316a",
+      "salida": {
+        "respuesta": "Brava Peças: R$ 1.718,52 para 2 unidades; plazo 5 días.\n- Brava Peças: R$ 1.718,52; cumple [PEC-01-0002-BR-01]\n- Casa Técnica Brasil: R$ 195,47; descartada por stock [PEC-01-0002-BR-04]\n- North Parts Trading: R$ 2.174,28; descartada por stock [PEC-01-0002-INT-01]\nFuentes: PEC-01-0002-BR-01, PEC-01-0002-BR-04, PEC-01-0002-INT-01",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 1,
+        "importe": 1,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "cep-27",
+      "pregunta": "Consulta el CEP 01001000",
+      "grupo": "cep",
+      "run_id": "01a1c7aa-a1d1-7ea0-b087-07a8dc3b814e",
+      "salida": {
+        "respuesta": "Ninguna oferta cumple las restricciones indicadas.\n- Brava Peças: R$ 331.851,85; descartada por stock, presupuesto [PEC-05-0001-BR-01]\n- Sul Componentes: R$ 518.373,30; descartada por stock, presupuesto [PEC-05-0001-BR-02]\n- North Parts Trading: R$ 1.176.289,18; descartada por stock, presupuesto [PEC-05-0001-INT-01]\nFuentes: PEC-05-0001-BR-01, PEC-05-0001-BR-02, PEC-05-0001-INT-01",
+        "herramientas": [
+          "consultar_cep",
+          "consultar_cep",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "sin_oferta",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": 0,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "sin-19",
+      "pregunta": "Compara 1000 unidades de PEC-05-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "sin_oferta",
+      "run_id": "01a1c7aa-e1ad-799b-ac09-95856c92bdbd",
+      "salida": {
+        "respuesta": "Ninguna oferta cumple las restricciones indicadas.\n- Brava Peças: R$ 331.851,85; descartada por stock, presupuesto [PEC-05-0001-BR-01]\n- Sul Componentes: R$ 518.373,30; descartada por stock, presupuesto [PEC-05-0001-BR-02]\n- North Parts Trading: R$ 1.176.289,18; descartada por stock, presupuesto [PEC-05-0001-INT-01]\nFuentes: PEC-05-0001-BR-01, PEC-05-0001-BR-02, PEC-05-0001-INT-01",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "sin_oferta",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "rec-01",
+      "pregunta": "Compara 2 unidades de PEC-01-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7ab-17a8-7d88-a732-48a0c3625d30",
+      "salida": {
+        "respuesta": "No puedo confirmar una recomendación con las evidencias disponibles.",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas",
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": [
+              "ganador o total incorrecto"
+            ]
+          },
+          {
+            "intento": 2,
+            "estado": "recomendacion",
+            "errores": [
+              "ganador o total incorrecto"
+            ]
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 0,
+        "importe": 0,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 0
+      }
+    },
+    {
+      "caso_id": "acl-21",
+      "pregunta": "Compara PEC-02-0001 con presupuesto R$ 100000 y plazo 60 días.",
+      "grupo": "aclaracion",
+      "run_id": "01a1c7ab-7c35-7520-b3af-f3eb7cd18e19",
+      "salida": {
+        "respuesta": "¿Cuántas unidades de PEC-02-0001 necesitas? Puedo comparar sin presupuesto o plazo máximo si no tienes esos límites.",
+        "herramientas": [],
+        "verificaciones": []
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": null,
+        "primera_propuesta": null
+      }
+    },
+    {
+      "caso_id": "rec-09",
+      "pregunta": "Compara 2 unidades de PEC-09-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7ab-7c55-7401-bf66-3735674da254",
+      "salida": {
+        "respuesta": "Brava Peças: R$ 523,31 para 2 unidades; plazo 9 días.\n- Brava Peças: R$ 523,31; cumple [PEC-09-0001-BR-01]\n- Norte Reposição: R$ 1.349,36; cumple [PEC-09-0001-BR-03]\n- TecnoParts Italia: R$ 2.450,02; cumple [PEC-09-0001-INT-03]\nFuentes: PEC-09-0001-BR-01, PEC-09-0001-BR-03, PEC-09-0001-INT-03",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas",
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": [
+              "ganador o total incorrecto"
+            ]
+          },
+          {
+            "intento": 2,
+            "estado": "recomendacion",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 1,
+        "importe": 1,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 0
+      }
+    },
+    {
+      "caso_id": "cat-24",
+      "pregunta": "lista piezas",
+      "grupo": "catalogo",
+      "run_id": "01a1c7ab-de39-7ab4-9ab0-d5245eacdd1e",
+      "salida": {
+        "respuesta": "Piezas del escenario (2640; página 1):\n- PEC-01-0001 · NEVE-COMP-0001 · Compresor para Neveras NEVE-COMP-0001\n- PEC-01-0002 · NEVE-TERM-0002 · Termostato para Neveras NEVE-TERM-0002\n- PEC-01-0003 · NEVE-EVAP-0003 · Evaporador para Neveras NEVE-EVAP-0003\n- PEC-01-0004 · NEVE-COND-0004 · Condensador para Neveras NEVE-COND-0004\n- PEC-01-0005 · NEVE-PLAC-0005 · Placa para Neveras NEVE-PLAC-0005\n- PEC-01-0006 · NEVE-SENS-0006 · Sensor para Neveras NEVE-SENS-0006\n- PEC-01-0007 · NEVE-PUER-0007 · Puerta para Neveras NEVE-PUER-0007\n- PEC-01-0008 · NEVE-SELL-0008 · Sello para Neveras NEVE-SELL-0008\n- PEC-01-0009 · NEVE-VENT-0009 · Ventilador para Neveras NEVE-VENT-0009\n- PEC-01-0010 · NEVE-FILT-0010 · Filtro para Neveras NEVE-FILT-0010\n- PEC-01-0011 · NEVE-COMP-0011 · Compresor para Neveras NEVE-COMP-0011\n- PEC-01-0012 · NEVE-TERM-0012 · Termostato para Neveras NEVE-TERM-0012\n- PEC-01-0013 · NEVE-EVAP-0013 · Evaporador para Neveras NEVE-EVAP-0013\n- PEC-01-0014 · NEVE-COND-0014 · Condensador para Neveras NEVE-COND-0014\n- PEC-01-0015 · NEVE-PLAC-0015 · Placa para Neveras NEVE-PLAC-0015\n- PEC-01-0016 · NEVE-SENS-0016 · Sensor para Neveras NEVE-SENS-0016\n- PEC-01-0017 · NEVE-PUER-0017 · Puerta para Neveras NEVE-PUER-0017\n- PEC-01-0018 · NEVE-SELL-0018 · Sello para Neveras NEVE-SELL-0018\n- PEC-01-0019 · NEVE-VENT-0019 · Ventilador para Neveras NEVE-VENT-0019\n- PEC-01-0020 · NEVE-FILT-0020 · Filtro para Neveras NEVE-FILT-0020",
+        "herramientas": [],
+        "verificaciones": []
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": null,
+        "primera_propuesta": null
+      }
+    },
+    {
+      "caso_id": "pol-30",
+      "pregunta": "¿Hay política de cambios?",
+      "grupo": "politica_sin_indice",
+      "run_id": "01a1c7ab-de5e-7f9b-99c4-0dbcbbcd37a4",
+      "salida": {
+        "respuesta": "No puedo confirmar la respuesta con las fuentes disponibles.",
+        "herramientas": [
+          "consultar_politicas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "sin_evidencia",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "sin-15",
+      "pregunta": "Compara 1000 unidades de PEC-01-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "sin_oferta",
+      "run_id": "01a1c7ab-e7e7-7fa6-b9c0-039e4c38ef2c",
+      "salida": {
+        "respuesta": "Ninguna oferta cumple las restricciones indicadas.\n- Litoral Parts: R$ 370.279,40; descartada por stock, presupuesto [PEC-01-0001-BR-05]\n- Atlantic Repair Parts: R$ 1.381.987,17; descartada por stock, presupuesto [PEC-01-0001-INT-06]\n- CentroPeças: R$ 1.439.005,23; descartada por stock, presupuesto [PEC-01-0001-BR-06]\nFuentes: PEC-01-0001-BR-05, PEC-01-0001-INT-06, PEC-01-0001-BR-06",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "sin_oferta",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "rec-02",
+      "pregunta": "Compara 2 unidades de PEC-02-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7ac-13d7-7de8-a8e4-7f9ffc0f3186",
+      "salida": {
+        "respuesta": "Brava Peças: R$ 311,55 para 2 unidades; plazo 8 días.\n- Brava Peças: R$ 311,55; cumple [PEC-02-0001-BR-01]\n- Global Fix México: R$ 2.075,78; cumple [PEC-02-0001-INT-05]\n- Norte Reposição: R$ 1.839,19; descartada por stock [PEC-02-0001-BR-03]\nFuentes: PEC-02-0001-BR-01, PEC-02-0001-INT-05, PEC-02-0001-BR-03",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 1,
+        "importe": 1,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "rec-13",
+      "pregunta": "Compara 2 unidades de PEC-02-0002; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7ac-427f-74d3-9a56-faa92e451618",
+      "salida": {
+        "respuesta": "EuroSpare Components: R$ 1.127,77 para 2 unidades; plazo 41 días.\n- EuroSpare Components: R$ 1.127,77; cumple [PEC-02-0002-INT-02]\n- Norte Reposição: R$ 2.300,66; cumple [PEC-02-0002-BR-03]\n- Litoral Parts: R$ 197,23; descartada por stock [PEC-02-0002-BR-05]\nFuentes: PEC-02-0002-INT-02, PEC-02-0002-BR-03, PEC-02-0002-BR-05",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 1,
+        "importe": 1,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "rec-11",
+      "pregunta": "Compara 2 unidades de PEC-11-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7ac-6ce8-7771-bdcb-3e32187176af",
+      "salida": {
+        "respuesta": "No puedo confirmar una recomendación con las evidencias disponibles.",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas",
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": [
+              "ganador o total incorrecto"
+            ]
+          },
+          {
+            "intento": 2,
+            "estado": "recomendacion",
+            "errores": [
+              "ganador o total incorrecto"
+            ]
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 0,
+        "importe": 0,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 0
+      }
+    },
+    {
+      "caso_id": "rec-07",
+      "pregunta": "Compara 2 unidades de PEC-07-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7ac-d169-754e-828f-2a5d48929e6b",
+      "salida": {
+        "respuesta": "No puedo confirmar una recomendación con las evidencias disponibles.",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas",
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": [
+              "ganador o total incorrecto"
+            ]
+          },
+          {
+            "intento": 2,
+            "estado": "recomendacion",
+            "errores": [
+              "ganador o total incorrecto"
+            ]
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 0,
+        "importe": 0,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 0
+      }
+    },
+    {
+      "caso_id": "rec-04",
+      "pregunta": "Compara 2 unidades de PEC-04-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacion",
+      "run_id": "01a1c7ad-1aa0-7e8d-8208-19ccda37752a",
+      "salida": {
+        "respuesta": "No puedo confirmar una recomendación con las evidencias disponibles.",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas",
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "recomendacion",
+            "errores": [
+              "ganador o total incorrecto"
+            ]
+          },
+          {
+            "intento": 2,
+            "estado": "recomendacion",
+            "errores": [
+              "ganador o total incorrecto"
+            ]
+          }
+        ]
+      },
+      "scores": {
+        "contenido": null,
+        "ganador": 0,
+        "importe": 0,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 0
+      }
+    },
+    {
+      "caso_id": "sin-18",
+      "pregunta": "Compara 1000 unidades de PEC-04-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "sin_oferta",
+      "run_id": "01a1c7ad-5c54-7c9a-84e7-2995a047a177",
+      "salida": {
+        "respuesta": "Ninguna oferta cumple las restricciones indicadas.\n- Brava Peças: R$ 515.758,79; descartada por stock, presupuesto [PEC-04-0001-BR-01]\n- North Parts Trading: R$ 523.915,88; descartada por stock, presupuesto [PEC-04-0001-INT-01]\n- Casa Técnica Brasil: R$ 1.072.396,23; descartada por stock, presupuesto [PEC-04-0001-BR-04]\nFuentes: PEC-04-0001-BR-01, PEC-04-0001-INT-01, PEC-04-0001-BR-04",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "sin_oferta",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "pol-29",
+      "pregunta": "¿Qué dice la política de devoluciones?",
+      "grupo": "politica_sin_indice",
+      "run_id": "01a1c7ad-7fe5-7b2d-97b8-fdde0b21f21b",
+      "salida": {
+        "respuesta": "No puedo confirmar la respuesta con las fuentes disponibles.",
+        "herramientas": [
+          "consultar_politicas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "sin_evidencia",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 1,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    },
+    {
+      "caso_id": "sin-16",
+      "pregunta": "Compara 1000 unidades de PEC-02-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "sin_oferta",
+      "run_id": "01a1c7ad-8add-7e26-8ee5-e81f0727bf3f",
+      "salida": {
+        "respuesta": "Ninguna oferta cumple las restricciones indicadas.\n- Brava Peças: R$ 117.107,49; descartada por stock, presupuesto [PEC-02-0001-BR-01]\n- Norte Reposição: R$ 893.991,31; descartada por stock, presupuesto [PEC-02-0001-BR-03]\n- Global Fix México: R$ 918.589,08; descartada por stock, presupuesto [PEC-02-0001-INT-05]\nFuentes: PEC-02-0001-BR-01, PEC-02-0001-BR-03, PEC-02-0001-INT-05",
+        "herramientas": [
+          "buscar_productos",
+          "comparar_ofertas"
+        ],
+        "verificaciones": [
+          {
+            "intento": 1,
+            "estado": "sin_oferta",
+            "errores": []
+          }
+        ]
+      },
+      "scores": {
+        "contenido": 1,
+        "ganador": null,
+        "importe": null,
+        "trayectoria": 0,
+        "herramienta_decisiva": 1,
+        "primera_propuesta": 1
+      }
+    }
+  ]
+}

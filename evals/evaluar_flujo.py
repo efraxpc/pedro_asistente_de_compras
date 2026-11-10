@@ -81,6 +81,7 @@ def main() -> None:
     argumentos = argparse.ArgumentParser(description=__doc__)
     argumentos.add_argument("--modelo", help="modelo de OpenAI; por defecto PEDRO_MODEL o gpt-4.1-mini")
     argumentos.add_argument("--salida", type=Path, help="copia versionable del registro")
+    argumentos.add_argument("--etiqueta", default="", help="sufijo del experimento, p. ej. tras-correccion")
     opciones = argumentos.parse_args()
     load_dotenv()
     if not os.getenv("OPENAI_API_KEY") or not os.getenv("LANGSMITH_API_KEY"):
@@ -123,7 +124,7 @@ def main() -> None:
         objetivo, data=nombre_dataset, evaluators=[evaluar_contenido, evaluar_ganador,
         evaluar_importe, evaluar_trayectoria, evaluar_herramienta_decisiva,
         evaluar_primera_propuesta], upload_results=True, max_concurrency=1,
-        experiment_prefix=f"pedro-infnet-flujo-{modelo}",
+        experiment_prefix=f"pedro-infnet-flujo-{modelo}" + (f"-{opciones.etiqueta}" if opciones.etiqueta else ""),
         metadata={"dataset_id": escenario.dataset_id, "nli_model": MODELO,
                   "nli_revision": REVISION, "casos": len(casos), "modelo_llm": modelo})
     resultados = list(experimento)
@@ -150,6 +151,7 @@ def main() -> None:
     destino.parent.mkdir(parents=True, exist_ok=True)
     registro = json.dumps({
         "fecha_utc": ahora.isoformat(), "modo": "real", "modelo_llm": modelo,
+        "etiqueta": opciones.etiqueta,
         "experimento_langsmith": experimento.experiment_name,
         "dataset_langsmith": nombre_dataset,
         "dataset_id": escenario.dataset_id, "resumen": resumen,

@@ -141,6 +141,34 @@ def anclar_citas(respuesta: RespuestaCompra,
     return informe
 
 
+def anclar_cep(respuesta: RespuestaCompra, observaciones: list[tuple[str, dict]] | None,
+               dataset_id: str) -> dict | None:
+    """Rellena una respuesta de CEP con lo que devolvió ViaCEP en este turno.
+
+    El modelo decide que la respuesta es un CEP; ciudad, estado, modo y evidencia los pone
+    el sistema a partir de la observación de la herramienta. Sin una observación válida la
+    respuesta queda intacta y la rechazará `verificar`.
+    """
+    if respuesta.estado != "cep":
+        return None
+    validas = [dato for nombre, dato in (observaciones or [])
+               if nombre == "consultar_cep" and dato.get("estado") == "ok"]
+    pedido = respuesta.solicitud.cep
+    dato = next((d for d in validas if d.get("cep") == pedido), None)
+    if dato is None and not pedido and len({d.get("cep") for d in validas}) == 1:
+        dato = validas[0]
+    if dato is None:
+        return {"estado": "sin_observacion_valida", "cep": pedido}
+    from .contracts import Evidencia
+    respuesta.solicitud.cep = dato["cep"]
+    respuesta.cidade, respuesta.uf, respuesta.modo_cep = dato["cidade"], dato["uf"], dato["modo"]
+    respuesta.evidencias = [Evidencia(tipo="viacep", fuente_id=f"ViaCEP:{dato['cep']}",
+                                      texto=f"{dato['cidade']}/{dato['uf']}")]
+    # Una respuesta de CEP no usa datos del catálogo: el escenario lo fija el sistema.
+    respuesta.dataset_id = dataset_id
+    return {"estado": "anclada", "cep": dato["cep"]}
+
+
 def respuesta_local(escenario: Escenario, solicitud) -> RespuestaCompra:
     if solicitud.faltantes() or not solicitud.producto_id:
         return RespuestaCompra(estado="aclaracion", dataset_id=escenario.dataset_id, solicitud=solicitud)

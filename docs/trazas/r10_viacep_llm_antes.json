@@ -1,0 +1,90 @@
+{
+  "rubrica": "R10",
+  "modo": "real remoto: OpenAI y ViaCEP (https://viacep.com.br)",
+  "fecha_utc": "2026-11-10T22:54:24+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "esquema_enviado_al_modelo": {
+    "type": "function",
+    "function": {
+      "name": "consultar_cep",
+      "description": "Confirma ciudad y UF con ViaCEP; no calcula flete.",
+      "parameters": {
+        "properties": {
+          "cep": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cep"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "turnos": [
+    {
+      "pregunta": "Voy a recibir el pedido en el CEP 01001000. ¿A qué ciudad y estado corresponde?",
+      "llamadas": [
+        {
+          "herramienta": "consultar_cep",
+          "argumentos_del_modelo": "{'cep': '01001000'}",
+          "respuesta_de_la_api": "{\"estado\": \"ok\", \"cep\": \"01001000\", \"cidade\": \"São Paulo\", \"uf\": \"SP\", \"modo\": \"real\", \"fuente\": \"ViaCEP:01001000\"}"
+        },
+        {
+          "herramienta": "consultar_cep",
+          "argumentos_del_modelo": "{'cep': '01001000'}",
+          "respuesta_de_la_api": "{\"estado\": \"ok\", \"cep\": \"01001000\", \"cidade\": \"São Paulo\", \"uf\": \"SP\", \"modo\": \"real\", \"fuente\": \"ViaCEP:01001000\"}"
+        }
+      ],
+      "verificaciones": [
+        {
+          "intento": 1,
+          "errores": [
+            "dataset ajeno"
+          ]
+        },
+        {
+          "intento": 2,
+          "errores": [
+            "dataset ajeno"
+          ]
+        }
+      ],
+      "respuesta_publicada": "No puedo confirmar una recomendación con las evidencias disponibles."
+    },
+    {
+      "pregunta": "¿Y el CEP 99999999?",
+      "llamadas": [
+        {
+          "herramienta": "consultar_cep",
+          "argumentos_del_modelo": "{'cep': '99999999'}",
+          "respuesta_de_la_api": "{\"estado\": \"no_encontrado\", \"cep\": \"99999999\"}"
+        }
+      ],
+      "verificaciones": [
+        {
+          "intento": 1,
+          "errores": []
+        }
+      ],
+      "respuesta_publicada": "No puedo confirmar la respuesta con las fuentes disponibles."
+    },
+    {
+      "pregunta": "¿Y el CEP 123?",
+      "llamadas": [
+        {
+          "herramienta": "consultar_cep",
+          "argumentos_del_modelo": "{'cep': '123'}",
+          "respuesta_de_la_api": "{\"estado\": \"invalido\", \"error\": \"CEP debe tener ocho dígitos\"}"
+        }
+      ],
+      "verificaciones": [
+        {
+          "intento": 1,
+          "errores": []
+        }
+      ],
+      "respuesta_publicada": "No puedo confirmar la respuesta con las fuentes disponibles."
+    }
+  ]
+}

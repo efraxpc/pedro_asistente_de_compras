@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** redactadas y con ejecución guardada R01–R08, R22 y R23. Pendientes de redactar: R09–R21 y R24–R29.
+**Avance de redacción:** redactadas y con ejecución guardada R01–R10, R22 y R23. Pendientes de redactar: R11–R21 y R24–R29.
 
 ---
 
@@ -555,11 +555,136 @@ La corrección fue añadir `{chat_history}` al sufijo del prompt mediante `agent
 
 ## R09 — Chains secuenciales o paralelas y RouterChain
 
-*Pendiente de redactar.*
+> ¿El alumno construyó chains secuenciales o paralelas e implementó enrutamiento dinámico con RouterChain?
+
+**Respuesta corta.** Sí. Hay cadenas secuenciales, una paralela y dos routers construidos sobre `RouterChain`: uno con reglas y otro que decide un modelo. Se compararon los dos con el modelo real: **el router por reglas acertó 2 de 7 rutas y el router LLM, 6 de 7.**
+
+### 1. Composición secuencial y paralela
+
+| Cadena | Tipo | Qué hace |
+|---|---|---|
+| `crear_lcel` y `crear_lcel_robusta` | Secuencial | plantilla → modelo → parser → regla de dominio |
+| `ejecutar_ruta` | Secuencial | Decide la ruta y después ejecuta la cadena de ese destino |
+| `composicion_paralela` | Paralela (`RunnableParallel`) | Busca candidatos y conserva el texto en dos ramas independientes, y luego las une |
+
+Las ramas paralelas no dependen una de otra, así que se pueden ejecutar a la vez. La unión final sí es secuencial, porque necesita el resultado de las dos.
+
+### 2. Dos routers sobre `RouterChain`
+
+Un router recibe la pregunta y devuelve el nombre de un destino. Los dos heredan de `RouterChain`, en [legacy.py](../src/pedro/legacy.py):
+
+| Router | Cómo decide | Destinos |
+|---|---|---|
+| `RouterCompras` | Reglas: si la pregunta contiene «oferta», «precio» o «stock» va a comparación; si no, a catálogo | catálogo, comparación |
+| `crear_router_llm` (`LLMRouterChain`) | El modelo lee la descripción de cada destino y elige; si ninguno encaja, devuelve «ninguno» | catálogo, comparación, CEP y aclaración |
+
+### 3. Comparación con el modelo real
+
+| Pregunta | Ruta correcta | Reglas | LLM |
+|---|---|---|---|
+| precio de PEC-01-0001 | comparación | ✔ comparación | ✔ comparación |
+| Busca compresores para nevera | catálogo | ✔ catálogo | ✔ catálogo |
+| ¿Cuánto cuesta el compresor PEC-01-0001? | comparación | ✘ catálogo | ✔ comparación |
+| ¿Quién vende PEC-01-0001 y en cuántos días llega? | comparación | ✘ catálogo | ✔ comparación |
+| ¿A qué ciudad corresponde el CEP 01001-000? | CEP | ✘ catálogo | ✔ CEP |
+| ¿Tienen en stock algún termostato? | catálogo | ✘ comparación | ✘ comparación |
+| Hola, buenos días | aclaración | ✘ catálogo | ✔ aclaración |
+| **Aciertos** | | **2 de 7** | **6 de 7** |
+
+Qué muestra:
+
+- **Las reglas fallan con los sinónimos.** «¿Cuánto cuesta?» pregunta por el precio sin usar la palabra «precio».
+- **Las reglas no tienen salida para lo imprevisto.** Un saludo acaba en el catálogo; el router LLM lo manda a aclaración.
+- **El LLM también se equivoca.** «¿Tienen en stock algún termostato?» es una búsqueda sin ID, pero la palabra «stock» lo llevó a comparación, igual que a las reglas.
+
+**Decisión técnica.** El chat de Pedro no usa ninguno de estos dos routers como puerta de entrada. Usa reglas para lo que se reconoce sin ambigüedad —un ID con formato fijo, un comando— y deja el resto al agente, que elige herramienta por *function calling*: es un enrutamiento dinámico más fino, porque decide con argumentos y puede encadenar varias herramientas. Un router LLM previo añadiría una llamada al modelo por turno sin aportar una decisión nueva. Las reglas se conservan donde un error no es tolerable y la respuesta debe ser inmediata y reproducible.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Siete preguntas por los dos routers, con la ruta elegida y el resultado de la cadena ejecutada | [trazas/r09_router_llm.json](trazas/r09_router_llm.json); [scripts/demostrar_r09.py](../scripts/demostrar_r09.py) | Router LLM: **ejecución real remota** (`gpt-4.1-mini`, temperatura 0). Router por reglas: local. ViaCEP simulado |
+| Router por reglas con dos rutas, cadena paralela y router LLM con tres destinos | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb), primera celda y §«R09» | Ejecución local; el router LLM usa un **doble** (`FakeListLLM`) |
+| Cada router ejecuta la cadena de su destino; el destino «ninguno» pide aclaración | [tests/test_legacy.py](../tests/test_legacy.py) | Pruebas automáticas con doble |
+
+### Pendientes y limitaciones
+
+- Son siete preguntas, y las rutas correctas se fijaron a mano. Varias se eligieron para poner a prueba las reglas, así que 2 de 7 no mide el router por reglas en uso normal.
+- La cadena paralela es pequeña: dos ramas locales, sin modelo.
+- `RouterChain` pertenece a las APIs clásicas de LangChain.
 
 ## R10 — API externa como herramienta vía function calling
 
-*Pendiente de redactar.*
+> ¿El alumno integró por lo menos una API externa como herramienta del agente vía function calling?
+
+**Respuesta corta.** Sí. El agente llama a **ViaCEP**, una API pública real de Brasil, para confirmar la ciudad y el estado de un código postal. El modelo decide llamarla, envía el argumento, recibe la respuesta de la API y la usa. Al ejecutarlo con el modelo real apareció un fallo, que se diagnosticó y se corrigió.
+
+### 1. La herramienta
+
+| Parte | Detalle |
+|---|---|
+| API | `https://viacep.com.br/ws/{cep}/json/`, pública y sin clave |
+| Para qué existe | Confirmar ciudad y UF del destino. No calcula flete |
+| Función | `consultar_cep` en [integrations.py](../src/pedro/integrations.py): valida los ocho dígitos, llama con un límite de 5 s y devuelve un estado |
+| Estados | `ok`, `no_encontrado`, `invalido` e `indisponible` (error de red) |
+| Registro en el agente | `StructuredTool` en [agent.py](../src/pedro/agent.py) |
+
+### 2. Function calling, paso a paso
+
+*Function calling* significa que el modelo no escribe la llamada en texto libre: recibe la descripción de la herramienta y devuelve un nombre y unos argumentos estructurados.
+
+1. **El modelo recibe este esquema:**
+   ```json
+   {"type": "function", "function": {"name": "consultar_cep",
+     "description": "Confirma ciudad y UF con ViaCEP; no calcula flete.",
+     "parameters": {"type": "object", "required": ["cep"],
+                    "properties": {"cep": {"type": "string"}}}}}
+   ```
+2. **El modelo decide llamarla** ante «Voy a recibir el pedido en el CEP 01001000. ¿A qué ciudad y estado corresponde?» y envía `{"cep": "01001000"}`.
+3. **La API responde:** `{"estado": "ok", "cep": "01001000", "cidade": "São Paulo", "uf": "SP", "modo": "real"}`.
+4. **El agente usa el resultado:** se publica «CEP 01001000: São Paulo/SP (ViaCEP, modo real)».
+
+### 3. Los tres casos, con el modelo real
+
+| Pregunta | Argumento que envió el modelo | Respuesta de la API | Respuesta publicada |
+|---|---|---|---|
+| CEP 01001000 | `{"cep": "01001000"}` | `ok`, São Paulo/SP | CEP 01001000: São Paulo/SP (ViaCEP, modo real) |
+| CEP 99999999 | `{"cep": "99999999"}` | `no_encontrado` | ViaCEP no tiene registrado el CEP 99999999 |
+| CEP 123 | `{"cep": "123"}` | `invalido` | Un CEP debe tener ocho dígitos |
+
+En los dos últimos el agente no inventa una ciudad: dice lo que devolvió la API.
+
+### 4. El fallo encontrado y su corrección
+
+La primera ejecución real no publicó la ciudad, aunque la API había respondido bien. La traza registra el motivo de cada rechazo, y decía `dataset ajeno`: el modelo tenía que copiar en su respuesta un identificador de escenario de 36 caracteres y lo escribía mal. En la evaluación de LangSmith apareció además `falta evidencia ViaCEP`: el modelo no construía la cita con el formato exacto.
+
+Es el mismo defecto que en las citas de política (R24): **se le pedía al modelo una tarea mecánica y se rechazaba todo si fallaba un carácter.** La corrección sigue el mismo principio:
+
+> El modelo decide qué responder; los datos los pone el sistema.
+
+`anclar_cep`, en [verification.py](../src/pedro/verification.py), rellena ciudad, estado, modo y evidencia con lo que devolvió la herramienta en ese turno. Si la API no devolvió un resultado válido para ese CEP, no rellena nada y la verificación sigue rechazando la respuesta.
+
+| | Antes | Después |
+|---|---|---|
+| CEP válido | No se publica (`dataset ajeno`, dos intentos) | Se publica al primer intento |
+| CEP inexistente o inválido | «No puedo confirmar la respuesta…» | Mensaje con el motivo que dio la API |
+
+**Decisión técnica.** Se eligió ViaCEP porque es real, gratuita y propia del dominio (una compra necesita un destino), y porque sus respuestas se pueden comprobar. Existe un modo simulado para las pruebas, siempre etiquetado: la respuesta publicada dice «modo real» o «modo simulado».
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Esquema enviado al modelo, argumentos, respuesta de la API y respuesta publicada en tres casos | [trazas/r10_viacep_llm.json](trazas/r10_viacep_llm.json); [scripts/demostrar_r10.py](../scripts/demostrar_r10.py) | **Ejecución real remota**: OpenAI `gpt-4.1-mini` y ViaCEP |
+| La misma conversación antes de la corrección, con los errores de verificación | [trazas/r10_viacep_llm_antes.json](trazas/r10_viacep_llm_antes.json) | Ejecución real remota |
+| El anclaje rellena desde la observación y no acepta un CEP sin observación válida; el flujo explica un CEP inexistente sin inventar ciudad | [tests/test_policy_cep.py](../tests/test_policy_cep.py) | Pruebas con doble |
+| Llamada directa a la función en modo simulado | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) | Ejecución con doble (simulado) |
+
+### Pendientes y limitaciones
+
+- Una sola API externa. No calcula flete ni plazo según el destino: solo confirma la ubicación.
+- La disponibilidad depende de un servicio de terceros; si no responde, el agente lo dice y no publica ciudad.
+- En los casos de CEP inexistente e inválido el modelo aún propone una respuesta que la verificación rechaza dos veces antes de llegar al mensaje correcto: funciona, pero gasta una llamada de más.
 
 ## R11 — Prompt PTCF, few-shot y chain-of-thought
 

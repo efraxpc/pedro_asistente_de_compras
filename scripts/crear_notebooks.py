@@ -192,6 +192,17 @@ print(ejecutar_ruta(router, escenario, 'precio de PEC-01-0001'))
 print(ejecutar_ruta(router, escenario, 'PEC-01-0001'))
 print(composicion_paralela(escenario).invoke({'producto':'Compresor'}))
 print(consultar_cep('01001000', simulado=True))"""),
+    ("md", "## R09 · routing dinámico y composición\nLa primera celda de este notebook ejecuta `RouterCompras` (una `RouterChain` con reglas), `ejecutar_ruta` (cadena secuencial: decidir la ruta y ejecutar su cadena) y `composicion_paralela` (`RunnableParallel`). Aquí se añade el router decidido por un modelo (`LLMRouterChain`). **Doble de prueba:** `FakeListLLM` devuelve el destino ya escrito; la comparación con el modelo real está en `docs/trazas/r09_router_llm.json`."),
+    ("code", """from langchain_core.language_models.fake import FakeListLLM
+from pedro.legacy import DESTINOS, crear_router_llm
+print('destinos:', DESTINOS)
+for pregunta, destino in (('¿Cuánto cuesta el compresor PEC-01-0001?', 'comparacion'),
+                          ('¿A qué ciudad corresponde el CEP 01001-000?', 'cep'),
+                          ('Hola, buenos días', 'DEFAULT')):
+    doble = FakeListLLM(responses=['```json\\n{"destination": "' + destino + '", "next_inputs": "x"}\\n```'])
+    salida = ejecutar_ruta(crear_router_llm(doble), escenario, pregunta)
+    print(pregunta, '->', salida['ruta'], '|', str(salida['resultado'])[:110])
+    print('   el router por reglas habría elegido:', ejecutar_ruta(router, escenario, pregunta)['ruta'])"""),
     ("md", "## R08 · agente ReAct con initialize_agent, herramientas y memoria\n**Doble de prueba:** `FakeListLLM` devuelve un guion fijo de pensamientos y acciones; no decide nada. Lo real es el agente (`initialize_agent` con `ZERO_SHOT_REACT_DESCRIPTION`), las dos herramientas ejecutadas sobre el catálogo y `ConversationBufferMemory`. La misma conversación con el modelo real, donde el LLM sí elige, está en `docs/trazas/r08_react_llm.json`."),
     ("code", """from langchain_core.language_models.fake import FakeListLLM
 from pedro.legacy import crear_react_textual

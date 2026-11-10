@@ -21,13 +21,42 @@ class RouterCompras(RouterChain):
         return {"destination": destino, "next_inputs": {"input": inputs["input"]}}
 
 
-def ejecutar_ruta(router: RouterCompras, escenario: Escenario, pregunta: str) -> dict:
-    ruta = router.invoke({"input": pregunta})["destination"]
+DESTINOS = {
+    "catalogo": "buscar o describir una pieza por nombre, SKU o ID, sin hablar de precios",
+    "comparacion": "precios, costes, ofertas, proveedores, stock o plazos de una pieza",
+    "cep": "confirmar la ciudad o el estado de un código postal brasileño (CEP)",
+}
+
+
+def crear_router_llm(llm) -> RouterChain:
+    """Router dinámico: el modelo elige el destino leyendo la descripción de cada ruta."""
+    from langchain_classic.chains.router.llm_router import LLMRouterChain, RouterOutputParser
+    from langchain_classic.chains.router.multi_prompt_prompt import MULTI_PROMPT_ROUTER_TEMPLATE
+    from langchain_core.prompts import PromptTemplate
+
+    destinos = "\n".join(f"{nombre}: {descripcion}" for nombre, descripcion in DESTINOS.items())
+    plantilla = PromptTemplate(template=MULTI_PROMPT_ROUTER_TEMPLATE.format(destinations=destinos),
+                               input_variables=["input"], output_parser=RouterOutputParser())
+    return LLMRouterChain.from_llm(llm, plantilla)
+
+
+def ejecutar_ruta(router: RouterChain, escenario: Escenario, pregunta: str, *,
+                  cep_simulado: bool = True) -> dict:
+    """Cadena secuencial: decide la ruta y ejecuta la cadena de ese destino."""
+    from .integrations import consultar_cep
+
+    ruta = router.invoke({"input": pregunta})["destination"] or "aclaracion"
     if ruta == "catalogo":
         return {"ruta": ruta, "resultado": buscar(escenario, pregunta)}
-    ids = re.findall(r"PEC-[0-9]{2}-[0-9]{4}", pregunta.upper())
-    return {"ruta": ruta, "resultado": [o.model_dump() for o in ofertas(escenario, ids[0])]
-            if ids else []}
+    if ruta == "comparacion":
+        ids = re.findall(r"PEC-[0-9]{2}-[0-9]{4}", pregunta.upper())
+        return {"ruta": ruta, "resultado": [o.model_dump() for o in ofertas(escenario, ids[0])]
+                if ids else []}
+    if ruta == "cep":
+        codigos = re.findall(r"\b\d{5}-?\d{3}\b", pregunta)
+        return {"ruta": ruta, "resultado": consultar_cep(codigos[0].replace("-", ""),
+                                                         simulado=cep_simulado) if codigos else {}}
+    return {"ruta": "aclaracion", "resultado": "¿Buscas una pieza, sus ofertas o un CEP?"}
 
 
 SUFIJO_CON_MEMORIA = """Conversación previa (úsala para entender a qué pieza se refiere el usuario):
