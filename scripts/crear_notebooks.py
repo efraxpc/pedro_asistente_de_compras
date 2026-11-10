@@ -79,6 +79,44 @@ print('herramientas ofrecidas al modelo:', llamadas[0])
 assert len(llamadas) == 2 and [e['herramienta'] for e in traza.eventos
                                if e['evento'] == 'tool_start'] == ['consultar_cep']"""),
     ("md", "Lectura: «lista piezas» y «Compara PEC-01-0001» se resuelven por regla (0 llamadas al modelo). La pregunta de CEP no tiene regla: el modelo elige `consultar_cep` entre seis herramientas y la respuesta solo se publica tras coincidir con la observación de la herramienta. Con un modelo real la elección la hace el LLM; esa ejecución remota corresponde a R26."),
+    ("md", "## R02 · planificación: una solicitud compleja dividida en pasos\nEjecución real local, sin modelo. La solicitud se divide en cinco subtareas, cada una con una salida observable: extraer restricciones, consultar ofertas, comparar, verificar y publicar."),
+    ("code", """from pedro.agent import renderizar
+from pedro.business import comparar
+from pedro.catalog import ofertas
+from pedro.dialogue import interpretar_compra
+from pedro.verification import respuesta_local, verificar
+mensaje = 'Necesito 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días'
+estado, aclaracion = interpretar_compra(escenario, None, mensaje)
+print('1 extraer  ', estado.solicitud.model_dump(exclude_none=True), '| falta:', aclaracion)
+disponibles = ofertas(escenario, estado.solicitud.producto_id)
+print('2 consultar', [o.id for o in disponibles])
+alternativas = comparar(estado.solicitud, disponibles)
+print('3 comparar ', [(a.oferta.proveedor_id, a.total_centavos, a.cumple, a.motivos)
+                      for a in alternativas])
+propuesta = respuesta_local(escenario, estado.solicitud)
+print('4 verificar', 'errores:', verificar(propuesta, escenario))
+print('5 publicar ', renderizar(propuesta).splitlines()[0])"""),
+    ("md", "## R02 · memoria aumentada: qué va a corto y a largo plazo\nEjecución real local, sin modelo. Corto plazo: el borrador de compra y la ventana de 12 mensajes viven en la sesión. Largo plazo: la preferencia vive en el usuario y aparece en una sesión nueva; otro usuario no la ve. Los episodios vectoriales se demuestran en el notebook 03."),
+    ("code", """from pedro.memory import Historial, guardar_preferencia, leer_borrador, preferencias
+sesion_a = nueva_sesion(memoria, 'alumna', escenario.dataset_id)
+local = crear_flujo(escenario, memoria)
+def cfg(usuario, sesion):
+    return {'configurable': {'user_id': usuario, 'session_id': sesion}}
+for texto in ('Necesito 2 unidades de PEC-01-0001 en 7 días', 'ahora 3 unidades'):
+    salida = local.invoke({'input': texto}, config=cfg('alumna', sesion_a)).content
+    print(texto, '->', salida.splitlines()[0])
+    print('  borrador (corto plazo):', {k: v for k, v in
+          leer_borrador(memoria, 'alumna', sesion_a)['solicitud'].items() if v is not None})
+for _ in range(7):
+    local.invoke({'input': 'lista piezas'}, config=cfg('alumna', sesion_a))
+historial = Historial(memoria, 'alumna', sesion_a)
+print('mensajes guardados:', len(historial.todos()), '| ventana que ve el agente:', len(historial.messages))
+guardar_preferencia(memoria, 'alumna', 'proveedor', 'nacional', explicita=True)
+sesion_b = nueva_sesion(memoria, 'alumna', escenario.dataset_id)
+print('sesión nueva -> borrador:', leer_borrador(memoria, 'alumna', sesion_b),
+      '| preferencia (largo plazo):', preferencias(memoria, 'alumna'),
+      '| otro usuario:', preferencias(memoria, 'otro'))"""),
+    ("md", "Lectura: al cambiar la cantidad a 3 el plazo de 7 días se conserva en el borrador. El historial guarda 18 mensajes pero el agente solo ve 12. La sesión nueva empieza sin borrador y conserva la preferencia del usuario."),
 ])
 
 guardar("02_react_herramientas.ipynb", [

@@ -11,7 +11,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 | Rúbrica | Pregunta resumida | ID previo | Ubicación | Evidencia o condición | Estado |
 |---|---|---|---|---|---|
 | R01 | Anatomía y arquitectura cognitiva; tipo y madurez agéntica | — | docs/respuestas_rubricas.md §R01; src/pedro/anatomia.py; NB01; docs/arquitectura.mmd | Anatomía leída del agente real y ejecutada en NB01; agente híbrido demostrado con doble (0 llamadas al modelo en rutas por regla, herramienta elegida en la ruta con modelo); arquitectura CoALA; madurez actual/objetivo con criterios medibles; **escala de madurez genérica (supuesto declarado) hasta disponer de la clase 1** | Local con doble |
-| R02 | Arquitectura de planificación y memoria aumentada | R3.2, R3.4 | docs/informe.md; src/pedro/memory.py; src/pedro/dialogue.py | Borrador por sesión, ventana de 12, episodios FastEmbed y descomposición por turno diseñados y probados | Local |
+| R02 | Arquitectura de planificación y memoria aumentada | R3.2, R3.4 | docs/respuestas_rubricas.md §R02; NB01; scripts/demostrar_r02.py; docs/trazas/r02_planificacion_llm.json | Cinco pasos observables y mapa de memoria ejecutados sin modelo; plan decidido por gpt-4.1-mini real en compra, CEP y cambio de cantidad; pregunta de política corregida con citas ancladas; **solicitud mixta en un turno no se publica** (limitación declarada) | Real local y remoto puntual |
 | R03 | PromptTemplate/ChatPromptTemplate reutilizables | R1.4 | src/pedro/chains.py; src/pedro/agent.py; src/pedro/prompts.py; NB01 | ChatPromptTemplate con variables del dominio ejecutado en notebook | Demostrado con doble |
 | R04 | Output parser con salida JSON estructurada | R1.3, R2.5 | src/pedro/contracts.py; src/pedro/chains.py; NB01 | Pydantic validado desde una solicitud; reparación de JSON inválido probada | Local con doble |
 | R05 | invoke, batch, stream y composición con @chain | R1.5, R1.6 | NB01 | Tres métodos y @chain demostrados con doble; **ejecución con LLM real pendiente** (requiere OPENAI_API_KEY) | Parcial |
@@ -26,7 +26,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 | R09 | Chains secuenciales/paralelas y RouterChain | R2.3 | src/pedro/chains.py; src/pedro/legacy.py; NB02 | RouterCompras con dos rutas demostradas (catálogo/comparación) y composición de cadenas | Local |
 | R10 | API externa como herramienta vía function calling | R2.4 | src/pedro/integrations.py; src/pedro/agent.py (consultar_cep) | Llamada HTTP real a ViaCEP (01001000 → São Paulo/SP) y doble simulado; expuesta como StructuredTool del agente | Real puntual |
 | R11 | Prompt PTCF con few-shot y chain-of-thought | R2.5 | src/pedro/prompts.py; src/pedro/agent.py | PTCF y cuatro ejemplos few-shot con planes de acción observables; **no se usa CoT privado por decisión documentada** — dejar la justificación explícita en el informe | Parcial |
-| R12 | Confiabilidad: parsers con errores, memoria, FAISS y callbacks | R2.5, R2.6 | src/pedro/agent.py (Traza); src/pedro/chains.py; src/pedro/policy_demo.py; src/pedro/memory.py | Reparación con caso de error probada, callback de trayectoria, FAISS en memoria y memoria de sesión; traza remota pendiente | Local |
+| R12 | Confiabilidad: parsers con errores, memoria, FAISS y callbacks | R2.5, R2.6 | src/pedro/agent.py (Traza); src/pedro/chains.py; src/pedro/policy_demo.py; src/pedro/memory.py; docs/citas_ancladas.md | Reparación con caso de error probada, callback de trayectoria, FAISS en memoria y memoria de sesión; traza remota pendiente; citas casi literales reancladas al fragmento y degradación a cita textual, con fallo real diagnosticado antes/después | Local |
 
 ## Fase 3 — Chatbot con memoria (R13–R18)
 
@@ -53,7 +53,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Rúbrica | Pregunta resumida | ID previo | Ubicación | Evidencia o condición | Estado |
 |---|---|---|---|---|---|
-| R24 | Verificación de consistencia factual y coherencia | R5.2, R5.3 | src/pedro/verification.py; src/pedro/nli.py | Verificación exacta (total, stock, presupuesto, plazo, IDs, dataset) + NLI triclase real local integradas antes de publicar | Real local |
+| R24 | Verificación de consistencia factual y coherencia | R5.2, R5.3 | src/pedro/verification.py; src/pedro/nli.py; docs/citas_ancladas.md; tests/test_citas_ancladas.py | Verificación exacta (total, stock, presupuesto, plazo, IDs, dataset) + NLI triclase real local integradas antes de publicar; anclaje de citas con cuatro estados en la traza: el modelo elige la fuente y el sistema pone el texto | Real local |
 | R25 | Agente único con ≥2 categorías de herramientas | R4.1, R5.1 | src/pedro/agent.py | SQL + RAG + API + deterministas bajo el mismo executor; ejecuciones remotas puntuales registradas en T24 | Local |
 | R26 | Executor con create_openai_tools_agent y AgentExecutor | R5.1 | src/pedro/agent.py | Constructor con las APIs exigidas; ejecuciones remotas puntuales con gpt-4.1-mini (T24); **sesión remota completa documentada pendiente** | Parcial |
 | R27 | Historial con RunnableWithMessageHistory | R5.4 | src/pedro/agent.py; tests/test_tools_flow.py | Historial multi-turno operativo que guarda solo petición y respuesta pública | Local |
@@ -75,7 +75,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Entregable | Estado |
 |---|---|
-| Código y notebooks reproducibles con dobles identificados | Local: 32/32 pruebas, 5/5 notebooks reejecutados |
+| Código y notebooks reproducibles con dobles identificados | Local: 40/40 pruebas, 5/5 notebooks reejecutados |
 | Informe técnico en PDF | Local: docs/informe.md y docs/informe.pdf; actualizar tras cerrar pendientes |
 | Registro de evaluación en LangSmith | Pendiente (ver R29) |
 | Video de demostración + enlace Drive institucional | Pendiente: requiere grabación y acceso del alumno |

@@ -36,7 +36,7 @@ Type-check edited code with `ty` when available. Run the full test suite before 
 - `query.py` — Pydantic plan → parameterized SELECT with trace (text-to-query).
 - `dialogue.py` — per-turn constraint extraction; asks only for blocking data (quantity); budget/deadline are optional filters kept in session.
 - `agent.py` — six tools wired into `create_openai_tools_agent`, one internal correction pass, `RunnableWithMessageHistory` that persists only the public reply. Also hosts the T24 partial-delivery route (`resolver_entrega_parcial`) and the `/t24` diagnostic rendering.
-- `verification.py` + `nli.py` — every agent recommendation passes exact-source verification plus a local tri-class NLI gate before being shown; cited policy rules are published only if NLI supports them.
+- `verification.py` + `nli.py` — every agent recommendation passes exact-source verification plus a local tri-class NLI gate before being shown; cited policy rules are published only if NLI supports them. Policy quotes are re-anchored to the literal text of the retrieved fragment (`anclar_citas`) before verification; if only the summary fails NLI, the flow publishes the literal quotes instead.
 - `memory.py` — full messages, 12-message window, per-session purchase drafts, per-user preferences and FastEmbed episodes (SQLite-backed).
 - `rag.py` — FAISS retrieval with metadata filtering; inspects a `manifest.json` (origin, embedding model, dimension, metric, per-file sha256) before allowing docstore deserialization.
 - `policy_demo.py` + `knowledge/politicas_demo/` — extensive fictitious policy corpus indexed in-memory with FastEmbed/FAISS; the chat uses this demo index when no authorized index exists.

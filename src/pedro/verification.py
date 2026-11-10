@@ -1,4 +1,6 @@
 """Puerta de publicación independiente del agente generador."""
+from difflib import SequenceMatcher
+
 from .business import comparar
 from .catalog import Escenario, buscar, ofertas
 from .contracts import RespuestaCompra
@@ -79,6 +81,64 @@ def verificar(respuesta: RespuestaCompra, escenario: Escenario, *, indice=None,
     elif respuesta.estado == "sin_oferta" and validas:
         errores.append("sí existe oferta válida")
     return errores
+
+
+COBERTURA_MINIMA_CITA = 0.8
+LONGITUD_MINIMA_CITA = 20
+
+
+def anclar_cita(cita: str, fragmento: str) -> tuple[str | None, float]:
+    """Localiza en el fragmento el tramo literal que corresponde a una cita casi literal.
+
+    Devuelve el tramo copiado del fragmento y la cobertura de la cita (0 a 1). El texto
+    devuelto procede siempre del fragmento, nunca de la cita.
+    """
+    cita = " ".join(cita.split())
+    if len(cita) < LONGITUD_MINIMA_CITA or not fragmento:
+        return None, 0.0
+    bloques = [b for b in SequenceMatcher(None, fragmento, cita, autojunk=False)
+               .get_matching_blocks() if b.size >= 4]
+    cobertura = sum(b.size for b in bloques) / len(cita)
+    if not bloques or cobertura < COBERTURA_MINIMA_CITA:
+        return None, cobertura
+    tramo = fragmento[bloques[0].a:bloques[-1].a + bloques[-1].size]
+    if len(tramo) > 1.5 * len(cita) + 20:
+        return None, cobertura
+    return tramo, cobertura
+
+
+def anclar_citas(respuesta: RespuestaCompra,
+                 observaciones: list[tuple[str, dict]] | None) -> list[dict]:
+    """Sustituye cada cita de política por el texto literal del fragmento recuperado.
+
+    El modelo propone qué fuente respalda la respuesta; el texto de la evidencia lo pone
+    el sistema. Una cita que no se puede anclar queda intacta y la rechazará `verificar`.
+    """
+    recuperados = {
+        fragmento.get("fuente_id"): fragmento.get("texto", "")
+        for nombre, dato in (observaciones or []) if nombre == "consultar_politicas"
+        for fragmento in dato.get("fragmentos", []) if isinstance(fragmento, dict)
+    }
+    informe = []
+    for evidencia in respuesta.evidencias:
+        if evidencia.tipo != "politica":
+            continue
+        fragmento = recuperados.get(evidencia.fuente_id, "")
+        if not fragmento:
+            estado, cobertura = "fuente_no_recuperada", 0.0
+        elif evidencia.texto and evidencia.texto in fragmento:
+            estado, cobertura = "literal", 1.0
+        elif not evidencia.texto.strip():
+            evidencia.texto, estado, cobertura = fragmento, "por_identificador", 1.0
+        else:
+            tramo, cobertura = anclar_cita(evidencia.texto, fragmento)
+            if tramo is None:
+                estado = "rechazada"
+            else:
+                evidencia.texto, estado = tramo, "reanclada"
+        informe.append({"fuente_id": evidencia.fuente_id, "estado": estado,
+                        "cobertura": round(cobertura, 3)})
+    return informe
 
 
 def respuesta_local(escenario: Escenario, solicitud) -> RespuestaCompra:

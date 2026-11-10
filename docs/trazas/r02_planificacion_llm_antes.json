@@ -1,0 +1,118 @@
+{
+  "rubrica": "R02",
+  "modo": "real remoto (OpenAI y ViaCEP); NLI real local; datos sintéticos",
+  "fecha_utc": "2026-11-10T15:59:25+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "modelo_nli": "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
+  "revision_nli": "8adb042d524ecd5c26d3e3ba0e3fbcf7e2d0864c",
+  "dataset_id": "6727bec0-e07c-492a-b55b-36362490cdac",
+  "origen_politicas": "ficticio_demo",
+  "nota": "Cada turno admite hasta dos propuestas del agente; la lista de herramientas incluye las de ambas. La trayectoria depende del modelo y puede variar.",
+  "solicitud_mixta_en_un_turno": [
+    {
+      "pregunta": "Compara 2 unidades de PEC-01-0001 con plazo de 7 días y dime qué dice la política de devoluciones sobre piezas dañadas, y confirma el CEP 01001000",
+      "herramientas": [
+        {
+          "nombre": "consultar_catalogo",
+          "argumentos": "{'pregunta': 'id=PEC-01-0001'}"
+        },
+        {
+          "nombre": "consultar_politicas",
+          "argumentos": "{'pregunta': 'política de devoluciones sobre piezas dañadas'}"
+        },
+        {
+          "nombre": "consultar_cep",
+          "argumentos": "{'cep': '01001000'}"
+        },
+        {
+          "nombre": "comparar_ofertas",
+          "argumentos": "{'producto_id': 'PEC-01-0001', 'cantidad': 2, 'plazo_max_dias': 7}"
+        },
+        {
+          "nombre": "buscar_productos",
+          "argumentos": "{'texto': 'PEC-01-0001'}"
+        },
+        {
+          "nombre": "consultar_politicas",
+          "argumentos": "{'pregunta': 'política de devoluciones sobre piezas dañadas'}"
+        },
+        {
+          "nombre": "consultar_cep",
+          "argumentos": "{'cep': '01001000'}"
+        },
+        {
+          "nombre": "consultar_catalogo",
+          "argumentos": "{'pregunta': \"id = 'PEC-01-0001'\"}"
+        },
+        {
+          "nombre": "comparar_ofertas",
+          "argumentos": "{'producto_id': 'PEC-01-0001', 'cantidad': 2, 'plazo_max_dias': 7}"
+        }
+      ],
+      "errores_de_ejecucion": [],
+      "respuesta_publicada": "No pude verificar la respuesta sobre políticas. Puedes reformular la pregunta o escribir /t24 para ver el diagnóstico de recuperación."
+    }
+  ],
+  "solicitud_repartida_en_turnos": [
+    {
+      "pregunta": "Compara 2 unidades de PEC-01-0001 con plazo de 7 días",
+      "herramientas": [
+        {
+          "nombre": "consultar_catalogo",
+          "argumentos": "{'pregunta': 'ofertas del producto PEC-01-0001'}"
+        },
+        {
+          "nombre": "comparar_ofertas",
+          "argumentos": "{'producto_id': 'PEC-01-0001', 'cantidad': 2, 'plazo_max_dias': 7}"
+        },
+        {
+          "nombre": "consultar_catalogo",
+          "argumentos": "{'pregunta': 'ofertas producto_id PEC-01-0001'}"
+        },
+        {
+          "nombre": "comparar_ofertas",
+          "argumentos": "{'producto_id': 'PEC-01-0001', 'cantidad': 2, 'plazo_max_dias': 7}"
+        }
+      ],
+      "errores_de_ejecucion": [],
+      "respuesta_publicada": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07; cumple [PEC-01-0001-BR-06]\n- Litoral Parts: R$ 819,80; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts: R$ 3.200,27; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06"
+    },
+    {
+      "pregunta": "¿Qué dice la política de devoluciones sobre piezas dañadas?",
+      "herramientas": [
+        {
+          "nombre": "consultar_politicas",
+          "argumentos": "{'pregunta': 'política de devoluciones sobre piezas dañadas'}"
+        },
+        {
+          "nombre": "consultar_politicas",
+          "argumentos": "{'pregunta': 'política de devoluciones sobre piezas dañadas'}"
+        }
+      ],
+      "errores_de_ejecucion": [],
+      "respuesta_publicada": "No pude verificar la respuesta sobre políticas. Puedes reformular la pregunta o escribir /t24 para ver el diagnóstico de recuperación."
+    },
+    {
+      "pregunta": "Confirma el CEP 01001000",
+      "herramientas": [
+        {
+          "nombre": "consultar_cep",
+          "argumentos": "{'cep': '01001000'}"
+        }
+      ],
+      "errores_de_ejecucion": [],
+      "respuesta_publicada": "CEP 01001000: São Paulo/SP (ViaCEP, modo real)."
+    },
+    {
+      "pregunta": "ahora 3 unidades",
+      "herramientas": [
+        {
+          "nombre": "comparar_ofertas",
+          "argumentos": "{'producto_id': 'PEC-01-0001', 'cantidad': 3, 'plazo_max_dias': 7}"
+        }
+      ],
+      "errores_de_ejecucion": [],
+      "respuesta_publicada": "CentroPeças: R$ 4.401,99 para 3 unidades; plazo 2 días.\n- CentroPeças: R$ 4.401,99; cumple [PEC-01-0001-BR-06]\n- Litoral Parts: R$ 1.190,00; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts: R$ 4.581,82; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06"
+    }
+  ]
+}

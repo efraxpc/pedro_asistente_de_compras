@@ -27,7 +27,7 @@ from .policy_demo import (FRAGMENTO_T24_ESPERADO, ORIGEN as ORIGEN_DEMO,
 from .prompts import EJEMPLOS_ACCIONES
 from .query import ejecutar, planear
 from .rag import consultar, diagnosticar_reescritura
-from .verification import respuesta_local, verificar
+from .verification import anclar_citas, respuesta_local, verificar
 
 
 class Traza(BaseCallbackHandler):
@@ -53,6 +53,10 @@ class Traza(BaseCallbackHandler):
             fuentes = []
         self.eventos.append({"evento": "tool_end", "resultado": resultado,
                              "fuentes": [f for f in fuentes if f]})
+
+    def registrar_citas(self, citas: list[dict]) -> None:
+        if citas:
+            self.eventos.append({"evento": "citas_ancladas", "citas": citas})
 
     def on_tool_error(self, error, **kwargs) -> None:
         self.eventos.append({"evento": "tool_error", "tipo": type(error).__name__})
@@ -161,6 +165,8 @@ def crear_agente(escenario: Escenario, memoria_db: Path, user_id: str,
          "Plan visible: usa buscar_productos para resolver ID, consultar_catalogo para ofertas y "
          "comparar_ofertas para todos los importes. Una política sin fragmento implica sin_evidencia. "
          "Para políticas usa estado=politica solo con fragmento y fuente_id del índice; "
+         "en mensaje resume la regla en una o dos frases usando solo lo que dice el fragmento, y en cada "
+         "evidencia copia la frase del fragmento que la respalda; "
          "si el metadato origen es ficticio_demo, indica que la política es ficticia. "
          "para CEP usa estado=cep con cidade, uf, modo_cep y evidencia ViaCEP. "
          "Si dos piezas coinciden, pide el ID. Ejemplos de acciones observables: "
@@ -207,6 +213,17 @@ def renderizar(respuesta: RespuestaCompra, *, indice=None) -> str:
                       f"[{a.oferta.id}]")
     lineas.append("Fuentes: " + ", ".join(e.fuente_id for e in respuesta.evidencias))
     return "\n".join(lineas)
+
+
+def renderizar_citas(respuesta: RespuestaCompra, *, indice=None) -> str:
+    """Respuesta extractiva: solo texto literal de las fuentes, sin resumen del modelo."""
+    citas = [e for e in respuesta.evidencias if e.tipo == "politica"]
+    ficticia = indice is not None and any(
+        getattr(indice.docstore.search(e.fuente_id), "metadata", {}).get("origen") == ORIGEN_DEMO
+        for e in citas)
+    prefijo = "Política ficticia de demostración. " if ficticia else ""
+    return (prefijo + "No pude verificar un resumen propio, así que cito el texto literal "
+            "de la fuente:\n" + "\n".join(f"- «{e.texto}» [{e.fuente_id}]" for e in citas))
 
 
 def es_diagnostico_t24(pregunta: str) -> bool:
@@ -397,6 +414,7 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
         contexto = "\n".join(f"Recuerdo histórico ({r['dataset_id']}): {r['texto']}" for r in recuerdos)
         pref = preferencias(memoria_db, usuario)
         errores = []
+        extractiva = None
         for intento in range(2):
             entrada = pregunta
             if solicitud_actual is not None:
@@ -422,6 +440,9 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                         observaciones.append((accion.tool, json.loads(str(resultado_tool))))
                     except (ValueError, TypeError, AttributeError):
                         pass
+                citas = anclar_citas(propuesta, observaciones)
+                if traza:
+                    traza.registrar_citas(citas)
                 errores = verificar(propuesta, escenario, indice=indice,
                                     observaciones=observaciones)
                 if solicitud_actual is not None and propuesta.estado not in (
@@ -434,6 +455,9 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                 if not errores and propuesta.estado in ("recomendacion", "politica"):
                     if clasificador is None or not verificar_nli(propuesta, clasificador):
                         errores = ["NLI sin entailment"]
+                        if propuesta.estado == "politica" and solicitud_actual is None:
+                            # Las citas ya son literales y verificadas; solo falló el resumen.
+                            extractiva = propuesta
                 if not errores:
                     texto = renderizar(propuesta, indice=indice)
                     if propuesta.estado == "politica":
@@ -454,6 +478,8 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                     return AIMessage(content=texto)
             except Exception as exc:
                 errores = [type(exc).__name__]
+        if extractiva is not None:
+            return AIMessage(content=renderizar_citas(extractiva, indice=indice))
         if indice is not None and re.search(r"\b(pol[ií]tica|entrega|devoluci[oó]n|garant[ií]a)\b",
                                             pregunta, re.I):
             return AIMessage(content="No pude verificar la respuesta sobre políticas. "
