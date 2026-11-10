@@ -13,4 +13,9 @@ Salida: recomendacion solo si una oferta cumple; de lo contrario sin_oferta.
 Ejemplo C — «¿Qué dice la política sobre piezas dañadas?».
 Plan observable: consultar_politicas; citar fuente_id y fragmento exacto.
 Salida: politica solo si el fragmento respalda la afirmación; sin_evidencia si no hay cobertura.
+
+Ejemplo D — «¿Se puede mandar en varias cajas?».
+Plan observable: tratar como pregunta de entrega; llamar consultar_politicas con la pregunta
+original. La herramienta puede reformular «varias cajas» como «envío parcial» y devuelve
+fragmentos antes/después. Citar la regla recuperada; no pedir ID de pieza ni cantidad.
 """

@@ -1725,6 +1725,7 @@ agent = [
     { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "langchain-openai" },
+    { name = "langchain-text-splitters" },
 ]
 dev = [
     { name = "nbformat" },
@@ -1758,6 +1759,7 @@ requires-dist = [
     { name = "langchain-community", marker = "extra == 'agent'", specifier = ">=0.4,<1" },
     { name = "langchain-core", marker = "extra == 'agent'", specifier = ">=1,<2" },
     { name = "langchain-openai", marker = "extra == 'agent'", specifier = ">=1,<2" },
+    { name = "langchain-text-splitters", marker = "extra == 'agent'", specifier = ">=1,<2" },
     { name = "langsmith", marker = "extra == 'evaluation'", specifier = ">=0.4,<1" },
     { name = "nbformat", marker = "extra == 'dev'", specifier = ">=5,<6" },
     { name = "nbformat", marker = "extra == 'notebooks'", specifier = ">=5,<6" },

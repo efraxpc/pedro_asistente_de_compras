@@ -7,11 +7,12 @@ from pathlib import Path
 import streamlit as st
 from dotenv import load_dotenv
 
-from pedro.agent import crear_flujo
+from pedro.agent import crear_flujo, es_diagnostico_t24
 from pedro.business import brl
 from pedro.catalog import abrir_escenario, crear_escenario, ficha, listar, ofertas
 from pedro.contracts import Solicitud
-from pedro.memory import Historial, nueva_sesion, sesiones
+from pedro.memory import MODELO_RECUERDOS, Historial, nueva_sesion, sesiones
+from pedro.policy_demo import crear_indice_demo, huella_corpus
 from pedro.verification import respuesta_local, verificar
 
 load_dotenv()
@@ -31,10 +32,20 @@ def modelo_nli():
 
 @st.cache_resource(show_spinner=False, max_entries=2)
 def indice_politicas(carpeta: str, huella_contenido: str, modelo: str):
-    from langchain_openai import OpenAIEmbeddings
     from pedro.rag import cargar_indice
-    return cargar_indice(Path(carpeta), OpenAIEmbeddings(model=modelo),
+    if modelo == MODELO_RECUERDOS:
+        from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+        embeddings = FastEmbedEmbeddings(model_name=modelo, doc_embed_type="passage")
+    else:
+        from langchain_openai import OpenAIEmbeddings
+        embeddings = OpenAIEmbeddings(model=modelo)
+    return cargar_indice(Path(carpeta), embeddings,
                          origen_confiable=True)[0]
+
+
+@st.cache_resource(show_spinner=False, max_entries=1)
+def indice_politicas_demo(huella_contenido: str):
+    return crear_indice_demo()
 
 
 def nuevo_escenario() -> None:
@@ -81,20 +92,23 @@ if escenario is None:
 if vista == "Chat":
     st.title("Chat")
     st.caption(f"Escenario {escenario.dataset_id[:8]} · datos comerciales ficticios")
+    st.caption("Las políticas ficticias de demostración se usan cuando no hay un índice autorizado disponible.")
+    st.caption("Pregunta «¿Se puede mandar en varias cajas?» para probar T24 en el flujo normal; /t24 muestra el diagnóstico controlado.")
     for mensaje in Historial(MEMORIA, USUARIO, st.session_state.sesion).todos():
         with st.chat_message("user" if mensaje.type == "human" else "assistant"):
             st.markdown(str(mensaje.content))
     if not os.getenv("OPENAI_API_KEY"):
-        st.info("Puedes listar piezas, pedir fichas y comparar ofertas aquí sin clave. Para políticas y CEP se requiere el agente.")
+        st.info("Puedes listar piezas, comparar ofertas y ejecutar /t24 sin clave. Para otras preguntas sobre políticas o CEP se requiere el agente OpenAI.")
     pregunta = st.chat_input("Pregunta por piezas, ofertas o políticas", key="pregunta")
     if pregunta:
+        prueba_t24 = es_diagnostico_t24(pregunta)
         with st.chat_message("user"):
             st.markdown(pregunta)
         with st.chat_message("assistant"):
             with st.status("Consultando y verificando", expanded=False):
                 llm = None
                 clasificador = None
-                if os.getenv("OPENAI_API_KEY"):
+                if os.getenv("OPENAI_API_KEY") and not prueba_t24:
                     from langchain_openai import ChatOpenAI
                     llm = ChatOpenAI(model=os.getenv("PEDRO_MODEL", "gpt-4.1-mini"))
                     try:
@@ -103,7 +117,12 @@ if vista == "Chat":
                         st.warning("NLI no disponible; las recomendaciones quedarán bloqueadas.")
                 indice = None
                 carpeta = Path("knowledge/politicas")
-                if (carpeta / "manifest.json").is_file() and llm is not None:
+                if prueba_t24:
+                    try:
+                        indice = indice_politicas_demo(huella_corpus())
+                    except Exception as exc:
+                        st.warning(f"Prueba T24 no disponible: {type(exc).__name__}")
+                elif (carpeta / "manifest.json").is_file() and llm is not None:
                     if os.getenv("PEDRO_TRUST_POLICY_INDEX", "false").lower() != "true":
                         st.warning("Revise la procedencia del índice antes de habilitar su docstore.")
                     else:
@@ -115,6 +134,11 @@ if vista == "Chat":
                                                        meta["embedding_model"])
                         except (ValueError, FileNotFoundError, PermissionError, KeyError) as exc:
                             st.warning(f"Índice de políticas no disponible: {type(exc).__name__}")
+                if indice is None and llm is not None:
+                    try:
+                        indice = indice_politicas_demo(huella_corpus())
+                    except Exception as exc:
+                        st.warning(f"Políticas ficticias no disponibles: {type(exc).__name__}")
                 flujo = crear_flujo(escenario, MEMORIA, llm=llm,
                                    clasificador=clasificador, indice=indice)
                 try:

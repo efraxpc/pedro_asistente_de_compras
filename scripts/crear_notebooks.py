@@ -79,7 +79,7 @@ print('después', recuperar(ruta, 'alumna', 'proveedor internacional', emb))""")
 ])
 
 guardar("04_rag_text_to_query.ipynb", [
-    ("md", "# Fase 4 · SQL y FAISS\nPlan Pydantic a SELECT parametrizado. La prueba de fallo y reescritura exige el índice autorizado, mismo corpus y top-k."),
+    ("md", "# Fase 4 · SQL y FAISS\nPlan Pydantic a SELECT parametrizado. T15 usa un corpus de políticas ficticias y FastEmbed local. T24 demuestra un fallo y una reformulación con el mismo índice y top-k; R22/R23 exigen repetirlo sobre un índice preexistente autorizado."),
     ("code", PRE),
     ("code", """from pedro.catalog import crear_escenario
 from pedro.query import planear, ejecutar
@@ -88,12 +88,59 @@ pregunta = 'ofertas PEC-01-0001'
 plan = planear(pregunta)
 print(plan.model_dump())
 print(ejecutar(escenario, pregunta, plan))"""),
+    ("md", "## T15 · embeddings, FAISS y filtros\nLas tres políticas son sintéticas y citan campos y ejemplos de la base generada con semilla 20261107. Cada sección produce varios fragmentos con ID y metadatos estables; el índice se construye en memoria y no se carga ningún pickle. Los ejemplos fechados no sustituyen los datos del escenario activo."),
+    ("code", """from collections import Counter
+from pedro.policy_demo import fragmentos_demo, crear_indice_demo, huella_corpus
+from pedro.rag import consultar
+fragmentos = fragmentos_demo()
+indice_demo = crear_indice_demo()
+print('corpus_sha256', huella_corpus())
+print('fragmentos_por_tema', dict(Counter(d.metadata['tema'] for d in fragmentos)))
+print('dimension', indice_demo.index.d, 'total', indice_demo.index.ntotal)
+preguntas = [
+    ('¿Qué fotografías se deben adjuntar para reportar una carcasa rota al abrir la caja?', 'devoluciones'),
+    ('¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?', 'garantia'),
+    ('¿Qué ocurre si el seguimiento no cambia después del despacho?', 'entrega'),
+    ('¿Cuántos meses de garantía ficticia tiene el compresor PEC-01-0001?', 'garantia'),
+    ('¿Qué oferta de PEC-01-0001 está descatalogada y sin stock?', 'entrega'),
+]
+for texto, tema in preguntas:
+    general = consultar(indice_demo, texto, k=1)[0]
+    filtrado = consultar(indice_demo, texto, k=1, filtro={'tema': tema},
+                        fetch_k=indice_demo.index.ntotal)[0]
+    print('pregunta', texto)
+    print('sin_filtro', general['fuente_id'], general['metadatos']['seccion'], round(general['score'], 3))
+    print('con_filtro', filtrado['fuente_id'], filtrado['metadatos']['seccion'], round(filtrado['score'], 3))
+    print('fragmento', filtrado['texto'][:180].replace('\\n', ' '))
+print('filtro_sin_coincidencias', consultar(indice_demo, preguntas[0][0],
+      filtro={'tema': 'inexistente'}, fetch_k=indice_demo.index.ntotal))"""),
+    ("md", "## T24 · fallo observado y reformulación\nSobre el mismo índice sintético y con top-4, una pregunta coloquial sobre varias cajas no recupera la regla de entregas parciales. La respuesta existe en `entrega.md`, sección 5. Se reformula la intención sin incluir la respuesta. El filtro por tema es una segunda prueba, separada de la comparación antes/después. La distancia solo se interpreta como L2 porque el índice informa esa métrica. Esta evidencia local no sustituye el índice preexistente exigido por R22."),
+    ("code", """from pedro.rag import diagnosticar_reescritura
+original = '¿Se puede mandar en varias cajas?'
+reescrita = '¿Cuándo admite la política de entrega un envío parcial de las piezas solicitadas?'
+esperado = 'FIC-ENT-01-S05-C01'
+informe = diagnosticar_reescritura(indice_demo, original, reescrita, esperado, k=4)
+print('métrica', informe['metrica'], 'fragmentos', informe['total_fragmentos'],
+      'top_k', informe['k'], 'fetch_k', informe['fetch_k'])
+print('fuente_esperada', esperado, informe['evidencia_esperada']['metadatos'])
+for etapa in ('antes', 'despues'):
+    print(etapa, 'posición', informe['posicion_' + etapa])
+    for fragmento in informe[etapa]:
+        print(fragmento['posicion'], fragmento['fuente_id'],
+              fragmento['metadatos']['fuente'], fragmento['metadatos']['seccion'],
+              round(fragmento['score'], 3))
+print('correccion_observada', informe['correccion_observada'])
+con_filtro = consultar(indice_demo, original, k=4, filtro={'tema': 'entrega'},
+                      fetch_k=indice_demo.index.ntotal)
+print('filtro_entrega', [(x['fuente_id'], round(x['score'], 3)) for x in con_filtro])
+assert informe['correccion_observada']
+assert any(x['fuente_id'] == esperado for x in con_filtro)"""),
     ("code", """from pedro.rag import inspeccionar_indice
 carpeta = Path('knowledge/politicas')
 if (carpeta / 'manifest.json').is_file():
     print(inspeccionar_indice(carpeta))
 else:
-    print('PENDIENTE: índice FAISS autorizado; sin prueba antes/después')"""),
+    print('PENDIENTE R22/R23: repetir la prueba T24 en un índice FAISS preexistente autorizado')"""),
 ])
 
 guardar("05_integrador_evaluacion.ipynb", [

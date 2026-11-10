@@ -39,6 +39,18 @@ def verificar(respuesta: RespuestaCompra, escenario: Escenario, *, indice=None,
             doc = indice.docstore.search(evidencia.fuente_id)
             if not hasattr(doc, "page_content") or not evidencia.texto or evidencia.texto not in doc.page_content:
                 errores.append(f"fragmento no corresponde: {evidencia.fuente_id}")
+        if observaciones is not None:
+            recuperados = {
+                fragmento.get("fuente_id"): fragmento.get("texto", "")
+                for nombre, dato in observaciones if nombre == "consultar_politicas"
+                for fragmento in dato.get("fragmentos", [])
+                if isinstance(fragmento, dict)
+            }
+            if not recuperados:
+                errores.append("política sin recuperación observada")
+            for evidencia in fuentes:
+                if evidencia.texto not in recuperados.get(evidencia.fuente_id, ""):
+                    errores.append(f"fuente no recuperada: {evidencia.fuente_id}")
         return errores
     if respuesta.solicitud.faltantes() or not respuesta.producto_id:
         return ["solicitud incompleta"]

@@ -26,7 +26,8 @@ def cargar_indice(carpeta: Path, embeddings, *, origen_confiable: bool):
     meta = inspeccionar_indice(carpeta)
     if not origen_confiable:
         raise PermissionError("se requiere confianza explícita para deserializar index.pkl")
-    if getattr(embeddings, "model", None) != meta["embedding_model"]:
+    modelo = getattr(embeddings, "model_name", None) or getattr(embeddings, "model", None)
+    if modelo != meta["embedding_model"]:
         raise ValueError("modelo de embeddings distinto")
     from langchain_community.vectorstores import FAISS
     import faiss
@@ -46,16 +47,74 @@ def cargar_indice(carpeta: Path, embeddings, *, origen_confiable: bool):
     return indice, meta
 
 
-def consultar(indice, pregunta: str, k: int = 4) -> list[dict]:
+def consultar(indice, pregunta: str, k: int = 4, *,
+             filtro: dict[str, str] | None = None, fetch_k: int = 20) -> list[dict]:
+    """Recupera fragmentos y sus fuentes; el filtro se aplica a metadatos."""
     if indice is None:
         return []
     resultado = []
-    for i, (doc, score) in enumerate(indice.similarity_search_with_score(pregunta, k=k), 1):
+    encontrados = indice.similarity_search_with_score(
+        pregunta, k=k, filter=filtro, fetch_k=max(fetch_k, k))
+    for i, (doc, score) in enumerate(encontrados, 1):
         doc_id = getattr(doc, "id", None) or doc.metadata.get("id")
         if not doc_id:
             coincidencias = [x for x in indice.index_to_docstore_id.values()
                              if (candidato := indice.docstore.search(x)) == doc]
             doc_id = coincidencias[0] if len(coincidencias) == 1 else None
         resultado.append({"posicion": i, "fuente_id": doc_id, "texto": doc.page_content,
-                          "metadatos": doc.metadata, "score": score})
+                          "metadatos": doc.metadata, "score": float(score)})
     return resultado
+
+
+def diagnosticar_reescritura(indice, pregunta_original: str, pregunta_reescrita: str,
+                             fuente_esperada: str, *, k: int = 4,
+                             filtro: dict[str, str] | None = None,
+                             fetch_k: int = 20) -> dict:
+    """Compara dos consultas sobre el mismo índice, filtro y top-k."""
+    import faiss
+    from langchain_core.documents import Document
+
+    if indice is None or k < 1 or fetch_k < 1:
+        raise ValueError("índice y límites de búsqueda válidos requeridos")
+    if not pregunta_original.strip() or not pregunta_reescrita.strip():
+        raise ValueError("ambas preguntas son obligatorias")
+    if pregunta_original == pregunta_reescrita:
+        raise ValueError("la pregunta reescrita debe ser diferente")
+    if fuente_esperada not in indice.index_to_docstore_id.values():
+        raise ValueError("el fragmento esperado no existe en el índice")
+    documento = indice.docstore.search(fuente_esperada)
+    if not isinstance(documento, Document):
+        raise ValueError("el fragmento esperado no existe en el docstore")
+    tipos = {faiss.METRIC_L2: ("L2", "distancia_l2"),
+             faiss.METRIC_INNER_PRODUCT: ("IP", "producto_interno")}
+    if indice.index.metric_type not in tipos:
+        raise ValueError("métrica FAISS no admitida para el diagnóstico")
+    metrica, tipo_score = tipos[indice.index.metric_type]
+    fetch_k = max(fetch_k, k)
+    antes = consultar(indice, pregunta_original, k=k, filtro=filtro, fetch_k=fetch_k)
+    despues = consultar(indice, pregunta_reescrita, k=k, filtro=filtro, fetch_k=fetch_k)
+
+    def posicion(resultados: list[dict]) -> int | None:
+        return next((r["posicion"] for r in resultados
+                     if r["fuente_id"] == fuente_esperada), None)
+
+    posicion_antes = posicion(antes)
+    posicion_despues = posicion(despues)
+    return {
+        "pregunta_original": pregunta_original,
+        "pregunta_reescrita": pregunta_reescrita,
+        "fuente_esperada": fuente_esperada,
+        "evidencia_esperada": {"texto": documento.page_content,
+                               "metadatos": documento.metadata},
+        "metrica": metrica,
+        "tipo_score": tipo_score,
+        "k": k,
+        "fetch_k": fetch_k,
+        "filtro": filtro,
+        "total_fragmentos": indice.index.ntotal,
+        "antes": antes,
+        "despues": despues,
+        "posicion_antes": posicion_antes,
+        "posicion_despues": posicion_despues,
+        "correccion_observada": posicion_antes is None and posicion_despues is not None,
+    }
