@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** R01–R05 redactadas y con ejecución guardada. R06–R29 pendientes de redactar, en orden.
+**Avance de redacción:** R01–R06 redactadas y con ejecución guardada (Fase 1 completa). R07–R29 pendientes de redactar, en orden.
 
 ---
 
@@ -372,7 +372,69 @@ Se pasó el laboratorio de salidas rotas de R04 por esta versión y por la decla
 
 ## R06 — Composición declarativa con LCEL y justificación
 
-*Pendiente de redactar.*
+> ¿El alumno implementó la composición declarativa de la chain con LCEL y justificó la elección entre composición imperativa y declarativa?
+
+**Respuesta corta.** Sí. Hay cuatro cadenas LCEL y la misma cadena con reparación existe en los dos estilos. La elección no se justifica con opiniones: se midió qué deja ver cada estilo. **LCEL es el patrón principal para las cadenas; el código imperativo se reserva para decidir el camino de cada turno.**
+
+### 1. Las cadenas LCEL
+
+| Cadena | Composición | Qué muestra de LCEL |
+|---|---|---|
+| `crear_lcel` | `plantilla \| modelo \| parser \| regla` | El operador `\|` como secuencia |
+| `crear_lcel_robusta` | `assign(salida=…) \| analizar.with_fallbacks([reparar]) \| regla` | Tratamiento de errores declarativo |
+| `crear_lcel_parcial` | `plantilla \| modelo \| JsonOutputParser` | Transmisión de estados parciales |
+| `composicion_paralela` | `RunnableParallel({…}) \| resumen` | Ramas independientes en paralelo |
+
+Todas están en [chains.py](../src/pedro/chains.py).
+
+### 2. La misma cadena en los dos estilos
+
+`crear_lcel_robusta` (declarativa) y `crear_chain_robusta` (imperativa) hacen lo mismo: extraer, validar y reparar una vez si hace falta. Dan **el mismo resultado** en los ocho casos del laboratorio, también con el modelo real. Lo que cambia es lo que se puede observar desde fuera. Esto se midió ejecutando las dos:
+
+| Medida | Declarativa (LCEL) | Imperativa (`@chain`) |
+|---|---|---|
+| Pasos que registra la traza, sin fallo | 10 | 5 |
+| Pasos que registra la traza, con reparación | 16 | 9 |
+| El fallo del parser queda anotado en la traza | Sí | No |
+| La validación de dominio queda anotada | Sí | No |
+| El grafo muestra la reparación | Sí (`WithFallbacks`) | No |
+| Resultado tras reparar | Correcto | Correcto |
+
+La razón: en `@chain`, el `try/except` y la llamada a la regla de dominio son Python normal, y LangChain no puede verlos. En LCEL cada paso es un objeto con nombre.
+
+### 3. Comparación
+
+| Criterio | Declarativa (LCEL) | Imperativa (`@chain`) |
+|---|---|---|
+| Observabilidad | Cada paso y cada error aparecen en la traza | Solo se ven los componentes que se invocan dentro |
+| Lectura | Se lee como una tubería; el error es una rama declarada | Se lee de arriba abajo, como cualquier función |
+| Depuración | Por la traza | Con un punto de parada |
+| Control de flujo | Secuencia, paralelo y fallback | Cualquiera: bucles, varias ramas, salidas anticipadas |
+| Cambiar «una reparación» por «hasta tres» | Hay que reestructurar la cadena | Se cambia el `try` por un bucle |
+| `invoke`, `batch`, `stream` | Los tres | Los tres |
+
+### 4. Decisión
+
+- **Patrón principal: LCEL**, para todo lo que sea una tubería: plantilla, modelo, parser, reparación y ramas paralelas. En este proyecto la trazabilidad importa más que la flexibilidad: la rúbrica y el dominio piden poder demostrar qué pasó en cada paso, y con LCEL un error o una reparación quedan registrados sin escribir código adicional.
+- **Imperativo solo para orquestar el turno.** La función `turno` de `crear_flujo`, en [agent.py](../src/pedro/agent.py), es código imperativo envuelto como `Runnable`. Tiene salidas anticipadas (comando de diagnóstico, ruta directa, aclaración), un bucle de dos propuestas y condiciones que dependen del resultado anterior. Expresar eso con LCEL lo haría más difícil de leer. Lo que LangChain no ve ahí se anota a mano en la traza (`Traza`), como el anclaje de citas; las llamadas a herramientas las registra el callback.
+
+En una frase: **declarativo para lo que es una tubería, imperativo para lo que es una decisión.**
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Medición de traza, error y grafo en los dos estilos, y diagrama Mermaid de la cadena LCEL | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R06»; `comparar_estilos` en [laboratorio.py](../src/pedro/laboratorio.py) | Ejecución real local con **dobles** (sin modelo) |
+| Los dos estilos dan el mismo resultado en el laboratorio, con el modelo real reparando | [trazas/fase1_chain_llm.json](trazas/fase1_chain_llm.json), `laboratorio_con_chain_imperativa` | Real remoto para el reparador; generador **doble** |
+| Cadena LCEL con el modelo real: `invoke`, `batch` y `stream` | Mismo archivo | **Ejecución real remota** |
+| Los estilos coinciden en resultado y difieren en lo que ve la traza | [tests/test_salida_estructurada.py](../tests/test_salida_estructurada.py) | Pruebas automáticas |
+| Composición paralela ejecutada | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) | Ejecución real local |
+
+### Pendientes y limitaciones
+
+- Los recuentos de pasos corresponden a esta cadena y a la versión instalada de LangChain; pueden cambiar con otra versión.
+- No se midió rendimiento: los dos estilos llaman al modelo las mismas veces.
+- La función `turno` usa `RunnableLambda`, no el decorador `@chain`; el decorador se demuestra en las cadenas de extracción.
 
 ---
 

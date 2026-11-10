@@ -9,7 +9,7 @@
 | Uso en Pedro | El integrador necesita un solo agente y una puerta determinista | Se estudia como alternativa; no se ejecutó aquí |
 | Límite de evidencia | ReAct clásico se probó con FakeListLLM; agente final remoto pendiente | Sin experimento ejecutado |
 
-La composición secuencial encadena parser, modelo y validación; RunnableParallel consulta ramas independientes. RouterCompras envía consultas reales a catálogo o comparación. Estos ejemplos están en notebooks 01 y 02. No se solicita ni conserva razonamiento privado; los planes del prompt describen llamadas observables.
+La comparación medida entre composición declarativa (LCEL) e imperativa (@chain), con la decisión del proyecto, está en respuestas_rubricas.md §R06. La composición secuencial encadena parser, modelo y validación; RunnableParallel consulta ramas independientes. RouterCompras envía consultas reales a catálogo o comparación. Estos ejemplos están en notebooks 01 y 02. No se solicita ni conserva razonamiento privado; los planes del prompt describen llamadas observables.
 
 ## Memoria
 
