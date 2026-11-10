@@ -40,6 +40,20 @@ Los tres métodos de Runnable se ejecutaron con gpt-4.1-mini. Con invoke, una so
 
 Hay cuatro cadenas LCEL: una secuencia simple, una con reparación mediante with_fallbacks, una que transmite JSON parcial y una con ramas paralelas. La cadena con reparación existe además en versión imperativa con @chain. Las dos dan el mismo resultado en los ocho casos del laboratorio; lo que cambia es lo observable. En la versión declarativa la traza registra 16 pasos cuando hay reparación, incluido el error del parser y la validación de dominio, y el grafo muestra el fallback. En la imperativa registra 9 y no ve ni el error ni la validación, porque el try/except y la regla son Python normal. Por eso LCEL es el patrón principal para las tuberías. El código imperativo se reserva para orquestar el turno en crear_flujo, que tiene salidas anticipadas y un bucle de dos propuestas, y donde lo que LangChain no ve, como el anclaje de citas, se anota a mano en la traza.
 
+## Fase 2: agente con herramientas, ReAct y confiabilidad (R07–R12)
+
+Orquestadores (R07). Se comparan LangChain, LangGraph, LlamaIndex, AutoGen, Semantic Kernel y Langflow por autonomía, abstracción y modularidad. LangChain se mantiene porque Pedro es un solo agente que necesita muchas piezas distintas bajo control estricto: el proyecto usa 13 tipos de componentes suyos, según un inventario leído de los imports. La comparación es conceptual; solo LangChain se ejecutó. Tres de las APIs que pide la rúbrica están marcadas como obsoletas y la migración natural sería a LangGraph.
+
+ReAct (R08). Un agente construido con initialize_agent y ZERO_SHOT_REACT_DESCRIPTION, con dos herramientas y ConversationBufferMemory, se ejecutó con gpt-4.1-mini. Con el historial dentro del prompt resolvió una pregunta de seguimiento (CentroPeças, 2 días); con el prompt zero-shot original, que no lee la memoria, pidió de nuevo el identificador de la pieza.
+
+Routing (R09). Dos routers sobre RouterChain, uno por reglas y otro decidido por el modelo, se compararon en siete preguntas: reglas 2 de 7, LLM 6 de 7. Las preguntas se eligieron para poner a prueba las reglas.
+
+API externa (R10). El agente llama a ViaCEP real por function calling. Se guardaron el esquema enviado al modelo, los argumentos, la respuesta de la API y la respuesta publicada en tres casos: válido, inexistente e inválido. La primera ejecución no publicó la ciudad porque el modelo copiaba mal un identificador; la respuesta se rellena ahora con lo que devolvió la herramienta.
+
+Prompts (R11). El prompt del agente sigue PTCF con cuatro ejemplos. En diez solicitudes difíciles, la extracción acertó 6 sin ejemplos, 10 con few-shot y 10 con few-shot y chain-of-thought; el razonamiento queda escrito antes de los datos.
+
+Confiabilidad (R12). Parsers con reparación, memoria que guarda solo lo publicado, búsqueda FAISS sobre el índice guardado y un callback que registra cada herramienta y cada verificación. Ese registro permitió encontrar y corregir dos fallos reales. El detalle de cada rúbrica está en docs/respuestas_rubricas.md.
+
 ## Enseñanza y comparación
 
 Los notebooks 01–05 cubren extracción LCEL y @chain; ReAct clásico y RouterChain; memoria CoALA; SQL con una demostración FAISS sintética para T15; y el integrador. El ReAct textual, ConversationBufferMemory y FakeListLLM son demostraciones didácticas. El integrador usa herramientas ligadas al escenario y una puerta de publicación. AutoGen, Mem0 y Letta se comparan conceptualmente en docs/comparaciones.md; no se atribuyen pruebas ejecutadas a esas bibliotecas. Los ejemplos few-shot del prompt describen acciones observables y no incluyen casos de evaluación.

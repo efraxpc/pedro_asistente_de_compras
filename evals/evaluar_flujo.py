@@ -89,7 +89,9 @@ def main() -> None:
     from langchain_openai import ChatOpenAI
     casos = referencias()
     escenario = crear_escenario(Path("storage/evals/catalogos"))
-    memoria = Path("storage/evals/memoria.sqlite3")
+    # Memoria nueva en cada experimento: si se reutiliza, los episodios de corridas anteriores
+    # entran al contexto y cambian la trayectoria del agente.
+    memoria = Path(f"storage/evals/memoria-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}.sqlite3")
     modelo = opciones.modelo or os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
     llm = ChatOpenAI(model=modelo)
     llm.invoke("ping")  # falla aquí, y no en cada caso, si el modelo no está disponible
@@ -152,6 +154,7 @@ def main() -> None:
     registro = json.dumps({
         "fecha_utc": ahora.isoformat(), "modo": "real", "modelo_llm": modelo,
         "etiqueta": opciones.etiqueta,
+        "memoria": "nueva para este experimento",
         "experimento_langsmith": experimento.experiment_name,
         "dataset_langsmith": nombre_dataset,
         "dataset_id": escenario.dataset_id, "resumen": resumen,

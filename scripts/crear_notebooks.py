@@ -222,6 +222,27 @@ for pregunta in ('Busca el compresor con SKU NEVE-COMP-0001 y dime su ID.',
 print('memoria de buffer:')
 print(buffer.load_memory_variables({})['chat_history'])"""),
     ("md", "La llamada real a ViaCEP se registra por separado en docs/evidencias.md."),
+    ("md", "## R12 · bitácora de un turno con error y recuperación\nLos cuatro componentes de confiabilidad en un solo turno del flujo final. **Doble de prueba:** el modelo es un guion; ViaCEP está simulado. La primera propuesta del guion es texto que no es JSON (error del parser); la segunda es válida. El callback `Traza` registra cada llamada a herramienta y cada verificación, y `RunnableWithMessageHistory` guarda en memoria solo la pregunta y la respuesta publicada."),
+    ("code", """import json
+from langchain_core.messages import AIMessage
+from langchain_core.runnables import RunnableLambda
+from pedro.agent import Traza, crear_flujo
+from pedro.memory import Historial, nueva_sesion
+memoria = Path('storage/notebooks/r12.sqlite3')
+sesion = nueva_sesion(memoria, 'alumna', escenario.dataset_id)
+llamar = AIMessage(content='', tool_calls=[{'name': 'consultar_cep', 'args': {'cep': '01001000'}, 'id': 'c1'}])
+valida = json.dumps({'estado': 'cep', 'dataset_id': escenario.dataset_id, 'solicitud': {'cep': '01001000'}})
+guion = iter([llamar, AIMessage(content='La ciudad es São Paulo, creo.'), llamar, AIMessage(content=valida)])
+traza = Traza()
+flujo = crear_flujo(escenario, memoria, llm=RunnableLambda(lambda prompt, **kw: next(guion)),
+                    cep_simulado=True, traza=traza)
+respuesta = flujo.invoke({'input': '¿A qué ciudad corresponde el CEP 01001000?'},
+                         config={'configurable': {'user_id': 'alumna', 'session_id': sesion}})
+for evento in traza.eventos:
+    print({k: (str(v)[:70] if isinstance(v, str) else v) for k, v in evento.items()})
+print('publicado:', respuesta.content)
+print('memoria:', [(m.type, m.content[:60]) for m in Historial(memoria, 'alumna', sesion).todos()])"""),
+    ("md", "Lectura: la bitácora muestra la herramienta llamada dos veces, el primer intento rechazado con `OutputParserException`, el segundo aceptado y el CEP rellenado desde la observación. La propuesta rechazada no llega a la memoria: solo se guardan la pregunta y la respuesta publicada."),
     ("md", "## R07 · qué aporta el orquestador: inventario de piezas de LangChain en Pedro\nSin modelo. El inventario se obtiene leyendo los imports del código (`pedro.anatomia.inventario_langchain`), no se escribe a mano. Sirve para argumentar la elección con hechos: cada fila es una pieza que el proyecto no tuvo que construir. La comparación con otros orquestadores está en `docs/respuestas_rubricas.md` §R07 y es conceptual: aquí solo se ejecutó LangChain."),
     ("code", """from pedro.anatomia import inventario_langchain
 inventario = inventario_langchain()

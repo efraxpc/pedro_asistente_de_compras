@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** redactadas y con ejecución guardada R01–R11, R22 y R23. Pendientes de redactar: R12–R21 y R24–R29.
+**Avance de redacción:** redactadas y con ejecución guardada R01–R12 (Fases 1 y 2 completas), R22 y R23. Pendientes de redactar: R13–R21 y R24–R29.
 
 ---
 
@@ -765,7 +765,71 @@ En el agente, el «pensamiento paso a paso» son sus **llamadas a herramientas**
 
 ## R12 — Componentes de confiabilidad
 
-*Pendiente de redactar.*
+> ¿El alumno implementó los componentes de confiabilidad del agente (output parsers con tratamiento de errores, memoria configurada en la chain, herramienta de búsqueda semántica con FAISS y callbacks de logging), justificando las decisiones técnicas?
+
+**Respuesta corta.** Sí, los cuatro. Cada uno tiene un caso normal y un caso de error ejecutados, y los callbacks dejaron la pista que permitió encontrar y corregir dos fallos reales del agente.
+
+### 1. Los cuatro componentes
+
+| Componente | Qué hay | Caso normal | Caso de error y recuperación |
+|---|---|---|---|
+| **Output parser con errores** | `PydanticOutputParser` en la extracción y en el agente; reparación con una segunda cadena; una corrección interna en el agente | JSON válido → objeto validado | JSON truncado, tipo incorrecto o texto libre → se repara (R04). En el agente, una propuesta que no se puede leer se descarta y se pide otra |
+| **Memoria en la cadena** | `RunnableWithMessageHistory` con historial en SQLite y ventana de 12 mensajes; `ConversationBufferMemory` en el agente ReAct | El turno siguiente recibe el historial | Una propuesta rechazada **no** entra en la memoria: solo se guardan la pregunta y la respuesta publicada |
+| **Búsqueda semántica con FAISS** | Herramienta `consultar_politicas` sobre el índice guardado, con filtro por metadatos | Devuelve fragmentos con fuente y distancia | Una consulta que no recupera la regla se reformula (R23); un índice alterado no se carga (R22) |
+| **Callbacks de logging** | `Traza`, un `BaseCallbackHandler` que registra cada herramienta, sus argumentos, su resultado y cada verificación | Bitácora ordenada del turno | Los errores de herramienta y de cadena quedan anotados; las claves de API se ocultan antes de guardar |
+
+### 2. Un turno con error y recuperación
+
+La bitácora de un turno real del flujo, con un modelo doble que falla a propósito en su primera propuesta:
+
+```text
+tool_start    consultar_cep  {'cep': '01001000'}
+tool_end      {"estado": "ok", "cep": "01001000", ...}
+verificacion  intento 1  errores: ['OutputParserException']     ← la respuesta no era JSON
+tool_start    consultar_cep  {'cep': '01001000'}
+tool_end      {"estado": "ok", "cep": "01001000", ...}
+cep_anclado   anclada
+verificacion  intento 2  estado: cep  errores: []               ← aceptada
+publicado:    CEP 01001000: Cidade Simulada/SP (ViaCEP, modo simulado).
+memoria:      [pregunta del usuario, respuesta publicada]
+```
+
+Se ven los cuatro componentes: el parser detecta el error, el flujo pide una segunda propuesta, el callback lo registra todo y la memoria guarda solo lo publicado.
+
+### 3. Lo que los callbacks permitieron encontrar
+
+Al principio la traza solo registraba las herramientas. Cuando una respuesta no se publicaba, no se sabía por qué. Se añadió el registro de **cada verificación con sus errores**, y eso sacó a la luz dos defectos con el modelo real:
+
+| Síntoma | Lo que mostró la traza | Corrección |
+|---|---|---|
+| Las preguntas de política no se publicaban | `fragmento no corresponde`: el modelo citaba el texto casi literal | Anclaje de citas al texto de la fuente (R24) |
+| Las respuestas de CEP no se publicaban | `dataset ajeno` y `falta evidencia ViaCEP`: el modelo copiaba mal un identificador | Anclaje del CEP a la respuesta de la API (R10) |
+
+Los dos tenían la misma causa: se pedía al modelo copiar datos que el sistema ya tenía. La regla que quedó es: **el modelo decide qué responder; los datos los pone el sistema.**
+
+### 4. Decisiones técnicas
+
+- **Una sola reparación o corrección.** Limita el coste y evita bucles; si el segundo intento falla, no se publica.
+- **Reparar la forma, nunca el fondo.** El parser arregla JSON y tipos. Los importes, el ganador y las fuentes no se «arreglan»: se recalculan y se comparan.
+- **Memoria solo de lo publicado.** Si las propuestas rechazadas entraran al historial, el modelo las leería en el turno siguiente como si fueran ciertas.
+- **Callback propio en vez de solo LangSmith.** `Traza` funciona sin credenciales ni red y se puede comprobar en las pruebas. LangSmith se usa además para la evaluación (R29).
+- **FAISS con embeddings locales.** La recuperación no depende de un servicio externo.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Bitácora de un turno con error del parser, segunda propuesta, anclaje y memoria | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) §«R12» | Ejecución del flujo real con **doble** (modelo guionado, ViaCEP simulado) |
+| Reparación de salidas rotas con el modelo real | [trazas/fase1_chain_llm.json](trazas/fase1_chain_llm.json) | Real remoto para el reparador |
+| Errores de verificación registrados y corregidos con el modelo real | [trazas/r10_viacep_llm_antes.json](trazas/r10_viacep_llm_antes.json) y [trazas/r10_viacep_llm.json](trazas/r10_viacep_llm.json); [citas_ancladas.md](citas_ancladas.md) | Ejecución real remota, antes y después |
+| Herramienta FAISS sobre el índice guardado | [trazas/r22_indice_existente.json](trazas/r22_indice_existente.json) | Ejecución real remota |
+| La traza oculta claves, registra fuentes y cada verificación; el historial guarda solo lo público | [tests/test_tools_flow.py](../tests/test_tools_flow.py); [tests/test_salida_estructurada.py](../tests/test_salida_estructurada.py); [tests/test_citas_ancladas.py](../tests/test_citas_ancladas.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- `Traza` vive en memoria durante el turno; no se guarda en un archivo de log permanente salvo en los scripts de evidencia.
+- No hay reintentos ante fallos de red del modelo: un error de la API cuenta como propuesta fallida.
+- La ventana de 12 mensajes no resume lo que queda fuera.
 
 ---
 
