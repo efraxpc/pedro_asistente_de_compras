@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** redactadas y con ejecución guardada R01–R12 (Fases 1 y 2 completas), R22 y R23. Pendientes de redactar: R13–R21 y R24–R29.
+**Avance de redacción:** redactadas y con ejecución guardada R01–R12 (Fases 1 y 2 completas), R22, R23 y R29. Pendientes de redactar: R13–R21 y R24–R28.
 
 ---
 
@@ -1005,4 +1005,90 @@ En el agente, la herramienta `consultar_politicas` aplica esta reformulación a 
 
 ## R29 — Evaluación de calidad y trayectoria con LangSmith
 
-*Pendiente de redactar.*
+> ¿El alumno evaluó la calidad de las respuestas y la trayectoria de llamadas de herramientas del agente con LangSmith, justificando las conclusiones a partir de las métricas obtenidas?
+
+**Respuesta corta.** Sí. Se ejecutaron cinco experimentos en LangSmith sobre 30 casos, con seis métricas de calidad y de trayectoria. Con `gpt-4.1-mini` el agente acertó el ganador y el importe en **14 de 14** recomendaciones. En ningún experimento se publicó una recomendación equivocada. La evaluación además encontró un defecto del agente y un error en la propia forma de evaluar; los dos se corrigieron y se volvieron a medir.
+
+### 1. Qué se evalúa
+
+El agente evaluado es el mismo flujo que usa la interfaz (`crear_flujo`), con el modelo real, el verificador y el NLI. El conjunto de casos está en LangSmith como `pedro-infnet-casos-derivados-7610315f`: 30 casos sintéticos con la respuesta y las herramientas esperadas.
+
+| Grupo | Casos | Qué se espera |
+|---|---|---|
+| Recomendación | 14 | Proveedor ganador e importe exactos |
+| Sin oferta | 5 | Decir que ninguna oferta cumple |
+| Aclaración | 4 | Preguntar el dato que falta |
+| Catálogo | 3 | Listar piezas |
+| CEP | 2 | Ciudad y estado de ViaCEP |
+| Política sin índice | 2 | Decir que no hay evidencia |
+
+| Métrica | Tipo | Qué mide |
+|---|---|---|
+| `ganador` | Calidad | La respuesta nombra la oferta ganadora correcta |
+| `importe` | Calidad | La respuesta da el total correcto |
+| `contenido` | Calidad | La respuesta contiene el texto esperado (casos sin recomendación) |
+| `trayectoria` | Trayectoria | Se llamó a **todas** las herramientas esperadas |
+| `herramienta_decisiva` | Trayectoria | Se llamó a la herramienta que produce la respuesta |
+| `primera_propuesta` | Trayectoria | La primera propuesta del agente pasó la verificación |
+
+### 2. Resultados
+
+Comparación principal, los dos modelos en las mismas condiciones (memoria nueva, mismo código):
+
+| Métrica | `gpt-4.1-mini` | `gpt-4o-mini` |
+|---|---|---|
+| Ganador correcto | **14 de 14** | 13 de 14 |
+| Importe correcto | **14 de 14** | 13 de 14 |
+| Contenido | **16 de 16** | 15 de 16 |
+| Herramienta decisiva | 23 de 23 | 23 de 23 |
+| Primera propuesta aceptada | **22 de 23** | 19 de 23 |
+| Trayectoria completa | 24 de 30 | 22 de 30 |
+| Recomendaciones erróneas publicadas | 0 | 0 |
+
+Los cinco experimentos:
+
+| Experimento en LangSmith | Modelo | Condición | Ganador | Contenido | Trayectoria | 1.ª propuesta |
+|---|---|---|---|---|---|---|
+| `…gpt-4.1-mini-a03a26e0` | 4.1-mini | Antes de corregir el CEP | 14/14 | 15/16 | 25/30 | 21/23 |
+| `…gpt-4o-mini-70ed80d8` | 4o-mini | Antes de corregir; memoria acumulada | 10/14 | 14/16 | 15/30 | 17/23 |
+| `…gpt-4.1-mini-tras-correccion-91fc58c3` | 4.1-mini | CEP corregido; memoria acumulada (73 episodios) | 14/14 | 16/16 | 15/30 | 22/23 |
+| `…gpt-4.1-mini-memoria-limpia-0c208db1` | 4.1-mini | CEP corregido; memoria nueva | 14/14 | 16/16 | 24/30 | 22/23 |
+| `…gpt-4o-mini-memoria-limpia-035aa38a` | 4o-mini | CEP corregido; memoria nueva | 13/14 | 15/16 | 22/30 | 19/23 |
+
+### 3. Conclusiones, cada una con su métrica
+
+**1. Se mantiene `gpt-4.1-mini`.** Gana o empata en todas las métricas: 14/14 frente a 13/14 en ganador e importe, y 22/23 frente a 19/23 en propuestas aceptadas a la primera. `gpt-4o-mini` falló cuatro veces el formato JSON (`OutputParserException`) y eligió mal un ganador.
+
+**2. La verificación cumple su función.** Cuando `gpt-4o-mini` propuso un ganador equivocado, la verificación lo rechazó dos veces y el agente respondió «no puedo confirmar». Recomendaciones erróneas publicadas: **0 en los cinco experimentos**. Un modelo peor produce menos respuestas, no respuestas falsas.
+
+**3. La evaluación encontró un defecto del agente.** En el primer experimento falló un caso de CEP. La traza de verificación dio el motivo (`dataset ajeno`, `falta evidencia ViaCEP`): el modelo copiaba mal datos que el sistema ya tenía. Tras la corrección (`anclar_cep`, R10), contenido pasó de 15/16 a **16/16** y los dos casos de CEP se aceptan a la primera (de 0/2 a 2/2).
+
+**4. La evaluación encontró un error en la forma de evaluar.** Todos los experimentos compartían la misma memoria, así que los recuerdos de una corrida entraban al contexto de la siguiente. Con 73 episodios acumulados, la trayectoria de `gpt-4.1-mini` cayó de 25/30 a 15/30 —el agente dejaba de consultar el catálogo— y `gpt-4o-mini` acertó solo 10/14 ganadores. Con memoria nueva volvieron a 24/30 y 13/14. Ahora cada experimento crea su propia memoria. La lección vale también para el producto: **la memoria episódica cambia el comportamiento del agente** y hay que vigilarla.
+
+**5. La trayectoria «completa» pide un paso que no siempre hace falta.** La referencia exige `consultar_catalogo` y después `comparar_ofertas`. En 6 de 19 compras el agente llamó solo a `comparar_ofertas`, que ya devuelve todas las ofertas, y la respuesta fue correcta. Por eso la herramienta decisiva es 23/23 mientras la trayectoria completa es 24/30. No es un fallo de calidad: es un atajo válido que la referencia no contempla. Los casos están congelados y no se cambiaron.
+
+### 4. Cómo se ejecuta
+
+```bash
+uv run python evals/evaluar_flujo.py --modelo gpt-4.1-mini --salida docs/trazas/r29_resultado.json
+```
+
+El script comprueba que el modelo responde antes de empezar, crea el conjunto de casos en LangSmith si no existe y guarda una copia local con las salidas, las herramientas y los errores de verificación de cada caso.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Cinco experimentos con sus métricas y trazas | LangSmith, conjunto `pedro-infnet-casos-derivados-7610315f` | **Ejecución real remota** (OpenAI, ViaCEP y LangSmith) |
+| Copia local de cada experimento, caso por caso | [trazas/](trazas/): `r29_langsmith_*.json` | Registro de ejecución real |
+| Evaluadores y casos | [evaluar_flujo.py](../evals/evaluar_flujo.py); [casos_derivados.json](../evals/casos_derivados.json) | Código |
+| Los casos congelados corresponden al catálogo | [tests/test_evals.py](../tests/test_evals.py) | Prueba automática |
+
+### Pendientes y limitaciones
+
+- **Los 30 casos son derivados y sintéticos, no los casos oficiales** del enunciado.
+- **Una corrida por configuración.** El modelo no es determinista: la trayectoria completa de `gpt-4.1-mini` varió entre 22 y 25 de 30 en corridas comparables. Las diferencias de uno o dos casos no son concluyentes.
+- Los evaluadores de calidad comprueban que la respuesta **contenga** un texto; no juzgan la redacción.
+- Los casos de política se evalúan sin índice: miden que el agente no invente, no la calidad del RAG.
+- El primer experimento de `gpt-4.1-mini` y el corregido difieren en dos cosas a la vez (corrección y memoria); la mejora del CEP se atribuye a la corrección porque los errores de verificación señalan esa causa.
+- En LangSmith quedan además dos experimentos que no cuentan: una primera corrida sin las métricas nuevas y una con `gpt-4.1-nano`, modelo retirado por OpenAI que devolvía error en todos los casos. Ese resultado se descartó.

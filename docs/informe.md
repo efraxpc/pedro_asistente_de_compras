@@ -1,6 +1,6 @@
 # Informe técnico — Pedro Infnet
 
-**Fecha:** 2026-11-08; actualizaciones T15/T24: 2026-11-09. **Proyecto:** reconstrucción independiente de asistente de compras sobre piezas ficticias. **Estado:** núcleo local ejecutado; índice autorizado y evaluaciones remotas pendientes.
+**Fecha:** 2026-11-08; actualizaciones T15/T24: 2026-11-09. **Proyecto:** reconstrucción independiente de asistente de compras sobre piezas ficticias. **Estado:** núcleo local y ejecuciones remotas con el modelo real registradas; el índice FAISS es propio y los casos de evaluación son derivados, no los oficiales.
 
 ## Objetivo y datos
 
@@ -54,6 +54,12 @@ Prompts (R11). El prompt del agente sigue PTCF con cuatro ejemplos. En diez soli
 
 Confiabilidad (R12). Parsers con reparación, memoria que guarda solo lo publicado, búsqueda FAISS sobre el índice guardado y un callback que registra cada herramienta y cada verificación. Ese registro permitió encontrar y corregir dos fallos reales. El detalle de cada rúbrica está en docs/respuestas_rubricas.md.
 
+## Evaluación con LangSmith (R29)
+
+El flujo final se evaluó en LangSmith sobre 30 casos derivados sintéticos con seis métricas: ganador, importe y contenido para la calidad; trayectoria completa, herramienta decisiva y primera propuesta aceptada para la trayectoria. Se ejecutaron cinco experimentos. En igualdad de condiciones, gpt-4.1-mini acertó el ganador y el importe en 14 de 14 recomendaciones y el contenido en 16 de 16, con 22 de 23 propuestas aceptadas a la primera; gpt-4o-mini obtuvo 13 de 14, 15 de 16 y 19 de 23. Por eso se mantiene gpt-4.1-mini. En ningún experimento se publicó una recomendación equivocada: cuando el modelo propuso un ganador incorrecto, la verificación lo rechazó.
+
+La evaluación produjo dos hallazgos. Primero, un defecto del agente: una respuesta de CEP no se publicaba porque el modelo copiaba mal un identificador; tras la corrección, contenido pasó de 15 a 16 de 16. Segundo, un error de método: los experimentos compartían memoria, y con 73 episodios acumulados la trayectoria completa cayó de 25 a 15 de 30 y gpt-4o-mini acertó solo 10 de 14 ganadores; con memoria nueva volvieron a 24 de 30 y 13 de 14. Cada experimento usa ahora su propia memoria. La trayectoria completa es menor que la herramienta decisiva (23 de 23) porque la referencia exige consultar el catálogo antes de comparar, y el agente a veces compara directamente con resultado correcto. Limitaciones: casos derivados y no oficiales, una corrida por configuración y un modelo no determinista.
+
 ## Enseñanza y comparación
 
 Los notebooks 01–05 cubren extracción LCEL y @chain; ReAct clásico y RouterChain; memoria CoALA; SQL con una demostración FAISS sintética para T15; y el integrador. El ReAct textual, ConversationBufferMemory y FakeListLLM son demostraciones didácticas. El integrador usa herramientas ligadas al escenario y una puerta de publicación. AutoGen, Mem0 y Letta se comparan conceptualmente en docs/comparaciones.md; no se atribuyen pruebas ejecutadas a esas bibliotecas. Los ejemplos few-shot del prompt describen acciones observables y no incluyen casos de evaluación.
@@ -66,4 +72,4 @@ El experimento T24 dejó `FIC-ENT-01-S05-C01` fuera del top 4 inicial y lo recup
 
 ## Riesgos y trabajo dependiente
 
-La guía integrada de fases, temas y rúbricas (guide/) permitió remapear la matriz a las 29 rúbricas R01–R29; el enunciado original en portugués y el índice FAISS preexistente autorizado siguen fuera de este workspace. Por ello la evaluación LangSmith remota no tiene tasas y el fallo de recuperación sobre el corpus exigido no está acreditado. Se prepararon 30 casos derivados sintéticos con referencias congeladas para LangSmith, sin ejecutar evaluación remota. Las demostraciones locales T15/T24 no sustituyen ese índice. La búsqueda semántica opcional de piezas no se implementó; la búsqueda actual es SQL. El modelo NLI se ejecuta en CPU y su descarga inicial puede tardar. Antes de entregar, cotejar la rúbrica de 29 criterios, incorporar el índice autorizado y repetir allí el diagnóstico T24, ejecutar chat y LangSmith reales con referencias y denominadores, grabar el vídeo con webcam y verificar el enlace Drive.
+La guía integrada de fases, temas y rúbricas (guide/) permitió remapear la matriz a las 29 rúbricas R01–R29; el enunciado original en portugués sigue fuera de este workspace y el cotejo contra su redacción exacta está pendiente. El índice FAISS es propio: la actividad no entregó uno, así que se construyó a partir del corpus ficticio y se guardó en knowledge/politicas/; si el curso entrega un índice oficial, hay que sustituir la carpeta y repetir el diagnóstico. Los 30 casos de LangSmith son derivados y sintéticos, no los oficiales, y cada configuración se midió una sola vez con un modelo no determinista. Una solicitud que mezcla compra, política y CEP en un solo turno no se publica: la respuesta admite un único estado. La búsqueda semántica de piezas no se implementó; la búsqueda actual es SQL. El modelo NLI se ejecuta en CPU, admite 512 tokens y su descarga inicial puede tardar. Quedan por redactar las respuestas de las rúbricas R13–R21 y R24–R28, grabar el vídeo con webcam y verificar el enlace Drive.

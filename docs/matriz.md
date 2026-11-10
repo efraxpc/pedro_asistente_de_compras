@@ -58,7 +58,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 | R26 | Executor con create_openai_tools_agent y AgentExecutor | R5.1 | src/pedro/agent.py | Constructor con las APIs exigidas; ejecuciones remotas puntuales con gpt-4.1-mini (T24); **sesión remota completa documentada pendiente** | Parcial |
 | R27 | Historial con RunnableWithMessageHistory | R5.4 | src/pedro/agent.py; tests/test_tools_flow.py | Historial multi-turno operativo que guarda solo petición y respuesta pública | Local |
 | R28 | Agente completo integrado a Streamlit | R5.5 | app.py | Agent API ready en Chat, Catálogo y Comparación con el mismo agente, memoria y verificador | Real local |
-| R29 | Evaluación LangSmith de calidad y trayectoria | R5.5 | evals/evaluar_flujo.py; evals/casos_derivados.json | 30 casos derivados congelados con respuestas y trayectorias de referencia; **evaluación remota sin ejecutar** (requiere OPENAI_API_KEY y LANGSMITH_API_KEY); no se publican métricas simuladas | Pendiente |
+| R29 | Evaluación LangSmith de calidad y trayectoria | R5.5 | docs/respuestas_rubricas.md §R29; evals/evaluar_flujo.py; evals/casos_derivados.json; docs/trazas/r29_langsmith_*.json | Cinco experimentos reales sobre 30 casos derivados con seis métricas: gpt-4.1-mini 14/14 en ganador e importe y 16/16 en contenido; gpt-4o-mini 13/14; 0 recomendaciones erróneas publicadas; la evaluación halló el defecto del CEP y el efecto de la memoria compartida, ambos corregidos y remedidos; casos derivados, no oficiales; una corrida por configuración | Real remoto |
 
 ## Infraestructura de soporte (sin rúbrica oficial directa)
 
@@ -77,7 +77,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 |---|---|
 | Código y notebooks reproducibles con dobles identificados | Local: 66/66 pruebas, 5/5 notebooks reejecutados |
 | Informe técnico en PDF | Local: docs/informe.md y docs/informe.pdf; actualizar tras cerrar pendientes |
-| Registro de evaluación en LangSmith | Pendiente (ver R29) |
+| Registro de evaluación en LangSmith | Real: cinco experimentos sobre el conjunto pedro-infnet-casos-derivados-7610315f (ver R29) |
 | Video de demostración + enlace Drive institucional | Pendiente: requiere grabación y acceso del alumno |
 
 ## Pendientes que bloquean el cierre
@@ -85,5 +85,4 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 1. **R01**: sustituir la escala genérica de madurez por la de la clase 1 cuando esté disponible.
 2. **R05, R18, R26**: documentar ejecuciones reales con OPENAI_API_KEY (extracción, conversación multi-turno y sesión del agente final).
 4. **R22–R23**: confirmar con el profesor si la actividad entrega un índice FAISS; hoy se usa uno propio guardado en knowledge/politicas/.
-5. **R29**: ejecutar evals/evaluar_flujo.py con credenciales y registrar métricas reales.
 6. Cotejo final contra el enunciado original en portugués cuando esté disponible, y actualización del diagrama rubricas_proyecto.mmd/svg a los IDs oficiales.
