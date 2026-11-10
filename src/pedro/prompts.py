@@ -2,7 +2,8 @@
 
 Los ejemplos son ajenos a los casos de evaluación.
 """
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import (ChatPromptTemplate, FewShotChatMessagePromptTemplate,
+                                    MessagesPlaceholder)
 
 EJEMPLOS_ACCIONES = """
 Ejemplo A — «Necesito un filtro para lavadora; el plazo no está indicado».
@@ -30,6 +31,57 @@ PLANTILLA_EXTRACCION = ChatPromptTemplate.from_messages([
      "Contexto: ninguna cifra ausente se infiere como cero. Formato: JSON válido. {formato}"),
     ("human", "{texto}"),
 ])
+
+# Ejemplos few-shot de extracción. Cubren los errores típicos: cantidades en palabras, importes
+# abreviados, correcciones dentro de la frase y datos ausentes (null, nunca cero ni uno).
+EJEMPLOS_EXTRACCION = [
+    {"texto": "Quiero una decena de PEC-09-0009 por hasta R$ 2,5 mil",
+     "razonamiento": ["«una decena» son 10 unidades", "«R$ 2,5 mil» son 250000 centavos",
+                      "no menciona plazo: queda null"],
+     "solicitud": {"producto_id": "PEC-09-0009", "cantidad": 10, "presupuesto_centavos": 250000},
+     "faltantes": []},
+    {"texto": "Compara PEC-09-0010 en 5 días",
+     "razonamiento": ["no dice cuántas unidades: cantidad queda null, no 1", "plazo máximo 5 días",
+                      "no menciona presupuesto: queda null"],
+     "solicitud": {"producto_id": "PEC-09-0010", "plazo_max_dias": 5},
+     "faltantes": ["cantidad"]},
+    {"texto": "Tres PEC-09-0011... perdón, cuatro. Sin tope de dinero, en tres semanas",
+     "razonamiento": ["se corrige: valen 4 unidades, no 3", "«sin tope de dinero»: presupuesto null",
+                      "«tres semanas» son 21 días"],
+     "solicitud": {"producto_id": "PEC-09-0011", "cantidad": 4, "plazo_max_dias": 21},
+     "faltantes": []},
+]
+
+
+def _ejemplos_como_mensajes(con_razonamiento: bool) -> FewShotChatMessagePromptTemplate:
+    import json
+
+    filas = []
+    for ejemplo in EJEMPLOS_EXTRACCION:
+        salida = {"intencion": "comparar", "solicitud": ejemplo["solicitud"],
+                  "faltantes": ejemplo["faltantes"]}
+        if con_razonamiento:
+            salida = {"razonamiento": ejemplo["razonamiento"], **salida}
+        filas.append({"texto": ejemplo["texto"],
+                      "salida": json.dumps(salida, ensure_ascii=False)})
+    return FewShotChatMessagePromptTemplate(
+        examples=filas,
+        example_prompt=ChatPromptTemplate.from_messages([("human", "{texto}"), ("ai", "{salida}")]))
+
+
+_SISTEMA_EXTRACCION = ("Persona: Pedro. Tarea: extraer intención y solicitud de compra ficticia. "
+                       "Contexto: ninguna cifra ausente se infiere como cero. Formato: JSON válido. "
+                       "{formato}")
+
+# Misma tarea con ejemplos resueltos (few-shot).
+PLANTILLA_EXTRACCION_FEWSHOT = ChatPromptTemplate.from_messages([
+    ("system", _SISTEMA_EXTRACCION), _ejemplos_como_mensajes(False), ("human", "{texto}")])
+
+# Few-shot con chain-of-thought visible: cada ejemplo razona antes de dar los datos.
+PLANTILLA_EXTRACCION_COT = ChatPromptTemplate.from_messages([
+    ("system", _SISTEMA_EXTRACCION + " Razona paso a paso en el campo razonamiento antes de "
+     "rellenar los datos."),
+    _ejemplos_como_mensajes(True), ("human", "{texto}")])
 
 # Repara una salida que no cumple el esquema. Variables: texto, salida, error y formato.
 PLANTILLA_REPARACION = ChatPromptTemplate.from_messages([

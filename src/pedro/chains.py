@@ -6,8 +6,9 @@ from langchain_core.exceptions import OutputParserException
 from langchain_core.output_parsers import PydanticOutputParser, StrOutputParser
 from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnablePassthrough, chain
 
-from .contracts import Extraccion
-from .prompts import PLANTILLA_EXTRACCION, PLANTILLA_REPARACION
+from .contracts import Extraccion, ExtraccionRazonada
+from .prompts import (PLANTILLA_EXTRACCION, PLANTILLA_EXTRACCION_COT,
+                      PLANTILLA_EXTRACCION_FEWSHOT, PLANTILLA_REPARACION)
 
 PROMPT = PLANTILLA_EXTRACCION
 
@@ -101,6 +102,19 @@ def crear_lcel_parcial(modelo):
 
     formato = PydanticOutputParser(pydantic_object=Extraccion).get_format_instructions()
     return PROMPT.partial(formato=formato) | modelo | JsonOutputParser()
+
+
+def crear_variantes_de_prompt(modelo) -> dict:
+    """La misma extracción con tres técnicas de prompt: zero-shot, few-shot y few-shot con CoT."""
+    simple = PydanticOutputParser(pydantic_object=Extraccion)
+    razonada = PydanticOutputParser(pydantic_object=ExtraccionRazonada)
+    return {
+        "zero-shot": PROMPT.partial(formato=simple.get_format_instructions()) | modelo | simple,
+        "few-shot": (PLANTILLA_EXTRACCION_FEWSHOT.partial(formato=simple.get_format_instructions())
+                     | modelo | simple),
+        "few-shot + CoT": (PLANTILLA_EXTRACCION_COT.partial(formato=razonada.get_format_instructions())
+                           | modelo | razonada),
+    }
 
 
 def composicion_paralela(escenario):

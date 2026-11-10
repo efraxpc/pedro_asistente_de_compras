@@ -1,7 +1,9 @@
 import pytest
 
 from pedro.chains import PROMPT, crear_lcel
-from pedro.prompts import EJEMPLOS_ACCIONES, PLANTILLA_AGENTE, PLANTILLA_EXTRACCION
+from pedro.prompts import (EJEMPLOS_ACCIONES, EJEMPLOS_EXTRACCION, PLANTILLA_AGENTE,
+                           PLANTILLA_EXTRACCION, PLANTILLA_EXTRACCION_COT,
+                           PLANTILLA_EXTRACCION_FEWSHOT)
 
 
 def test_plantilla_de_extraccion_declara_sus_variables_y_se_reutiliza():
@@ -33,3 +35,24 @@ def test_plantilla_falla_si_falta_una_variable(faltante):
     del valores[faltante]
     with pytest.raises(KeyError):
         PLANTILLA_EXTRACCION.format_messages(**valores)
+
+
+def test_few_shot_inserta_los_ejemplos_como_turnos_resueltos():
+    mensajes = PLANTILLA_EXTRACCION_FEWSHOT.format_messages(texto="Necesito un filtro", formato="JSON")
+    tipos = [m.type for m in mensajes]
+    assert tipos == ["system"] + ["human", "ai"] * len(EJEMPLOS_EXTRACCION) + ["human"]
+    assert mensajes[-1].content == "Necesito un filtro"
+    assert all("razonamiento" not in m.content for m in mensajes if m.type == "ai")
+
+
+def test_cot_pone_el_razonamiento_antes_que_los_datos():
+    mensajes = PLANTILLA_EXTRACCION_COT.format_messages(texto="Necesito un filtro", formato="JSON")
+    respuestas = [m.content for m in mensajes if m.type == "ai"]
+    assert len(respuestas) == len(EJEMPLOS_EXTRACCION)
+    assert all(r.index("razonamiento") < r.index("solicitud") for r in respuestas)
+    assert "paso a paso" in mensajes[0].content
+
+
+def test_los_ejemplos_ensenan_que_un_dato_ausente_no_es_cero():
+    sin_cantidad = next(e for e in EJEMPLOS_EXTRACCION if e["faltantes"] == ["cantidad"])
+    assert "cantidad" not in sin_cantidad["solicitud"]

@@ -25,7 +25,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 | R08 | ReAct con initialize_agent, herramientas y memoria | R2.2 | docs/respuestas_rubricas.md §R08; src/pedro/legacy.py; scripts/demostrar_r08.py; NB02; tests/test_legacy.py; docs/trazas/r08_react_llm.json | ZERO_SHOT_REACT_DESCRIPTION con dos herramientas y ConversationBufferMemory ejecutado con gpt-4.1-mini real: pensamiento, acción, observación y respuesta correcta; contraste con y sin historial en el prompt | Real remoto puntual y doble |
 | R09 | Chains secuenciales/paralelas y RouterChain | R2.3 | docs/respuestas_rubricas.md §R09; src/pedro/legacy.py; src/pedro/chains.py; scripts/demostrar_r09.py; NB02; tests/test_legacy.py; docs/trazas/r09_router_llm.json | Cadenas secuenciales y RunnableParallel; dos routers sobre RouterChain (reglas y LLMRouterChain) comparados con gpt-4.1-mini real en siete preguntas: reglas 2/7, LLM 6/7 | Real remoto puntual y local |
 | R10 | API externa como herramienta vía function calling | R2.4 | docs/respuestas_rubricas.md §R10; src/pedro/integrations.py; src/pedro/agent.py; src/pedro/verification.py; scripts/demostrar_r10.py; docs/trazas/r10_viacep_llm.json | ViaCEP real llamado por gpt-4.1-mini por function calling: esquema, argumentos, respuesta de la API y respuesta publicada en tres casos (válido, inexistente, inválido); fallo real de publicación diagnosticado con la traza y corregido con anclar_cep, con antes/después | Real remoto puntual |
-| R11 | Prompt PTCF con few-shot y chain-of-thought | R2.5 | src/pedro/prompts.py; src/pedro/agent.py | PTCF y cuatro ejemplos few-shot con planes de acción observables; **no se usa CoT privado por decisión documentada** — dejar la justificación explícita en el informe | Parcial |
+| R11 | Prompt PTCF con few-shot y chain-of-thought | R2.5 | docs/respuestas_rubricas.md §R11; src/pedro/prompts.py; src/pedro/chains.py; scripts/demostrar_r11.py; tests/test_prompts.py; docs/trazas/r11_prompts_llm.json | PTCF en el prompt del agente con cuatro ejemplos; FewShotChatMessagePromptTemplate y variante CoT con razonamiento antes de los datos; medición con gpt-4.1-mini real en diez solicitudes difíciles: zero-shot 6/10, few-shot 10/10, few-shot + CoT 10/10 | Real remoto puntual |
 | R12 | Confiabilidad: parsers con errores, memoria, FAISS y callbacks | R2.5, R2.6 | src/pedro/agent.py (Traza); src/pedro/chains.py; src/pedro/policy_demo.py; src/pedro/memory.py; docs/citas_ancladas.md | Reparación con caso de error probada, callback de trayectoria, FAISS en memoria y memoria de sesión; traza remota pendiente; citas casi literales reancladas al fragmento y degradación a cita textual, con fallo real diagnosticado antes/después | Local |
 
 ## Fase 3 — Chatbot con memoria (R13–R18)
@@ -75,7 +75,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Entregable | Estado |
 |---|---|
-| Código y notebooks reproducibles con dobles identificados | Local: 64/64 pruebas, 5/5 notebooks reejecutados |
+| Código y notebooks reproducibles con dobles identificados | Local: 66/66 pruebas, 5/5 notebooks reejecutados |
 | Informe técnico en PDF | Local: docs/informe.md y docs/informe.pdf; actualizar tras cerrar pendientes |
 | Registro de evaluación en LangSmith | Pendiente (ver R29) |
 | Video de demostración + enlace Drive institucional | Pendiente: requiere grabación y acceso del alumno |
@@ -84,7 +84,6 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 1. **R01**: sustituir la escala genérica de madurez por la de la clase 1 cuando esté disponible.
 2. **R05, R18, R26**: documentar ejecuciones reales con OPENAI_API_KEY (extracción, conversación multi-turno y sesión del agente final).
-3. **R11**: justificar por escrito la sustitución de CoT privado por planes observables, o añadir una demostración de CoT.
 4. **R22–R23**: confirmar con el profesor si la actividad entrega un índice FAISS; hoy se usa uno propio guardado en knowledge/politicas/.
 5. **R29**: ejecutar evals/evaluar_flujo.py con credenciales y registrar métricas reales.
 6. Cotejo final contra el enunciado original en portugués cuando esté disponible, y actualización del diagrama rubricas_proyecto.mmd/svg a los IDs oficiales.

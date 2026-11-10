@@ -33,6 +33,15 @@ class Extraccion(BaseModel):
     faltantes: list[str]
 
 
+class ExtraccionRazonada(BaseModel):
+    """Extracción con chain-of-thought visible: el razonamiento se escribe antes que los datos."""
+    razonamiento: list[str] = Field(description="Pasos breves: qué dice el texto sobre producto, "
+                                                "cantidad, presupuesto y plazo, y qué no dice")
+    intencion: Literal["consultar", "comparar", "politica", "cep", "preferencia", "otro"]
+    solicitud: Solicitud
+    faltantes: list[str]
+
+
 class Oferta(BaseModel):
     dataset_id: str
     id: str

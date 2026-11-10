@@ -1,0 +1,484 @@
+{
+  "rubrica": "R11",
+  "modo": "real remoto (OpenAI); solicitudes sintéticas",
+  "fecha_utc": "2026-11-10T22:59:28+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "temperature": 0,
+  "nota": "Diez casos elegidos por difíciles y etiquetados a mano: no son una muestra representativa.",
+  "resumen": {
+    "zero-shot": {
+      "solicitudes_correctas": "6/10",
+      "campos_correctos": "36/40"
+    },
+    "few-shot": {
+      "solicitudes_correctas": "10/10",
+      "campos_correctos": "40/40"
+    },
+    "few-shot + CoT": {
+      "solicitudes_correctas": "10/10",
+      "campos_correctos": "40/40"
+    }
+  },
+  "casos": [
+    {
+      "solicitud": "Necesito media docena de PEC-01-0001",
+      "esperado": {
+        "producto_id": "PEC-01-0001",
+        "cantidad": 6,
+        "presupuesto_centavos": null,
+        "plazo_max_dias": null
+      },
+      "zero-shot": {
+        "obtenido": {
+          "producto_id": "PEC-01-0001",
+          "cantidad": 6,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot": {
+        "obtenido": {
+          "producto_id": "PEC-01-0001",
+          "cantidad": 6,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot + CoT": {
+        "obtenido": {
+          "producto_id": "PEC-01-0001",
+          "cantidad": 6,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": [
+          "«media docena» son 6 unidades",
+          "no menciona presupuesto: queda null",
+          "no menciona plazo: queda null"
+        ]
+      }
+    },
+    {
+      "solicitud": "Compara PEC-02-0003, un par, hasta mil quinientos reales",
+      "esperado": {
+        "producto_id": "PEC-02-0003",
+        "cantidad": 2,
+        "presupuesto_centavos": 150000,
+        "plazo_max_dias": null
+      },
+      "zero-shot": {
+        "obtenido": {
+          "producto_id": "PEC-02-0003",
+          "cantidad": 1,
+          "presupuesto_centavos": 150000,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 3,
+        "todo_correcto": false,
+        "razonamiento": null
+      },
+      "few-shot": {
+        "obtenido": {
+          "producto_id": "PEC-02-0003",
+          "cantidad": 2,
+          "presupuesto_centavos": 150000,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot + CoT": {
+        "obtenido": {
+          "producto_id": "PEC-02-0003",
+          "cantidad": 2,
+          "presupuesto_centavos": 150000,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": [
+          "«un par» son 2 unidades",
+          "«mil quinientos reales» son 150000 centavos",
+          "no menciona plazo: queda null"
+        ]
+      }
+    },
+    {
+      "solicitud": "Quiero 3 de PEC-01-0002 para dentro de dos semanas",
+      "esperado": {
+        "producto_id": "PEC-01-0002",
+        "cantidad": 3,
+        "presupuesto_centavos": null,
+        "plazo_max_dias": 14
+      },
+      "zero-shot": {
+        "obtenido": {
+          "producto_id": "PEC-01-0002",
+          "cantidad": 3,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": 14
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot": {
+        "obtenido": {
+          "producto_id": "PEC-01-0002",
+          "cantidad": 3,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": 14
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot + CoT": {
+        "obtenido": {
+          "producto_id": "PEC-01-0002",
+          "cantidad": 3,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": 14
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": [
+          "quiere 3 unidades del producto PEC-01-0002",
+          "«para dentro de dos semanas» implica un plazo máximo de 14 días",
+          "no menciona presupuesto, queda null"
+        ]
+      }
+    },
+    {
+      "solicitud": "Dame 4 unidades de PEC-03-0001, sin límite de presupuesto, en 10 días",
+      "esperado": {
+        "producto_id": "PEC-03-0001",
+        "cantidad": 4,
+        "presupuesto_centavos": null,
+        "plazo_max_dias": 10
+      },
+      "zero-shot": {
+        "obtenido": {
+          "producto_id": "PEC-03-0001",
+          "cantidad": 4,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": 10
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot": {
+        "obtenido": {
+          "producto_id": "PEC-03-0001",
+          "cantidad": 4,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": 10
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot + CoT": {
+        "obtenido": {
+          "producto_id": "PEC-03-0001",
+          "cantidad": 4,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": 10
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": [
+          "pide 4 unidades del producto PEC-03-0001",
+          "sin límite de presupuesto: presupuesto null",
+          "plazo máximo 10 días"
+        ]
+      }
+    },
+    {
+      "solicitud": "PEC-01-0001: dos unidades... no, mejor tres. Tope R$ 2.000",
+      "esperado": {
+        "producto_id": "PEC-01-0001",
+        "cantidad": 3,
+        "presupuesto_centavos": 200000,
+        "plazo_max_dias": null
+      },
+      "zero-shot": {
+        "obtenido": {
+          "producto_id": "PEC-01-0001",
+          "cantidad": 3,
+          "presupuesto_centavos": 200000,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot": {
+        "obtenido": {
+          "producto_id": "PEC-01-0001",
+          "cantidad": 3,
+          "presupuesto_centavos": 200000,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot + CoT": {
+        "obtenido": {
+          "producto_id": "PEC-01-0001",
+          "cantidad": 3,
+          "presupuesto_centavos": 200000,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": [
+          "se corrige cantidad a 3 unidades",
+          "tope de R$ 2.000 son 200000 centavos",
+          "no menciona plazo: queda null"
+        ]
+      }
+    },
+    {
+      "solicitud": "¿Cuánto saldrían 5 PEC-04-0002 si no puedo gastar más de R$ 1.234,56?",
+      "esperado": {
+        "producto_id": "PEC-04-0002",
+        "cantidad": 5,
+        "presupuesto_centavos": 123456,
+        "plazo_max_dias": null
+      },
+      "zero-shot": {
+        "obtenido": {
+          "producto_id": null,
+          "cantidad": 5,
+          "presupuesto_centavos": 123456,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 3,
+        "todo_correcto": false,
+        "razonamiento": null
+      },
+      "few-shot": {
+        "obtenido": {
+          "producto_id": "PEC-04-0002",
+          "cantidad": 5,
+          "presupuesto_centavos": 123456,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot + CoT": {
+        "obtenido": {
+          "producto_id": "PEC-04-0002",
+          "cantidad": 5,
+          "presupuesto_centavos": 123456,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": [
+          "quiere saber el precio total para 5 unidades del producto PEC-04-0002",
+          "presupuesto máximo es 123456 centavos",
+          "no menciona plazo: queda null"
+        ]
+      }
+    },
+    {
+      "solicitud": "Compara PEC-05-0001 con R$ 800 de presupuesto",
+      "esperado": {
+        "producto_id": "PEC-05-0001",
+        "cantidad": null,
+        "presupuesto_centavos": 80000,
+        "plazo_max_dias": null
+      },
+      "zero-shot": {
+        "obtenido": {
+          "producto_id": "PEC-05-0001",
+          "cantidad": null,
+          "presupuesto_centavos": 80000,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot": {
+        "obtenido": {
+          "producto_id": "PEC-05-0001",
+          "cantidad": null,
+          "presupuesto_centavos": 80000,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot + CoT": {
+        "obtenido": {
+          "producto_id": "PEC-05-0001",
+          "cantidad": null,
+          "presupuesto_centavos": 80000,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": [
+          "no menciona cantidad: queda null",
+          "presupuesto es R$ 800, que son 80000 centavos",
+          "no menciona plazo: queda null"
+        ]
+      }
+    },
+    {
+      "solicitud": "Necesito 10 PEC-06-0001 en una semana como máximo, gasto libre",
+      "esperado": {
+        "producto_id": "PEC-06-0001",
+        "cantidad": 10,
+        "presupuesto_centavos": null,
+        "plazo_max_dias": 7
+      },
+      "zero-shot": {
+        "obtenido": {
+          "producto_id": null,
+          "cantidad": 10,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": 7
+        },
+        "campos_correctos": 3,
+        "todo_correcto": false,
+        "razonamiento": null
+      },
+      "few-shot": {
+        "obtenido": {
+          "producto_id": "PEC-06-0001",
+          "cantidad": 10,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": 7
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot + CoT": {
+        "obtenido": {
+          "producto_id": "PEC-06-0001",
+          "cantidad": 10,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": 7
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": [
+          "quiere 10 unidades",
+          "plazo máximo una semana: 7 días",
+          "gasto libre: presupuesto null"
+        ]
+      }
+    },
+    {
+      "solicitud": "Una docena de PEC-07-0001 por R$ 3 mil en un mes",
+      "esperado": {
+        "producto_id": "PEC-07-0001",
+        "cantidad": 12,
+        "presupuesto_centavos": 300000,
+        "plazo_max_dias": 30
+      },
+      "zero-shot": {
+        "obtenido": {
+          "producto_id": null,
+          "cantidad": 12,
+          "presupuesto_centavos": 300000,
+          "plazo_max_dias": 30
+        },
+        "campos_correctos": 3,
+        "todo_correcto": false,
+        "razonamiento": null
+      },
+      "few-shot": {
+        "obtenido": {
+          "producto_id": "PEC-07-0001",
+          "cantidad": 12,
+          "presupuesto_centavos": 300000,
+          "plazo_max_dias": 30
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot + CoT": {
+        "obtenido": {
+          "producto_id": "PEC-07-0001",
+          "cantidad": 12,
+          "presupuesto_centavos": 300000,
+          "plazo_max_dias": 30
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": [
+          "«una docena» son 12 unidades",
+          "«R$ 3 mil» son 300000 centavos",
+          "«un mes» se interpreta como 30 días"
+        ]
+      }
+    },
+    {
+      "solicitud": "Compra 2 de PEC-08-0001; el plazo me da igual y tengo R$ 0 disponibles",
+      "esperado": {
+        "producto_id": "PEC-08-0001",
+        "cantidad": 2,
+        "presupuesto_centavos": 0,
+        "plazo_max_dias": null
+      },
+      "zero-shot": {
+        "obtenido": {
+          "producto_id": "PEC-08-0001",
+          "cantidad": 2,
+          "presupuesto_centavos": 0,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot": {
+        "obtenido": {
+          "producto_id": "PEC-08-0001",
+          "cantidad": 2,
+          "presupuesto_centavos": 0,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": null
+      },
+      "few-shot + CoT": {
+        "obtenido": {
+          "producto_id": "PEC-08-0001",
+          "cantidad": 2,
+          "presupuesto_centavos": 0,
+          "plazo_max_dias": null
+        },
+        "campos_correctos": 4,
+        "todo_correcto": true,
+        "razonamiento": [
+          "quiere comprar 2 unidades de PEC-08-0001",
+          "el plazo no importa: plazo null",
+          "presupuesto es 0 reales, es decir 0 centavos"
+        ]
+      }
+    }
+  ]
+}

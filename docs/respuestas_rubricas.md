@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** redactadas y con ejecución guardada R01–R10, R22 y R23. Pendientes de redactar: R11–R21 y R24–R29.
+**Avance de redacción:** redactadas y con ejecución guardada R01–R11, R22 y R23. Pendientes de redactar: R12–R21 y R24–R29.
 
 ---
 
@@ -688,7 +688,80 @@ Es el mismo defecto que en las citas de política (R24): **se le pedía al model
 
 ## R11 — Prompt PTCF, few-shot y chain-of-thought
 
-*Pendiente de redactar.*
+> ¿El alumno estructuró el prompt del agente con el framework PTCF y aplicó few-shot learning y chain-of-thought?
+
+**Respuesta corta.** Sí. El prompt del agente sigue PTCF y lleva cuatro ejemplos. Las tres técnicas se midieron con el modelo real sobre diez solicitudes difíciles: **sin ejemplos acertó 6 de 10; con ejemplos, 10 de 10; con ejemplos y razonamiento paso a paso, 10 de 10.**
+
+### 1. PTCF en el prompt del agente
+
+`PLANTILLA_AGENTE`, en [prompts.py](../src/pedro/prompts.py), marca las cuatro partes:
+
+| Parte | Qué contiene |
+|---|---|
+| **Persona** | «Pedro, asistente de compras ficticias» |
+| **Tarea** | Aclarar solo producto y cantidad; presupuesto y plazo son filtros opcionales; consultar herramientas y comparar ofertas del escenario |
+| **Contexto** | Los mensajes y recuerdos anteriores son históricos; la solicitud actual prevalece |
+| **Formato** | JSON `RespuestaCompra` válido, sin inventar datos ni fuentes |
+
+Una prueba automática comprueba que las cuatro etiquetas están en el mensaje de sistema.
+
+### 2. Few-shot
+
+Hay dos juegos de ejemplos:
+
+- **En el agente:** cuatro ejemplos (`EJEMPLOS_ACCIONES`) que muestran qué herramientas llamar y qué estado devolver en cada tipo de pregunta: pieza ambigua, comparación con límites, política y envío en varias cajas.
+- **En la extracción:** tres ejemplos (`EJEMPLOS_EXTRACCION`) insertados con `FewShotChatMessagePromptTemplate` como turnos ya resueltos de usuario y asistente. Cada uno enseña un error típico: cantidad en palabras, importe abreviado, corrección dentro de la frase y dato ausente.
+
+### 3. Chain-of-thought
+
+La variante con CoT añade un campo `razonamiento` que el modelo debe rellenar **antes** de los datos. Como el modelo escribe en orden, primero razona y después concluye. Ejemplo real, para «PEC-01-0001: dos unidades... no, mejor tres. Tope R$ 2.000»:
+
+```json
+{"razonamiento": ["se corrige cantidad a 3 unidades",
+                  "tope de R$ 2.000 son 200000 centavos",
+                  "no menciona plazo: queda null"],
+ "solicitud": {"producto_id": "PEC-01-0001", "cantidad": 3, "presupuesto_centavos": 200000}}
+```
+
+El razonamiento queda escrito y se puede revisar: es CoT **observable**, no un pensamiento oculto del modelo.
+
+### 4. La medición
+
+Diez solicitudes elegidas por difíciles, con la respuesta correcta fijada a mano. Misma tarea, mismo modelo (`gpt-4.1-mini`, temperatura 0), tres prompts:
+
+| Técnica | Solicitudes correctas | Campos correctos |
+|---|---|---|
+| Zero-shot (sin ejemplos) | 6 de 10 | 36 de 40 |
+| Few-shot | 10 de 10 | 40 de 40 |
+| Few-shot + CoT | 10 de 10 | 40 de 40 |
+
+Qué falló sin ejemplos:
+
+- **«un par»** se leyó como 1 unidad.
+- En tres solicitudes el modelo puso el identificador en el campo `producto` (nombre libre) en vez de en `producto_id`. El esquema admitía las dos lecturas; los ejemplos enseñaron la convención.
+
+Qué se concluye:
+
+- **Few-shot fue lo que marcó la diferencia.** Corrigió los cuatro fallos.
+- **CoT no añadió aciertos en esta prueba**, porque few-shot ya llegaba al máximo. Su aporte aquí es otro: deja escrito el porqué de cada dato, y cuesta más texto generado.
+
+### 5. Por qué el agente final no usa CoT en texto libre
+
+En el agente, el «pensamiento paso a paso» son sus **llamadas a herramientas**: cada paso queda registrado con su nombre, sus argumentos y su resultado, y la respuesta final se contrasta con esos resultados. Un razonamiento en prosa no se podría verificar igual, y publicarlo iría contra la regla del proyecto de mostrar solo lo comprobado. El CoT en texto se demuestra donde sí aporta: en el campo `razonamiento` de la extracción y en los *Thought* del agente ReAct (R08).
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Diez solicitudes por tres prompts, con lo obtenido, lo esperado y el razonamiento | [trazas/r11_prompts_llm.json](trazas/r11_prompts_llm.json); [scripts/demostrar_r11.py](../scripts/demostrar_r11.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
+| PTCF presente en el prompt del agente; few-shot como turnos resueltos; CoT con el razonamiento antes de los datos | [tests/test_prompts.py](../tests/test_prompts.py); [tests/test_anatomia.py](../tests/test_anatomia.py) | Pruebas automáticas |
+| Los ejemplos del agente en uso: el modelo real sigue el plan de herramientas | [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json) | Ejecución real remota |
+
+### Pendientes y limitaciones
+
+- Diez casos elegidos a propósito por difíciles: 6 de 10 no describe el prompt sin ejemplos en uso normal.
+- Una sola ejecución por técnica, con temperatura 0.
+- No se midió el efecto de quitar los ejemplos al prompt del agente.
 
 ## R12 — Componentes de confiabilidad
 
