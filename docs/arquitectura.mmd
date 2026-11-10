@@ -1,13 +1,18 @@
-flowchart LR
-    UI[Streamlit: Chat / Catálogo / Comparación] --> S[Sesión y dataset]
-    S --> M[12 mensajes + preferencias + episodios]
-    M --> A[OpenAI tools agent]
-    A --> T[6 herramientas ligadas al escenario]
+flowchart TD
+    UI[Streamlit: Chat / Catálogo / Comparación] --> S[Sesión, usuario y dataset]
+    S --> D[Extracción de restricciones del turno y borrador de compra]
+    D -->|falta pieza o cantidad| Q[Pregunta de aclaración]
+    D -->|regla determinista| R[Ruta directa: listado, ficha, comparación local, entrega parcial]
+    D -->|requiere decidir| M[Memoria: 12 mensajes + preferencias + episodios]
+    M --> A[OpenAI tools agent + AgentExecutor]
+    A <--> T[6 herramientas ligadas al escenario]
     T --> DB[(SQLite de solo lectura)]
-    T --> P[(FAISS políticas autorizado)]
+    T --> P[(FAISS políticas: demo en memoria o índice autorizado)]
     T --> V[ViaCEP]
     A --> J[RespuestaCompra JSON]
+    R --> J
     J --> X[Verificación exacta y procedencia]
     X --> N[NLI local triclase]
-    N --> R[Render público]
-    R --> H[(Historial SQLite)]
+    N -->|respaldada| PUB[Render público]
+    N -->|rechazada, una corrección| A
+    PUB --> H[(Historial SQLite: petición y respuesta pública)]

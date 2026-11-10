@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** R01 redactada. R02–R29 pendientes de redactar, en orden.
+**Avance de redacción:** R01 redactada y con ejecución guardada. R02–R29 pendientes de redactar, en orden.
 
 ---
 
@@ -52,7 +52,19 @@ flowchart TD
     P --> H[(Historial: solo petición<br/>y respuesta pública)]
 ```
 
-El ciclo de un turno es: **percibir** (extraer intención y restricciones del mensaje, cargar memoria), **decidir** (regla directa o agente con herramientas), **actuar** (consultar SQL, políticas o API y calcular), **verificar** (comprobaciones exactas y NLI) y **responder**. Si la propuesta no pasa la verificación, el agente dispone de una única pasada de corrección; si vuelve a fallar, no se publica la recomendación. El diagrama de componentes completo está en [arquitectura.mmd](arquitectura.mmd).
+La arquitectura cognitiva se describe con CoALA, el marco que el curso usa por defecto para agentes cognitivos (clase del 21-10-2026):
+
+| Elemento CoALA | En Pedro |
+|---|---|
+| Memoria de trabajo | Mensaje actual, borrador de compra de la sesión y ventana de 12 mensajes |
+| Memoria episódica | Episodios vectoriales de recomendaciones pasadas, por usuario |
+| Memoria semántica | Catálogo SQLite, políticas en FAISS y preferencias explícitas del usuario |
+| Memoria procedimental | System message PTCF, ejemplos few-shot, reglas deterministas y código de verificación |
+| Acciones internas | Recuperar recuerdos y políticas (retrieval), razonar con el LLM, guardar un episodio o una preferencia (aprendizaje) |
+| Acciones externas | Leer SQLite, consultar ViaCEP y responder al usuario |
+| Ciclo de decisión | Proponer (regla o LLM con herramientas) → evaluar (verificación exacta y NLI) → ejecutar (publicar o corregir una vez) |
+
+El ciclo de un turno es: **percibir** (extraer intención y restricciones del mensaje, cargar memoria), **decidir** (regla directa o agente con herramientas), **actuar** (consultar SQL, políticas o API y calcular), **verificar** (comprobaciones exactas y NLI) y **responder**. Si la propuesta no pasa la verificación, el agente dispone de una única pasada de corrección; si vuelve a fallar, no se publica la recomendación. El mismo flujo está en [arquitectura.mmd](arquitectura.mmd).
 
 ### 3. Clasificación: agente híbrido
 
@@ -77,23 +89,33 @@ Pedro no es **reactivo puro** porque conserva estado entre turnos y elige herram
 | 4 | Agente con memoria y autoverificación: estado entre turnos y sesiones, y revisión de la propia salida antes de publicar | **Sí — nivel actual** |
 | 5 | Sistema multiagente o autónomo: planificación de largo horizonte, varios agentes, acciones con efecto real | No, y no es el objetivo |
 
-**Madurez actual: nivel 4, con autonomía acotada.** El agente decide herramientas, recuerda y se autoverifica, pero su alcance está limitado a propósito: solo lee del escenario, su única escritura es una preferencia explícita del usuario, tiene un máximo de 6 iteraciones y una sola corrección. La evidencia hoy es local; la sesión completa con el modelo remoto y la evaluación en LangSmith están pendientes (R26 y R29).
+**Madurez actual: nivel 4 en diseño, demostrado solo en local.** El agente decide herramientas, recuerda y se autoverifica, con autonomía acotada a propósito: solo lee del escenario, su única escritura es una preferencia explícita del usuario, tiene un máximo de 6 iteraciones y una sola corrección. Lo que falta para darlo por demostrado es evidencia con el modelo real: no hay todavía una sesión remota completa documentada ni métricas.
 
-**Madurez objetivo: nivel 4 consolidado.** Se busca el mismo nivel, pero demostrado con mediciones: evaluación de calidad y de trayectoria de herramientas en LangSmith (R29) y descomposición explícita de solicitudes compuestas (R02, R18). No se persigue el nivel 5 porque el problema — recomendar una oferta verificada para una pieza — no requiere varios agentes ni ejecutar compras, y más autonomía reduciría la trazabilidad que la puerta de verificación garantiza.
+**Madurez objetivo: nivel 4 demostrado con mediciones.** Se considera alcanzado cuando se cumplan estos criterios:
+
+| Criterio | Cómo se mide | Rúbrica |
+|---|---|---|
+| El LLM real elige las herramientas correctas | Trayectoria esperada frente a observada en los 30 casos de LangSmith | R29 |
+| Las respuestas son correctas | Métricas de contenido, ganador e importe en LangSmith | R29 |
+| Nada se publica sin respaldo | Cero recomendaciones publicadas que no pasen verificación exacta y NLI | R24 |
+| Hay continuidad entre turnos con el modelo real | Sesión remota multi-turno documentada | R18, R26, R27 |
+
+No se persigue el nivel 5 porque el problema — recomendar una oferta verificada para una pieza — no requiere varios agentes ni ejecutar compras, y más autonomía reduciría la trazabilidad que la puerta de verificación garantiza.
 
 ### Evidencia
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| Explicación de componentes, clasificación y madurez | Esta sección | Documentación |
-| Diagrama de arquitectura | [arquitectura.mmd](arquitectura.mmd) y diagrama de flujo de esta sección | Documentación |
-| Componentes en código | [agent.py](../src/pedro/agent.py), [memory.py](../src/pedro/memory.py), [verification.py](../src/pedro/verification.py), [nli.py](../src/pedro/nli.py) | Código probado localmente (31/31 pruebas) |
+| Anatomía leída de los objetos reales del agente: modelo, executor, system message PTCF, seis herramientas con su papel y lógica, memoria, base de conocimiento y puerta de publicación | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomía del agente»; [anatomia.py](../src/pedro/anatomia.py) | Ejecución real local (sin modelo) |
+| Agente híbrido en acción: «lista piezas» y «Compara PEC-01-0001» se resuelven por regla con 0 llamadas al modelo; la pregunta de CEP pasa por el modelo, que recibe seis herramientas y ejecuta `consultar_cep` | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · agente híbrido» | Ejecución con **doble de prueba**: modelo guionado y ViaCEP simulado; el flujo, el executor, la herramienta y la verificación son los reales |
+| La anatomía descrita coincide con el agente construido | [tests/test_anatomia.py](../tests/test_anatomia.py) | Prueba automática (32/32 pruebas) |
+| Explicación de componentes, clasificación y madurez | Esta sección; [arquitectura.mmd](arquitectura.mmd) | Documentación |
 
 ### Pendientes y limitaciones
 
-- Sustituir la escala genérica de madurez por la del curso (clase 1) cuando esté disponible.
-- Trasladar esta sección a [informe.md](informe.md) y regenerar `informe.pdf`.
-- El nodo «FAISS políticas autorizado» de [arquitectura.mmd](arquitectura.mmd) describe el índice exigido por R22, que aún no existe; hoy el chat usa el índice demo en memoria.
+- La escala de madurez es genérica (supuesto declarado); sustituirla por la del curso cuando esté disponible la clase 1.
+- En la demostración de la capa deliberativa la herramienta la pide un modelo guionado, no un LLM. La elección hecha por el modelo real se documenta en R26.
+- El chat usa el índice de políticas demo en memoria; el índice preexistente que exige R22 aún no existe.
 
 ---
 

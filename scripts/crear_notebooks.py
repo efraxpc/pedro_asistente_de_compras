@@ -32,6 +32,53 @@ print([x.model_dump() for x in lcel.batch([entrada, entrada])])
 print(list(modelo.stream('etapa del modelo')))
 print(lcel.get_graph().draw_mermaid())"""),
     ("md", "LCEL expone etapas declarativas. @chain envuelve la misma extracción. Los faltantes se recalculan tras el parser."),
+    ("md", "## R01 · anatomía del agente\nLa anatomía se lee de los objetos reales del agente final (`pedro.anatomia`), no se escribe a mano. No se llama a ningún modelo: el executor se construye con un modelo de relleno que nunca se invoca."),
+    ("code", """import json
+from pedro.catalog import crear_escenario
+from pedro.anatomia import describir_anatomia
+escenario = crear_escenario(Path('storage/notebooks/catalogos'))
+memoria = Path('storage/notebooks/r01.sqlite3')
+anatomia = describir_anatomia(escenario, memoria)
+for clave in ('motor_cognitivo', 'orquestador', 'system_message', 'memoria',
+              'base_conocimiento', 'puerta_publicacion'):
+    print(clave, json.dumps(anatomia[clave], ensure_ascii=False))
+for h in anatomia['herramientas']:
+    print('herramienta', h['nombre'], '|', h['papel'], '|', h['logica'], '|', h['argumentos'])"""),
+    ("md", "## R01 · agente híbrido: capa reactiva y capa deliberativa\nTres turnos sobre el mismo flujo final. **Doble de prueba:** el modelo es un guion determinista (no es OpenAI) y ViaCEP está simulado. Lo real es el flujo: las reglas, el `AgentExecutor`, la herramienta ejecutada y la verificación antes de publicar. Los dos primeros turnos los resuelve una regla sin llamar al modelo; el tercero pasa por el modelo, que recibe las seis herramientas y solicita una."),
+    ("code", """from langchain_core.messages import AIMessage
+from langchain_core.runnables import RunnableLambda
+from pedro.agent import Traza, crear_flujo
+from pedro.memory import nueva_sesion
+sesion = nueva_sesion(memoria, 'alumna', escenario.dataset_id)
+final = json.dumps({'estado': 'cep', 'dataset_id': escenario.dataset_id,
+    'solicitud': {'cep': '01001000'}, 'cidade': 'Cidade Simulada', 'uf': 'SP',
+    'modo_cep': 'simulado', 'evidencias': [{'tipo': 'viacep',
+    'fuente_id': 'ViaCEP:01001000', 'texto': 'Cidade Simulada/SP'}]})
+guion = [AIMessage(content='', tool_calls=[{'name': 'consultar_cep',
+                                             'args': {'cep': '01001000'}, 'id': 'c1'}]),
+         AIMessage(content=final)]
+llamadas = []
+def modelo_doble(prompt, **kwargs):
+    llamadas.append(sorted(t['function']['name'] for t in kwargs.get('tools', [])))
+    return guion[len(llamadas) - 1]
+traza = Traza()
+flujo = crear_flujo(escenario, memoria, llm=RunnableLambda(modelo_doble),
+                    cep_simulado=True, traza=traza)
+config = {'configurable': {'user_id': 'alumna', 'session_id': sesion}}
+for pregunta in ('lista piezas', 'Compara PEC-01-0001',
+                 '¿A qué ciudad corresponde el CEP 01001000?'):
+    antes = (len(llamadas), len(traza.eventos))
+    respuesta = flujo.invoke({'input': pregunta}, config=config).content
+    usadas = [e['herramienta'] for e in traza.eventos[antes[1]:] if e['evento'] == 'tool_start']
+    n = len(llamadas) - antes[0]
+    print('turno:', pregunta)
+    print('  capa:', 'deliberativa' if n else 'reactiva', '| llamadas al modelo:', n,
+          '| herramientas ejecutadas:', usadas)
+    print('  respuesta:', respuesta[:100].replace('\\n', ' '))
+print('herramientas ofrecidas al modelo:', llamadas[0])
+assert len(llamadas) == 2 and [e['herramienta'] for e in traza.eventos
+                               if e['evento'] == 'tool_start'] == ['consultar_cep']"""),
+    ("md", "Lectura: «lista piezas» y «Compara PEC-01-0001» se resuelven por regla (0 llamadas al modelo). La pregunta de CEP no tiene regla: el modelo elige `consultar_cep` entre seis herramientas y la respuesta solo se publica tras coincidir con la observación de la herramienta. Con un modelo real la elección la hace el LLM; esa ejecución remota corresponde a R26."),
 ])
 
 guardar("02_react_herramientas.ipynb", [

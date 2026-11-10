@@ -10,7 +10,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Rúbrica | Pregunta resumida | ID previo | Ubicación | Evidencia o condición | Estado |
 |---|---|---|---|---|---|
-| R01 | Anatomía y arquitectura cognitiva; tipo y madurez agéntica | — | docs/respuestas_rubricas.md §R01; docs/arquitectura.mmd | Anatomía por componente, flujo, clasificación híbrida y madurez actual/objetivo redactadas; **la escala de madurez es genérica (supuesto declarado) hasta disponer de la de la clase 1** | Local |
+| R01 | Anatomía y arquitectura cognitiva; tipo y madurez agéntica | — | docs/respuestas_rubricas.md §R01; src/pedro/anatomia.py; NB01; docs/arquitectura.mmd | Anatomía leída del agente real y ejecutada en NB01; agente híbrido demostrado con doble (0 llamadas al modelo en rutas por regla, herramienta elegida en la ruta con modelo); arquitectura CoALA; madurez actual/objetivo con criterios medibles; **escala de madurez genérica (supuesto declarado) hasta disponer de la clase 1** | Local con doble |
 | R02 | Arquitectura de planificación y memoria aumentada | R3.2, R3.4 | docs/informe.md; src/pedro/memory.py; src/pedro/dialogue.py | Borrador por sesión, ventana de 12, episodios FastEmbed y descomposición por turno diseñados y probados | Local |
 | R03 | PromptTemplate/ChatPromptTemplate reutilizables | R1.4 | src/pedro/chains.py; src/pedro/agent.py; src/pedro/prompts.py; NB01 | ChatPromptTemplate con variables del dominio ejecutado en notebook | Demostrado con doble |
 | R04 | Output parser con salida JSON estructurada | R1.3, R2.5 | src/pedro/contracts.py; src/pedro/chains.py; NB01 | Pydantic validado desde una solicitud; reparación de JSON inválido probada | Local con doble |
@@ -75,14 +75,14 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Entregable | Estado |
 |---|---|
-| Código y notebooks reproducibles con dobles identificados | Local: 31/31 pruebas, 5/5 notebooks reejecutados |
+| Código y notebooks reproducibles con dobles identificados | Local: 32/32 pruebas, 5/5 notebooks reejecutados |
 | Informe técnico en PDF | Local: docs/informe.md y docs/informe.pdf; actualizar tras cerrar pendientes |
 | Registro de evaluación en LangSmith | Pendiente (ver R29) |
 | Video de demostración + enlace Drive institucional | Pendiente: requiere grabación y acceso del alumno |
 
 ## Pendientes que bloquean el cierre
 
-1. **R01**: sustituir la escala genérica de madurez por la de la clase 1 y trasladar la sección de docs/respuestas_rubricas.md al informe.
+1. **R01**: sustituir la escala genérica de madurez por la de la clase 1 cuando esté disponible.
 2. **R05, R18, R26**: documentar ejecuciones reales con OPENAI_API_KEY (extracción, conversación multi-turno y sesión del agente final).
 3. **R11**: justificar por escrito la sustitución de CoT privado por planes observables, o añadir una demostración de CoT.
 4. **R22–R23**: obtener el índice FAISS preexistente autorizado, revisar su procedencia y repetir el diagnóstico T24 sobre él.

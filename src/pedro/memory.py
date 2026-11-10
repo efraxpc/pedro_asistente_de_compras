@@ -11,6 +11,7 @@ from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, messages_from_dict, messages_to_dict
 
 MODELO_RECUERDOS = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+VENTANA_MENSAJES = 12
 VERSION_RECUERDOS = "fastembed-0.9.1"
 
 
@@ -117,7 +118,8 @@ class Historial(BaseChatMessageHistory):
     def messages(self) -> list[BaseMessage]:
         with sqlite3.connect(self.ruta) as db:
             filas = db.execute("SELECT dato FROM (SELECT id,dato FROM mensajes WHERE session_id=? "
-                               "ORDER BY id DESC LIMIT 12) ORDER BY id", (self.session_id,))
+                               "ORDER BY id DESC LIMIT ?) ORDER BY id",
+                               (self.session_id, VENTANA_MENSAJES))
             return messages_from_dict([json.loads(f[0]) for f in filas])
 
     @messages.setter
