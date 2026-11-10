@@ -4,7 +4,8 @@ import pytest
 from langchain_core.exceptions import OutputParserException
 from langchain_core.runnables import RunnableLambda
 
-from pedro.chains import crear_lcel, crear_lcel_robusta
+from pedro.chains import (crear_chain, crear_chain_robusta, crear_lcel, crear_lcel_parcial,
+                          crear_lcel_robusta)
 from pedro.laboratorio import CORRECTA, SALIDAS_ROTAS, SOLICITUD, ensayar
 
 REPARADOR = RunnableLambda(lambda prompt: json.dumps(CORRECTA))
@@ -53,3 +54,30 @@ def test_el_parser_solo_pierde_un_dato_en_silencio_y_la_cadena_robusta_lo_evita(
     assert simple.solicitud.plazo_max_dias is None  # el plazo de 7 días desapareció sin error
     robusta = crear_lcel_robusta(RunnableLambda(lambda _: truncada), REPARADOR)
     assert robusta.invoke({"texto": SOLICITUD}).solicitud.plazo_max_dias == 7
+
+
+def test_cadena_imperativa_y_declarativa_son_equivalentes_en_el_laboratorio():
+    declarativa = ensayar(REPARADOR, crear_lcel_robusta)
+    imperativa = ensayar(REPARADOR, crear_chain_robusta)
+    assert imperativa == declarativa
+
+
+def test_chain_decorada_expone_invoke_batch_y_stream():
+    modelo = RunnableLambda(lambda _: json.dumps(CORRECTA))
+    decorada = crear_chain(modelo)
+    entrada = {"texto": SOLICITUD}
+    uno = decorada.invoke(entrada)
+    assert decorada.batch([entrada, entrada]) == [uno, uno]
+    assert list(decorada.stream(entrada)) == [uno]  # un solo fragmento: el parser necesita todo
+
+
+def test_stream_emite_estados_parciales_si_el_modelo_y_el_parser_transmiten():
+    texto = json.dumps(CORRECTA)
+
+    def modelo_por_trozos(_):
+        for inicio in range(0, len(texto), 12):
+            yield texto[inicio:inicio + 12]
+
+    estados = list(crear_lcel_parcial(RunnableLambda(modelo_por_trozos)).stream({"texto": SOLICITUD}))
+    assert len(estados) > 3 and estados[-1] == CORRECTA
+    assert estados[0] != estados[-1]

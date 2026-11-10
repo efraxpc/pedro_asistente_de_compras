@@ -32,11 +32,12 @@ SALIDAS_ROTAS: dict[str, tuple[str, str]] = {
 }
 
 
-def ensayar(reparador) -> list[dict]:
+def ensayar(reparador, constructor=crear_lcel_robusta) -> list[dict]:
     """Pasa cada salida rota por la cadena robusta y registra qué capa la resolvió.
 
     El generador es un doble que emite la salida rota; `reparador` es el modelo que repara
-    (real o doble). La capa se deduce de lo observado, no de la etiqueta esperada.
+    (real o doble). `constructor` elige la cadena: declarativa o imperativa. La capa se
+    deduce de lo observado, no de la etiqueta esperada.
     """
     informe = []
     for nombre, (salida, esperada) in SALIDAS_ROTAS.items():
@@ -46,8 +47,8 @@ def ensayar(reparador) -> list[dict]:
             registro.append(1)
             return prompt
 
-        cadena = crear_lcel_robusta(RunnableLambda(lambda _, texto=salida: texto),
-                                    RunnableLambda(contar) | reparador)
+        cadena = constructor(RunnableLambda(lambda _, texto=salida: texto),
+                             RunnableLambda(contar) | reparador)
         try:
             resultado: Extraccion | None = cadena.invoke({"texto": SOLICITUD})
             error = None

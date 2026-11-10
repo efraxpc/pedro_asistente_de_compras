@@ -69,6 +69,40 @@ def crear_chain(modelo):
     return extraer
 
 
+def crear_chain_robusta(modelo, reparador=None):
+    """La misma extracción con reparación, escrita paso a paso con @chain.
+
+    Equivale a `crear_lcel_robusta`: aquí el control de errores es un try/except visible
+    en lugar de un `with_fallbacks`.
+    """
+    parser = PydanticOutputParser(pydantic_object=Extraccion)
+    formato = parser.get_format_instructions()
+    generar = PROMPT.partial(formato=formato) | modelo | StrOutputParser()
+    reparar = PLANTILLA_REPARACION.partial(formato=formato) | (reparador or modelo) | StrOutputParser()
+
+    @chain
+    def extraer_con_reparacion(dato: dict) -> Extraccion:
+        salida = generar.invoke(dato)
+        try:
+            extraccion = parser.parse(salida)
+            if not _json_completo(salida):
+                raise OutputParserException("JSON incompleto: la salida se cortó antes de cerrar")
+        except OutputParserException as error:
+            corregida = reparar.invoke({"texto": dato["texto"], "salida": salida, "error": error})
+            extraccion = parser.parse(corregida)
+        return _validar(extraccion)
+
+    return extraer_con_reparacion
+
+
+def crear_lcel_parcial(modelo):
+    """Extracción sin validar que emite el JSON a medida que llega: sirve para `stream()`."""
+    from langchain_core.output_parsers import JsonOutputParser
+
+    formato = PydanticOutputParser(pydantic_object=Extraccion).get_format_instructions()
+    return PROMPT.partial(formato=formato) | modelo | JsonOutputParser()
+
+
 def composicion_paralela(escenario):
     from .catalog import buscar
     return RunnableParallel({

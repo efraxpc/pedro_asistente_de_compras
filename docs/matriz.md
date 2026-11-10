@@ -14,7 +14,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 | R02 | Arquitectura de planificación y memoria aumentada | R3.2, R3.4 | docs/respuestas_rubricas.md §R02; NB01; scripts/demostrar_r02.py; docs/trazas/r02_planificacion_llm.json | Cinco pasos observables y mapa de memoria ejecutados sin modelo; plan decidido por gpt-4.1-mini real en compra, CEP y cambio de cantidad; pregunta de política corregida con citas ancladas; **solicitud mixta en un turno no se publica** (limitación declarada) | Real local y remoto puntual |
 | R03 | PromptTemplate/ChatPromptTemplate reutilizables | R1.4 | docs/respuestas_rubricas.md §R03; src/pedro/prompts.py; src/pedro/chains.py; NB01; tests/test_prompts.py; docs/trazas/fase1_chain_llm.json | Dos ChatPromptTemplate con nombre propio y variables del dominio; la de extracción se reutiliza en LCEL y @chain, se rellena con tres solicitudes en NB01 y se ejecutó con gpt-4.1-mini real | Real local y remoto puntual |
 | R04 | Output parser con salida JSON estructurada | R1.3, R2.5 | docs/respuestas_rubricas.md §R04; src/pedro/chains.py; src/pedro/laboratorio.py; NB01; tests/test_salida_estructurada.py; docs/trazas/fase1_chain_llm.json | Objeto Pydantic validado con gpt-4.1-mini real; laboratorio de ocho salidas rotas resueltas por parser, reparación (modelo real) o regla de dominio; hallazgo y corrección de pérdida silenciosa con JSON truncado; comparación ejecutada con with_structured_output | Real local y remoto puntual |
-| R05 | invoke, batch, stream y composición con @chain | R1.5, R1.6 | NB01 | Tres métodos y @chain demostrados con doble; **ejecución con LLM real pendiente** (requiere OPENAI_API_KEY) | Parcial |
+| R05 | invoke, batch, stream y composición con @chain | R1.5, R1.6 | docs/respuestas_rubricas.md §R05; src/pedro/chains.py; NB01; tests/test_salida_estructurada.py; docs/trazas/fase1_chain_llm.json | Tres métodos con gpt-4.1-mini real y medidos (batch de 3 en 1,43 s frente a 4,55 s en serie; stream con 19 estados parciales, primero a 0,45 s); dos cadenas @chain, una con reparación por try/except equivalente a la declarativa en el laboratorio | Real local y remoto puntual |
 | R06 | Composición LCEL y justificación imperativa vs. declarativa | R1.4 | src/pedro/chains.py; NB01; docs/comparaciones.md | LCEL ejecutado y comparación técnica escrita | Demostrado con doble |
 
 ## Fase 2 — Agente con herramientas y ReAct (R07–R12)
@@ -75,7 +75,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Entregable | Estado |
 |---|---|
-| Código y notebooks reproducibles con dobles identificados | Local: 49/49 pruebas, 5/5 notebooks reejecutados |
+| Código y notebooks reproducibles con dobles identificados | Local: 52/52 pruebas, 5/5 notebooks reejecutados |
 | Informe técnico en PDF | Local: docs/informe.md y docs/informe.pdf; actualizar tras cerrar pendientes |
 | Registro de evaluación en LangSmith | Pendiente (ver R29) |
 | Video de demostración + enlace Drive institucional | Pendiente: requiere grabación y acceso del alumno |

@@ -60,6 +60,27 @@ print('cadena simple  -> plazo:', simple.solicitud.plazo_max_dias, '(se perdió 
 from pedro.chains import crear_lcel_robusta
 robusta = crear_lcel_robusta(RunnableLambda(lambda _: truncada), reparador_doble).invoke({'texto': SOLICITUD})
 print('cadena robusta -> plazo:', robusta.solicitud.plazo_max_dias, '(detectado y reparado)')"""),
+    ("md", "## R05 · invoke, batch y stream sobre una cadena @chain\n**Doble de prueba:** el modelo es un generador que entrega el JSON en trozos de 12 caracteres, para que `stream()` tenga algo que transmitir. Se ejecutan los tres métodos sobre la cadena imperativa. `stream()` solo transmite si todos los pasos lo permiten: con el parser Pydantic llega un único fragmento; con el parser de JSON parcial llega el objeto a medida que se forma. Las mediciones con el modelo real están en `docs/trazas/fase1_chain_llm.json`."),
+    ("code", """from pedro.chains import crear_chain_robusta, crear_lcel_parcial
+texto_json = json.dumps(CORRECTA)
+def modelo_por_trozos(_):
+    for i in range(0, len(texto_json), 12):
+        yield texto_json[i:i + 12]
+doble = RunnableLambda(modelo_por_trozos)
+imperativa = crear_chain(doble)
+entrada = {'texto': SOLICITUD}
+print('invoke:', imperativa.invoke(entrada).solicitud.model_dump(exclude_none=True))
+print('batch :', [r.intencion for r in imperativa.batch([entrada] * 3)])
+print('stream con @chain y Pydantic:', len(list(imperativa.stream(entrada))), 'fragmento')
+estados = list(crear_lcel_parcial(doble).stream(entrada))
+print('stream con JSON parcial:', len(estados), 'estados')
+for estado in estados[::3]:
+    print('  ', estado)"""),
+    ("md", "## R05 · la cadena con reparación, escrita con @chain\n`crear_chain_robusta` hace lo mismo que la versión declarativa de R04, pero el control de errores es un `try/except` a la vista. Se pasa el mismo laboratorio por las dos versiones."),
+    ("code", """import inspect
+print(inspect.getsource(crear_chain_robusta).split('    @chain\\n')[1].split('    return extraer_con_reparacion')[0])
+print('imperativa = declarativa en los 8 casos:',
+      ensayar(reparador_doble, crear_chain_robusta) == ensayar(reparador_doble))"""),
     ("md", "## R01 · anatomía del agente\nLa anatomía se lee de los objetos reales del agente final (`pedro.anatomia`), no se escribe a mano. No se llama a ningún modelo: el executor se construye con un modelo de relleno que nunca se invoca."),
     ("code", """import json
 from pedro.catalog import crear_escenario

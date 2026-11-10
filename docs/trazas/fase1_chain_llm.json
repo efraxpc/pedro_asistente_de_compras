@@ -7,7 +7,7 @@
     "R06"
   ],
   "modo": "real remoto (OpenAI); solicitudes sintéticas",
-  "fecha_utc": "2026-11-10T17:15:12+00:00",
+  "fecha_utc": "2026-11-10T17:21:56+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "temperature": 0,
   "plantilla": {
@@ -309,19 +309,63 @@
       "igual_que_parser": true
     }
   ],
+  "tiempos_invoke_y_batch": {
+    "nota": "Una sola medición; depende de la red y del servicio. No es un benchmark.",
+    "tres_invoke_en_serie_segundos": 4.55,
+    "un_batch_de_tres_segundos": 1.43,
+    "mismos_resultados": true
+  },
   "stream": {
-    "entrada": "Necesito un termostato para nevera, sin prisa",
-    "fragmentos_recibidos": 37,
-    "primeros_fragmentos": [
-      "",
-      "{\"",
-      "int",
-      "ención",
-      "\":",
-      " \"",
-      "compr",
-      "ar"
-    ],
-    "texto": "{\"intención\": \"comprar termostato para nevera\", \"solicitud\": \"información y posible compra de termostato para nevera\"}"
+    "entrada": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
+    "cadena_json_parcial": {
+      "estados_recibidos": 19,
+      "segundos_hasta_el_primero": 0.45,
+      "segundos_totales": 1.07,
+      "muestra": [
+        {},
+        {
+          "intencion": "comparar",
+          "solicitud": {
+            "producto_id": "PEC"
+          }
+        },
+        {
+          "intencion": "comparar",
+          "solicitud": {
+            "producto_id": "PEC-01-0001",
+            "producto": null
+          }
+        },
+        {
+          "intencion": "comparar",
+          "solicitud": {
+            "producto_id": "PEC-01-0001",
+            "producto": null,
+            "cantidad": 2,
+            "presupuesto_centavos": 500000,
+            "plazo_max_dias": 7,
+            "cep": null
+          },
+          "faltantes": []
+        }
+      ]
+    },
+    "cadena_pydantic_con_chain": {
+      "fragmentos_recibidos": 1,
+      "nota": "El parser Pydantic necesita el JSON completo: emite un único fragmento."
+    }
+  },
+  "laboratorio_con_chain_imperativa": {
+    "misma_capa_que_la_declarativa": true,
+    "datos_correctos": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
   }
 }

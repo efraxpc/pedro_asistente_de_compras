@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** R01–R04 redactadas y con ejecución guardada. R05–R29 pendientes de redactar, en orden.
+**Avance de redacción:** R01–R05 redactadas y con ejecución guardada. R06–R29 pendientes de redactar, en orden.
 
 ---
 
@@ -303,7 +303,72 @@ En clase se vieron dos formas de obtener salida estructurada. Se ejecutaron las 
 
 ## R05 — Runnable (invoke, batch, stream) y composición con @chain
 
-*Pendiente de redactar.*
+> ¿El alumno aplicó la interfaz Runnable (invoke, batch, stream) e implementó composición imperativa con el decorador @chain?
+
+**Respuesta corta.** Sí. Los tres métodos se ejecutaron con el modelo real y se midió para qué sirve cada uno. Hay dos cadenas con `@chain`: una simple y otra con reparación de errores escrita paso a paso.
+
+### 1. Los tres métodos, con el modelo real
+
+Todo objeto de LangChain que sea `Runnable` ofrece los mismos tres métodos. Se usaron sobre la cadena de extracción:
+
+| Método | Para qué sirve | Qué se observó |
+|---|---|---|
+| `invoke` | Una entrada, una salida | «Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días» → objeto validado |
+| `batch` | Varias entradas a la vez | 3 solicitudes en **1,43 s**; las mismas 3 con `invoke` en serie tardaron **4,55 s**. Mismos resultados |
+| `stream` | Recibir la salida a medida que se genera | **19 estados parciales**; el primero a los **0,45 s** de un total de 1,07 s |
+
+Son una sola medición cada una: sirven para ver el efecto, no como benchmark.
+
+### 2. Lo aprendido sobre `stream`
+
+`stream` solo transmite si **todos** los pasos de la cadena saben transmitir. Se comprobó con dos cadenas:
+
+- Con el parser Pydantic llega **un único fragmento**: necesita el JSON completo para validarlo.
+- Con el parser de JSON parcial (`crear_lcel_parcial`) llega el objeto mientras se forma: `{}` → `{"intencion": "comparar", "solicitud": {"producto_id": "PEC"}}` → … → objeto completo.
+
+La consecuencia práctica: para mostrar progreso al usuario sirve la segunda; para decidir una compra solo vale la primera, porque un estado parcial todavía no está validado.
+
+### 3. Composición imperativa con `@chain`
+
+`@chain` convierte una función de Python en un `Runnable`: dentro se escribe código normal y por fuera tiene `invoke`, `batch` y `stream`.
+
+| Cadena | Qué hace |
+|---|---|
+| `crear_chain` | Envuelve la extracción en una función decorada |
+| `crear_chain_robusta` | La extracción con reparación de R04, escrita con `try/except`: genera, intenta validar y, si falla, llama a la cadena reparadora |
+
+```python
+@chain
+def extraer_con_reparacion(dato: dict) -> Extraccion:
+    salida = generar.invoke(dato)
+    try:
+        extraccion = parser.parse(salida)
+        if not _json_completo(salida):
+            raise OutputParserException("JSON incompleto: la salida se cortó antes de cerrar")
+    except OutputParserException as error:
+        corregida = reparar.invoke({"texto": dato["texto"], "salida": salida, "error": error})
+        extraccion = parser.parse(corregida)
+    return _validar(extraccion)
+```
+
+Se pasó el laboratorio de salidas rotas de R04 por esta versión y por la declarativa: las dos resolvieron los ocho casos en la misma capa y con los mismos datos, también con el modelo real como reparador.
+
+**Decisión técnica.** Se escribió la versión imperativa de la cadena con reparación, y no solo un envoltorio trivial, porque es donde `@chain` aporta algo: el control de errores se lee de arriba abajo y se puede depurar con un punto de parada. La comparación con la versión declarativa y la elección del patrón principal se justifican en R06.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| `invoke`, `batch` y `stream` con tiempos, estados parciales y resultado de `@chain` | [trazas/fase1_chain_llm.json](trazas/fase1_chain_llm.json); [scripts/demostrar_fase1.py](../scripts/demostrar_fase1.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0); una medición |
+| Cadena imperativa igual a la declarativa en los ocho casos del laboratorio, con el modelo real reparando | Mismo archivo, `laboratorio_con_chain_imperativa` | Real remoto para el reparador; generador **doble** |
+| Los tres métodos sobre `@chain`, stream de 1 fragmento frente a estados parciales, y código de la cadena imperativa | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R05» | Ejecución con **doble** (modelo que emite el JSON en trozos) |
+| `@chain` expone los tres métodos; el stream parcial emite varios estados; imperativa y declarativa son equivalentes | [tests/test_salida_estructurada.py](../tests/test_salida_estructurada.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- Los tiempos son de una sola ejecución y dependen de la red.
+- El chat de Streamlit no usa `stream`: muestra la respuesta completa porque debe pasar la verificación antes de publicarse.
+- `batch` no se usa en el flujo del chat, que atiende una solicitud por turno; sí lo usaría una evaluación por lotes.
 
 ## R06 — Composición declarativa con LCEL y justificación
 
