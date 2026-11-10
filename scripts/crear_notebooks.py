@@ -81,6 +81,17 @@ for estado in estados[::3]:
 print(inspect.getsource(crear_chain_robusta).split('    @chain\\n')[1].split('    return extraer_con_reparacion')[0])
 print('imperativa = declarativa en los 8 casos:',
       ensayar(reparador_doble, crear_chain_robusta) == ensayar(reparador_doble))"""),
+    ("md", "## R06 · la misma cadena en LCEL y en @chain: qué deja ver cada una\nSin modelo (dobles). Las dos versiones de la cadena con reparación dan el mismo resultado. Aquí se mide lo que cambia: los pasos que registra la traza, si el error queda anotado y si el grafo muestra la reparación."),
+    ("code", """from pedro.laboratorio import comparar_estilos
+medidas = comparar_estilos()
+for estilo, dato in medidas.items():
+    print(estilo)
+    for clave, valor in dato.items():
+        if clave != 'pasos_con_reparacion':
+            print('  ', clave, '=', valor)
+    print('   pasos:', ' > '.join(dato['pasos_con_reparacion']))
+print(crear_lcel_robusta(RunnableLambda(lambda _: ''), reparador_doble).get_graph().draw_mermaid())"""),
+    ("md", "Lectura: en LCEL la traza registra el fallo del parser, la reparación y la validación de dominio como pasos con nombre, y el grafo muestra el `WithFallbacks`. En `@chain` el resultado es idéntico, pero el `try/except` y la llamada a `_validar` son Python normal: la traza no los ve."),
     ("md", "## R01 · anatomía del agente\nLa anatomía se lee de los objetos reales del agente final (`pedro.anatomia`), no se escribe a mano. No se llama a ningún modelo: el executor se construye con un modelo de relleno que nunca se invoca."),
     ("code", """import json
 from pedro.catalog import crear_escenario

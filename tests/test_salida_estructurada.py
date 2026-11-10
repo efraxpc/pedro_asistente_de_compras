@@ -6,7 +6,7 @@ from langchain_core.runnables import RunnableLambda
 
 from pedro.chains import (crear_chain, crear_chain_robusta, crear_lcel, crear_lcel_parcial,
                           crear_lcel_robusta)
-from pedro.laboratorio import CORRECTA, SALIDAS_ROTAS, SOLICITUD, ensayar
+from pedro.laboratorio import CORRECTA, SALIDAS_ROTAS, SOLICITUD, comparar_estilos, ensayar
 
 REPARADOR = RunnableLambda(lambda prompt: json.dumps(CORRECTA))
 
@@ -81,3 +81,13 @@ def test_stream_emite_estados_parciales_si_el_modelo_y_el_parser_transmiten():
     estados = list(crear_lcel_parcial(RunnableLambda(modelo_por_trozos)).stream({"texto": SOLICITUD}))
     assert len(estados) > 3 and estados[-1] == CORRECTA
     assert estados[0] != estados[-1]
+
+
+def test_los_dos_estilos_dan_el_mismo_resultado_pero_la_traza_ve_cosas_distintas():
+    lcel, imperativa = comparar_estilos().values()
+    assert lcel["resultado_tras_reparar"] == imperativa["resultado_tras_reparar"] == 2
+    assert lcel["el_error_queda_en_la_traza"] and not imperativa["el_error_queda_en_la_traza"]
+    assert lcel["la_validacion_de_dominio_queda_en_la_traza"]
+    assert not imperativa["la_validacion_de_dominio_queda_en_la_traza"]
+    assert lcel["el_grafo_muestra_la_reparacion"] and not imperativa["el_grafo_muestra_la_reparacion"]
+    assert lcel["pasos_trazados_con_reparacion"] > imperativa["pasos_trazados_con_reparacion"]

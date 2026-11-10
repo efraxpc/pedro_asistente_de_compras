@@ -1,9 +1,10 @@
 """Laboratorio de salidas rotas: defectos típicos de un LLM frente a la cadena de extracción."""
 import json
 
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.runnables import RunnableLambda
 
-from .chains import crear_lcel_robusta
+from .chains import crear_chain_robusta, crear_lcel_robusta
 from .contracts import Extraccion
 
 SOLICITUD = "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días"
@@ -68,3 +69,48 @@ def ensayar(reparador, constructor=crear_lcel_robusta) -> list[dict]:
                         "reparaciones": len(reparaciones), "error": error,
                         "resultado": resultado.model_dump(exclude_none=True) if resultado else None})
     return informe
+
+
+class _PasosTrazados(BaseCallbackHandler):
+    """Anota cada paso que la traza de LangChain llega a ver."""
+
+    def __init__(self):
+        self.pasos: list[str] = []
+
+    def on_chain_start(self, serialized, inputs, *, name=None, **kwargs) -> None:
+        self.pasos.append(name or "paso")
+
+    def on_chain_error(self, error, **kwargs) -> None:
+        self.pasos.append("ERROR:" + type(error).__name__)
+
+
+def comparar_estilos() -> dict[str, dict]:
+    """Mide lo que deja ver cada estilo de la misma cadena con reparación.
+
+    Usa dobles: no llama a ningún modelo. Ejecuta un caso sin fallo y otro con reparación
+    y cuenta los pasos que registra la traza y los nodos del grafo.
+    """
+    correcta = json.dumps(CORRECTA)
+    reparador = RunnableLambda(lambda _: correcta)
+    medidas = {}
+    for estilo, constructor in (("declarativa (LCEL)", crear_lcel_robusta),
+                                ("imperativa (@chain)", crear_chain_robusta)):
+        registro = {}
+        for caso, salida in (("sin_fallo", correcta),
+                             ("con_reparacion", SALIDAS_ROTAS["cantidad negativa"][0])):
+            traza = _PasosTrazados()
+            cadena = constructor(RunnableLambda(lambda _, texto=salida: texto), reparador)
+            resultado = cadena.invoke({"texto": SOLICITUD}, config={"callbacks": [traza]})
+            registro[caso] = {"pasos": traza.pasos, "cantidad": resultado.solicitud.cantidad}
+        nodos = [nodo.name for nodo in cadena.get_graph().nodes.values()]
+        medidas[estilo] = {
+            "pasos_trazados_sin_fallo": len(registro["sin_fallo"]["pasos"]),
+            "pasos_trazados_con_reparacion": len(registro["con_reparacion"]["pasos"]),
+            "el_error_queda_en_la_traza": any(
+                paso.startswith("ERROR") for paso in registro["con_reparacion"]["pasos"]),
+            "la_validacion_de_dominio_queda_en_la_traza": "_validar" in registro["sin_fallo"]["pasos"],
+            "el_grafo_muestra_la_reparacion": "WithFallbacks" in nodos,
+            "resultado_tras_reparar": registro["con_reparacion"]["cantidad"],
+            "pasos_con_reparacion": registro["con_reparacion"]["pasos"],
+        }
+    return medidas
