@@ -1,9 +1,13 @@
 """Dos formas de la misma extracción MVP y composiciones didácticas."""
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.runnables import RunnableLambda, RunnableParallel, chain
+import json
+import re
+
+from langchain_core.exceptions import OutputParserException
+from langchain_core.output_parsers import PydanticOutputParser, StrOutputParser
+from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnablePassthrough, chain
 
 from .contracts import Extraccion
-from .prompts import PLANTILLA_EXTRACCION
+from .prompts import PLANTILLA_EXTRACCION, PLANTILLA_REPARACION
 
 PROMPT = PLANTILLA_EXTRACCION
 
@@ -13,9 +17,46 @@ def _validar(extraccion: Extraccion) -> Extraccion:
     return extraccion
 
 
+def _json_completo(texto: str) -> bool:
+    """Indica si el bloque JSON de la salida está entero (el parser acepta JSON parcial)."""
+    bloque = re.search(r"```(?:json)?\s*(.*?)```", texto, re.S)
+    try:
+        json.loads(bloque.group(1) if bloque else texto)
+    except ValueError:
+        return False
+    return True
+
+
 def crear_lcel(modelo):
     parser = PydanticOutputParser(pydantic_object=Extraccion)
     return PROMPT.partial(formato=parser.get_format_instructions()) | modelo | parser | RunnableLambda(_validar)
+
+
+def crear_lcel_robusta(modelo, reparador=None):
+    """Extracción con una reparación: si la salida no cumple el esquema, otra cadena la corrige.
+
+    El parser falla con `OutputParserException` tanto por JSON roto como por un dato que
+    Pydantic rechaza. El fallback recibe la solicitud, la salida inválida y el error, y
+    vuelve a pasar por el mismo parser; si la reparación también falla, el error se propaga.
+    """
+    parser = PydanticOutputParser(pydantic_object=Extraccion)
+    formato = parser.get_format_instructions()
+    generar = PROMPT.partial(formato=formato) | modelo | StrOutputParser()
+
+    def analizar_estricto(dato: dict) -> Extraccion:
+        extraccion = parser.parse(dato["salida"])
+        if not _json_completo(dato["salida"]):
+            # El parser tolera JSON cortado y devolvería un objeto al que le faltan datos.
+            raise OutputParserException("JSON incompleto: la salida se cortó antes de cerrar")
+        return extraccion
+
+    analizar = RunnableLambda(analizar_estricto)
+    reparar = (PLANTILLA_REPARACION.partial(formato=formato) | (reparador or modelo)
+               | StrOutputParser() | parser)
+    return (RunnablePassthrough.assign(salida=generar)
+            | analizar.with_fallbacks([reparar], exceptions_to_handle=(OutputParserException,),
+                                      exception_key="error")
+            | RunnableLambda(_validar))
 
 
 def crear_chain(modelo):

@@ -40,6 +40,7 @@ Type-check edited code with `ty` when available. Run the full test suite before 
 - `memory.py` — full messages, 12-message window, per-session purchase drafts, per-user preferences and FastEmbed episodes (SQLite-backed).
 - `rag.py` — FAISS retrieval with metadata filtering; inspects a `manifest.json` (origin, embedding model, dimension, metric, per-file sha256) before allowing docstore deserialization.
 - `policy_demo.py` + `knowledge/politicas_demo/` — extensive fictitious policy corpus indexed in-memory with FastEmbed/FAISS; the chat uses this demo index when no authorized index exists.
+- `chains.py` + `laboratorio.py` — teaching chains (LCEL, `@chain`, and `crear_lcel_robusta` with a one-shot repair fallback and a strict complete-JSON check) and the broken-output lab that exercises them; not used by the chat flow.
 - `prompts.py` — the two named reusable templates (`PLANTILLA_EXTRACCION`, `PLANTILLA_AGENTE`, PTCF) and the observable-action few-shot examples.
 
 **Security gate:** a pre-existing index at `knowledge/politicas/` requires `index.faiss`, `index.pkl`, and a complete `manifest.json`; its docstore is pickle, so `PEDRO_TRUST_POLICY_INDEX=true` must only be set after verifying provenance, hashes, model, dimension, metric, and metadata. The in-memory demo index never uses that flag.

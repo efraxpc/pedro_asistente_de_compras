@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** R01–R03 redactadas y con ejecución guardada. R04–R29 pendientes de redactar, en orden.
+**Avance de redacción:** R01–R04 redactadas y con ejecución guardada. R05–R29 pendientes de redactar, en orden.
 
 ---
 
@@ -222,7 +222,84 @@ Las dos tienen la misma forma: un mensaje de sistema fijo con huecos y un mensaj
 
 ## R04 — Output parser con salida estructurada en JSON
 
-*Pendiente de redactar.*
+> ¿El alumno implementó un output parser para generar salida estructurada en JSON a partir de la chain?
+
+**Respuesta corta.** Sí. La cadena convierte una solicitud en un objeto `Extraccion` validado con Pydantic. Además se construyó un **laboratorio de salidas rotas**: ocho defectos típicos de un modelo, cada uno resuelto por una capa distinta, con el modelo real haciendo las reparaciones.
+
+### 1. De la solicitud al objeto validado
+
+«Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días» produce, con el modelo real:
+
+```json
+{"intencion": "comparar",
+ "solicitud": {"producto_id": "PEC-01-0001", "cantidad": 2,
+               "presupuesto_centavos": 500000, "plazo_max_dias": 7},
+ "faltantes": []}
+```
+
+El esquema está en [contracts.py](../src/pedro/contracts.py) y la cadena en [chains.py](../src/pedro/chains.py): plantilla → modelo → `PydanticOutputParser` → regla de dominio.
+
+### 2. Tres capas de defensa
+
+Un modelo puede fallar de tres maneras distintas, y cada una necesita una defensa diferente:
+
+| Capa | Qué defiende | Cómo |
+|---|---|---|
+| **Sintaxis** | Que la salida sea JSON | El parser tolera cercas de markdown y texto alrededor |
+| **Esquema** | Que los datos tengan el tipo correcto | Pydantic rechaza «dos» como cantidad, una cantidad negativa o una intención fuera de la lista |
+| **Dominio** | Que el dato signifique lo correcto | Los faltantes los recalcula el código: no se confía en lo que el modelo declare. Un dato ausente es `null`, nunca cero |
+
+Cuando la sintaxis o el esquema fallan, una **segunda cadena repara** la salida (`crear_lcel_robusta`). Recibe la solicitud original, la salida inválida y el mensaje de error, y su respuesta vuelve a pasar por el mismo parser. Está montada con `with_fallbacks`, así que la reparación solo se ejecuta si hay error. Hay una sola reparación: si también falla, el error se propaga y no se publica nada.
+
+### 3. El laboratorio de salidas rotas
+
+Ocho salidas para la misma solicitud. El generador es un doble que emite el defecto; el reparador es `gpt-4.1-mini` real.
+
+| Defecto | Capa que lo resolvió | Reparaciones | Datos finales correctos |
+|---|---|---|---|
+| JSON válido | Ninguna | 0 | Sí |
+| Cercas markdown y charla alrededor | Parser | 0 | Sí |
+| JSON truncado | Reparación | 1 | Sí |
+| Cantidad en letras («dos») | Reparación | 1 | Sí |
+| Cantidad negativa | Reparación | 1 | Sí |
+| Intención fuera de la lista | Reparación | 1 | Sí |
+| Texto libre sin JSON | Reparación | 1 | Sí |
+| Faltantes mal declarados | Regla de dominio | 0 | Sí (marca «cantidad» como faltante) |
+
+### 4. Hallazgo: un parser tolerante puede perder datos en silencio
+
+Al montar el laboratorio apareció algo que no estaba previsto. El parser de LangChain acepta JSON cortado. Con la cadena simple, una salida truncada se convirtió en un objeto válido **sin el plazo de 7 días y sin ningún error**. En este dominio eso es grave: la comparación se haría sin un límite que el usuario sí pidió.
+
+La corrección fue añadir a la cadena robusta una comprobación estricta de que el JSON esté entero. Si no lo está, la salida va a reparación. La cadena simple conserva el comportamiento original, y una prueba deja documentados los dos resultados.
+
+### 5. Parser frente a `with_structured_output`
+
+En clase se vieron dos formas de obtener salida estructurada. Se ejecutaron las dos con el modelo real sobre las tres solicitudes y dieron **el mismo resultado**.
+
+| | `PydanticOutputParser` | `with_structured_output` |
+|---|---|---|
+| Cómo fuerza el formato | Instrucciones dentro del prompt | Esquema enviado por la API del modelo |
+| Funciona con cualquier modelo | Sí, también con dobles de prueba | Solo si el modelo lo soporta |
+| Se puede probar sin credenciales | Sí | No |
+| Permite ver y reparar la salida cruda | Sí | No, la salida ya llega convertida |
+
+**Decisión técnica.** Se mantiene `PydanticOutputParser` como patrón principal por dos razones: la rúbrica pide un output parser, y es la única opción que deja ver el texto crudo del modelo, que es lo que hace posible el laboratorio, la reparación y las pruebas sin credenciales.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Objeto validado desde tres solicitudes, con `invoke` y `batch` | [trazas/fase1_chain_llm.json](trazas/fase1_chain_llm.json) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
+| Laboratorio: cinco reparaciones hechas por el modelo real, todas con datos finales correctos | Mismo archivo, `laboratorio_salidas_rotas`; [laboratorio.py](../src/pedro/laboratorio.py) | Real remoto para el reparador; el generador es un **doble** |
+| `with_structured_output` igual que el parser en las tres solicitudes | Mismo archivo, `with_structured_output` | Ejecución real remota |
+| Laboratorio y pérdida silenciosa de datos, reproducibles sin credenciales | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R04» | Ejecución con **doble** (generador y reparador) |
+| Cada defecto cae en su capa; la reparación recibe solicitud, salida y error; una reparación fallida no se publica; el parser simple pierde el plazo y la cadena robusta no | [tests/test_salida_estructurada.py](../tests/test_salida_estructurada.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- La cadena de extracción es didáctica: el chat extrae las restricciones con reglas deterministas ([dialogue.py](../src/pedro/dialogue.py)), no con esta cadena. El agente final sí usa `PydanticOutputParser` para `RespuestaCompra`.
+- Las salidas rotas se escribieron a mano; no son fallos observados del modelo real, que en estas ejecuciones respondió siempre con JSON válido.
+- Una sola reparación por diseño. No se midió con qué frecuencia el modelo real necesitaría reparación.
 
 ## R05 — Runnable (invoke, batch, stream) y composición con @chain
 

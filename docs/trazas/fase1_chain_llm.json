@@ -7,7 +7,7 @@
     "R06"
   ],
   "modo": "real remoto (OpenAI); solicitudes sintéticas",
-  "fecha_utc": "2026-11-10T16:14:15+00:00",
+  "fecha_utc": "2026-11-10T17:15:12+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "temperature": 0,
   "plantilla": {
@@ -103,9 +103,215 @@
       }
     }
   ],
+  "laboratorio_salidas_rotas": {
+    "solicitud": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
+    "nota": "El generador es un doble que emite la salida rota; el reparador es el modelo real.",
+    "casos": [
+      {
+        "caso": "JSON válido",
+        "capa_esperada": "ninguna",
+        "capa_observada": "ninguna",
+        "reparaciones": 0,
+        "error": null,
+        "resultado": {
+          "intencion": "comparar",
+          "solicitud": {
+            "producto_id": "PEC-01-0001",
+            "cantidad": 2,
+            "presupuesto_centavos": 500000,
+            "plazo_max_dias": 7
+          },
+          "faltantes": []
+        },
+        "datos_correctos": true
+      },
+      {
+        "caso": "cercas markdown y charla",
+        "capa_esperada": "parser",
+        "capa_observada": "parser",
+        "reparaciones": 0,
+        "error": null,
+        "resultado": {
+          "intencion": "comparar",
+          "solicitud": {
+            "producto_id": "PEC-01-0001",
+            "cantidad": 2,
+            "presupuesto_centavos": 500000,
+            "plazo_max_dias": 7
+          },
+          "faltantes": []
+        },
+        "datos_correctos": true
+      },
+      {
+        "caso": "JSON truncado",
+        "capa_esperada": "reparación",
+        "capa_observada": "reparación",
+        "reparaciones": 1,
+        "error": null,
+        "resultado": {
+          "intencion": "comparar",
+          "solicitud": {
+            "producto_id": "PEC-01-0001",
+            "cantidad": 2,
+            "presupuesto_centavos": 500000,
+            "plazo_max_dias": 7
+          },
+          "faltantes": []
+        },
+        "datos_correctos": true
+      },
+      {
+        "caso": "cantidad en letras",
+        "capa_esperada": "reparación",
+        "capa_observada": "reparación",
+        "reparaciones": 1,
+        "error": null,
+        "resultado": {
+          "intencion": "comparar",
+          "solicitud": {
+            "producto_id": "PEC-01-0001",
+            "cantidad": 2,
+            "presupuesto_centavos": 500000,
+            "plazo_max_dias": 7
+          },
+          "faltantes": []
+        },
+        "datos_correctos": true
+      },
+      {
+        "caso": "cantidad negativa",
+        "capa_esperada": "reparación",
+        "capa_observada": "reparación",
+        "reparaciones": 1,
+        "error": null,
+        "resultado": {
+          "intencion": "comparar",
+          "solicitud": {
+            "producto_id": "PEC-01-0001",
+            "cantidad": 2,
+            "presupuesto_centavos": 500000,
+            "plazo_max_dias": 7
+          },
+          "faltantes": []
+        },
+        "datos_correctos": true
+      },
+      {
+        "caso": "intención fuera de la lista",
+        "capa_esperada": "reparación",
+        "capa_observada": "reparación",
+        "reparaciones": 1,
+        "error": null,
+        "resultado": {
+          "intencion": "comparar",
+          "solicitud": {
+            "producto_id": "PEC-01-0001",
+            "cantidad": 2,
+            "presupuesto_centavos": 500000,
+            "plazo_max_dias": 7
+          },
+          "faltantes": []
+        },
+        "datos_correctos": true
+      },
+      {
+        "caso": "texto libre sin JSON",
+        "capa_esperada": "reparación",
+        "capa_observada": "reparación",
+        "reparaciones": 1,
+        "error": null,
+        "resultado": {
+          "intencion": "comparar",
+          "solicitud": {
+            "producto_id": "PEC-01-0001",
+            "cantidad": 2,
+            "presupuesto_centavos": 500000,
+            "plazo_max_dias": 7
+          },
+          "faltantes": []
+        },
+        "datos_correctos": true
+      },
+      {
+        "caso": "faltantes mal declarados",
+        "capa_esperada": "regla de dominio",
+        "capa_observada": "regla de dominio",
+        "reparaciones": 0,
+        "error": null,
+        "resultado": {
+          "intencion": "comparar",
+          "solicitud": {
+            "producto_id": "PEC-01-0001",
+            "presupuesto_centavos": 500000,
+            "plazo_max_dias": 7
+          },
+          "faltantes": [
+            "cantidad"
+          ]
+        },
+        "datos_correctos": true
+      }
+    ]
+  },
+  "with_structured_output": [
+    {
+      "entrada": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
+      "salida": {
+        "intencion": "comparar",
+        "solicitud": {
+          "producto_id": "PEC-01-0001",
+          "producto": null,
+          "cantidad": 2,
+          "presupuesto_centavos": 500000,
+          "plazo_max_dias": 7,
+          "cep": null
+        },
+        "faltantes": []
+      },
+      "igual_que_parser": true
+    },
+    {
+      "entrada": "Necesito un termostato para nevera, sin prisa",
+      "salida": {
+        "intencion": "consultar",
+        "solicitud": {
+          "producto_id": null,
+          "producto": "termostato para nevera",
+          "cantidad": null,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": null,
+          "cep": null
+        },
+        "faltantes": [
+          "cantidad",
+          "presupuesto_centavos",
+          "plazo_max_dias",
+          "cep"
+        ]
+      },
+      "igual_que_parser": true
+    },
+    {
+      "entrada": "¿A qué ciudad corresponde el CEP 01001000?",
+      "salida": {
+        "intencion": "cep",
+        "solicitud": {
+          "producto_id": null,
+          "producto": null,
+          "cantidad": null,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": null,
+          "cep": "01001000"
+        },
+        "faltantes": []
+      },
+      "igual_que_parser": true
+    }
+  ],
   "stream": {
     "entrada": "Necesito un termostato para nevera, sin prisa",
-    "fragmentos_recibidos": 38,
+    "fragmentos_recibidos": 37,
     "primeros_fragmentos": [
       "",
       "{\"",
@@ -116,6 +322,6 @@
       "compr",
       "ar"
     ],
-    "texto": "{\"intención\": \"comprar termostato para nevera\", \"solicitud\": \"información y posible compra futura de termostato para nevera\"}"
+    "texto": "{\"intención\": \"comprar termostato para nevera\", \"solicitud\": \"información y posible compra de termostato para nevera\"}"
   }
 }

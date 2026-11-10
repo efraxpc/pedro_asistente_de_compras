@@ -31,6 +31,14 @@ PLANTILLA_EXTRACCION = ChatPromptTemplate.from_messages([
     ("human", "{texto}"),
 ])
 
+# Repara una salida que no cumple el esquema. Variables: texto, salida, error y formato.
+PLANTILLA_REPARACION = ChatPromptTemplate.from_messages([
+    ("system", "Persona: revisor de formato de Pedro. Tarea: corregir una salida que no cumple "
+     "el esquema. Contexto: usa solo la solicitud original; lo que la solicitud no diga queda "
+     "null, nunca cero ni un valor supuesto. Formato: solo JSON válido. {formato}"),
+    ("human", "Solicitud original: {texto}\nSalida inválida: {salida}\nError de validación: {error}"),
+])
+
 # System message del agente final. Variables: dataset_id, ejemplos, formato, input,
 # chat_history (opcional) y agent_scratchpad.
 PLANTILLA_AGENTE = ChatPromptTemplate.from_messages([

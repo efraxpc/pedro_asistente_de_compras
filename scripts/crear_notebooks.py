@@ -45,6 +45,21 @@ for texto in ('Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días',
     print(humano.type, '->', humano.content)
 print(sistema.type, '->', sistema.content)
 print('misma plantilla en LCEL:', lcel.first.messages == PROMPT.messages)"""),
+    ("md", "## R04 · laboratorio de salidas rotas\nOcho salidas típicas de un modelo pasan por la cadena con reparación (`crear_lcel_robusta`). Cada defecto lo resuelve una capa distinta: el **parser** (tolera cercas y texto alrededor), la **reparación** (otra cadena corrige con la solicitud, la salida inválida y el error) o una **regla de dominio** (los faltantes los calcula el código). **Doble de prueba:** el generador emite la salida rota y el reparador devuelve siempre el JSON correcto; la reparación con el modelo real está en `docs/trazas/fase1_chain_llm.json`."),
+    ("code", """from pedro.laboratorio import CORRECTA, SALIDAS_ROTAS, SOLICITUD, ensayar
+reparador_doble = RunnableLambda(lambda prompt: json.dumps(CORRECTA))
+print('solicitud:', SOLICITUD)
+for caso in ensayar(reparador_doble):
+    print(f"{caso['caso']:28} capa: {caso['capa_observada']:17} reparaciones: {caso['reparaciones']}"
+          f" -> {caso['resultado']['solicitud']} faltan {caso['resultado']['faltantes']}")"""),
+    ("md", "## R04 · un parser tolerante puede perder datos en silencio\nHallazgo del laboratorio. El parser de LangChain acepta JSON cortado. Con la cadena simple, una salida truncada se convierte en un objeto válido al que le falta el plazo, sin ningún error. La cadena robusta comprueba que el JSON esté entero y, si no, lo manda a reparar."),
+    ("code", """truncada = SALIDAS_ROTAS['JSON truncado'][0]
+print('salida del modelo:', truncada)
+simple = crear_lcel(RunnableLambda(lambda _: truncada)).invoke({'texto': SOLICITUD})
+print('cadena simple  -> plazo:', simple.solicitud.plazo_max_dias, '(se perdió sin error)')
+from pedro.chains import crear_lcel_robusta
+robusta = crear_lcel_robusta(RunnableLambda(lambda _: truncada), reparador_doble).invoke({'texto': SOLICITUD})
+print('cadena robusta -> plazo:', robusta.solicitud.plazo_max_dias, '(detectado y reparado)')"""),
     ("md", "## R01 · anatomía del agente\nLa anatomía se lee de los objetos reales del agente final (`pedro.anatomia`), no se escribe a mano. No se llama a ningún modelo: el executor se construye con un modelo de relleno que nunca se invoca."),
     ("code", """import json
 from pedro.catalog import crear_escenario
