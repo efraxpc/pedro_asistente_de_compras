@@ -1,0 +1,79 @@
+{
+  "rubrica": "R22",
+  "modo": "índice cargado de disco; agente real remoto (OpenAI); NLI real local; corpus ficticio",
+  "fecha_utc": "2026-11-10T22:41:42+00:00",
+  "indice": {
+    "carpeta": "knowledge/politicas",
+    "origen": "ficticio_demo: corpus propio en knowledge/politicas_demo, indexado por scripts/construir_indice_politicas.py",
+    "creado_utc": "2026-11-10T22:40:19+00:00",
+    "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "dimension": 384,
+    "metrica": "L2",
+    "fragmentos": 75,
+    "sha256": {
+      "index.faiss": "9a0212f70353611b59a8ad4826baaafa435ee6e3d7cb421ec0b3343421deb660",
+      "index.pkl": "9da5db7c0b7e170885e4066fa6c0ab1ed7dbcdd3f580361bc73370e59b8d8bdd"
+    },
+    "segundos_de_carga": 0.03
+  },
+  "puerta_de_seguridad": {
+    "sin_confianza_explicita": "PermissionError: se requiere confianza explícita para deserializar index.pkl",
+    "copia_con_index_pkl_alterado": "ValueError: huella incorrecta: index.pkl"
+  },
+  "herramienta_consultar_politicas": {
+    "pregunta": "¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?",
+    "fragmentos": [
+      {
+        "posicion": 1,
+        "fuente_id": "FIC-GAR-01-S03-C01",
+        "seccion": "3. Compatibilidad antes de la instalación",
+        "distancia_l2": 11.533
+      },
+      {
+        "posicion": 2,
+        "fuente_id": "FIC-DEV-01-S02-C01",
+        "seccion": "2. Devolución de una pieza sin instalar",
+        "distancia_l2": 12.783
+      },
+      {
+        "posicion": 3,
+        "fuente_id": "FIC-DEV-01-S06-C01",
+        "seccion": "6. Compatibilidad, cambios de opinión y exclusiones",
+        "distancia_l2": 12.855
+      },
+      {
+        "posicion": 4,
+        "fuente_id": "FIC-GAR-01-S06-C01",
+        "seccion": "6. Situaciones fuera de esta cobertura ficticia",
+        "distancia_l2": 13.875
+      }
+    ]
+  },
+  "agente": {
+    "modelo_llm": "gpt-4.1-mini",
+    "turnos": [
+      {
+        "pregunta": "¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?",
+        "herramientas": [
+          "consultar_politicas"
+        ],
+        "citas_ancladas": [
+          {
+            "fuente_id": "FIC-GAR-01-S03-C01",
+            "estado": "literal",
+            "cobertura": 1.0
+          }
+        ],
+        "respuesta_publicada": "Política ficticia de demostración. La compatibilidad eléctrica se comprueba comparando la ficha técnica de la pieza con el aparato de prueba, verificando marca, código de modelo, voltaje y otros atributos técnicos. No basta con que sea compatible con una marca; se debe confirmar el código exacto y que voltaje y conector coincidan. Si no coinciden, la pieza no debe instalarse para probar si funciona.\nFuentes: FIC-GAR-01-S03-C01"
+      },
+      {
+        "pregunta": "¿Se puede mandar en varias cajas?",
+        "herramientas": [
+          "consultar_politicas"
+        ],
+        "citas_ancladas": [],
+        "respuesta_publicada": "Política ficticia de demostración. Una entrega parcial solo puede describirse si hay un acuerdo simulado explícito que identifica las unidades, el proveedor y los plazos de cada envío. Si no existe ese acuerdo, el asistente debe indicar que la oferta no cubre la cantidad pedida.\nFuentes: FIC-ENT-01-S05-C01\n\nRecuperación T24: la pregunta inicial dejó `FIC-ENT-01-S05-C01` fuera del top-4; la reformulación lo situó en la posición 1 con el mismo índice y top-k."
+      }
+    ]
+  }
+}

@@ -1,14 +1,13 @@
 """Evaluación remota del mismo flujo final usado por Streamlit."""
+import argparse
 import json
 import os
 import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
-from uuid import uuid4
 
 from dotenv import load_dotenv
-from langsmith import evaluate
-from langsmith.schemas import Example
+from langsmith import Client, evaluate
 
 from pedro.agent import Traza, crear_flujo
 from pedro.catalog import SOURCE, crear_escenario
@@ -62,6 +61,10 @@ def evaluar_trayectoria(run, example):
 
 
 def main() -> None:
+    argumentos = argparse.ArgumentParser(description=__doc__)
+    argumentos.add_argument("--modelo", help="modelo de OpenAI; por defecto PEDRO_MODEL o gpt-4.1-mini")
+    argumentos.add_argument("--salida", type=Path, help="copia versionable del registro")
+    opciones = argumentos.parse_args()
     load_dotenv()
     if not os.getenv("OPENAI_API_KEY") or not os.getenv("LANGSMITH_API_KEY"):
         raise SystemExit("Faltan OPENAI_API_KEY y LANGSMITH_API_KEY; sin evaluación remota")
@@ -69,7 +72,8 @@ def main() -> None:
     casos = referencias()
     escenario = crear_escenario(Path("storage/evals/catalogos"))
     memoria = Path("storage/evals/memoria.sqlite3")
-    llm = ChatOpenAI(model=os.getenv("PEDRO_MODEL", "gpt-4.1-mini"))
+    modelo = opciones.modelo or os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
+    llm = ChatOpenAI(model=modelo)
     nli = ModeloNLI()
 
     def objetivo(entrada: dict) -> dict:
@@ -83,26 +87,37 @@ def main() -> None:
                                  if e["evento"] == "tool_start"]}
 
     ahora = datetime.now(timezone.utc)
-    dataset = uuid4()
-    ejemplos = [Example(id=uuid4(), dataset_id=dataset, created_at=ahora,
-                        inputs={"pregunta": caso["pregunta"]}, outputs=caso["esperado"],
-                        metadata={"grupo": caso["grupo"], "caso_id": caso["id"],
-                                  "dataset_id": escenario.dataset_id}) for caso in casos]
-    resultados = list(evaluate(
-        objetivo, data=ejemplos, evaluators=[evaluar_contenido, evaluar_ganador,
+    # LangSmith necesita que el conjunto de casos exista allí; se crea una vez y se reutiliza.
+    cliente = Client()
+    huella = hashlib.sha256(CASOS_RUTA.read_bytes()).hexdigest()[:8]
+    nombre_dataset = f"pedro-infnet-casos-derivados-{huella}"
+    if not cliente.has_dataset(dataset_name=nombre_dataset):
+        dataset = cliente.create_dataset(
+            dataset_name=nombre_dataset,
+            description="30 casos derivados sintéticos y congelados; no son los casos oficiales.")
+        cliente.create_examples(dataset_id=dataset.id, examples=[
+            {"inputs": {"pregunta": caso["pregunta"]}, "outputs": caso["esperado"],
+             "metadata": {"grupo": caso["grupo"], "caso_id": caso["id"]}} for caso in casos])
+    experimento = evaluate(
+        objetivo, data=nombre_dataset, evaluators=[evaluar_contenido, evaluar_ganador,
         evaluar_importe, evaluar_trayectoria], upload_results=True, max_concurrency=1,
-        experiment_prefix="pedro-infnet-flujo",
+        experiment_prefix=f"pedro-infnet-flujo-{modelo}",
         metadata={"dataset_id": escenario.dataset_id, "nli_model": MODELO,
-                  "nli_revision": REVISION, "casos": len(casos)}))
+                  "nli_revision": REVISION, "casos": len(casos), "modelo_llm": modelo})
+    resultados = list(experimento)
     filas = []
     metricas: dict[str, list[int]] = {}
+    por_grupo: dict[str, dict[str, list[int]]] = {}
     for fila in resultados:
         scores = {r.key: r.score for r in fila["evaluation_results"]["results"]}
         meta_caso = fila["example"].metadata or {}
+        grupo = str(meta_caso.get("grupo"))
         for nombre, score in scores.items():
             if score is not None:
                 metricas.setdefault(nombre, []).append(int(score))
+                por_grupo.setdefault(grupo, {}).setdefault(nombre, []).append(int(score))
         filas.append({"caso_id": meta_caso.get("caso_id"),
+                      "pregunta": (fila["example"].inputs or {}).get("pregunta"),
                       "grupo": meta_caso.get("grupo"),
                       "run_id": str(fila["run"].id), "salida": fila["run"].outputs,
                       "scores": scores})
@@ -111,12 +126,20 @@ def main() -> None:
                for k, v in metricas.items()}
     destino = Path("storage/evals/flujo.json")
     destino.parent.mkdir(parents=True, exist_ok=True)
-    destino.write_text(json.dumps({"fecha_utc": ahora.isoformat(), "modo": "real",
-                                   "dataset_id": escenario.dataset_id, "resumen": resumen,
-                                   "casos": filas}, indent=2, ensure_ascii=False),
-                       encoding="utf-8")
+    registro = json.dumps({
+        "fecha_utc": ahora.isoformat(), "modo": "real", "modelo_llm": modelo,
+        "experimento_langsmith": experimento.experiment_name,
+        "dataset_langsmith": nombre_dataset,
+        "dataset_id": escenario.dataset_id, "resumen": resumen,
+        "por_grupo": {grupo: {nombre: f"{sum(v)}/{len(v)}" for nombre, v in metricas_grupo.items()}
+                      for grupo, metricas_grupo in por_grupo.items()},
+        "casos": filas}, indent=2, ensure_ascii=False)
+    destino.write_text(registro, encoding="utf-8")
+    if opciones.salida:
+        opciones.salida.parent.mkdir(parents=True, exist_ok=True)
+        opciones.salida.write_text(registro + "\n", encoding="utf-8")
     print(json.dumps(resumen, ensure_ascii=False))
-    print(f"registro {destino}")
+    print(f"experimento {experimento.experiment_name}; registro {opciones.salida or destino}")
 
 
 if __name__ == "__main__":

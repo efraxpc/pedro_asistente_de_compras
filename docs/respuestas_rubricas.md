@@ -510,11 +510,107 @@ En una frase: **declarativo para lo que es una tubería, imperativo para lo que 
 
 ## R22 — Agente de recuperación sobre un índice FAISS existente
 
-*Pendiente de redactar.*
+> ¿El alumno construyó un agente de recuperación usando un índice FAISS existente?
+
+**Respuesta corta.** Sí. El índice está guardado en `knowledge/politicas/` y el agente solo lo **carga**; no lo reconstruye. Antes de abrirlo comprueba su manifiesto y sus huellas. Con el índice cargado, el modelo real respondió dos preguntas de política citando sus fuentes.
+
+### 1. Indexar y recuperar son dos pasos separados
+
+| Paso | Cuándo ocurre | Quién lo hace |
+|---|---|---|
+| **Indexar** | Una vez, fuera del agente | [construir_indice_politicas.py](../scripts/construir_indice_politicas.py): trocea el corpus, calcula embeddings, guarda `index.faiss`, `index.pkl` y `manifest.json` |
+| **Recuperar** | En cada pregunta | `cargar_indice` en [rag.py](../src/pedro/rag.py) abre lo guardado; la herramienta `consultar_politicas` busca en él |
+
+El índice tiene 75 fragmentos, 384 dimensiones y métrica L2, con el modelo de embeddings `paraphrase-multilingual-MiniLM-L12-v2`. Cargarlo tardó 0,03 s, porque no se calcula ningún embedding.
+
+### 2. La puerta antes de cargar
+
+El docstore de FAISS es un archivo pickle, y abrir un pickle ajeno puede ejecutar código. Por eso la carga exige tres cosas:
+
+| Comprobación | Qué pasa si falla |
+|---|---|
+| Manifiesto completo: origen, modelo, dimensión, métrica y documentos | `ValueError: manifiesto incompleto` |
+| Huella SHA-256 de `index.faiss` e `index.pkl` igual a la del manifiesto | `ValueError: huella incorrecta: index.pkl` |
+| Confianza explícita del operador | `PermissionError: se requiere confianza explícita…` |
+
+Tras cargar, se vuelve a comparar dimensión, recuento, métrica, identificadores y metadatos con el manifiesto. Una prueba adicional avisa si el corpus cambió después de indexar.
+
+### 3. El agente recuperando
+
+| Pregunta | Qué hizo | Respuesta publicada |
+|---|---|---|
+| «¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?» | El LLM llamó a `consultar_politicas`; cita literal de `FIC-GAR-01-S03-C01`; pasó verificación y NLI | Resumen de la regla con su fuente |
+| «¿Se puede mandar en varias cajas?» | Ruta de entrega: reformula la consulta y recupera `FIC-ENT-01-S05-C01` | Regla de entrega parcial con su fuente |
+
+**Decisión técnica.** Se mantuvo el modelo de embeddings local (FastEmbed) en lugar de uno de OpenAI para que cargar y consultar el índice no dependa de credenciales ni de un servicio externo. El modelo queda escrito en el manifiesto y la carga se niega si el que se usa para consultar es otro, porque los vectores no serían comparables.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Índice guardado con manifiesto y huellas | [knowledge/politicas/](../knowledge/politicas/) | Artefacto versionado |
+| Carga desde disco, puerta de seguridad, herramienta y dos preguntas al agente | [trazas/r22_indice_existente.json](trazas/r22_indice_existente.json); [scripts/demostrar_r22.py](../scripts/demostrar_r22.py) | **Ejecución real remota** (`gpt-4.1-mini`), NLI real local |
+| Carga del índice y recuperación sin credenciales | [notebooks/04_rag_text_to_query.ipynb](../notebooks/04_rag_text_to_query.ipynb) §«R22» | Ejecución real local |
+| El índice se carga sin indexar, corresponde al corpus actual y la puerta rechaza carga sin confianza o con un archivo alterado | [tests/test_indice_existente.py](../tests/test_indice_existente.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- **El índice es propio.** La guía habla del «índice FAISS preexistente exigido por la actividad», pero el enunciado original no está en este workspace y no se recibió ningún índice del curso. Se construyó uno a partir del corpus ficticio y se guardó como artefacto. Si el profesor entrega un índice, basta con sustituir la carpeta: el cargador y las pruebas son los mismos.
+- La app solo usa este índice si `PEDRO_TRUST_POLICY_INDEX=true` está en `.env`. Sin esa variable avisa y usa el índice de demostración en memoria, con el mismo contenido.
+- El corpus son tres políticas ficticias; no hay políticas reales.
 
 ## R23 — Diagnóstico y corrección de un fallo real de recuperación
 
-*Pendiente de redactar.*
+> ¿El alumno documentó una falla real de recuperación a partir de los documentos fuente retornados y justificó la técnica de corrección aplicada?
+
+**Respuesta corta.** Sí. Una pregunta coloquial no recuperaba la regla correcta aunque estaba en el corpus. Se diagnosticó con los fragmentos devueltos y se corrigió reformulando la consulta. El antes y el después se midieron sobre el índice guardado en disco.
+
+### 1. El fallo
+
+Pregunta: «¿Se puede mandar en varias cajas?». La respuesta está en `entrega.md`, sección 5 («Entrega parcial y stock»), fragmento `FIC-ENT-01-S05-C01`. Con top-4, ese fragmento **no aparece**:
+
+| Posición | Fragmento devuelto | Sección | Distancia L2 |
+|---|---|---|---|
+| 1 | `FIC-ENT-01-S04-C01` | Recepción y comprobación inmediata | 12,845 |
+| 2 | `FIC-GAR-01-S06-C01` | Situaciones fuera de la cobertura | 13,336 |
+| 3 | `FIC-DEV-01-S03-C01` | Daño visible y contenido incompleto | 13,389 |
+| 4 | `FIC-GAR-01-S01-C01` | Propósito y piezas cubiertas | 14,045 |
+
+### 2. Diagnóstico
+
+Los cuatro fragmentos hablan de cajas y paquetes en sentido físico: recibirlos, abrirlos, daños. La pregunta dice «varias cajas» y la política dice «entrega parcial». Es un **desajuste de vocabulario**: el usuario y el documento nombran la misma idea con palabras distintas, y el embedding acerca la pregunta a los textos que comparten la palabra «caja».
+
+No es un problema del corpus (la regla existe) ni del troceado (está entera en un fragmento).
+
+### 3. Corrección: reformular la consulta
+
+Se reescribe la pregunta con el término del dominio, **sin incluir la respuesta**: «¿Cuándo admite la política de entrega un envío parcial de las piezas solicitadas?». Mismo índice, mismo top-4:
+
+| Posición | Fragmento devuelto | Distancia L2 |
+|---|---|---|
+| **1** | **`FIC-ENT-01-S05-C01`** | **10,216** |
+| 2 | `FIC-ENT-01-S01-C01` | 11,819 |
+| 3 | `FIC-ENT-01-S04-C01` | 12,317 |
+| 4 | `FIC-DEV-01-S08-C02` | 12,437 |
+
+**Por qué esta técnica.** El diagnóstico apunta al vocabulario de la consulta, así que se corrige la consulta. Las alternativas atacan otra causa: subir el top-k trae más ruido sin arreglar el orden, y cambiar el troceado no ayuda porque el fragmento ya estaba completo. El filtro por tema (`tema=entrega`) también recupera el fragmento, pero exige saber de antemano el tema; se dejó como prueba aparte.
+
+En el agente, la herramienta `consultar_politicas` aplica esta reformulación a las preguntas sobre dividir un envío y devuelve los fragmentos de antes y de después, de modo que el diagnóstico queda en la traza de cada respuesta.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Antes y después sobre el **índice guardado en disco**, con fuente, identificador y distancia L2 | [trazas/r23_t24_indice_existente.json](trazas/r23_t24_indice_existente.json); [scripts/diagnosticar_t24.py](../scripts/diagnosticar_t24.py) | Ejecución real local |
+| El mismo contraste reproducible sin credenciales | [notebooks/04_rag_text_to_query.ipynb](../notebooks/04_rag_text_to_query.ipynb) §«T24» y §«R22» | Ejecución real local |
+| La pregunta coloquial respondida por el agente con la regla correcta | [trazas/r22_indice_existente.json](trazas/r22_indice_existente.json) | Ejecución real remota |
+| Diagnóstico ampliado y pruebas | [t24_recuperacion.md](t24_recuperacion.md); [tests/test_rag_diagnostics.py](../tests/test_rag_diagnostics.py) | Documentación y pruebas |
+
+### Pendientes y limitaciones
+
+- El fallo se localizó en un corpus ficticio propio; es real en el sentido de que se observó, no se fabricó alterando resultados.
+- La reformulación está escrita como regla para las preguntas de envío dividido. No es una reescritura general hecha por el LLM.
+- Es un caso; no se midió cuántas preguntas del corpus fallan del mismo modo.
 
 ---
 

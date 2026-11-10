@@ -224,7 +224,7 @@ print('después', recuperar(ruta, 'alumna', 'proveedor internacional', emb))""")
 ])
 
 guardar("04_rag_text_to_query.ipynb", [
-    ("md", "# Fase 4 · SQL y FAISS\nPlan Pydantic a SELECT parametrizado. T15 usa un corpus de políticas ficticias y FastEmbed local. T24 demuestra un fallo y una reformulación con el mismo índice y top-k; R22/R23 exigen repetirlo sobre un índice preexistente autorizado."),
+    ("md", "# Fase 4 · SQL y FAISS\nPlan Pydantic a SELECT parametrizado. T15 usa un corpus de políticas ficticias y FastEmbed local. T24 demuestra un fallo y una reformulación con el mismo índice y top-k, primero en memoria y al final sobre el índice guardado en disco (R22/R23)."),
     ("code", PRE),
     ("code", """from pedro.catalog import crear_escenario
 from pedro.query import planear, ejecutar
@@ -280,12 +280,26 @@ con_filtro = consultar(indice_demo, original, k=4, filtro={'tema': 'entrega'},
 print('filtro_entrega', [(x['fuente_id'], round(x['score'], 3)) for x in con_filtro])
 assert informe['correccion_observada']
 assert any(x['fuente_id'] == esperado for x in con_filtro)"""),
-    ("code", """from pedro.rag import inspeccionar_indice
+    ("md", "## R22 · índice FAISS existente: se carga, no se construye\nEl índice de `knowledge/politicas/` se creó una vez con `scripts/construir_indice_politicas.py` y está guardado con su manifiesto. Aquí solo se **carga** desde disco: primero se comprueban el manifiesto y las huellas, y sin confianza explícita el docstore no se abre. Después se repite T24 sobre el índice cargado. El corpus es ficticio y propio."),
+    ("code", """from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+from pedro.rag import cargar_indice, inspeccionar_indice
 carpeta = Path('knowledge/politicas')
-if (carpeta / 'manifest.json').is_file():
-    print(inspeccionar_indice(carpeta))
-else:
-    print('PENDIENTE R22/R23: repetir la prueba T24 en un índice FAISS preexistente autorizado')"""),
+meta = inspeccionar_indice(carpeta)
+print({k: meta[k] for k in ('origen', 'creado_utc', 'embedding_model', 'dimension', 'metrica')})
+print('fragmentos en el manifiesto:', len(meta['documentos']), '| sha256:', meta['sha256'])
+print('corpus sin cambios desde la indexación:', meta['corpus_sha256'] == huella_corpus())
+embeddings = FastEmbedEmbeddings(model_name=meta['embedding_model'], doc_embed_type='passage')
+try:
+    cargar_indice(carpeta, embeddings, origen_confiable=False)
+except PermissionError as error:
+    print('sin confianza explícita ->', error)
+existente, _ = cargar_indice(carpeta, embeddings, origen_confiable=True)
+print('cargado de disco:', existente.index.ntotal, 'fragmentos')
+informe = diagnosticar_reescritura(existente, original, reescrita, esperado, k=4)
+for etapa in ('antes', 'despues'):
+    print(etapa, 'posición', informe['posicion_' + etapa],
+          [(f['fuente_id'], round(f['score'], 3)) for f in informe[etapa]])
+assert informe['correccion_observada']"""),
 ])
 
 guardar("05_integrador_evaluacion.ipynb", [

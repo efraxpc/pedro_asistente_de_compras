@@ -19,6 +19,7 @@ uv run python scripts/generar_catalogo_piezas.py  # regenerate synthetic SQLite 
 uv run python scripts/crear_notebooks.py          # regenerate the 5 teaching notebooks
 uv run python scripts/ejecutar_notebooks.py       # execute notebooks and save outputs
 uv run python scripts/diagnosticar_t24.py --salida storage/evidencias/t24_demo.json  # T24 retrieval diagnostic (no OpenAI needed)
+uv run python scripts/construir_indice_politicas.py  # rebuild the persisted policy index in knowledge/politicas/ (run after editing the corpus)
 uv run python evals/evaluar_flujo.py          # LangSmith eval (requires OPENAI_API_KEY + LANGSMITH_API_KEY; never simulate metrics)
 ```
 
@@ -43,7 +44,7 @@ Type-check edited code with `ty` when available. Run the full test suite before 
 - `chains.py` + `laboratorio.py` — teaching chains (LCEL, `@chain`, and `crear_lcel_robusta` with a one-shot repair fallback and a strict complete-JSON check) and the broken-output lab that exercises them; not used by the chat flow.
 - `prompts.py` — the two named reusable templates (`PLANTILLA_EXTRACCION`, `PLANTILLA_AGENTE`, PTCF) and the observable-action few-shot examples.
 
-**Security gate:** a pre-existing index at `knowledge/politicas/` requires `index.faiss`, `index.pkl`, and a complete `manifest.json`; its docstore is pickle, so `PEDRO_TRUST_POLICY_INDEX=true` must only be set after verifying provenance, hashes, model, dimension, metric, and metadata. The in-memory demo index never uses that flag.
+**Security gate:** the persisted index at `knowledge/politicas/` (our own, built from the fictitious corpus; committed with its manifest) requires `index.faiss`, `index.pkl`, and a complete `manifest.json`; its docstore is pickle, so `PEDRO_TRUST_POLICY_INDEX=true` must only be set after verifying provenance, hashes, model, dimension, metric, and metadata. The in-memory demo index never uses that flag.
 
 **Env vars:** `OPENAI_API_KEY`, `PEDRO_MODEL`, `PEDRO_TRUST_POLICY_INDEX`, `PEDRO_PORT`, `LANGSMITH_API_KEY` (evals). Copy `.env.example` to `.env`; never commit `.env` or `storage/`.
 

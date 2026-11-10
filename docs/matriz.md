@@ -46,8 +46,8 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 | R19 | Herramientas hardcoded vs. semánticas | R4.1 | src/pedro/agent.py; docs/informe.md | Seis herramientas tipadas con docstring; deterministas (comparar, CEP), text-to-query y semántica (políticas) diferenciadas | Local |
 | R20 | APIs internas/externas según tipo de uso | R2.4 | src/pedro/integrations.py; src/pedro/agent.py | ViaCEP real y simulado integrado como herramienta con propósito documentado (confirmar ciudad/UF, no flete) | Real puntual |
 | R21 | Patrón text-to-query | R4.2 | src/pedro/query.py; NB04; tests/test_tools_flow.py | Pregunta natural → PlanConsulta Pydantic → SELECT parametrizado de solo lectura, validación, ejecución y filas con traza | Local |
-| R22 | Agente de recuperación sobre índice FAISS **existente** | R4.3 | src/pedro/rag.py; tests/test_rag_integrations.py | Cargador con manifiesto, hashes y puerta de confianza probados con fixture; **el índice autorizado no está disponible**; la demo T15 en memoria no lo acredita | Pendiente externo |
-| R23 | Fallo real de recuperación diagnosticado y corregido | R4.4, R4.5 | docs/t24_recuperacion.md; scripts/diagnosticar_t24.py; NB04; src/pedro/agent.py | Before/after con mismo índice y top-4: `FIC-ENT-01-S05-C01` ausente y luego primero tras query rewriting, con fuente, ID y distancia L2; **demostrado sobre corpus ficticio; repetirlo sobre el índice exigido cuando exista** | Parcial |
+| R22 | Agente de recuperación sobre índice FAISS existente | R4.3 | docs/respuestas_rubricas.md §R22; knowledge/politicas/; scripts/construir_indice_politicas.py; scripts/demostrar_r22.py; NB04; tests/test_indice_existente.py; docs/trazas/r22_indice_existente.json | Índice guardado (75 fragmentos, 384d, L2) con manifiesto y huellas; el agente lo carga sin reconstruirlo y respondió dos preguntas con gpt-4.1-mini real; puerta de seguridad probada; **índice propio: la actividad no entregó uno** | Real local y remoto puntual |
+| R23 | Fallo real de recuperación diagnosticado y corregido | R4.4, R4.5 | docs/respuestas_rubricas.md §R23; docs/t24_recuperacion.md; scripts/diagnosticar_t24.py; NB04; docs/trazas/r23_t24_indice_existente.json | Antes/después sobre el índice guardado en disco: `FIC-ENT-01-S05-C01` fuera del top-4 y luego primero tras reformular la consulta, con fuente, ID y distancia L2; diagnóstico de desajuste de vocabulario y técnica justificada; corpus ficticio propio | Real local |
 
 ## Fase 5 — Agente final verificado y evaluado (R24–R29)
 
@@ -75,7 +75,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Entregable | Estado |
 |---|---|
-| Código y notebooks reproducibles con dobles identificados | Local: 53/53 pruebas, 5/5 notebooks reejecutados |
+| Código y notebooks reproducibles con dobles identificados | Local: 56/56 pruebas, 5/5 notebooks reejecutados |
 | Informe técnico en PDF | Local: docs/informe.md y docs/informe.pdf; actualizar tras cerrar pendientes |
 | Registro de evaluación en LangSmith | Pendiente (ver R29) |
 | Video de demostración + enlace Drive institucional | Pendiente: requiere grabación y acceso del alumno |
@@ -85,6 +85,6 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 1. **R01**: sustituir la escala genérica de madurez por la de la clase 1 cuando esté disponible.
 2. **R05, R18, R26**: documentar ejecuciones reales con OPENAI_API_KEY (extracción, conversación multi-turno y sesión del agente final).
 3. **R11**: justificar por escrito la sustitución de CoT privado por planes observables, o añadir una demostración de CoT.
-4. **R22–R23**: obtener el índice FAISS preexistente autorizado, revisar su procedencia y repetir el diagnóstico T24 sobre él.
+4. **R22–R23**: confirmar con el profesor si la actividad entrega un índice FAISS; hoy se usa uno propio guardado en knowledge/politicas/.
 5. **R29**: ejecutar evals/evaluar_flujo.py con credenciales y registrar métricas reales.
 6. Cotejo final contra el enunciado original en portugués cuando esté disponible, y actualización del diagrama rubricas_proyecto.mmd/svg a los IDs oficiales.

@@ -1,0 +1,843 @@
+{
+  "origen": "ficticio_demo: corpus propio en knowledge/politicas_demo, indexado por scripts/construir_indice_politicas.py",
+  "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "dimension": 384,
+  "metrica": "L2",
+  "documentos": [
+    {
+      "id": "FIC-DEV-01-S00-C00",
+      "metadata": {
+        "id": "FIC-DEV-01-S00-C00",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "Política ficticia de devoluciones · DEMOSTRACIÓN T15",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S01-C00",
+      "metadata": {
+        "id": "FIC-DEV-01-S01-C00",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "1. Alcance y fecha de referencia",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S01-C01",
+      "metadata": {
+        "id": "FIC-DEV-01-S01-C01",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "1. Alcance y fecha de referencia",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S01-C02",
+      "metadata": {
+        "id": "FIC-DEV-01-S01-C02",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "1. Alcance y fecha de referencia",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S02-C00",
+      "metadata": {
+        "id": "FIC-DEV-01-S02-C00",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "2. Devolución de una pieza sin instalar",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S02-C01",
+      "metadata": {
+        "id": "FIC-DEV-01-S02-C01",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "2. Devolución de una pieza sin instalar",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S02-C02",
+      "metadata": {
+        "id": "FIC-DEV-01-S02-C02",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "2. Devolución de una pieza sin instalar",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S03-C00",
+      "metadata": {
+        "id": "FIC-DEV-01-S03-C00",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "3. Daño visible y contenido incompleto",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S03-C01",
+      "metadata": {
+        "id": "FIC-DEV-01-S03-C01",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "3. Daño visible y contenido incompleto",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S03-C02",
+      "metadata": {
+        "id": "FIC-DEV-01-S03-C02",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "3. Daño visible y contenido incompleto",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S04-C00",
+      "metadata": {
+        "id": "FIC-DEV-01-S04-C00",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "4. Solicitud, autorización y envío",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S04-C01",
+      "metadata": {
+        "id": "FIC-DEV-01-S04-C01",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "4. Solicitud, autorización y envío",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S04-C02",
+      "metadata": {
+        "id": "FIC-DEV-01-S04-C02",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "4. Solicitud, autorización y envío",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S05-C00",
+      "metadata": {
+        "id": "FIC-DEV-01-S05-C00",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "5. Inspección y resolución",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S05-C01",
+      "metadata": {
+        "id": "FIC-DEV-01-S05-C01",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "5. Inspección y resolución",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S05-C02",
+      "metadata": {
+        "id": "FIC-DEV-01-S05-C02",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "5. Inspección y resolución",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S06-C00",
+      "metadata": {
+        "id": "FIC-DEV-01-S06-C00",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "6. Compatibilidad, cambios de opinión y exclusiones",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S06-C01",
+      "metadata": {
+        "id": "FIC-DEV-01-S06-C01",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "6. Compatibilidad, cambios de opinión y exclusiones",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S06-C02",
+      "metadata": {
+        "id": "FIC-DEV-01-S06-C02",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "6. Compatibilidad, cambios de opinión y exclusiones",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S07-C00",
+      "metadata": {
+        "id": "FIC-DEV-01-S07-C00",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "7. Ejemplos para comprobar recuperación",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S07-C01",
+      "metadata": {
+        "id": "FIC-DEV-01-S07-C01",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "7. Ejemplos para comprobar recuperación",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S07-C02",
+      "metadata": {
+        "id": "FIC-DEV-01-S07-C02",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "7. Ejemplos para comprobar recuperación",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S08-C00",
+      "metadata": {
+        "id": "FIC-DEV-01-S08-C00",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "8. Identificación de piezas y ofertas del catálogo",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S08-C01",
+      "metadata": {
+        "id": "FIC-DEV-01-S08-C01",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "8. Identificación de piezas y ofertas del catálogo",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-DEV-01-S08-C02",
+      "metadata": {
+        "id": "FIC-DEV-01-S08-C02",
+        "origen": "ficticio_demo",
+        "tema": "devoluciones",
+        "seccion": "8. Identificación de piezas y ofertas del catálogo",
+        "fuente": "devoluciones.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S00-C00",
+      "metadata": {
+        "id": "FIC-GAR-01-S00-C00",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "Política ficticia de garantía y compatibilidad · DEMOSTRACIÓN T15",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S01-C00",
+      "metadata": {
+        "id": "FIC-GAR-01-S01-C00",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "1. Propósito y piezas cubiertas",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S01-C01",
+      "metadata": {
+        "id": "FIC-GAR-01-S01-C01",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "1. Propósito y piezas cubiertas",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S01-C02",
+      "metadata": {
+        "id": "FIC-GAR-01-S01-C02",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "1. Propósito y piezas cubiertas",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S02-C00",
+      "metadata": {
+        "id": "FIC-GAR-01-S02-C00",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "2. Qué se considera fallo de fabricación",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S02-C01",
+      "metadata": {
+        "id": "FIC-GAR-01-S02-C01",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "2. Qué se considera fallo de fabricación",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S02-C02",
+      "metadata": {
+        "id": "FIC-GAR-01-S02-C02",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "2. Qué se considera fallo de fabricación",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S03-C00",
+      "metadata": {
+        "id": "FIC-GAR-01-S03-C00",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "3. Compatibilidad antes de la instalación",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S03-C01",
+      "metadata": {
+        "id": "FIC-GAR-01-S03-C01",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "3. Compatibilidad antes de la instalación",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S03-C02",
+      "metadata": {
+        "id": "FIC-GAR-01-S03-C02",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "3. Compatibilidad antes de la instalación",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S04-C00",
+      "metadata": {
+        "id": "FIC-GAR-01-S04-C00",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "4. Apertura de un caso de garantía",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S04-C01",
+      "metadata": {
+        "id": "FIC-GAR-01-S04-C01",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "4. Apertura de un caso de garantía",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S04-C02",
+      "metadata": {
+        "id": "FIC-GAR-01-S04-C02",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "4. Apertura de un caso de garantía",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S05-C00",
+      "metadata": {
+        "id": "FIC-GAR-01-S05-C00",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "5. Inspección y posibles resultados",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S05-C01",
+      "metadata": {
+        "id": "FIC-GAR-01-S05-C01",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "5. Inspección y posibles resultados",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S05-C02",
+      "metadata": {
+        "id": "FIC-GAR-01-S05-C02",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "5. Inspección y posibles resultados",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S06-C00",
+      "metadata": {
+        "id": "FIC-GAR-01-S06-C00",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "6. Situaciones fuera de esta cobertura ficticia",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S06-C01",
+      "metadata": {
+        "id": "FIC-GAR-01-S06-C01",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "6. Situaciones fuera de esta cobertura ficticia",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S06-C02",
+      "metadata": {
+        "id": "FIC-GAR-01-S06-C02",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "6. Situaciones fuera de esta cobertura ficticia",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S07-C00",
+      "metadata": {
+        "id": "FIC-GAR-01-S07-C00",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "7. Ejemplos para comprobar recuperación",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S07-C01",
+      "metadata": {
+        "id": "FIC-GAR-01-S07-C01",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "7. Ejemplos para comprobar recuperación",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S07-C02",
+      "metadata": {
+        "id": "FIC-GAR-01-S07-C02",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "7. Ejemplos para comprobar recuperación",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S08-C00",
+      "metadata": {
+        "id": "FIC-GAR-01-S08-C00",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "8. Fichas técnicas y compatibilidad verificables",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S08-C01",
+      "metadata": {
+        "id": "FIC-GAR-01-S08-C01",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "8. Fichas técnicas y compatibilidad verificables",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-GAR-01-S08-C02",
+      "metadata": {
+        "id": "FIC-GAR-01-S08-C02",
+        "origen": "ficticio_demo",
+        "tema": "garantia",
+        "seccion": "8. Fichas técnicas y compatibilidad verificables",
+        "fuente": "garantia.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S00-C00",
+      "metadata": {
+        "id": "FIC-ENT-01-S00-C00",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "Política ficticia de entrega y recepción · DEMOSTRACIÓN T15",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S01-C00",
+      "metadata": {
+        "id": "FIC-ENT-01-S01-C00",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "1. Alcance de los plazos simulados",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S01-C01",
+      "metadata": {
+        "id": "FIC-ENT-01-S01-C01",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "1. Alcance de los plazos simulados",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S01-C02",
+      "metadata": {
+        "id": "FIC-ENT-01-S01-C02",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "1. Alcance de los plazos simulados",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S02-C00",
+      "metadata": {
+        "id": "FIC-ENT-01-S02-C00",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "2. Preparación y despacho de prueba",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S02-C01",
+      "metadata": {
+        "id": "FIC-ENT-01-S02-C01",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "2. Preparación y despacho de prueba",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S02-C02",
+      "metadata": {
+        "id": "FIC-ENT-01-S02-C02",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "2. Preparación y despacho de prueba",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S03-C00",
+      "metadata": {
+        "id": "FIC-ENT-01-S03-C00",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "3. Seguimiento y demora",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S03-C01",
+      "metadata": {
+        "id": "FIC-ENT-01-S03-C01",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "3. Seguimiento y demora",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S03-C02",
+      "metadata": {
+        "id": "FIC-ENT-01-S03-C02",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "3. Seguimiento y demora",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S04-C00",
+      "metadata": {
+        "id": "FIC-ENT-01-S04-C00",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "4. Recepción y comprobación inmediata",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S04-C01",
+      "metadata": {
+        "id": "FIC-ENT-01-S04-C01",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "4. Recepción y comprobación inmediata",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S04-C02",
+      "metadata": {
+        "id": "FIC-ENT-01-S04-C02",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "4. Recepción y comprobación inmediata",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S05-C00",
+      "metadata": {
+        "id": "FIC-ENT-01-S05-C00",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "5. Entrega parcial y stock",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S05-C01",
+      "metadata": {
+        "id": "FIC-ENT-01-S05-C01",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "5. Entrega parcial y stock",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S05-C02",
+      "metadata": {
+        "id": "FIC-ENT-01-S05-C02",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "5. Entrega parcial y stock",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S06-C00",
+      "metadata": {
+        "id": "FIC-ENT-01-S06-C00",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "6. Incidencias de destino y datos personales",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S06-C01",
+      "metadata": {
+        "id": "FIC-ENT-01-S06-C01",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "6. Incidencias de destino y datos personales",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S06-C02",
+      "metadata": {
+        "id": "FIC-ENT-01-S06-C02",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "6. Incidencias de destino y datos personales",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S07-C00",
+      "metadata": {
+        "id": "FIC-ENT-01-S07-C00",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "7. Ejemplos para comprobar recuperación",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S07-C01",
+      "metadata": {
+        "id": "FIC-ENT-01-S07-C01",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "7. Ejemplos para comprobar recuperación",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S07-C02",
+      "metadata": {
+        "id": "FIC-ENT-01-S07-C02",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "7. Ejemplos para comprobar recuperación",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S08-C00",
+      "metadata": {
+        "id": "FIC-ENT-01-S08-C00",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "8. Lectura de ofertas concretas de la base",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S08-C01",
+      "metadata": {
+        "id": "FIC-ENT-01-S08-C01",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "8. Lectura de ofertas concretas de la base",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    },
+    {
+      "id": "FIC-ENT-01-S08-C02",
+      "metadata": {
+        "id": "FIC-ENT-01-S08-C02",
+        "origen": "ficticio_demo",
+        "tema": "entrega",
+        "seccion": "8. Lectura de ofertas concretas de la base",
+        "fuente": "entrega.md",
+        "version": "1.1"
+      }
+    }
+  ],
+  "sha256": {
+    "index.faiss": "9a0212f70353611b59a8ad4826baaafa435ee6e3d7cb421ec0b3343421deb660",
+    "index.pkl": "9da5db7c0b7e170885e4066fa6c0ab1ed7dbcdd3f580361bc73370e59b8d8bdd"
+  },
+  "corpus_sha256": "b9dec4509b36aa722e03bff45c14876339e52831e12f8b311de6287ed5bce6c3",
+  "fragmentacion": {
+    "tamano": 700,
+    "solapamiento": 100
+  },
+  "creado_utc": "2026-11-10T22:40:19+00:00"
+}
