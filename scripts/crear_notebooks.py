@@ -32,6 +32,19 @@ print([x.model_dump() for x in lcel.batch([entrada, entrada])])
 print(list(modelo.stream('etapa del modelo')))
 print(lcel.get_graph().draw_mermaid())"""),
     ("md", "LCEL expone etapas declarativas. @chain envuelve la misma extracción. Los faltantes se recalculan tras el parser."),
+    ("md", "## R03 · plantilla reutilizable con variables del dominio\nEjecución real local, sin modelo: se rellena la misma `ChatPromptTemplate` con tres solicitudes distintas y se muestran los mensajes resultantes. La plantilla vive en `pedro.chains.PROMPT` y la reutilizan la cadena LCEL y la cadena `@chain`. La ejecución con el modelo real está en `docs/trazas/fase1_chain_llm.json`."),
+    ("code", """from pedro.chains import PROMPT
+print('clase:', type(PROMPT).__name__, '| variables:', sorted(PROMPT.input_variables))
+print('mensajes:', [type(m).__name__ for m in PROMPT.messages])
+parcial = PROMPT.partial(formato='Devuelve JSON con intencion, solicitud y faltantes.')
+print('tras partial -> variables libres:', sorted(parcial.input_variables))
+for texto in ('Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días',
+              'Necesito un termostato para nevera, sin prisa',
+              '¿A qué ciudad corresponde el CEP 01001000?'):
+    sistema, humano = parcial.format_messages(texto=texto)
+    print(humano.type, '->', humano.content)
+print(sistema.type, '->', sistema.content)
+print('misma plantilla en LCEL:', lcel.first.messages == PROMPT.messages)"""),
     ("md", "## R01 · anatomía del agente\nLa anatomía se lee de los objetos reales del agente final (`pedro.anatomia`), no se escribe a mano. No se llama a ningún modelo: el executor se construye con un modelo de relleno que nunca se invoca."),
     ("code", """import json
 from pedro.catalog import crear_escenario

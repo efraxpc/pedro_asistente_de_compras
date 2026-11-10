@@ -1,0 +1,121 @@
+{
+  "fase": 1,
+  "rubricas": [
+    "R03",
+    "R04",
+    "R05",
+    "R06"
+  ],
+  "modo": "real remoto (OpenAI); solicitudes sintéticas",
+  "fecha_utc": "2026-11-10T16:14:15+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "temperature": 0,
+  "plantilla": {
+    "clase": "ChatPromptTemplate",
+    "variables": [
+      "formato",
+      "texto"
+    ],
+    "mensajes": [
+      "SystemMessagePromptTemplate",
+      "HumanMessagePromptTemplate"
+    ]
+  },
+  "invoke_lcel": {
+    "entrada": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
+    "salida": {
+      "intencion": "comparar",
+      "solicitud": {
+        "producto_id": "PEC-01-0001",
+        "producto": null,
+        "cantidad": 2,
+        "presupuesto_centavos": 500000,
+        "plazo_max_dias": 7,
+        "cep": null
+      },
+      "faltantes": []
+    }
+  },
+  "invoke_chain_decorada": {
+    "entrada": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
+    "salida": {
+      "intencion": "comparar",
+      "solicitud": {
+        "producto_id": "PEC-01-0001",
+        "producto": null,
+        "cantidad": 2,
+        "presupuesto_centavos": 500000,
+        "plazo_max_dias": 7,
+        "cep": null
+      },
+      "faltantes": []
+    }
+  },
+  "batch_lcel": [
+    {
+      "entrada": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
+      "salida": {
+        "intencion": "comparar",
+        "solicitud": {
+          "producto_id": "PEC-01-0001",
+          "producto": null,
+          "cantidad": 2,
+          "presupuesto_centavos": 500000,
+          "plazo_max_dias": 7,
+          "cep": null
+        },
+        "faltantes": []
+      }
+    },
+    {
+      "entrada": "Necesito un termostato para nevera, sin prisa",
+      "salida": {
+        "intencion": "consultar",
+        "solicitud": {
+          "producto_id": null,
+          "producto": "termostato para nevera",
+          "cantidad": null,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": null,
+          "cep": null
+        },
+        "faltantes": [
+          "cantidad"
+        ]
+      }
+    },
+    {
+      "entrada": "¿A qué ciudad corresponde el CEP 01001000?",
+      "salida": {
+        "intencion": "cep",
+        "solicitud": {
+          "producto_id": null,
+          "producto": null,
+          "cantidad": null,
+          "presupuesto_centavos": null,
+          "plazo_max_dias": null,
+          "cep": "01001000"
+        },
+        "faltantes": [
+          "producto",
+          "cantidad"
+        ]
+      }
+    }
+  ],
+  "stream": {
+    "entrada": "Necesito un termostato para nevera, sin prisa",
+    "fragmentos_recibidos": 38,
+    "primeros_fragmentos": [
+      "",
+      "{\"",
+      "int",
+      "ención",
+      "\":",
+      " \"",
+      "compr",
+      "ar"
+    ],
+    "texto": "{\"intención\": \"comprar termostato para nevera\", \"solicitud\": \"información y posible compra futura de termostato para nevera\"}"
+  }
+}

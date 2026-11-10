@@ -7,7 +7,6 @@ from langchain_classic.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import AIMessage
 from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import ConfigurableFieldSpec, RunnableLambda, RunnableWithMessageHistory
 from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import StructuredTool
@@ -24,7 +23,7 @@ from .nli import Clasificador, verificar_nli
 from .policy_demo import (FRAGMENTO_T24_ESPERADO, ORIGEN as ORIGEN_DEMO,
                           PREGUNTA_T24_ORIGINAL, PREGUNTA_T24_REESCRITA,
                           reescribir_consulta_entrega)
-from .prompts import EJEMPLOS_ACCIONES
+from .prompts import EJEMPLOS_ACCIONES, PLANTILLA_AGENTE
 from .query import ejecutar, planear
 from .rag import consultar, diagnosticar_reescritura
 from .verification import anclar_citas, respuesta_local, verificar
@@ -154,27 +153,8 @@ def herramientas(escenario: Escenario, memoria_db: Path, user_id: str,
 def crear_agente(escenario: Escenario, memoria_db: Path, user_id: str,
                 mensaje_actual: str, llm, indice=None, *, cep_simulado: bool = False) -> AgentExecutor:
     parser = PydanticOutputParser(pydantic_object=RespuestaCompra)
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "Persona: Pedro, asistente de compras ficticias. "
-         "Tarea: en compras, aclara solo producto y cantidad cuando falten; presupuesto y plazo son filtros opcionales. "
-         "Las preguntas sobre políticas, entrega o envíos en varias cajas no requieren ID de pieza ni cantidad: "
-         "llama consultar_politicas y responde con la fuente recuperada. "
-         "Consulta herramientas y compara ofertas del dataset {dataset_id}. "
-         "Contexto: los mensajes anteriores y recuerdos son históricos; la solicitud actual prevalece. "
-         "Formato: JSON RespuestaCompra válido. No inventes datos ni fuentes. "
-         "Plan visible: usa buscar_productos para resolver ID, consultar_catalogo para ofertas y "
-         "comparar_ofertas para todos los importes. Una política sin fragmento implica sin_evidencia. "
-         "Para políticas usa estado=politica solo con fragmento y fuente_id del índice; "
-         "en mensaje resume la regla en una o dos frases usando solo lo que dice el fragmento, y en cada "
-         "evidencia copia la frase del fragmento que la respalda; "
-         "si el metadato origen es ficticio_demo, indica que la política es ficticia. "
-         "para CEP usa estado=cep con cidade, uf, modo_cep y evidencia ViaCEP. "
-         "Si dos piezas coinciden, pide el ID. Ejemplos de acciones observables: "
-         "{ejemplos} {formato}"),
-        MessagesPlaceholder("chat_history", optional=True),
-        ("human", "{input}"), MessagesPlaceholder("agent_scratchpad")
-    ]).partial(dataset_id=escenario.dataset_id, ejemplos=EJEMPLOS_ACCIONES,
-               formato=parser.get_format_instructions())
+    prompt = PLANTILLA_AGENTE.partial(dataset_id=escenario.dataset_id, ejemplos=EJEMPLOS_ACCIONES,
+                                      formato=parser.get_format_instructions())
     lista = herramientas(escenario, memoria_db, user_id, mensaje_actual, indice,
                          cep_simulado=cep_simulado)
     return AgentExecutor(agent=create_openai_tools_agent(llm, lista, prompt), tools=lista,

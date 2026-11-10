@@ -12,7 +12,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 |---|---|---|---|---|---|
 | R01 | Anatomía y arquitectura cognitiva; tipo y madurez agéntica | — | docs/respuestas_rubricas.md §R01; src/pedro/anatomia.py; NB01; docs/arquitectura.mmd | Anatomía leída del agente real y ejecutada en NB01; agente híbrido demostrado con doble (0 llamadas al modelo en rutas por regla, herramienta elegida en la ruta con modelo); arquitectura CoALA; madurez actual/objetivo con criterios medibles; **escala de madurez genérica (supuesto declarado) hasta disponer de la clase 1** | Local con doble |
 | R02 | Arquitectura de planificación y memoria aumentada | R3.2, R3.4 | docs/respuestas_rubricas.md §R02; NB01; scripts/demostrar_r02.py; docs/trazas/r02_planificacion_llm.json | Cinco pasos observables y mapa de memoria ejecutados sin modelo; plan decidido por gpt-4.1-mini real en compra, CEP y cambio de cantidad; pregunta de política corregida con citas ancladas; **solicitud mixta en un turno no se publica** (limitación declarada) | Real local y remoto puntual |
-| R03 | PromptTemplate/ChatPromptTemplate reutilizables | R1.4 | src/pedro/chains.py; src/pedro/agent.py; src/pedro/prompts.py; NB01 | ChatPromptTemplate con variables del dominio ejecutado en notebook | Demostrado con doble |
+| R03 | PromptTemplate/ChatPromptTemplate reutilizables | R1.4 | docs/respuestas_rubricas.md §R03; src/pedro/prompts.py; src/pedro/chains.py; NB01; tests/test_prompts.py; docs/trazas/fase1_chain_llm.json | Dos ChatPromptTemplate con nombre propio y variables del dominio; la de extracción se reutiliza en LCEL y @chain, se rellena con tres solicitudes en NB01 y se ejecutó con gpt-4.1-mini real | Real local y remoto puntual |
 | R04 | Output parser con salida JSON estructurada | R1.3, R2.5 | src/pedro/contracts.py; src/pedro/chains.py; NB01 | Pydantic validado desde una solicitud; reparación de JSON inválido probada | Local con doble |
 | R05 | invoke, batch, stream y composición con @chain | R1.5, R1.6 | NB01 | Tres métodos y @chain demostrados con doble; **ejecución con LLM real pendiente** (requiere OPENAI_API_KEY) | Parcial |
 | R06 | Composición LCEL y justificación imperativa vs. declarativa | R1.4 | src/pedro/chains.py; NB01; docs/comparaciones.md | LCEL ejecutado y comparación técnica escrita | Demostrado con doble |
@@ -75,7 +75,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Entregable | Estado |
 |---|---|
-| Código y notebooks reproducibles con dobles identificados | Local: 40/40 pruebas, 5/5 notebooks reejecutados |
+| Código y notebooks reproducibles con dobles identificados | Local: 44/44 pruebas, 5/5 notebooks reejecutados |
 | Informe técnico en PDF | Local: docs/informe.md y docs/informe.pdf; actualizar tras cerrar pendientes |
 | Registro de evaluación en LangSmith | Pendiente (ver R29) |
 | Video de demostración + enlace Drive institucional | Pendiente: requiere grabación y acceso del alumno |

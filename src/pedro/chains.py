@@ -1,15 +1,11 @@
 """Dos formas de la misma extracción MVP y composiciones didácticas."""
 from langchain_core.output_parsers import PydanticOutputParser
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnableParallel, chain
 
 from .contracts import Extraccion
+from .prompts import PLANTILLA_EXTRACCION
 
-PROMPT = ChatPromptTemplate.from_messages([
-    ("system", "Persona: Pedro. Tarea: extraer intención y solicitud de compra ficticia. "
-     "Contexto: ninguna cifra ausente se infiere como cero. Formato: JSON válido. {formato}"),
-    ("human", "{texto}"),
-])
+PROMPT = PLANTILLA_EXTRACCION
 
 
 def _validar(extraccion: Extraccion) -> Extraccion:
