@@ -60,6 +60,23 @@ def evaluar_trayectoria(run, example):
         herramienta in llamadas for herramienta in esperado["herramientas"]))}
 
 
+def evaluar_herramienta_decisiva(run, example):
+    """Trayectoria mínima: se llamó a la herramienta que produce la respuesta (la última esperada)."""
+    esperadas = (example.outputs or {})["herramientas"]
+    if not esperadas:
+        return {"key": "herramienta_decisiva", "score": None}
+    return {"key": "herramienta_decisiva",
+            "score": int(esperadas[-1] in _salida(run).get("herramientas", []))}
+
+
+def evaluar_primera_propuesta(run, example):
+    """Entre los casos que pasan por el agente, la primera propuesta superó la verificación."""
+    intentos = _salida(run).get("verificaciones", [])
+    if not intentos:
+        return {"key": "primera_propuesta", "score": None}
+    return {"key": "primera_propuesta", "score": int(not intentos[0]["errores"])}
+
+
 def main() -> None:
     argumentos = argparse.ArgumentParser(description=__doc__)
     argumentos.add_argument("--modelo", help="modelo de OpenAI; por defecto PEDRO_MODEL o gpt-4.1-mini")
@@ -74,6 +91,7 @@ def main() -> None:
     memoria = Path("storage/evals/memoria.sqlite3")
     modelo = opciones.modelo or os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
     llm = ChatOpenAI(model=modelo)
+    llm.invoke("ping")  # falla aquí, y no en cada caso, si el modelo no está disponible
     nli = ModeloNLI()
 
     def objetivo(entrada: dict) -> dict:
@@ -84,7 +102,10 @@ def main() -> None:
             "user_id": "evaluacion", "session_id": sesion}})
         return {"respuesta": salida.content,
                 "herramientas": [e["herramienta"] for e in traza.eventos
-                                 if e["evento"] == "tool_start"]}
+                                 if e["evento"] == "tool_start"],
+                "verificaciones": [{"intento": e["intento"], "estado": e["estado"],
+                                    "errores": e["errores"]}
+                                   for e in traza.eventos if e["evento"] == "verificacion"]}
 
     ahora = datetime.now(timezone.utc)
     # LangSmith necesita que el conjunto de casos exista allí; se crea una vez y se reutiliza.
@@ -100,7 +121,8 @@ def main() -> None:
              "metadata": {"grupo": caso["grupo"], "caso_id": caso["id"]}} for caso in casos])
     experimento = evaluate(
         objetivo, data=nombre_dataset, evaluators=[evaluar_contenido, evaluar_ganador,
-        evaluar_importe, evaluar_trayectoria], upload_results=True, max_concurrency=1,
+        evaluar_importe, evaluar_trayectoria, evaluar_herramienta_decisiva,
+        evaluar_primera_propuesta], upload_results=True, max_concurrency=1,
         experiment_prefix=f"pedro-infnet-flujo-{modelo}",
         metadata={"dataset_id": escenario.dataset_id, "nli_model": MODELO,
                   "nli_revision": REVISION, "casos": len(casos), "modelo_llm": modelo})

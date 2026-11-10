@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** R01–R06 redactadas y con ejecución guardada (Fase 1 completa). R07–R29 pendientes de redactar, en orden.
+**Avance de redacción:** redactadas y con ejecución guardada R01–R08, R22 y R23. Pendientes de redactar: R09–R21 y R24–R29.
 
 ---
 
@@ -442,11 +442,116 @@ En una frase: **declarativo para lo que es una tubería, imperativo para lo que 
 
 ## R07 — Comparación de orquestadores y elección de LangChain
 
-*Pendiente de redactar.*
+> ¿El alumno comparó orquestadores de agentes autónomos y justificó la elección de LangChain para el problema?
+
+**Respuesta corta.** Sí. Se comparan los seis orquestadores vistos en clase con los criterios de clase (autonomía, abstracción y modularidad). LangChain se mantiene porque Pedro es **un solo agente** que necesita **muchas piezas distintas** bajo un control estricto, y LangChain las trae todas: el proyecto usa 13 tipos de componentes suyos.
+
+### 1. Para qué sirve un orquestador
+
+En clase (14-10-2026) se dieron cuatro razones para no programar el agente desde cero: escalabilidad, gestión de la complejidad, estandarización y confiabilidad. Se añadieron dos propiedades que un orquestador debe facilitar: **autonomía** (que el agente decida y no solo obedezca) y **modularidad** (poder añadir o quitar componentes).
+
+### 2. Comparación
+
+| Orquestador | Idea central | Autonomía | Abstracción | Modularidad | Encaje con Pedro |
+|---|---|---|---|---|---|
+| **LangChain** | Componentes que se encadenan: plantillas, modelos, parsers, herramientas, memoria | Media: el agente elige herramientas dentro de un ejecutor acotado | Media: se ve y se controla cada paso | Alta: cada pieza se cambia por separado | **Alto** |
+| **LangGraph** | Grafo de estados con ciclos y puntos de control; misma familia que LangChain | Alta y controlable: el flujo es un grafo explícito | Baja-media: hay que definir estado, nodos y aristas | Alta | Alto, pero más de lo necesario |
+| **LlamaIndex** | Centrado en datos: indexar documentos y consultarlos | Media | Alta para RAG | Media: gira en torno a índices | Parcial: Pedro es más que RAG |
+| **AutoGen** | Varios agentes que conversan entre sí | Alta: los agentes se coordinan solos | Alta | Media | Bajo: aquí hay un solo agente |
+| **Semantic Kernel** | Funciones («plugins») y planificadores, orientado a integrarse en aplicaciones de empresa | Media | Media | Alta | Medio: su ecosistema natural es otro |
+| **Langflow** | Construcción visual, sin código o con poco código | La que tenga el flujo dibujado | Muy alta | Media: se trabaja con cajas | Bajo para un entregable de código probado |
+
+La tabla es conceptual. **Solo LangChain se ejecutó en este proyecto**; no se atribuye ninguna prueba a los demás.
+
+### 3. Por qué LangChain para este problema
+
+1. **El problema es de un solo agente.** Recomendar una oferta verificada no necesita agentes que conversen. La coordinación multiagente de AutoGen añadiría mensajes que auditar sin resolver nada.
+2. **Hacen falta muchas piezas distintas, no una sola.** El proyecto usa 13 tipos de componentes de LangChain (34 nombres importados): plantillas, parsers, composición LCEL, herramientas, agente y ejecutor, memoria, historial, callbacks, FAISS, embeddings, troceado, cadenas clásicas y el modelo de chat. Este inventario sale de leer los imports del código. Un orquestador centrado en datos como LlamaIndex cubriría bien la parte de políticas y dejaría fuera el resto.
+3. **El control importa más que la autonomía.** El dominio maneja importes, stock y plazos: el agente debe ser auditable. La abstracción media de LangChain deja ver cada paso —la traza de R06 lo demostró— y permite intercalar la verificación antes de publicar.
+4. **Se puede probar sin credenciales.** Cualquier componente se sustituye por un doble porque todos comparten la interfaz `Runnable`. Todas las pruebas automáticas del proyecto corren sin llamar a ningún modelo.
+5. **La rúbrica nombra APIs de LangChain**: `initialize_agent`, `RouterChain`, `ConversationBufferMemory`, `create_openai_tools_agent`, `AgentExecutor` y `RunnableWithMessageHistory`.
+
+### 4. Lo que LangChain no resuelve bien aquí
+
+La elección tiene un coste, y conviene decirlo. Tres de las APIs que pide la rúbrica están marcadas como obsoletas por la propia biblioteca (`initialize_agent`, `ConversationBufferMemory` y `RunnableWithMessageHistory`), y sus avisos recomiendan pasar a LangGraph. En clase se usó la forma moderna, `create_agent` con memoria por `thread_id`.
+
+Por eso las APIs clásicas están aisladas en [legacy.py](../src/pedro/legacy.py) y el flujo del turno —que tiene ramas, un bucle de dos propuestas y salidas anticipadas— está escrito a mano. Ese flujo es justamente lo que LangGraph modelaría como un grafo. **Si el proyecto siguiera creciendo, el paso natural sería migrar la orquestación del turno a LangGraph y conservar los componentes de LangChain.**
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Inventario de piezas de LangChain usadas, obtenido de los imports | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) §«R07»; `inventario_langchain` en [anatomia.py](../src/pedro/anatomia.py) | Ejecución real local (sin modelo) |
+| Tabla comparativa y decisión | Esta sección; [comparaciones.md](comparaciones.md) | Documentación |
+| El inventario refleja el código | [tests/test_anatomia.py](../tests/test_anatomia.py) | Prueba automática |
+
+### Pendientes y limitaciones
+
+- La comparación con LangGraph, LlamaIndex, AutoGen, Semantic Kernel y Langflow es conceptual: no se instalaron ni se ejecutaron.
+- Las valoraciones de autonomía, abstracción y modularidad son cualitativas.
 
 ## R08 — Agente ReAct con initialize_agent, herramientas y memoria
 
-*Pendiente de redactar.*
+> ¿El alumno construyó un agente con herramientas y memoria e implementó el patrón ReAct con initialize_agent?
+
+**Respuesta corta.** Sí. Hay un agente ReAct construido con `initialize_agent` y `ZERO_SHOT_REACT_DESCRIPTION`, con dos herramientas y `ConversationBufferMemory`. Se ejecutó con el modelo real: razona, elige la herramienta y responde. Además se comprobó que la memoria solo sirve si el prompt la incluye.
+
+### 1. El agente
+
+Está en `crear_react_textual`, en [legacy.py](../src/pedro/legacy.py).
+
+| Parte | En el código |
+|---|---|
+| Patrón ReAct | `initialize_agent(..., agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)` |
+| Herramientas | `buscar_pieza` (por nombre, SKU o ID) y `ofertas_de_pieza` (proveedor, precio, stock y plazo de un ID) |
+| Memoria | `ConversationBufferMemory`, que guarda cada pregunta y respuesta |
+| Límites | 5 iteraciones como máximo y tolerancia a errores de formato del modelo |
+
+ReAct significa razonar y actuar en ciclo: el modelo escribe un pensamiento, elige una acción, recibe una observación y repite hasta tener la respuesta.
+
+### 2. El ciclo ReAct, con el modelo real
+
+Segundo turno de la conversación, tal como lo escribió `gpt-4.1-mini`:
+
+```text
+Pregunta:     ¿Cuál de sus proveedores entrega más rápido y en cuántos días?
+Thought:      Para responder a esta pregunta, necesito obtener las ofertas de la pieza
+              con ID PEC-01-0001 para ver los proveedores, precios, stock y plazos de entrega.
+Action:       ofertas_de_pieza
+Action Input: PEC-01-0001
+Observation:  [ofertas del catálogo: proveedor, precio, stock y plazo]
+Respuesta:    El proveedor que entrega más rápido es CentroPeças, con un plazo de entrega de 2 días.
+```
+
+El dato es correcto: en el catálogo, CentroPeças (BR-06) tiene plazo de 2 días para esa pieza.
+
+### 3. Lo aprendido: la memoria no sirve si el prompt no la lee
+
+El prompt zero-shot original solo tiene dos variables: la pregunta y el borrador de razonamiento. `ConversationBufferMemory` guarda la conversación, pero **el modelo nunca la ve**. Se ejecutó la misma conversación de dos turnos de las dos maneras:
+
+| | Historial dentro del prompt | Prompt zero-shot original |
+|---|---|---|
+| Variables del prompt | `input`, `chat_history`, `agent_scratchpad` | `input`, `agent_scratchpad` |
+| Turno 1: «Busca el compresor con SKU NEVE-COMP-0001 y dime su ID» | `buscar_pieza` → PEC-01-0001 | `buscar_pieza` → PEC-01-0001 |
+| Turno 2: «¿Cuál de **sus** proveedores entrega más rápido…?» | `ofertas_de_pieza(PEC-01-0001)` → CentroPeças, 2 días | No sabe a qué pieza se refiere y pide el ID |
+
+La corrección fue añadir `{chat_history}` al sufijo del prompt mediante `agent_kwargs`. En los dos casos la memoria guardó lo mismo; la diferencia está en si llega al modelo.
+
+**Decisión técnica.** Este agente clásico se conserva aislado en `legacy.py` como demostración del patrón. El agente final de Pedro usa `create_openai_tools_agent` (R26) por tres motivos: las herramientas reciben argumentos con tipo en vez de un único texto; la decisión de llamar a una herramienta la devuelve la API del modelo y no hay que interpretarla de un texto libre; y `initialize_agent` está marcado como obsoleto por LangChain.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Conversación de dos turnos con pensamiento, acción, observación y respuesta, con y sin historial en el prompt | [trazas/r08_react_llm.json](trazas/r08_react_llm.json); [scripts/demostrar_r08.py](../scripts/demostrar_r08.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
+| El mismo agente con herramientas reales y memoria, reproducible sin credenciales | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) §«R08» | Ejecución con **doble** (`FakeListLLM` guionado) |
+| El agente ejecuta las dos herramientas y guarda memoria; el historial solo entra al prompt si se configura | [tests/test_legacy.py](../tests/test_legacy.py) | Pruebas automáticas con doble |
+
+### Pendientes y limitaciones
+
+- Es una conversación; no mide con qué frecuencia el modelo elige bien la herramienta.
+- `initialize_agent` y `ConversationBufferMemory` emiten avisos de obsolescencia en la versión instalada de LangChain.
+- La memoria de buffer guarda todo el historial sin límite; el control de la ventana se trata en R14.
 
 ## R09 — Chains secuenciales o paralelas y RouterChain
 

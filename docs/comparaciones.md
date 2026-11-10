@@ -1,5 +1,7 @@
 # Comparaciones didácticas
 
+La comparación completa de los seis orquestadores vistos en clase (LangChain, LangGraph, LlamaIndex, AutoGen, Semantic Kernel y Langflow) y la justificación de LangChain están en respuestas_rubricas.md §R07. La tabla siguiente conserva el contraste inicial con AutoGen.
+
 ## Agentes y composición
 
 | Aspecto | LangChain clásico / LCEL en este proyecto | AutoGen |

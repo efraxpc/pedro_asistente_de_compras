@@ -57,6 +57,10 @@ class Traza(BaseCallbackHandler):
         if citas:
             self.eventos.append({"evento": "citas_ancladas", "citas": citas})
 
+    def registrar_verificacion(self, intento: int, estado: str | None, errores: list[str]) -> None:
+        self.eventos.append({"evento": "verificacion", "intento": intento, "estado": estado,
+                             "errores": list(errores)})
+
     def on_tool_error(self, error, **kwargs) -> None:
         self.eventos.append({"evento": "tool_error", "tipo": type(error).__name__})
 
@@ -438,6 +442,8 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                         if propuesta.estado == "politica" and solicitud_actual is None:
                             # Las citas ya son literales y verificadas; solo falló el resumen.
                             extractiva = propuesta
+                if traza:
+                    traza.registrar_verificacion(intento + 1, propuesta.estado, errores)
                 if not errores:
                     texto = renderizar(propuesta, indice=indice)
                     if propuesta.estado == "politica":
@@ -458,6 +464,8 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                     return AIMessage(content=texto)
             except Exception as exc:
                 errores = [type(exc).__name__]
+                if traza:
+                    traza.registrar_verificacion(intento + 1, None, errores)
         if extractiva is not None:
             return AIMessage(content=renderizar_citas(extractiva, indice=indice))
         if indice is not None and re.search(r"\b(pol[ií]tica|entrega|devoluci[oó]n|garant[ií]a)\b",

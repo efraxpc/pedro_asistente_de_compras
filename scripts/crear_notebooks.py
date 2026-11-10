@@ -192,14 +192,32 @@ print(ejecutar_ruta(router, escenario, 'precio de PEC-01-0001'))
 print(ejecutar_ruta(router, escenario, 'PEC-01-0001'))
 print(composicion_paralela(escenario).invoke({'producto':'Compresor'}))
 print(consultar_cep('01001000', simulado=True))"""),
+    ("md", "## R08 · agente ReAct con initialize_agent, herramientas y memoria\n**Doble de prueba:** `FakeListLLM` devuelve un guion fijo de pensamientos y acciones; no decide nada. Lo real es el agente (`initialize_agent` con `ZERO_SHOT_REACT_DESCRIPTION`), las dos herramientas ejecutadas sobre el catálogo y `ConversationBufferMemory`. La misma conversación con el modelo real, donde el LLM sí elige, está en `docs/trazas/r08_react_llm.json`."),
     ("code", """from langchain_core.language_models.fake import FakeListLLM
 from pedro.legacy import crear_react_textual
-llm = FakeListLLM(responses=['Action: buscar_pieza\\nAction Input: PEC-01-0001',
-                             'Final Answer: candidato localizado'])
+llm = FakeListLLM(responses=[
+    'Thought: debo buscar la pieza\\nAction: buscar_pieza\\nAction Input: NEVE-COMP-0001',
+    'Thought: ya la tengo\\nFinal Answer: el ID es PEC-01-0001',
+    'Thought: el historial dice PEC-01-0001\\nAction: ofertas_de_pieza\\nAction Input: PEC-01-0001',
+    'Thought: comparo los plazos\\nFinal Answer: CentroPeças entrega en 2 días'])
 react, buffer = crear_react_textual(llm, escenario)
-print(react.invoke({'input':'Busca PEC-01-0001'})['output'])
+print('variables del prompt:', sorted(react.agent.llm_chain.prompt.input_variables))
+for pregunta in ('Busca el compresor con SKU NEVE-COMP-0001 y dime su ID.',
+                 '¿Cuál de sus proveedores entrega más rápido?'):
+    salida = react.invoke({'input': pregunta})
+    for accion, observacion in salida['intermediate_steps']:
+        print('  acción:', accion.tool, '| entrada:', accion.tool_input, '| observación:', str(observacion)[:150])
+    print('  respuesta:', salida['output'])
+print('memoria de buffer:')
 print(buffer.load_memory_variables({})['chat_history'])"""),
     ("md", "La llamada real a ViaCEP se registra por separado en docs/evidencias.md."),
+    ("md", "## R07 · qué aporta el orquestador: inventario de piezas de LangChain en Pedro\nSin modelo. El inventario se obtiene leyendo los imports del código (`pedro.anatomia.inventario_langchain`), no se escribe a mano. Sirve para argumentar la elección con hechos: cada fila es una pieza que el proyecto no tuvo que construir. La comparación con otros orquestadores está en `docs/respuestas_rubricas.md` §R07 y es conceptual: aquí solo se ejecutó LangChain."),
+    ("code", """from pedro.anatomia import inventario_langchain
+inventario = inventario_langchain()
+for pieza, dato in inventario.items():
+    print(f"{pieza:38} {', '.join(dato['nombres'])}")
+    print(f"{'':38} usado en: {', '.join(dato['archivos'])}")
+print('piezas:', len(inventario), '| nombres importados:', sum(len(d['nombres']) for d in inventario.values()))"""),
 ])
 
 guardar("03_memoria_chatbot.ipynb", [

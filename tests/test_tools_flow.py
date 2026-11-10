@@ -98,3 +98,32 @@ def test_modelo_no_publica_cantidad_antigua(tmp_path, monkeypatch):
                          config={"configurable": {"user_id": "ana", "session_id": sesion}})
     assert len(llamadas) == 2
     assert "No puedo confirmar" in salida.content
+
+
+def test_traza_registra_cada_verificacion_con_sus_errores(tmp_path, monkeypatch):
+    import pedro.agent as modulo
+    from pedro.contracts import Solicitud
+    from pedro.verification import respuesta_local
+
+    escenario = crear_escenario(tmp_path / "catalogos")
+    memoria = tmp_path / "memoria.sqlite3"
+    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
+    propuesta = respuesta_local(escenario, Solicitud(producto_id="PEC-01-0001", cantidad=1))
+    salidas = iter(["json inválido", propuesta.model_dump_json()])
+
+    class Executor:
+        def invoke(self, entrada, config):
+            return {"output": next(salidas)}
+
+    class NLI:
+        def clasificar(self, premisa, hipotesis):
+            return "entailment"
+
+    monkeypatch.setattr(modulo, "crear_agente", lambda *args, **kwargs: Executor())
+    traza = Traza()
+    flujo = crear_flujo(escenario, memoria, llm=object(), clasificador=NLI(), traza=traza)
+    flujo.invoke({"input": "Compara 1 unidad de PEC-01-0001"}, config={"configurable": {
+        "user_id": "ana", "session_id": sesion}})
+    verificaciones = [e for e in traza.eventos if e["evento"] == "verificacion"]
+    assert [(v["intento"], v["estado"], v["errores"]) for v in verificaciones] == [
+        (1, None, ["OutputParserException"]), (2, "recomendacion", [])]

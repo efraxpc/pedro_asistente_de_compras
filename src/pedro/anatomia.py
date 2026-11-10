@@ -57,3 +57,49 @@ def describir_anatomia(escenario: Escenario, memoria_db: Path, user_id: str = "a
         "puerta_publicacion": {"verificacion": "exacta (total, stock, presupuesto, plazo, IDs, fuentes)",
                                "nli": MODELO_NLI, "revision_nli": REVISION_NLI},
     }
+
+
+# Prefijo del módulo importado -> pieza del orquestador que aporta.
+PIEZAS_LANGCHAIN = {
+    "langchain_core.prompts": "plantillas de prompt",
+    "langchain_core.output_parsers": "parsers de salida",
+    "langchain_core.exceptions": "parsers de salida",
+    "langchain_core.runnables": "composición (Runnable, LCEL, @chain)",
+    "langchain_core.tools": "herramientas",
+    "langchain_core.callbacks": "callbacks y trazas",
+    "langchain_core.messages": "mensajes e historial",
+    "langchain_core.chat_history": "mensajes e historial",
+    "langchain_core.documents": "documentos y embeddings",
+    "langchain_core.embeddings": "documentos y embeddings",
+    "langchain_classic.agents": "agentes y ejecutor",
+    "langchain_classic.chains": "cadenas clásicas (RouterChain)",
+    "langchain_classic.memory": "memoria clásica",
+    "langchain_community.vectorstores": "almacén vectorial (FAISS)",
+    "langchain_community.embeddings": "documentos y embeddings",
+    "langchain_text_splitters": "troceado de documentos",
+    "langchain_openai": "modelo de chat (OpenAI)",
+}
+
+
+def inventario_langchain(raiz: Path | None = None) -> dict[str, dict[str, list[str]]]:
+    """Lista qué piezas de LangChain usa el proyecto, leyendo los imports del código.
+
+    Devuelve, por pieza, los nombres importados y los archivos que los usan.
+    """
+    import ast
+
+    raiz = raiz or Path(__file__).resolve().parents[2]
+    inventario: dict[str, dict[str, set[str]]] = {}
+    for archivo in sorted([*(raiz / "src/pedro").glob("*.py"), raiz / "app.py"]):
+        for nodo in ast.walk(ast.parse(archivo.read_text(encoding="utf-8"))):
+            if not isinstance(nodo, ast.ImportFrom) or not nodo.module:
+                continue
+            pieza = next((nombre for prefijo, nombre in PIEZAS_LANGCHAIN.items()
+                          if nodo.module.startswith(prefijo)), None)
+            if pieza is None:
+                continue
+            registro = inventario.setdefault(pieza, {"nombres": set(), "archivos": set()})
+            registro["nombres"].update(alias.name for alias in nodo.names)
+            registro["archivos"].add(archivo.name)
+    return {pieza: {clave: sorted(valores) for clave, valores in registro.items()}
+            for pieza, registro in sorted(inventario.items())}
