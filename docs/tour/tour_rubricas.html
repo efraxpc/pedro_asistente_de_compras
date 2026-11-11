@@ -1,0 +1,275 @@
+<title>Tour de las rúbricas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Concepto: un plano de metro. Una línea con 10 paradas, un color por fase; debajo, la parada actual. */
+:root {
+  --fondo: #f3f5f9; --papel: #ffffff; --tinta: #14213d; --suave: #56627a; --linea: #d5dbe7;
+  --f1: #1f5fbf; --f2: #1c8a5a; --f3: #b86a00; --f4: #7a3fb0; --f5: #c0392b;
+  --sobre-fase: #ffffff;
+  --titulo: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --texto: "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fondo: #0e1422; --papel: #171f33; --tinta: #eaf0ff; --suave: #a2aec8; --linea: #2c3854;
+    --f1: #6ea8fe; --f2: #5fd3a0; --f3: #f2b45a; --f4: #c39bf0; --f5: #ff8f80;
+    --sobre-fase: #0e1422; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --fondo: #0e1422; --papel: #171f33; --tinta: #eaf0ff; --suave: #a2aec8; --linea: #2c3854;
+  --f1: #6ea8fe; --f2: #5fd3a0; --f3: #f2b45a; --f4: #c39bf0; --f5: #ff8f80;
+  --sobre-fase: #0e1422; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--fondo); color: var(--tinta); font-family: var(--texto); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 22px;
+}
+.pagina { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+
+.cabecera { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+.cabecera h1 { font-family: var(--titulo); font-size: 1.5rem; margin: 0; letter-spacing: -0.01em; }
+.cabecera p { margin: 0; color: var(--suave); font-size: 0.95rem; min-width: 0; }
+.cabecera code { font-family: var(--mono); font-size: 0.86em; color: var(--tinta); }
+
+/* Plano de la línea */
+.plano { overflow-x: auto; padding: 6px 2px 2px; }
+.linea { display: flex; min-width: 880px; list-style: none; margin: 0; padding: 0; }
+.parada { flex: 1 1 0; position: relative; padding-top: 48px; text-align: center; }
+.parada::before { content: ""; position: absolute; top: 18px; left: 0; right: 0; height: 6px; background: var(--c); }
+.parada:first-child::before { left: 50%; border-radius: 3px 0 0 3px; }
+.parada:last-child::before { right: 50%; border-radius: 0 3px 3px 0; }
+.parada button {
+  all: unset; cursor: pointer; display: block; width: 100%; font-family: var(--texto);
+  font-size: 0.72rem; line-height: 1.25; color: var(--suave); padding: 0 4px 4px;
+}
+.parada button::before {
+  content: attr(data-n); position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  width: 26px; height: 26px; border-radius: 50%; background: var(--papel); border: 4px solid var(--c);
+  font-family: var(--titulo); font-weight: 700; font-size: 0.72rem; line-height: 18px; color: var(--tinta);
+  transition: transform .35s ease, background .35s ease, color .35s ease;
+}
+.parada button:focus-visible { outline: 2px solid var(--tinta); outline-offset: 2px; border-radius: 6px; }
+.parada.hecha button::before { background: var(--c); color: var(--sobre-fase); }
+.parada.actual button { color: var(--tinta); font-weight: 600; }
+.parada.actual button::before { background: var(--c); color: var(--sobre-fase); transform: translateX(-50%) scale(1.45); }
+
+/* Parada actual */
+.escena { background: var(--papel); border: 1px solid var(--linea); border-top: 6px solid var(--c); border-radius: 10px;
+  padding: 18px 22px 20px; display: flex; flex-direction: column; gap: 14px; }
+.rotulo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.fase { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 0.74rem; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--c); color: var(--tinta); white-space: nowrap; }
+.chip b { font-family: var(--titulo); color: var(--c); margin-right: 4px; }
+.escena h2 { font-family: var(--titulo); font-size: clamp(1.45rem, 3.2vw, 2.1rem); line-height: 1.12; margin: 0; text-wrap: balance; letter-spacing: -0.015em; }
+
+.paneles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.panel { min-width: 0; display: flex; flex-direction: column; gap: 8px; transition: opacity .5s ease, transform .5s ease; }
+.panel.oculto { opacity: 0; transform: translateY(8px); }
+.panel h3 { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--suave); margin: 0; }
+.panel p { margin: 0; max-width: 46ch; }
+.idea { font-size: 1.04rem; }
+.analogia { color: var(--suave); font-size: 0.95rem; }
+.flujo { display: flex; flex-direction: column; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.flujo li { font-size: 0.9rem; padding: 7px 10px; border-radius: 7px; background: color-mix(in srgb, var(--c) 12%, var(--papel)); border-left: 4px solid var(--c); }
+.flujo li + li { margin-top: 12px; position: relative; }
+.flujo li + li::before { content: "↓"; position: absolute; top: -17px; left: 12px; font-size: 0.8rem; color: var(--suave); }
+.archivos { font-family: var(--mono); font-size: 0.8rem; color: var(--tinta); overflow-wrap: anywhere; }
+.dato { font-size: 1rem; font-weight: 500; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--c) 12%, var(--papel)); }
+
+/* Mandos */
+.mandos { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.mandos button { font: 600 0.9rem var(--texto); color: var(--tinta); background: var(--papel); border: 1px solid var(--linea);
+  border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+.mandos button.principal { background: var(--tinta); color: var(--fondo); border-color: var(--tinta); }
+.mandos button:focus-visible { outline: 2px solid var(--f1); outline-offset: 2px; }
+.mandos button:disabled { opacity: .45; cursor: default; }
+.cuenta { color: var(--suave); font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+.barra { flex: 1 1 160px; height: 6px; border-radius: 3px; background: var(--linea); overflow: hidden; }
+.barra i { display: block; height: 100%; width: 0; background: var(--c); transition: width .4s ease; }
+
+@media (max-width: 760px) {
+  .paneles { grid-template-columns: minmax(0, 1fr); }
+  .escena { padding: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .panel, .parada button::before, .barra i { transition: none; } }
+</style>
+
+<div class="pagina">
+  <header class="cabecera">
+    <h1>Tour de las rúbricas</h1>
+    <p>Seguimos un mensaje por todo Pedro: <code>«Compare 5 unidades de PEC-01-0001 com prazo de 7 dias»</code></p>
+  </header>
+
+  <nav class="plano" aria-label="Paradas del recorrido"><ol class="linea" id="linea"></ol></nav>
+
+  <main class="escena" id="escena" aria-live="polite">
+    <div class="rotulo"><span class="fase" id="fase"></span><div class="chips" id="chips"></div></div>
+    <h2 id="titulo"></h2>
+    <div class="paneles">
+      <section class="panel" id="p1"><h3>La idea</h3><p class="idea" id="idea"></p><p class="analogia" id="analogia"></p></section>
+      <section class="panel" id="p2"><h3>Cómo fluye</h3><ol class="flujo" id="flujo"></ol></section>
+      <section class="panel" id="p3"><h3>En el proyecto</h3><p class="archivos" id="archivos"></p><p class="dato" id="dato"></p></section>
+    </div>
+  </main>
+
+  <div class="mandos">
+    <button type="button" id="anterior">← Anterior</button>
+    <button type="button" id="reproducir" class="principal">▶ Reproducir</button>
+    <button type="button" id="siguiente">Siguiente →</button>
+    <span class="cuenta" id="cuenta"></span>
+    <div class="barra" aria-hidden="true"><i id="avance"></i></div>
+  </div>
+</div>
+
+<script>
+const RUBRICAS = {
+  R01: "Anatomía y tipo de agente", R02: "Planificación", R03: "Plantillas de prompt", R04: "Parser JSON",
+  R05: "invoke, batch, stream", R06: "LCEL", R07: "Orquestadores", R08: "ReAct", R09: "Chains y router",
+  R10: "API externa", R11: "PTCF y few-shot", R12: "Confiabilidad", R13: "Memorias CoALA",
+  R14: "Ventana y vectores", R15: "Herramientas de memoria", R16: "Buffer de conversación",
+  R17: "Intención y entidades", R18: "Contexto multi-turno", R19: "Herramientas fijas y semánticas",
+  R20: "APIs internas y externas", R21: "Text-to-query", R22: "RAG con índice existente",
+  R23: "Fallo de recuperación", R24: "Verificación y NLI", R25: "Un agente, varias fuentes",
+  R26: "AgentExecutor", R27: "Historial por sesión", R28: "Streamlit", R29: "LangSmith"
+};
+const PARADAS = [
+  { fase: 1, corto: "Texto a datos", titulo: "Del texto a los datos", rubricas: ["R03", "R04"],
+    idea: "Una plantilla de prompt le pide al modelo un JSON, y un parser lo convierte en un objeto validado.",
+    analogia: "Como un formulario: el modelo lo rellena y el parser revisa que esté completo.",
+    flujo: ["Mensaje del usuario", "Plantilla de prompt (R03)", "Modelo", "Parser (R04)", "Solicitud validada: pieza, cantidad, plazo"],
+    archivos: "src/pedro/chains.py · src/pedro/prompts.py",
+    dato: "Un JSON cortado también se rechaza: no basta con que tenga la forma correcta." },
+  { fase: 1, corto: "Tres formas de ejecutar", titulo: "Tres formas de ejecutar la misma cadena", rubricas: ["R05", "R06"],
+    idea: "La cadena se ejecuta de una en una (invoke), varias a la vez (batch) o a trozos según llegan (stream).",
+    analogia: "Una caja del súper, tres cajas abiertas a la vez, o ver pasar los productos uno a uno.",
+    flujo: ["invoke: un pedido", "batch: tres pedidos en paralelo", "stream: el JSON llega a trozos", "@chain: la misma cadena escrita como función"],
+    archivos: "src/pedro/chains.py · src/pedro/laboratorio.py",
+    dato: "Tres pedidos: 4,6 s uno por uno y 1,4 s con batch." },
+  { fase: 1, corto: "El agente y su plan", titulo: "El agente: reglas, modelo y plan", rubricas: ["R01", "R02"],
+    idea: "Pedro es híbrido: reglas fijas para lo simple y el modelo para lo abierto. Si el mensaje pide varias cosas, primero escribe un plan.",
+    analogia: "Un recepcionista que resuelve lo rutinario y pasa lo difícil al especialista.",
+    flujo: ["Mensaje", "Capa reactiva: reglas fijas", "Capa deliberativa: el modelo elige", "Plan si hay varias intenciones"],
+    archivos: "src/pedro/anatomia.py · src/pedro/agent.py · src/pedro/planner.py",
+    dato: "Madurez 4 de 5: decide, recuerda y se verifica, con autonomía limitada a propósito." },
+  { fase: 2, corto: "Herramientas", titulo: "Herramientas: pensar, actuar, observar", rubricas: ["R07", "R08", "R09", "R10"],
+    idea: "El agente no se sabe los datos: los pide. Piensa qué necesita, llama a una herramienta, lee el resultado y repite.",
+    analogia: "Un cocinero que mira la despensa antes de cada paso.",
+    flujo: ["Pensar: ¿qué necesito?", "Actuar: llamar a una herramienta", "Observar el resultado", "Responder, o repetir el ciclo"],
+    archivos: "src/pedro/legacy.py · src/pedro/orquestradores.py · src/pedro/integrations.py",
+    dato: "Al elegir ruta, las reglas acertaron 2 de 7 preguntas y el modelo 6 de 7." },
+  { fase: 2, corto: "Prompts y registro", titulo: "Prompts que funcionan y fallos a la vista", rubricas: ["R11", "R12"],
+    idea: "Un buen prompt dice Persona, Tarea, Contexto y Formato, y da ejemplos. Y cada paso del agente queda registrado.",
+    analogia: "Explicar una tarea con ejemplos, y llevar un cuaderno de lo que salió mal.",
+    flujo: ["PTCF: persona, tarea, contexto, formato", "Few-shot: ejemplos resueltos", "Chain-of-thought: razonar antes", "Rastro: registro de cada paso y error"],
+    archivos: "src/pedro/prompts.py · src/pedro/laboratorio.py · src/pedro/agent.py",
+    dato: "Sin ejemplos: 6 de 10 solicitudes bien. Con ejemplos: 10 de 10." },
+  { fase: 3, corto: "Cuatro memorias", titulo: "Cuatro memorias", rubricas: ["R13", "R14", "R15", "R16"],
+    idea: "El modelo solo ve los últimos 12 mensajes. Lo demás se guarda fuera y se recupera cuando hace falta.",
+    analogia: "La mesa de trabajo, el diario, la agenda y el manual.",
+    flujo: ["Trabajo: mensajes y borrador de compra", "Episódica: lo que pasó antes", "Semántica: preferencias y políticas", "Procedimental: prompts y reglas"],
+    archivos: "src/pedro/memory.py · src/pedro/orquestradores.py · src/pedro/legacy.py",
+    dato: "Guardar toda la conversación crece sin límite. Por eso: ventana más búsqueda por similitud." },
+  { fase: 3, corto: "Entender la conversación", titulo: "Entender la conversación", rubricas: ["R17", "R18"],
+    idea: "Pedro detecta qué quieres y los datos que diste (pieza, cantidad, presupuesto, plazo), y los mantiene entre turnos.",
+    analogia: "Un vendedor que recuerda tu pedido cuando dices «mejor que sean 6».",
+    flujo: ["«Agora que sejam 6»", "Las reglas conservan la pieza", "El modelo interpreta el cambio", "Borrador actualizado", "Nueva comparación"],
+    archivos: "src/pedro/dialogue.py · src/pedro/planner.py",
+    dato: "Solo reglas: 8 de 14 mensajes entendidos. Reglas más modelo: 14 de 14." },
+  { fase: 4, corto: "Consultar datos", titulo: "Consultar los datos", rubricas: ["R19", "R20", "R21"],
+    idea: "Para preguntas sobre el catálogo, el modelo escribe la consulta SQL, pero un filtro decide si se puede ejecutar.",
+    analogia: "Puedes pedir cualquier libro; el bibliotecario solo abre las salas permitidas.",
+    flujo: ["Pregunta abierta", "El modelo escribe el SQL", "Lista blanca y solo lectura", "Filas del catálogo", "Tabla armada por el sistema"],
+    archivos: "src/pedro/query.py · src/pedro/catalog.py · src/pedro/integrations.py",
+    dato: "Herramienta fija: cálculo en código. Herramienta semántica: búsqueda por significado." },
+  { fase: 4, corto: "Políticas con RAG", titulo: "Políticas con RAG y un fallo real", rubricas: ["R22", "R23"],
+    idea: "Las políticas se buscan por significado en un índice ya guardado. Cuando la búsqueda falla, se mide, se entiende y se corrige.",
+    analogia: "Buscas «cajas» y el manual dice «entrega parcial»: hay que reformular la pregunta.",
+    flujo: ["«Posso receber em várias caixas?»", "Los 4 primeros resultados no traen la regla", "Reescritura: «envío parcial»", "La regla sube a la posición 1"],
+    archivos: "src/pedro/rag.py · src/pedro/policy_demo.py · scripts/diagnosticar_t24.py",
+    dato: "El índice solo se abre después de comprobar su manifiesto y sus huellas SHA-256." },
+  { fase: 5, corto: "Verificar y medir", titulo: "Verificar, mostrar y medir", rubricas: ["R24", "R25", "R26", "R27", "R28", "R29"],
+    idea: "Antes de publicar, el sistema pone las cifras reales y verifica la respuesta. Después se muestra en el chat y se mide con 30 casos.",
+    analogia: "Un editor que comprueba cada cifra antes de imprimir.",
+    flujo: ["Propuesta del modelo", "Anclaje: los datos los pone el sistema", "Verificación exacta y NLI", "Chat en Streamlit", "Evaluación en LangSmith"],
+    archivos: "src/pedro/verification.py · src/pedro/nli.py · app.py · evals/avaliar_fluxo.py",
+    dato: "Ganador 14 de 14 e importe 14 de 14. Ninguna recomendación contraria a la regla en 9 experimentos." }
+];
+const NOMBRE_FASE = ["", "Fase 1 · Chain y arquitectura", "Fase 2 · Agente con herramientas", "Fase 3 · Chatbot con memoria",
+  "Fase 4 · SQL, APIs y RAG", "Fase 5 · Agente final"];
+const ESPERAS = [3600, 4200, 5200];  // ms que dura cada panel al reproducir
+
+const el = (id) => document.getElementById(id);
+const paneles = [el("p1"), el("p2"), el("p3")];
+let actual = 0, reloj = null, reproduciendo = false;
+
+el("linea").innerHTML = PARADAS.map((p, i) =>
+  `<li class="parada" style="--c: var(--f${p.fase})"><button type="button" data-n="${i + 1}" data-i="${i}">${p.corto}</button></li>`).join("");
+
+function pintar(i, visibles = 3) {
+  actual = i;
+  const p = PARADAS[i], color = `var(--f${p.fase})`;
+  for (const zona of [el("escena"), el("avance")]) zona.style.setProperty("--c", color);
+  el("fase").textContent = `Parada ${i + 1} de ${PARADAS.length} · ${NOMBRE_FASE[p.fase]}`;
+  el("chips").innerHTML = p.rubricas.map((r) => `<span class="chip"><b>${r}</b>${RUBRICAS[r]}</span>`).join("");
+  el("titulo").textContent = p.titulo;
+  el("idea").textContent = p.idea;
+  el("analogia").textContent = p.analogia;
+  el("flujo").innerHTML = p.flujo.map((paso) => `<li>${paso}</li>`).join("");
+  el("archivos").textContent = p.archivos;
+  el("dato").textContent = p.dato;
+  paneles.forEach((panel, n) => panel.classList.toggle("oculto", n >= visibles));
+  document.querySelectorAll(".parada").forEach((li, n) => {
+    li.classList.toggle("actual", n === i);
+    li.classList.toggle("hecha", n < i);
+    if (n === i) li.querySelector("button").setAttribute("aria-current", "step");
+    else li.querySelector("button").removeAttribute("aria-current");
+  });
+  const hechas = PARADAS.slice(0, i + 1).reduce((suma, x) => suma + x.rubricas.length, 0);
+  el("cuenta").textContent = `${hechas} de 29 rúbricas`;
+  el("avance").style.width = `${(hechas / 29) * 100}%`;
+  el("anterior").disabled = i === 0;
+  el("siguiente").disabled = i === PARADAS.length - 1;
+  document.querySelector(".parada.actual")?.scrollIntoView({ block: "nearest", inline: "center" });
+}
+
+function parar() {
+  reproduciendo = false;
+  clearTimeout(reloj);
+  el("reproducir").textContent = "▶ Reproducir";
+  pintar(actual, 3);
+}
+function paso(i, visibles) {
+  pintar(i, visibles);
+  reloj = setTimeout(() => {
+    if (visibles < 3) return paso(i, visibles + 1);
+    if (i < PARADAS.length - 1) return paso(i + 1, 1);
+    parar();
+  }, ESPERAS[visibles - 1]);
+}
+function reproducir(desde = actual) {
+  reproduciendo = true;
+  el("reproducir").textContent = "⏸ Pausar";
+  paso(desde, 1);
+}
+
+el("reproducir").addEventListener("click", () => (reproduciendo ? parar() : reproducir(actual === PARADAS.length - 1 ? 0 : actual)));
+el("anterior").addEventListener("click", () => { parar(); pintar(Math.max(0, actual - 1)); });
+el("siguiente").addEventListener("click", () => { parar(); pintar(Math.min(PARADAS.length - 1, actual + 1)); });
+el("linea").addEventListener("click", (evento) => {
+  const boton = evento.target.closest("button");
+  if (boton) { parar(); pintar(Number(boton.dataset.i)); }
+});
+document.addEventListener("keydown", (evento) => {
+  if (evento.key === "ArrowRight") el("siguiente").click();
+  if (evento.key === "ArrowLeft") el("anterior").click();
+});
+
+window.tour = { pintar, reproducir, parar, total: PARADAS.length };
+pintar(0, 3);
+</script>
