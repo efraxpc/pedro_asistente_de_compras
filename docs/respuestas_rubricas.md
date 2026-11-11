@@ -95,9 +95,9 @@ Pedro no es **reactivo puro** porque conserva estado entre turnos y elige herram
 
 | Criterio | Cómo se midió | Resultado | Rúbrica |
 |---|---|---|---|
-| El LLM real elige las herramientas correctas | Trayectoria en 30 casos de LangSmith | Herramienta decisiva 23 de 23; trayectoria completa 24 de 30 | R29 |
+| El LLM real elige las herramientas correctas | Trayectoria en 30 casos de LangSmith | Herramienta decisiva 23 de 23; trayectoria completa 13 de 30 en la versión final, porque el agente usa un camino más corto que el de la referencia | R29 |
 | Las respuestas son correctas | Ganador, importe y contenido en LangSmith | 14 de 14, 14 de 14 y 16 de 16 | R29 |
-| Nada se publica sin respaldo | Recomendaciones erróneas publicadas | 0 en cinco experimentos | R24 |
+| Nada se publica sin respaldo | Recomendaciones erróneas publicadas | 0 en seis experimentos | R24 |
 | Hay continuidad entre turnos con el modelo real | Conversación real multi-turno | Siete turnos con estado correcto | R18, R26, R27 |
 
 **Madurez actual: nivel 4 demostrado**, con una reserva que impide darlo por consolidado: las mediciones son corridas únicas sobre casos derivados, no sobre los oficiales.
@@ -1603,7 +1603,7 @@ En el agente, la herramienta `consultar_politicas` aplica esta reformulación a 
 
 > ¿El alumno construyó un mecanismo de verificación de consistencia factual y coherencia lógica de las respuestas del agente?
 
-**Respuesta corta.** Sí. Ninguna respuesta del agente se muestra sin pasar por dos puertas dentro del flujo: una **verificación exacta** (coherencia lógica) y un modelo **NLI** (consistencia factual). En cinco experimentos con el modelo real no se publicó ninguna recomendación equivocada.
+**Respuesta corta.** Sí. Ninguna respuesta del agente se muestra sin pasar por dos puertas dentro del flujo: una **verificación exacta** (coherencia lógica) y un modelo **NLI** (consistencia factual). En seis experimentos con el modelo real no se publicó ninguna recomendación equivocada.
 
 ### 1. Dónde está
 
@@ -1667,9 +1667,9 @@ El anclaje no relaja la verificación: solo evita rechazar lo que ya era cierto.
 
 | Hecho observado | Dónde |
 |---|---|
-| **0 recomendaciones erróneas publicadas** en cinco experimentos de 30 casos | R29 |
+| **0 recomendaciones erróneas publicadas** en seis experimentos de 30 casos | R29 |
 | `gpt-4o-mini` propuso un ganador equivocado; la verificación lo rechazó dos veces y no se publicó | R29 |
-| `gpt-4.1-mini`: 22 de 23 propuestas aceptadas a la primera; la otra, corregida | R29 |
+| `gpt-4.1-mini`: 22 de 23 propuestas aceptadas a la primera, y 24 de 24 en la versión final, sin ningún error de verificación | R29 |
 | Una primera propuesta con el ganador o el total incorrecto fue rechazada y la segunda fue correcta | Turno 3 de la conversación de R18 |
 | Una política cuyo resumen no pasó el NLI se corrigió y la segunda propuesta sí lo pasó | [citas_ancladas.md](citas_ancladas.md) |
 
@@ -1934,7 +1934,7 @@ Sin `OPENAI_API_KEY` la interfaz no se rompe: lista piezas, muestra fichas, comp
 
 > ¿El alumno evaluó la calidad de las respuestas y la trayectoria de llamadas de herramientas del agente con LangSmith, justificando las conclusiones a partir de las métricas obtenidas?
 
-**Respuesta corta.** Sí. Se ejecutaron cinco experimentos en LangSmith sobre 30 casos, con seis métricas de calidad y de trayectoria. Con `gpt-4.1-mini` el agente acertó el ganador y el importe en **14 de 14** recomendaciones. En ningún experimento se publicó una recomendación equivocada. La evaluación además encontró un defecto del agente y un error en la propia forma de evaluar; los dos se corrigieron y se volvieron a medir.
+**Respuesta corta.** Sí. Se ejecutaron seis experimentos en LangSmith sobre 30 casos, con seis métricas de calidad y de trayectoria. Con `gpt-4.1-mini` el agente acertó el ganador y el importe en **14 de 14** recomendaciones, también en la versión final. En ningún experimento se publicó una recomendación equivocada. La evaluación además encontró un defecto del agente y un error en la propia forma de evaluar; los dos se corrigieron y se volvieron a medir.
 
 ### 1. Qué se evalúa
 
@@ -1972,7 +1972,7 @@ Comparación principal, los dos modelos en las mismas condiciones (memoria nueva
 | Trayectoria completa | 24 de 30 | 22 de 30 |
 | Recomendaciones erróneas publicadas | 0 | 0 |
 
-Los cinco experimentos:
+Los seis experimentos:
 
 | Experimento en LangSmith | Modelo | Condición | Ganador | Contenido | Trayectoria | 1.ª propuesta |
 |---|---|---|---|---|---|---|
@@ -1981,8 +1981,28 @@ Los cinco experimentos:
 | `…gpt-4.1-mini-tras-correccion-91fc58c3` | 4.1-mini | CEP corregido; memoria acumulada (73 episodios) | 14/14 | 16/16 | 15/30 | 22/23 |
 | `…gpt-4.1-mini-memoria-limpia-0c208db1` | 4.1-mini | CEP corregido; memoria nueva | 14/14 | 16/16 | 24/30 | 22/23 |
 | `…gpt-4o-mini-memoria-limpia-035aa38a` | 4o-mini | CEP corregido; memoria nueva | 13/14 | 15/16 | 22/30 | 19/23 |
+| `…gpt-4.1-mini-version-final-c4842e8a` | 4.1-mini | **Versión final** (planificador, intérprete, anclaje de la comparación, text-to-SQL en el chat); memoria nueva | 14/14 | 16/16 | 13/30 | 24/24 |
 
-### 3. Conclusiones, cada una con su métrica
+### 3. La versión final del agente
+
+Después de estos experimentos el agente cambió: se añadieron el planificador de turno, el intérprete con modelo, el anclaje de la comparación y el text-to-SQL en el chat. Se volvió a evaluar, con memoria nueva:
+
+| Métrica | Antes de las mejoras | Versión final |
+|---|---|---|
+| Ganador correcto | 14 de 14 | 14 de 14 |
+| Importe correcto | 14 de 14 | 14 de 14 |
+| Contenido | 16 de 16 | 16 de 16 |
+| Herramienta decisiva | 23 de 23 | 23 de 23 |
+| Primera propuesta aceptada | 22 de 23 | **24 de 24** |
+| Errores de verificación | 1 | **0** |
+| Trayectoria completa | 24 de 30 | **13 de 30** |
+
+Dos lecturas:
+
+- **La calidad se mantuvo y la fiabilidad subió.** Ninguna propuesta fue rechazada: con el anclaje, las cifras de la comparación ya no las transcribe el modelo.
+- **La trayectoria completa bajó, y hay que explicarlo.** La referencia espera `consultar_catalogo` y después `comparar_ofertas`. En la versión final el agente llamó solo a `comparar_ofertas` en 17 de 19 compras: es el camino más corto y da el mismo resultado, porque esa herramienta ya devuelve todas las ofertas. La métrica mide que el agente siga un camino concreto, no que el camino sea bueno. Los casos están congelados y no se ajustaron para mejorar el número.
+
+### 4. Conclusiones, cada una con su métrica
 
 **1. Se mantiene `gpt-4.1-mini`.** Gana o empata en todas las métricas: 14/14 frente a 13/14 en ganador e importe, y 22/23 frente a 19/23 en propuestas aceptadas a la primera. `gpt-4o-mini` falló cuatro veces el formato JSON (`OutputParserException`) y eligió mal un ganador.
 
@@ -1992,9 +2012,9 @@ Los cinco experimentos:
 
 **4. La evaluación encontró un error en la forma de evaluar.** Todos los experimentos compartían la misma memoria, así que los recuerdos de una corrida entraban al contexto de la siguiente. Con 73 episodios acumulados, la trayectoria de `gpt-4.1-mini` cayó de 25/30 a 15/30 —el agente dejaba de consultar el catálogo— y `gpt-4o-mini` acertó solo 10/14 ganadores. Con memoria nueva volvieron a 24/30 y 13/14. Ahora cada experimento crea su propia memoria. La lección vale también para el producto: **la memoria episódica cambia el comportamiento del agente** y hay que vigilarla.
 
-**5. La trayectoria «completa» pide un paso que no siempre hace falta.** La referencia exige `consultar_catalogo` y después `comparar_ofertas`. En 6 de 19 compras el agente llamó solo a `comparar_ofertas`, que ya devuelve todas las ofertas, y la respuesta fue correcta. Por eso la herramienta decisiva es 23/23 mientras la trayectoria completa es 24/30. No es un fallo de calidad: es un atajo válido que la referencia no contempla. Los casos están congelados y no se cambiaron.
+**5. La trayectoria «completa» pide un paso que no siempre hace falta.** La referencia exige `consultar_catalogo` y después `comparar_ofertas`. Antes de las mejoras, en 6 de 19 compras el agente llamó solo a `comparar_ofertas`, que ya devuelve todas las ofertas, y la respuesta fue correcta; en la versión final lo hizo en 17 de 19. Por eso la herramienta decisiva es siempre 23/23 mientras la trayectoria completa pasó de 24/30 a 13/30. No es un fallo de calidad: es un atajo válido que la referencia no contempla. Los casos están congelados y no se cambiaron.
 
-### 4. Cómo se ejecuta
+### 5. Cómo se ejecuta
 
 ```bash
 uv run python evals/evaluar_flujo.py --modelo gpt-4.1-mini --salida docs/trazas/r29_resultado.json
@@ -2006,7 +2026,7 @@ El script comprueba que el modelo responde antes de empezar, crea el conjunto de
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| Cinco experimentos con sus métricas y trazas | LangSmith, conjunto `pedro-infnet-casos-derivados-7610315f` | **Ejecución real remota** (OpenAI, ViaCEP y LangSmith) |
+| Seis experimentos con sus métricas y trazas | LangSmith, conjunto `pedro-infnet-casos-derivados-7610315f` | **Ejecución real remota** (OpenAI, ViaCEP y LangSmith) |
 | Copia local de cada experimento, caso por caso | [trazas/](trazas/): `r29_langsmith_*.json` | Registro de ejecución real |
 | Evaluadores y casos | [evaluar_flujo.py](../evals/evaluar_flujo.py); [casos_derivados.json](../evals/casos_derivados.json) | Código |
 | Los casos congelados corresponden al catálogo | [tests/test_evals.py](../tests/test_evals.py) | Prueba automática |
@@ -2014,7 +2034,8 @@ El script comprueba que el modelo responde antes de empezar, crea el conjunto de
 ### Pendientes y limitaciones
 
 - **Los 30 casos son derivados y sintéticos, no los casos oficiales** del enunciado.
-- **Una corrida por configuración.** El modelo no es determinista: la trayectoria completa de `gpt-4.1-mini` varió entre 22 y 25 de 30 en corridas comparables. Las diferencias de uno o dos casos no son concluyentes.
+- **La referencia de trayectoria quedó desfasada** respecto al agente final, que usa un camino más corto. Habría que revisarla con los casos oficiales.
+- **Una corrida por configuración.** El modelo no es determinista: antes de las mejoras, la trayectoria completa de `gpt-4.1-mini` varió entre 22 y 25 de 30 en corridas comparables. Las diferencias de uno o dos casos no son concluyentes.
 - Los evaluadores de calidad comprueban que la respuesta **contenga** un texto; no juzgan la redacción.
 - Los casos de política se evalúan sin índice: miden que el agente no invente, no la calidad del RAG.
 - El primer experimento de `gpt-4.1-mini` y el corregido difieren en dos cosas a la vez (corrección y memoria); la mejora del CEP se atribuye a la corrección porque los errores de verificación señalan esa causa.
