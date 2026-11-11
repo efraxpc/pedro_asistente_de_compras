@@ -76,7 +76,7 @@ def test_la_comparacion_se_ancla_al_calculo_de_la_herramienta(tmp_path):
     from pedro.verification import anclar_recomendacion, respuesta_local, verificar
 
     escenario = crear_escenario(tmp_path / "catalogos")
-    solicitud = Solicitud(producto_id="PEC-01-0001", cantidad=2)
+    solicitud = Solicitud(producto_id="PEC-01-0001", cantidad=5)
     calculada = respuesta_local(escenario, solicitud)
     observacion = ("comparar_ofertas", calculada.model_dump(mode="json"))
 
@@ -92,7 +92,58 @@ def test_la_comparacion_se_ancla_al_calculo_de_la_herramienta(tmp_path):
 
     # Sin un cálculo para esa misma solicitud no se corrige nada y la verificación lo rechaza.
     otra = calculada.model_copy(deep=True)
-    otra.solicitud.cantidad, otra.proveedor_id = 3, "INT-06"
+    otra.solicitud.cantidad, otra.proveedor_id = 6, "INT-06"
     assert anclar_recomendacion(otra, [observacion]) == {"estado": "sin_calculo_para_esa_solicitud"}
     assert verificar(otra, escenario) != []
     assert anclar_recomendacion(propuesta, []) == {"estado": "sin_calculo_para_esa_solicitud"}
+
+
+def test_el_pedido_minimo_descarta_una_oferta_aunque_sea_la_mas_barata(tmp_path):
+    from pedro.agent import renderizar
+    from pedro.catalog import crear_escenario, ofertas
+    from pedro.contracts import Solicitud
+    from pedro.verification import respuesta_local, verificar
+
+    escenario = crear_escenario(tmp_path / "catalogos")
+    por_proveedor = {o.proveedor_id: o for o in ofertas(escenario, "PEC-01-0001")}
+    assert (por_proveedor["BR-06"].pedido_minimo, por_proveedor["INT-06"].pedido_minimo) == (5, 1)
+    assert por_proveedor["BR-06"].nacional and not por_proveedor["INT-06"].nacional
+
+    dos = respuesta_local(escenario, Solicitud(producto_id="PEC-01-0001", cantidad=2))
+    assert dos.proveedor_id == "INT-06" and verificar(dos, escenario) == []
+    centro = next(a for a in dos.alternativas if a.oferta.proveedor_id == "BR-06")
+    assert not centro.cumple and centro.motivos == ["pedido_minimo"]
+    assert "CentroPeças (nacional)" in renderizar(dos)
+    assert "descartada por pedido mínimo (5 unidades)" in renderizar(dos)
+
+    cinco = respuesta_local(escenario, Solicitud(producto_id="PEC-01-0001", cantidad=5))
+    assert cinco.proveedor_id == "BR-06" and cinco.total_centavos == 5 * 143892 + 8523
+
+
+def test_la_preferencia_de_origen_ordena_las_ofertas_validas_y_se_explica(tmp_path):
+    from pedro.agent import renderizar
+    from pedro.business import origen_preferido
+    from pedro.catalog import crear_escenario
+    from pedro.contracts import Solicitud
+    from pedro.verification import respuesta_local, verificar
+
+    assert origen_preferido({"proveedor": "nacionales"}) == "nacional"
+    assert origen_preferido({"proveedores": "prefiero internacionales"}) == "internacional"
+    assert origen_preferido({"color": "azul"}) is None and origen_preferido({}) is None
+
+    escenario = crear_escenario(tmp_path / "catalogos")
+    base = Solicitud(producto_id="PEC-01-0001", cantidad=5)
+    sin_preferencia = respuesta_local(escenario, base)
+    internacional = respuesta_local(escenario, base.model_copy(update={"origen_preferido": "internacional"}))
+    # Sin preferencia gana la más barata; con ella, la del origen preferido aunque cueste más.
+    assert sin_preferencia.proveedor_id == "BR-06" and internacional.proveedor_id == "INT-06"
+    assert internacional.total_centavos > sin_preferencia.total_centavos
+    assert verificar(internacional, escenario) == []
+    texto = renderizar(internacional)
+    assert "Se aplicó tu preferencia por proveedores internacionales." in texto
+    assert "Sin ella, la más barata sería CentroPeças" in texto
+    assert "preferencia" not in renderizar(sin_preferencia)
+    # La preferencia nunca hace ganar a una oferta que no cumple.
+    solo_dos = respuesta_local(escenario, Solicitud(producto_id="PEC-01-0001", cantidad=2,
+                                                    origen_preferido="nacional"))
+    assert solo_dos.proveedor_id == "INT-06"

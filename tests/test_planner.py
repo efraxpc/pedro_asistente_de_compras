@@ -11,7 +11,7 @@ from pedro.memory import Historial, nueva_sesion
 from pedro.planner import (PlanTurno, intenciones_detectadas, planificar_turno, validar_plan)
 from pedro.verification import respuesta_local
 
-MIXTO = "Compara 2 unidades de PEC-01-0001 con plazo de 7 días y confirma el CEP 01001000"
+MIXTO = "Compara 5 unidades de PEC-01-0001 con plazo de 7 días y confirma el CEP 01001000"
 
 
 def _plan(*pares):
@@ -32,20 +32,20 @@ def test_solo_se_planifica_si_hay_senales_de_varias_intenciones():
 
 
 def test_un_plan_valido_devuelve_las_peticiones_en_orden():
-    plan = _plan(("compra", "Compara 2 unidades de PEC-01-0001 con plazo de 7 días"),
+    plan = _plan(("compra", "Compara 5 unidades de PEC-01-0001 con plazo de 7 días"),
                  ("cep", "Confirma el CEP 01001000"))
     peticiones = planificar_turno(MIXTO, _modelo(plan))
     assert [p.tipo for p in peticiones] == ["compra", "cep"]
 
 
 @pytest.mark.parametrize("plan, motivo", [
-    (_plan(("compra", "Compara 5 unidades de PEC-01-0001"), ("cep", "Confirma el CEP 01001000")),
+    (_plan(("compra", "Compara 9 unidades de PEC-01-0001"), ("cep", "Confirma el CEP 01001000")),
      "añade datos"),
-    (_plan(("compra", "Compara 2 unidades de PEC-09-0009"), ("cep", "Confirma el CEP 01001000")),
+    (_plan(("compra", "Compara 5 unidades de PEC-09-0009"), ("cep", "Confirma el CEP 01001000")),
      "añade datos"),
-    (_plan(("compra", "Compara 2 unidades de PEC-01-0001"), ("compra", "Compara PEC-01-0001")),
+    (_plan(("compra", "Compara 5 unidades de PEC-01-0001"), ("compra", "Compara PEC-01-0001")),
      "repite"),
-    (_plan(("compra", "Compara 2 unidades de PEC-01-0001"), ("politica", "Cuéntame algo")),
+    (_plan(("compra", "Compara 5 unidades de PEC-01-0001"), ("politica", "Cuéntame algo")),
      "no lo parece"),
 ])
 def test_un_plan_que_inventa_o_no_encaja_se_descarta(plan, motivo):
@@ -56,7 +56,7 @@ def test_un_plan_que_inventa_o_no_encaja_se_descarta(plan, motivo):
 
 def test_un_plan_ilegible_o_de_una_peticion_equivale_a_no_planificar():
     assert planificar_turno(MIXTO, RunnableLambda(lambda _: "no es JSON")) is None
-    assert planificar_turno(MIXTO, _modelo(_plan(("compra", "Compara 2 unidades de PEC-01-0001")))) is None
+    assert planificar_turno(MIXTO, _modelo(_plan(("compra", "Compara 5 unidades de PEC-01-0001")))) is None
     assert planificar_turno(MIXTO, None) is None
 
 
@@ -66,9 +66,9 @@ def test_el_flujo_responde_cada_peticion_con_su_propia_verificacion(tmp_path, mo
     escenario = crear_escenario(tmp_path / "catalogos")
     memoria = tmp_path / "memoria.sqlite3"
     sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
-    compra = respuesta_local(escenario, Solicitud(producto_id="PEC-01-0001", cantidad=2, plazo_max_dias=7))
+    compra = respuesta_local(escenario, Solicitud(producto_id="PEC-01-0001", cantidad=5, plazo_max_dias=7))
     cep = RespuestaCompra(estado="cep", dataset_id=escenario.dataset_id, solicitud=Solicitud(cep="01001000"))
-    plan = _plan(("compra", "Compara 2 unidades de PEC-01-0001 con plazo de 7 días"),
+    plan = _plan(("compra", "Compara 5 unidades de PEC-01-0001 con plazo de 7 días"),
                  ("cep", "Confirma el CEP 01001000"))
     vistos = []
 
@@ -98,9 +98,9 @@ def test_el_flujo_responde_cada_peticion_con_su_propia_verificacion(tmp_path, mo
     flujo = crear_flujo(escenario, memoria, llm=_modelo(plan), clasificador=NLI(), traza=traza)
     salida = flujo.invoke({"input": MIXTO}, config={"configurable": {
         "user_id": "ana", "session_id": sesion}}).content
-    assert vistos == ["Compara 2 unidades de PEC-01-0001 con plazo de 7 días", "Confirma el CEP 01001000"]
+    assert vistos == ["Compara 5 unidades de PEC-01-0001 con plazo de 7 días", "Confirma el CEP 01001000"]
     assert "Tu mensaje tenía 2 peticiones" in salida
-    assert "R$ 2.963,07" in salida and "São Paulo/SP" in salida
+    assert "CentroPeças: R$ 7.279,83 para 5 unidades" in salida and "São Paulo/SP" in salida
     assert [e["evento"] for e in traza.eventos if e["evento"] in ("plan", "verificacion")] == [
         "plan", "verificacion", "verificacion"]
     mensajes = Historial(memoria, "ana", sesion).todos()

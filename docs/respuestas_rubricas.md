@@ -8,6 +8,70 @@ Todos los datos del proyecto (catálogo, proveedores, stock, precios y política
 
 ---
 
+# El núcleo del asistente: comparar proveedores
+
+Pedro es un asistente de compras. Todo lo demás —memoria, políticas, CEP, verificación— existe para que la comparación de proveedores sea correcta y se pueda confiar en ella. Esta sección describe esa comparación; las rúbricas la citan.
+
+## Qué se compara
+
+Para una pieza y una cantidad, cada oferta de cada proveedor se evalúa con cuatro reglas ([business.py](../src/pedro/business.py)):
+
+| Regla | La oferta se descarta si… | Dato del catálogo |
+|---|---|---|
+| Stock | No hay unidades suficientes | `stock_qty` |
+| **Pedido mínimo** | El proveedor exige comprar más unidades de las pedidas | `min_order_qty` |
+| Plazo | Tarda más que el plazo máximo del usuario (si lo dio) | `lead_days` |
+| Presupuesto | El total supera el presupuesto del usuario (si lo dio) | precio × cantidad + flete |
+
+El total es `cantidad × precio unitario + flete`, siempre en centavos enteros.
+
+## Cómo se ordena
+
+1. Primero, las ofertas que cumplen todas las reglas.
+2. Entre ellas, las del **origen que prefiere el usuario** (nacional o internacional), si guardó esa preferencia.
+3. Después, el menor total; luego el menor plazo; luego el identificador del proveedor.
+
+La preferencia ordena las ofertas válidas, pero **nunca hace ganar a una oferta que no cumple**. Y si respetarla cuesta más, la respuesta lo dice.
+
+## Qué ve el usuario
+
+Cada respuesta muestra **todas** las ofertas, no solo la ganadora: proveedor, origen, total, y si cumple o por qué se descartó.
+
+```text
+Usuario: Compara 2 unidades de PEC-11-0001        (tiene guardada la preferencia «proveedores nacionales»)
+
+Casa Técnica Brasil: R$ 1.970,38 para 2 unidades; plazo 9 días.
+- Casa Técnica Brasil (nacional): R$ 1.970,38; cumple [PEC-11-0001-BR-04]
+- Atlantic Repair Parts (internacional): R$ 619,38; cumple [PEC-11-0001-INT-06]
+- CentroPeças (nacional): R$ 1.179,23; descartada por stock [PEC-11-0001-BR-06]
+Se aplicó tu preferencia por proveedores nacionales. Sin ella, la más barata sería Atlantic Repair Parts por R$ 619,38.
+```
+
+## El hallazgo que cambió la comparación
+
+Durante casi todo el proyecto la comparación ignoró el pedido mínimo, aunque el dato estaba en el catálogo. El ejemplo que se usaba en todas las demostraciones era incorrecto como recomendación de compra:
+
+| «2 unidades de PEC-01-0001 con plazo de 7 días» | Antes | Ahora |
+|---|---|---|
+| CentroPeças (pedido mínimo: 5 unidades) | **Recomendada**: R$ 2.963,07 | Descartada por pedido mínimo (5 unidades) |
+| Atlantic Repair Parts | Descartada por plazo | Descartada por plazo |
+| Resultado | Una recomendación que el proveedor no aceptaría | «Ninguna oferta cumple»; con 5 unidades sí: CentroPeças, R$ 7.279,83 |
+
+En el catálogo hay 1.151 ofertas con stock cuyo pedido mínimo es mayor que 2. El error no lo encontró ninguna prueba ni ninguna métrica: todas comprobaban que el agente coincidía con una referencia que tenía el mismo hueco. Se encontró al revisar qué datos del proveedor usaba la comparación y cuáles no. Al corregirlo:
+
+- 5 de los 14 casos de recomendación de la evaluación cambiaron: 2 de ganador y 3 pasaron a «ninguna oferta». Los casos se regeneraron con una regla de referencia independiente del agente, que incluye el pedido mínimo.
+- La preferencia «proveedores nacionales», que antes solo se guardaba, ahora cambia la recomendación.
+- Cada oferta muestra si el proveedor es nacional o internacional.
+
+## Qué no se compara todavía
+
+- El **historial de precios** (47.520 registros en el catálogo) no se usa: Pedro no dice si un precio subió o bajó.
+- No se combinan proveedores para cubrir una cantidad: un pedido va entero a un proveedor.
+- La preferencia de origen es la única que cambia el orden; otras preferencias guardadas no tienen efecto.
+- El flete no depende del destino: ViaCEP solo confirma la ciudad.
+
+---
+
 # Fase 1 — Chain ejecutable y arquitectura
 
 ## R01 — Anatomía, arquitectura cognitiva, tipo de agente y madurez agéntica
@@ -95,10 +159,10 @@ Pedro no es **reactivo puro** porque conserva estado entre turnos y elige herram
 
 | Criterio | Cómo se midió | Resultado | Rúbrica |
 |---|---|---|---|
-| El LLM real elige las herramientas correctas | Trayectoria en 30 casos de LangSmith | Herramienta decisiva 23 de 23; trayectoria completa 13 de 30 en la versión final, porque el agente usa un camino más corto que el de la referencia | R29 |
+| El LLM real elige las herramientas correctas | Trayectoria en 30 casos de LangSmith | Herramienta decisiva 23 de 23; trayectoria completa 16 de 30, porque el agente usa un camino más corto que el de la referencia | R29 |
 | Las respuestas son correctas | Ganador, importe y contenido en LangSmith | 14 de 14, 14 de 14 y 16 de 16 | R29 |
-| Nada se publica sin respaldo | Recomendaciones erróneas publicadas | 0 en seis experimentos | R24 |
-| Hay continuidad entre turnos con el modelo real | Conversación real multi-turno | Siete turnos con estado correcto | R18, R26, R27 |
+| Nada se publica sin respaldo | Recomendaciones contrarias a la regla publicadas | 0 en siete experimentos | R24 |
+| Hay continuidad entre turnos con el modelo real | Conversación real multi-turno | Ocho turnos con estado correcto | R18, R26, R27 |
 
 **Madurez actual: nivel 4 demostrado**, con una reserva que impide darlo por consolidado: las mediciones son corridas únicas sobre casos derivados, no sobre los oficiales.
 
@@ -133,20 +197,20 @@ No se persigue el nivel 5 porque el problema — recomendar una oferta verificad
 |---|---|---|---|
 | 1 | Extraer pieza, cantidad, presupuesto y plazo del mensaje; detectar qué falta | Regla determinista | Borrador `EstadoCompra` o pregunta de aclaración |
 | 2 | Consultar los datos necesarios | Herramientas de lectura (SQL, FAISS, ViaCEP) | Ofertas, fragmentos de política o ciudad/UF |
-| 3 | Comparar ofertas con las restricciones | Cálculo determinista en centavos | Alternativas con «cumple» o motivo de descarte |
+| 3 | Comparar ofertas con las restricciones | Cálculo determinista en centavos: stock, pedido mínimo, plazo, presupuesto y preferencia de origen | Alternativas con «cumple» o motivo de descarte |
 | 4 | Verificar la propuesta | Verificación exacta y NLI | Lista de errores (vacía si pasa) |
 | 5 | Publicar o corregir | Flujo | Respuesta pública, o una única corrección |
 
 Hay tres niveles de planificación, según el tipo de solicitud:
 
 - **Plan fijo (capa reactiva).** Una compra con ID y cantidad sigue siempre los pasos 1 a 5 en ese orden, sin modelo.
-- **Plan decidido por el LLM (capa deliberativa).** Cuando interviene el modelo — por ejemplo para confirmar un CEP o recalcular tras «ahora 3 unidades» —, el agente elige qué herramientas llamar y en qué orden dentro del `AgentExecutor`, con un máximo de 6 iteraciones. El prompt le da un «plan visible»: `buscar_productos` para resolver el ID, `consultar_catalogo` para las ofertas y `comparar_ofertas` para todos los importes.
+- **Plan decidido por el LLM (capa deliberativa).** Cuando interviene el modelo — por ejemplo para confirmar un CEP o recalcular tras «ahora 6 unidades» —, el agente elige qué herramientas llamar y en qué orden dentro del `AgentExecutor`, con un máximo de 6 iteraciones. El prompt le da un «plan visible»: `buscar_productos` para resolver el ID, `consultar_catalogo` para las ofertas y `comparar_ofertas` para todos los importes.
 
-- **Plan de turno (planificador explícito).** Si el mensaje trae varias intenciones, el modelo escribe primero un plan con una petición por intención. Ejemplo real: «Compara 2 unidades de PEC-01-0001 con plazo de 7 días y dime qué dice la política de devoluciones sobre piezas dañadas, y confirma el CEP 01001000» produjo este plan, y cada petición se respondió y verificó por separado:
+- **Plan de turno (planificador explícito).** Si el mensaje trae varias intenciones, el modelo escribe primero un plan con una petición por intención. Ejemplo real: «Compara 5 unidades de PEC-01-0001 con plazo de 7 días y dime qué dice la política de devoluciones sobre piezas dañadas, y confirma el CEP 01001000» produjo este plan, y cada petición se respondió y verificó por separado:
 
   | # | Tipo | Petición |
   |---|---|---|
-  | 1 | compra | Compara 2 unidades de PEC-01-0001 con plazo de 7 días |
+  | 1 | compra | Compara 5 unidades de PEC-01-0001 con plazo de 7 días |
   | 2 | politica | ¿Qué dice la política de devoluciones sobre piezas dañadas? |
   | 3 | cep | Confirma el CEP 01001000 |
 
@@ -176,13 +240,13 @@ Reglas de planificación:
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| Solicitud «Necesito 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días» dividida en los cinco pasos, con la salida de cada uno | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · planificación» | Ejecución real local (sin modelo) |
-| Corto plazo: al pedir «ahora 3 unidades» el borrador conserva el plazo de 7 días; 18 mensajes guardados, 12 visibles | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · memoria aumentada» | Ejecución real local (sin modelo) |
+| Solicitud «Necesito 5 unidades de PEC-01-0001 hasta R$ 10.000 en 7 días» dividida en los cinco pasos, con la salida de cada uno | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · planificación» | Ejecución real local (sin modelo) |
+| Corto plazo: al pedir «ahora 6 unidades» el borrador conserva el plazo de 7 días; 18 mensajes guardados, 12 visibles | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · memoria aumentada» | Ejecución real local (sin modelo) |
 | Largo plazo: la preferencia aparece en una sesión nueva del mismo usuario y no en otro usuario; la sesión nueva empieza sin borrador | Mismo notebook | Ejecución real local |
-| Plan decidido por el LLM real, por turnos: compra → `consultar_catalogo` y `comparar_ofertas`; CEP → `consultar_cep` (São Paulo/SP); «ahora 3 unidades» → `comparar_ofertas` con cantidad 3 y el plazo de 7 días conservado (R$ 4.401,99) | [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json); [scripts/demostrar_r02.py](../scripts/demostrar_r02.py) | **Ejecución real remota** (OpenAI `gpt-4.1-mini`, ViaCEP real, NLI real local) |
+| Plan decidido por el LLM real, por turnos: compra → `comparar_ofertas` (CentroPeças, R$ 7.279,83 para 5 unidades); CEP → `consultar_cep` (São Paulo/SP); «ahora 6 unidades» → `comparar_ofertas` con cantidad 6 y el plazo de 7 días conservado (R$ 8.718,75) | [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json); [scripts/demostrar_r02.py](../scripts/demostrar_r02.py) | **Ejecución real remota** (OpenAI `gpt-4.1-mini`, ViaCEP real, NLI real local) |
 | Pregunta de política por turnos: antes no se publicaba; tras anclar las citas se publica con dos fuentes | [trazas/r02_planificacion_llm_antes.json](trazas/r02_planificacion_llm_antes.json) y [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json); [citas_ancladas.md](citas_ancladas.md) | Ejecución real remota, antes y después |
-| Solicitud mixta en un solo turno, **con planificador**: plan de tres peticiones (compra, política, CEP), cada una verificada sin errores y publicada | [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json), `solicitud_mixta_en_un_turno` | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP) |
-| La misma solicitud **antes del planificador**: el LLM llamó a las herramientas correctas, pero la respuesta no se publicó | [trazas/r02_planificacion_llm_sin_plan.json](trazas/r02_planificacion_llm_sin_plan.json) | Ejecución real remota; resultado negativo conservado |
+| Solicitud mixta en un solo turno, **con planificador**: plan de tres peticiones (compra, política, CEP), las tres publicadas; la de política necesitó una corrección porque su primer resumen no pasó el NLI | [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json), `solicitud_mixta_en_un_turno` | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP) |
+| La misma solicitud **antes del planificador** (entonces con 2 unidades, antes de la regla del pedido mínimo): el LLM llamó a las herramientas correctas, pero la respuesta no se publicó | [trazas/r02_planificacion_llm_sin_plan.json](trazas/r02_planificacion_llm_sin_plan.json) | Ejecución real remota; resultado negativo conservado |
 | El plan se descarta si inventa datos, repite un tipo o no encaja; cada petición pasa por su verificación | [tests/test_planner.py](../tests/test_planner.py) | Pruebas automáticas con doble |
 | Episodios vectoriales guardados, actualizados y recuperados | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb) | Ejecución real local (FastEmbed) |
 | Reglas del borrador y aislamiento | [tests/test_dialogue.py](../tests/test_dialogue.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py) | Pruebas automáticas |
@@ -895,35 +959,35 @@ CoALA distingue una memoria de trabajo (corto plazo) y tres de largo plazo. En c
 
 ### 2. Ejemplos concretos, tras una conversación real
 
-Después de siete turnos con el modelo real, `mapa_memorias` devolvió:
+Después de ocho turnos con el modelo real, `mapa_memorias` devolvió:
 
 | Memoria | Contenido observado |
 |---|---|
-| De trabajo | Borrador: PEC-01-0001, 3 unidades, presupuesto 500000 centavos. 14 mensajes guardados, 12 en la ventana |
-| Episódica | 4 episodios de una sesión, cada uno con la petición y la recomendación publicada |
-| Semántica | Preferencia `proveedor = nacionales`, guardada cuando el usuario dijo «Prefiero proveedores nacionales, recuérdalo» |
+| De trabajo | Borrador: PEC-11-0001, 2 unidades. 16 mensajes guardados, 12 en la ventana |
+| Episódica | 5 episodios de una sesión, cada uno con la petición y la comparación publicada |
+| Semántica | Preferencia `proveedor = nacionales`, guardada cuando el usuario dijo «Prefiero proveedores nacionales, recuérdalo». Cuatro turnos después hizo ganar a un proveedor nacional |
 | Procedimental | Sin cambios: solo cambia con una nueva versión del proyecto |
 
 ### 3. La regla que separa corto y largo plazo
 
 - **Corto plazo es lo que solo sirve para la compra en curso.** El borrador desaparece al cambiar de sesión. Así no se arrastra la cantidad de una compra a otra.
 - **Largo plazo es lo que debe sobrevivir a la sesión.** Una preferencia o un episodio aparecen en una sesión nueva del mismo usuario, y nunca en la de otro.
-- **Precios, stock y plazos no son memoria.** Se releen siempre del escenario activo. Un episodio puede decir «te recomendé CentroPeças por R$ 2.963,07», pero ese importe se trata como histórico.
+- **Precios, stock y plazos no son memoria.** Se releen siempre del escenario activo. Un episodio puede decir «te recomendé CentroPeças por R$ 7.279,83», pero ese importe se trata como histórico.
 
-**Decisión técnica.** Las preferencias se clasifican como semánticas (son hechos sobre el usuario) y las recomendaciones pasadas como episódicas (son sucesos con fecha). La distinción importa al usarlas: un hecho se aplica; un suceso solo se recuerda, porque sus datos pueden haber caducado.
+**Decisión técnica.** Las preferencias se clasifican como semánticas (son hechos sobre el usuario) y las recomendaciones pasadas como episódicas (son sucesos con fecha). La distinción importa al usarlas: **un hecho se aplica** —la preferencia de origen ordena las ofertas válidas de cada comparación— y **un suceso solo se recuerda**, porque sus datos pueden haber caducado.
 
 ### Evidencia
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| Mapa de memorias tras una conversación de siete turnos, con persistencia y aislamiento | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r13_mapa_de_memorias`; [scripts/demostrar_fase3.py](../scripts/demostrar_fase3.py) | **Ejecución real remota** (`gpt-4.1-mini`) con memoria real local |
+| Mapa de memorias tras una conversación de ocho turnos, con persistencia y aislamiento | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r13_mapa_de_memorias`; [scripts/demostrar_fase3.py](../scripts/demostrar_fase3.py) | **Ejecución real remota** (`gpt-4.1-mini`) con memoria real local |
 | Mapa de memorias reproducible sin credenciales | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb) §«R13» | Ejecución real local |
 | El mapa refleja lo guardado; aislamiento por usuario y sesión | [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
 
 ### Pendientes y limitaciones
 
 - La memoria procedimental es estática: el agente no aprende reglas nuevas de la experiencia.
-- La memoria semántica del usuario son solo preferencias explícitas en forma de clave y valor.
+- La memoria semántica del usuario son solo preferencias explícitas en forma de clave y valor, y de ellas solo la de origen del proveedor cambia la comparación.
 
 ## R14 — Ventana de contexto con búsqueda vectorial
 
@@ -942,21 +1006,21 @@ Los episodios se convierten en vectores de 384 dimensiones con un modelo local m
 
 ### 2. Ejecución
 
-Tras una conversación real de siete turnos:
+Tras una conversación real de ocho turnos:
 
 | Medida | Valor |
 |---|---|
-| Mensajes guardados en la sesión | 14 |
+| Mensajes guardados en la sesión | 16 |
 | Mensajes que ve el agente (ventana) | 12 |
-| Episodios guardados del usuario | 4 |
+| Episodios guardados del usuario | 5 |
 
 En una **sesión nueva** del mismo usuario, la pregunta «¿Qué proveedor me convenía para el compresor PEC-01-0001?» recuperó:
 
 | Similitud | Recuerdo recuperado |
 |---|---|
-| 0,355 | «Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días → CentroPeças: R$ 2.963,07…» |
-| 0,317 | «Vuelve a comparar con lo último que te pedí → CentroPeças: R$ 4.401,99…» |
-| 0,312 | «Mejor sin límite de plazo, pero con presupuesto de R$ 5.000 → CentroPeças: R$ 4.401,99…» |
+| 0,349 | «Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días → Ninguna oferta cumple…» |
+| 0,283 | «Compara 2 unidades de PEC-11-0001 → Casa Técnica Brasil: R$ 1.970,38…» |
+| 0,274 | «Vuelve a comparar con lo último que te pedí → CentroPeças: R$ 7.279,83…» |
 
 Para otro usuario, la misma pregunta no recuperó nada.
 
@@ -978,7 +1042,7 @@ La evaluación de R29 mostró el otro lado de esta memoria: con 73 episodios acu
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| 14 mensajes guardados y 12 en ventana; tres recuerdos recuperados en una sesión nueva; ninguno para otro usuario | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r14_r18_persistencia_y_aislamiento` | **Ejecución real remota** para la conversación; embeddings reales locales |
+| 16 mensajes guardados y 12 en ventana; tres recuerdos recuperados en una sesión nueva; ninguno para otro usuario | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r14_r18_persistencia_y_aislamiento` | **Ejecución real remota** para la conversación; embeddings reales locales |
 | Episodio guardado, actualizado y recuperado; ventana de 12 sobre 18 mensajes | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb); [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · memoria» | Ejecución real local (FastEmbed) |
 | Ventana, aislamiento y actualización de episodios | [tests/test_memory_nli.py](../tests/test_memory_nli.py) | Pruebas automáticas |
 
@@ -986,7 +1050,7 @@ La evaluación de R29 mostró el otro lado de esta memoria: con 73 episodios acu
 
 - No hay resumen del historial ni recorte por número de tokens: la ventana cuenta mensajes.
 - La recuperación usa solo similitud; no pondera la antigüedad ni la frecuencia de uso del recuerdo.
-- Las similitudes observadas son bajas (0,31 a 0,36) y no hay un umbral mínimo: siempre se devuelven los tres mejores.
+- Las similitudes observadas son bajas (0,27 a 0,35) y no hay un umbral mínimo: siempre se devuelven los tres mejores. El segundo recuerdo recuperado es de otra pieza.
 
 ## R15 — Comparación de herramientas especializadas de memoria
 
@@ -1019,15 +1083,15 @@ Tres mensajes, el mismo modelo (`gpt-4.1-mini`) y dos memorias. LangMem se mont�
 
 | Mensaje | Memoria de Pedro | LangMem |
 |---|---|---|
-| «Prefiero proveedores nacionales, recuérdalo.» | Llama a `guardar_preferencia`. Guarda `proveedor = nacionales` | Llama a `manage_memory`. Guarda «Prefiere proveedores nacionales para las piezas de repuesto.» |
-| «Compara 2 unidades de PEC-01-0001 con plazo de 7 días.» | Recomendación verificada: CentroPeças, R$ 2.963,07. Guarda un episodio | Responde con el proveedor nacional y su precio unitario, **sin verificación**, y ofrece «hacer el pedido» |
-| «Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.» | Repite la comparación y guarda otro episodio | Responde al comentario; no guarda nada nuevo |
+| «Prefiero proveedores nacionales, recuérdalo.» | Llama a `guardar_preferencia`. Guarda `proveedor = nacionales` | Llama a `manage_memory`. Guarda «Prefiere proveedores nacionales.» |
+| «Compara 5 unidades de PEC-01-0001 con plazo de 7 días.» | Comparación verificada: CentroPeças, R$ 7.279,83, con la nota «Se aplicó tu preferencia por proveedores nacionales». Guarda un episodio | Responde **sin verificación** y se contradice: dice que no hay stock en proveedores nacionales y, a continuación, que CentroPeças (que es nacional) tiene 67 unidades |
+| «Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.» | No lo toma por una compra, pero no sabe qué contestar: pregunta «¿Cuántas unidades necesitas?» | Responde al comentario y ofrece buscar alternativas; no guarda nada nuevo |
 
 | Después | Memoria de Pedro | LangMem |
 |---|---|---|
-| Qué quedó guardado | 1 preferencia (clave y valor) y 2 episodios | 1 recuerdo en texto libre |
+| Qué quedó guardado | 1 preferencia (clave y valor) y 1 episodio | 1 recuerdo en texto libre |
 | Quién decidió guardarlo | El código: cita literal del usuario, o respuesta verificada | El modelo |
-| Sesión nueva: «¿Qué recuerdas de mis preferencias?» | La preferencia está disponible y se inyecta en el contexto, pero Pedro no tiene una respuesta para esa pregunta | Busca en su memoria y contesta: «prefieres proveedores nacionales» |
+| Sesión nueva: «¿Qué recuerdas de mis preferencias?» | La preferencia sigue guardada y se aplica a la siguiente comparación, pero Pedro no tiene una respuesta para esa pregunta | Busca en su memoria y contesta: «prefieres proveedores nacionales» |
 | Otro usuario | No ve nada | No ve nada |
 
 Lo que enseña la ejecución:
@@ -1035,8 +1099,8 @@ Lo que enseña la ejecución:
 - **Las dos guardaron la preferencia y las dos aíslan por usuario.** En lo básico son equivalentes.
 - **LangMem conversa mejor sobre lo que recuerda.** Sabe responder «¿qué recuerdas de mí?»; Pedro no tiene ese tipo de respuesta.
 - **LangMem guarda texto libre que redacta el modelo**; Pedro guarda una clave y un valor comprobados contra la cita. En esta corrida LangMem guardó algo correcto, pero nada impide que guarde una inferencia.
-- **Sin verificación, la memoria influye sin control.** El agente con LangMem aplicó la preferencia por su cuenta al comparar, dio un precio sin comprobar y ofreció hacer un pedido que no puede hacer. En Pedro, la preferencia está «subordinada a la petición actual» y toda cifra pasa por la verificación.
-- **Pedro también falló en algo.** Ante un comentario sin petición («me va a salir caro») repitió la comparación y guardó un episodio redundante: no sabe conversar fuera de sus tipos de respuesta.
+- **Lo que importa es qué se hace con lo recordado.** En Pedro la preferencia entra en la regla de comparación: ordena las ofertas válidas, se verifica y la respuesta lo dice. El agente con LangMem la usó a su manera, sin comprobación, y dio una respuesta contradictoria sobre el stock de un proveedor nacional.
+- **Pedro también falló en algo.** Ante un comentario sin petición («me va a salir caro») contestó con una pregunta fuera de lugar: no sabe conversar fuera de sus tipos de respuesta.
 
 ### 4. Decisión
 
@@ -1046,7 +1110,7 @@ Se mantiene la implementación propia por tres razones:
 2. **El aislamiento por usuario, sesión y escenario es un requisito.** Con tablas propias es una condición en cada consulta y se prueba directamente.
 3. **El volumen es pequeño.** Unos pocos episodios y preferencias por usuario no justifican un servicio adicional.
 
-La ejecución confirmó la decisión y señaló qué mejorar: Pedro debería poder responder qué recuerda del usuario, y no debería guardar un episodio por un comentario.
+La ejecución confirmó la decisión y señaló qué mejorar: Pedro debería poder responder qué recuerda del usuario y saber contestar a un comentario.
 
 Lo que sí se tomó de estas herramientas es una idea de LangMem vista en clase: **el agente guarda preferencias durante la conversación con una herramienta**. Pedro la tiene (`guardar_preferencia`), con una condición añadida: la herramienta rechaza el guardado si el valor no aparece en una cita literal del mensaje del usuario.
 
@@ -1066,7 +1130,7 @@ Ejecutado con el modelo real: ante «Prefiero proveedores nacionales, recuérdal
 
 - **Mem0 y Letta no se instalaron ni se ejecutaron**: su comparación es conceptual. LangMem sí se ejecutó, en una conversación de tres mensajes y una sola corrida; lo que el modelo decide guardar puede variar.
 - LangMem es una dependencia opcional (extra `comparacion`); el producto no lo usa.
-- Pedro no tiene una respuesta para «¿qué recuerdas de mí?» y repite la comparación ante un comentario sin petición.
+- Pedro no tiene una respuesta para «¿qué recuerdas de mí?» ni para un comentario sin petición.
 - La implementación propia no deduplica episodios ni extrae hechos por sí sola.
 
 ## R16 — Chatbot con ConversationBufferMemory
@@ -1091,16 +1155,16 @@ La memoria de buffer guarda la conversación completa y la inserta entera en cad
 
 | Turno | Usuario | Pedro | Memoria |
 |---|---|---|---|
-| 1 | Hola, soy Ana. Necesito un termostato para mi nevera. | Hola Ana, ¿podrías indicarme la cantidad, tu presupuesto aproximado y el plazo?… | 260 caracteres |
-| 2 | Que sean 2 unidades. | Perfecto, Ana, entonces necesito saber tu presupuesto y el plazo para las 2 unidades del termostato… | 436 |
-| 3 | Tengo hasta R$ 900 y lo necesito en 5 días. | Gracias, Ana. Consultaré el catálogo para las 2 unidades del termostato dentro de tu presupuesto de R$ 900 y plazo de 5 días… | 679 |
-| 4 | Resume mi solicitud completa y dime cómo me llamo. | Claro, Ana. Solicitas 2 unidades de termostato para nevera, con un presupuesto de R$ 900 y un plazo de entrega de 5 días… | 935 |
+| 1 | Hola, soy Ana. Necesito un termostato para mi nevera. | Hola Ana, ¿podrías indicarme la cantidad que necesitas, tu presupuesto aproximado y el plazo?… | 240 caracteres |
+| 2 | Que sean 2 unidades. | Perfecto, Ana. ¿Podrías indicarme tu presupuesto aproximado y el plazo en que necesitas las 2 unidades del termostato?… | 449 |
+| 3 | Tengo hasta R$ 900 y lo necesito en 5 días. | Gracias, Ana. Consultaré el catálogo para verificar disponibilidad y precios de 2 termostatos dentro de tu presupuesto y plazo… | 667 |
+| 4 | Resume mi solicitud completa y dime cómo me llamo. | Claro, Ana. Solicitas 2 unidades de termostato para tu nevera, con un presupuesto de hasta R$ 900 y un plazo de entrega de 5 días. ¿Es correcto? | 879 |
 
 El turno 4 solo se puede responder con memoria: el nombre se dijo en el turno 1, la cantidad en el 2 y el presupuesto y el plazo en el 3.
 
 ### 3. Lo que muestra la última columna
 
-La memoria crece en cada turno: de 260 a 935 caracteres en cuatro turnos. Con el buffer, **cada mensaje nuevo hace más largo y más caro el siguiente prompt**, sin límite. Por eso el agente final no usa esta memoria: usa una ventana de 12 mensajes más recuperación de recuerdos (R14).
+La memoria crece en cada turno: de 240 a 879 caracteres en cuatro turnos. Con el buffer, **cada mensaje nuevo hace más largo y más caro el siguiente prompt**, sin límite. Por eso el agente final no usa esta memoria: usa una ventana de 12 mensajes más recuperación de recuerdos (R14).
 
 **Decisión técnica.** Este chatbot está aislado en `legacy.py` como demostración. Es útil para ver la memoria conversacional en su forma más simple, pero no sirve para el producto por dos motivos: no tiene límite de tamaño, y no tiene herramientas, así que no puede consultar el catálogo. Su prompt le prohíbe inventar precios y por eso responde «consultaré el catálogo».
 
@@ -1210,41 +1274,44 @@ Medición con el modelo real sobre catorce mensajes difíciles, con el resultado
 
 > ¿El alumno validó, con evidencia de una conversación real, que el agente mantiene contexto y descompone consultas complejas en diálogos multi-turno?
 
-**Respuesta corta.** Sí. En una conversación real de siete turnos el agente cambió la cantidad conservando el plazo, quitó el plazo y añadió presupuesto, guardó una preferencia, respondió un CEP y una política sin perder la compra en curso, y al final volvió a comparar con el estado correcto.
+**Respuesta corta.** Sí. En una conversación real de ocho turnos el agente descartó una compra por pedido mínimo, la recalculó al cambiar la cantidad conservando el plazo, cambió los límites, guardó una preferencia, respondió un CEP y una política sin perder la compra en curso, volvió a comparar con el estado correcto y aplicó la preferencia guardada a una pieza nueva.
 
 ### 1. La conversación
 
 Agente final, `gpt-4.1-mini`, ViaCEP real, índice de políticas cargado de disco. La columna «Estado» es el borrador de compra después de cada turno.
 
-| # | Usuario | Herramientas | Estado (pieza PEC-01-0001) | Respuesta |
+| # | Usuario | Herramientas | Estado | Respuesta |
 |---|---|---|---|---|
-| 1 | Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días | `consultar_catalogo`, `comparar_ofertas` | 2 uds · plazo 7 | CentroPeças: R$ 2.963,07 |
-| 2 | Ahora que sean 3 y mantén el plazo | `comparar_ofertas` | **3 uds** · plazo 7 | CentroPeças: R$ 4.401,99 |
-| 3 | Mejor sin límite de plazo, pero con presupuesto de R$ 5.000 | `comparar_ofertas` | 3 uds · **sin plazo** · **R$ 5.000** | CentroPeças: R$ 4.401,99 |
+| 1 | Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días | `comparar_ofertas` | PEC-01-0001 · 2 uds · plazo 7 | Ninguna oferta cumple: CentroPeças exige un pedido mínimo de 5 unidades y Atlantic tarda 35 días |
+| 2 | Ahora que sean 5 y mantén el plazo | `comparar_ofertas` | **5 uds** · plazo 7 | CentroPeças: R$ 7.279,83 |
+| 3 | Mejor sin límite de plazo, pero con presupuesto de R$ 10.000 | `comparar_ofertas` | 5 uds · **sin plazo** · **R$ 10.000** | CentroPeças: R$ 7.279,83; Atlantic también cumple ahora |
 | 4 | Prefiero proveedores nacionales, recuérdalo | `guardar_preferencia` | sin cambios | Guardé tu preferencia: proveedor = nacionales |
 | 5 | ¿A qué ciudad corresponde el CEP 01001000? | `consultar_cep` | sin cambios | CEP 01001000: São Paulo/SP |
 | 6 | ¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza? | `consultar_politicas` | sin cambios | Resumen de la política, con su fuente |
-| 7 | Vuelve a comparar con lo último que te pedí | `consultar_catalogo`, `comparar_ofertas` | 3 uds · R$ 5.000 | CentroPeças: R$ 4.401,99 |
+| 7 | Vuelve a comparar con lo último que te pedí | `comparar_ofertas` | 5 uds · R$ 10.000 | CentroPeças: R$ 7.279,83. «Se aplicó tu preferencia por proveedores nacionales» |
+| 8 | Compara 2 unidades de PEC-11-0001 | `comparar_ofertas` | **PEC-11-0001** · 2 uds | Casa Técnica Brasil: R$ 1.970,38. «Sin ella, la más barata sería Atlantic Repair Parts por R$ 619,38» |
+
+Las ocho propuestas del modelo pasaron la verificación a la primera.
 
 ### 2. Qué demuestra
 
-- **Mantiene el contexto.** En el turno 2 el usuario no repite la pieza ni el plazo. En el turno 7 no repite nada, y el agente compara con 3 unidades y R$ 5.000, después de tres turnos sobre otros temas.
-- **Actualiza solo lo que cambia.** El turno 3 quita un límite y añade otro; la cantidad se conserva.
+- **Mantiene el contexto.** En el turno 2 el usuario no repite la pieza ni el plazo. En el turno 7 no repite nada, y el agente compara con 5 unidades y R$ 10.000, después de tres turnos sobre otros temas.
+- **Actualiza solo lo que cambia.** El turno 3 quita un límite y añade otro; la cantidad se conserva. El turno 8 nombra otra pieza y la solicitud empieza de nuevo.
 - **No mezcla los temas.** Los turnos 4, 5 y 6 no tocan el borrador de compra.
 - **Descompone la consulta compleja.** Comprar, fijar una preferencia, confirmar el destino y consultar una política se resuelven turno a turno, cada uno con sus herramientas.
-- **Se corrige sola.** En el turno 3 la primera propuesta del modelo tenía mal el ganador o el total; la verificación la rechazó y la segunda fue correcta.
+- **Compara proveedores como lo haría un comprador.** El turno 1 no recomienda una oferta que el proveedor no aceptaría. El turno 8 respeta la preferencia guardada cuatro turnos antes y dice cuánto cuesta: el proveedor nacional sale R$ 1.351,00 más caro que el internacional.
 
 ### 3. Aislamiento y persistencia
 
 | Comprobación | Resultado |
 |---|---|
-| Se crea un flujo nuevo sobre la misma base, como tras reiniciar | 14 mensajes recuperados; el agente ve los últimos 12 |
+| Se crea un flujo nuevo sobre la misma base, como tras reiniciar | 16 mensajes recuperados; el agente ve los últimos 12 |
 | Sesión nueva del mismo usuario | Sin borrador; conserva la preferencia; recupera tres episodios |
 | Otro usuario | Sin borrador, sin preferencias, sin episodios |
 
 ### 4. La primera ejecución falló, y eso también es evidencia
 
-La primera vez que se ejecutó esta conversación, tres turnos salieron mal:
+La primera vez que se ejecutó una conversación como esta (entonces con 2 y 3 unidades, antes de la regla del pedido mínimo), tres turnos salieron mal:
 
 | Turno | Qué pasó | Causa | Corrección |
 |---|---|---|---|
@@ -1258,7 +1325,7 @@ Las dos trazas se conservan. Las pruebas automáticas ya pasaban antes: el fallo
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| Conversación de siete turnos con herramientas, verificaciones, estado y respuesta de cada turno | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r18_conversacion_compleja` | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
+| Conversación de ocho turnos con herramientas, verificaciones, estado y respuesta de cada turno | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r18_conversacion_compleja` | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
 | La misma conversación antes de las correcciones | [trazas/fase3_memoria_llm_antes.json](trazas/fase3_memoria_llm_antes.json) | Ejecución real remota |
 | Persistencia tras reinicio y aislamiento | Mismo archivo, `r14_r18_persistencia_y_aislamiento` | Ejecución real local |
 | Los tres casos corregidos | [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
@@ -1268,6 +1335,7 @@ Las dos trazas se conservan. Las pruebas automáticas ya pasaban antes: el fallo
 - Es una conversación, con una pieza y en un solo idioma.
 - La conversación reparte las intenciones entre turnos. Un mensaje que las mezcla lo divide el planificador de turno (R02), que solo actúa con el modelo disponible.
 - En el turno 7 el agente interpretó «lo último que te pedí» gracias al borrador; sin borrador habría pedido la pieza.
+- La traza anterior a las correcciones usa cantidades distintas (2 y 3 unidades) y es previa a la regla del pedido mínimo: sirve para ver los fallos de diálogo, no para comparar importes.
 
 ---
 
@@ -1292,7 +1360,7 @@ Las dos trazas se conservan. Las pruebas automáticas ya pasaban antes: el fallo
 |---|---|---|---|---|---|
 | `buscar_productos` | Hardcoded | SQL de lectura | `texto` | Candidatos (ID, SKU, nombre, categoría) | Lista vacía si no hay coincidencias |
 | `consultar_catalogo` | Hardcoded con un ID; **semántica** en preguntas abiertas | Con ID: plan validado → `SELECT` con parámetros. Sin ID: el modelo escribe el `SELECT` y el motor lo autoriza | `pregunta` | Modo, SQL y filas | Consulta rechazada o sin filas |
-| `comparar_ofertas` | Hardcoded | Cálculo en centavos enteros con desempate fijo | `producto_id`, `cantidad`, `presupuesto_centavos`, `plazo_max_dias` | Todas las ofertas, con «cumple» o el motivo de descarte | Rechaza una cantidad no positiva |
+| `comparar_ofertas` | Hardcoded | Stock, pedido mínimo, plazo y presupuesto; total en centavos enteros; preferencia de origen del usuario; desempate fijo | `producto_id`, `cantidad`, `presupuesto_centavos`, `plazo_max_dias` | Todas las ofertas, con «cumple» o el motivo de descarte | Rechaza una cantidad no positiva |
 | `consultar_politicas` | **Semántica** | Búsqueda por similitud en FAISS, con reformulación de la consulta | `pregunta` | Fragmentos con fuente y distancia; estado | `sin_evidencia` o `indisponible` |
 | `consultar_cep` | Hardcoded | Llamada a una API externa | `cep` | Ciudad, UF y modo | `no_encontrado`, `invalido`, `indisponible` |
 | `guardar_preferencia` | Hardcoded | Escritura condicionada a una cita literal | `clave`, `valor`, `cita_usuario` | Confirmación | `invalido` si el usuario no lo dijo |
@@ -1301,7 +1369,7 @@ El catálogo se genera del código: nombre, descripción y entradas salen de las
 
 ### 3. Por qué este reparto
 
-- **`comparar_ofertas` es hardcoded a propósito.** Sumar precio y flete, comprobar stock y elegir al ganador son operaciones exactas. Un modelo podría equivocarse en una suma; el código no. La evaluación lo confirmó: cuando un modelo propuso un ganador distinto del calculado, la verificación lo rechazó (R29).
+- **`comparar_ofertas` es hardcoded a propósito.** Es el corazón del asistente (ver «El núcleo del asistente: comparar proveedores»). Sumar precio y flete, comprobar stock y pedido mínimo y elegir al ganador son operaciones exactas. Un modelo podría equivocarse en una suma; el código no. La evaluación lo confirmó: cuando un modelo propuso un ganador distinto del calculado, la verificación lo rechazó (R29).
 - **`consultar_politicas` es semántica porque no hay otra forma.** El usuario pregunta «¿se puede mandar en varias cajas?» y la política dice «entrega parcial». Solo una búsqueda por significado las une.
 - **Lo semántico nunca decide un número.** La herramienta semántica devuelve fragmentos de texto con su fuente; los importes vienen siempre de herramientas hardcoded.
 - **El LLM es el que elige.** Las herramientas no se llaman entre sí; el agente decide cuál usar leyendo su descripción.
@@ -1603,7 +1671,7 @@ En el agente, la herramienta `consultar_politicas` aplica esta reformulación a 
 
 > ¿El alumno construyó un mecanismo de verificación de consistencia factual y coherencia lógica de las respuestas del agente?
 
-**Respuesta corta.** Sí. Ninguna respuesta del agente se muestra sin pasar por dos puertas dentro del flujo: una **verificación exacta** (coherencia lógica) y un modelo **NLI** (consistencia factual). En seis experimentos con el modelo real no se publicó ninguna recomendación equivocada.
+**Respuesta corta.** Sí. Ninguna respuesta del agente se muestra sin pasar por dos puertas dentro del flujo: una **verificación exacta** (coherencia lógica) y un modelo **NLI** (consistencia factual). En siete experimentos con el modelo real no se publicó ninguna recomendación contraria a la regla de comparación. La regla misma tuvo un hueco —ignoraba el pedido mínimo— que la verificación no podía ver, porque comprobaba contra esa misma regla.
 
 ### 1. Dónde está
 
@@ -1622,8 +1690,8 @@ propuesta del modelo → anclaje de datos → verificación exacta → NLI → p
 | Comprobación | Qué detecta |
 |---|---|
 | Total | Un importe que no coincide con precio × cantidad + flete |
-| Stock, presupuesto y plazo | Una oferta marcada como válida que no cumple, o al revés |
-| Ganador | Un proveedor recomendado que no es el mejor según la regla |
+| Stock, pedido mínimo, presupuesto y plazo | Una oferta marcada como válida que no cumple, o al revés |
+| Ganador | Un proveedor recomendado que no es el mejor según la regla, incluida la preferencia de origen del usuario |
 | Ofertas completas | Que falte o sobre alguna alternativa |
 | Identificadores | Una oferta o una pieza que no existe |
 | Procedencia | Una cita que no está en el fragmento recuperado; un escenario distinto del activo |
@@ -1667,10 +1735,10 @@ El anclaje no relaja la verificación: solo evita rechazar lo que ya era cierto.
 
 | Hecho observado | Dónde |
 |---|---|
-| **0 recomendaciones erróneas publicadas** en seis experimentos de 30 casos | R29 |
+| **0 recomendaciones contrarias a la regla publicadas** en siete experimentos de 30 casos | R29 |
 | `gpt-4o-mini` propuso un ganador equivocado; la verificación lo rechazó dos veces y no se publicó | R29 |
 | `gpt-4.1-mini`: 22 de 23 propuestas aceptadas a la primera, y 24 de 24 en la versión final, sin ningún error de verificación | R29 |
-| Una primera propuesta con el ganador o el total incorrecto fue rechazada y la segunda fue correcta | Turno 3 de la conversación de R18 |
+| Una primera propuesta con el ganador o el total incorrecto fue rechazada y la segunda fue correcta | Primera ejecución de la conversación de R18; motivó el anclaje de la comparación |
 | Una política cuyo resumen no pasó el NLI se corrigió y la segunda propuesta sí lo pasó | [citas_ancladas.md](citas_ancladas.md) |
 
 ### Evidencia
@@ -1678,13 +1746,14 @@ El anclaje no relaja la verificación: solo evita rechazar lo que ya era cierto.
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
 | Errores de verificación de cada caso en cinco experimentos | [trazas/](trazas/): `r29_langsmith_*.json` | **Ejecución real remota**; NLI real local |
-| Rechazo y corrección dentro de una conversación | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), turno 3 | Ejecución real remota |
+| Ocho propuestas verificadas sin errores en una conversación | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | Ejecución real remota |
 | Anclaje de citas y de CEP, antes y después | [citas_ancladas.md](citas_ancladas.md); [trazas/r10_viacep_llm_antes.json](trazas/r10_viacep_llm_antes.json) | Ejecución real remota |
 | Tres pares NLI con sus tres clases | [evidencias.md](evidencias.md), fila R5.3 | Ejecución real local |
 | Cada comprobación exacta, las tres clases NLI, los anclajes y la degradación | [tests/test_core.py](../tests/test_core.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_policy_cep.py](../tests/test_policy_cep.py); [tests/test_citas_ancladas.py](../tests/test_citas_ancladas.py) | Pruebas automáticas |
 
 ### Pendientes y limitaciones
 
+- **Verifica contra la regla de negocio, no la regla.** Mientras la comparación ignoró el pedido mínimo, la verificación aprobó recomendaciones que un proveedor no aceptaría.
 - **Verifica que la respuesta sea cierta, no que sea pertinente.** En un experimento con memoria contaminada, una pregunta de CEP recibió una respuesta de compra verificada pero fuera de tema.
 - El NLI se probó con tres pares ilustrativos; no se midió su exactitud general.
 - El modelo NLI admite 512 tokens: con varias citas largas la premisa se trunca.
@@ -1711,17 +1780,17 @@ No hay un agente por tema ni un router previo: el mismo modelo ve las seis descr
 
 ### 2. Las tres categorías en una misma conversación
 
-Conversación real de siete turnos con el agente final (la de R18):
+Conversación real de ocho turnos con el agente final (la de R18):
 
 | Turno | Pregunta | Categoría | Herramienta llamada |
 |---|---|---|---|
-| 1 | Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días | SQL | `consultar_catalogo`, `comparar_ofertas` |
+| 2 | Ahora que sean 5 y mantén el plazo | SQL | `comparar_ofertas` |
 | 4 | Prefiero proveedores nacionales, recuérdalo | Memoria | `guardar_preferencia` |
 | 5 | ¿A qué ciudad corresponde el CEP 01001000? | API | `consultar_cep` |
 | 6 | ¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza? | RAG | `consultar_politicas` |
-| 7 | Vuelve a comparar con lo último que te pedí | SQL | `consultar_catalogo`, `comparar_ofertas` |
+| 8 | Compara 2 unidades de PEC-11-0001 | SQL | `comparar_ofertas` |
 
-El mismo ejecutor, la misma memoria y el mismo verificador atienden los siete turnos.
+El mismo ejecutor, la misma memoria y el mismo verificador atienden los ocho turnos. Y las categorías se cruzan: la preferencia guardada en el turno 4 (memoria) decide el proveedor ganador del turno 8 (SQL).
 
 ### 3. Por qué un solo agente
 
@@ -1775,10 +1844,10 @@ return AgentExecutor(agent=create_openai_tools_agent(llm, lista, prompt), tools=
 Un turno real, tal como lo registró la traza:
 
 ```text
-Usuario:      Ahora que sean 3 y mantén el plazo
-Herramienta:  comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 3, 'plazo_max_dias': 7}
+Usuario:      Ahora que sean 5 y mantén el plazo
+Herramienta:  comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 5, 'plazo_max_dias': 7}
 Verificación: intento 1, sin errores
-Respuesta:    CentroPeças: R$ 4.401,99 para 3 unidades; plazo 2 días.
+Respuesta:    CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.
 ```
 
 ### 3. Lo que rodea al ejecutor
@@ -1796,7 +1865,7 @@ El ejecutor no se usa solo. `crear_flujo` lo envuelve:
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| Conversación de siete turnos con el ejecutor, sus herramientas y verificaciones | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | **Ejecución real remota** (`gpt-4.1-mini`) |
+| Conversación de ocho turnos con el ejecutor, sus herramientas y verificaciones | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | **Ejecución real remota** (`gpt-4.1-mini`) |
 | Cinco experimentos de 30 casos sobre el mismo ejecutor | [trazas/](trazas/): `r29_langsmith_*.json` | Ejecución real remota |
 | El ejecutor llamando a ViaCEP y al índice de políticas | [trazas/r10_viacep_llm.json](trazas/r10_viacep_llm.json); [trazas/r22_indice_existente.json](trazas/r22_indice_existente.json) | Ejecución real remota |
 | El objeto construido es un `AgentExecutor` con `create_openai_tools_agent`, 6 iteraciones y 6 herramientas | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomía»; [tests/test_anatomia.py](../tests/test_anatomia.py) | Ejecución real local y prueba |
@@ -1841,12 +1910,12 @@ return RunnableWithMessageHistory(
 
 ### 3. Historial operativo en una sesión real
 
-En la conversación de siete turnos (R18):
+En la conversación de ocho turnos (R18):
 
-- El turno 2, «Ahora que sean 3 y mantén el plazo», no nombra la pieza: viene del contexto.
+- El turno 2, «Ahora que sean 5 y mantén el plazo», no nombra la pieza: viene del contexto.
 - El turno 7, «Vuelve a comparar con lo último que te pedí», se resuelve tres turnos después de la última compra.
-- Al terminar había **14 mensajes guardados**: siete del usuario y siete respuestas publicadas. El turno 3 tuvo una propuesta rechazada, y **no aparece** en el historial.
-- Al crear un flujo nuevo sobre la misma base, como tras reiniciar, los 14 mensajes seguían ahí y el agente veía los últimos 12.
+- Al terminar había **16 mensajes guardados**: ocho del usuario y ocho respuestas publicadas, y nada más. Las llamadas a herramientas y las propuestas intermedias no entran.
+- Al crear un flujo nuevo sobre la misma base, como tras reiniciar, los 16 mensajes seguían ahí y el agente veía los últimos 12.
 - Desde la interfaz, al reabrir una conversación anterior volvieron sus 8 mensajes.
 
 **Decisión técnica.** Se eligió `RunnableWithMessageHistory`, y no pasar el historial a mano, porque separa dos responsabilidades: el turno recibe el historial ya cargado y no sabe dónde vive. Cambiar SQLite por otro almacén sería cambiar una sola clase.
@@ -1855,7 +1924,7 @@ En la conversación de siete turnos (R18):
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| Siete turnos con contexto, 14 mensajes guardados, 12 en ventana y recuperación tras recrear el flujo | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | **Ejecución real remota** (`gpt-4.1-mini`) |
+| Ocho turnos con contexto, 16 mensajes guardados, 12 en ventana y recuperación tras recrear el flujo | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | **Ejecución real remota** (`gpt-4.1-mini`) |
 | Conversación reabierta desde la interfaz con sus 8 mensajes | [trazas/r28_streamlit.json](trazas/r28_streamlit.json) | Ejecución real remota |
 | Bitácora de un turno: la propuesta rechazada no llega a la memoria | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) §«R12» | Ejecución con **doble** |
 | Solo se guarda lo público; ventana de 12; aislamiento por usuario y sesión | [tests/test_tools_flow.py](../tests/test_tools_flow.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
@@ -1898,16 +1967,16 @@ La app se ejecutó con `AppTest`, la herramienta de pruebas de Streamlit: corre 
 
 | Acción | Resultado |
 |---|---|
-| Chat: «Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días» | CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días |
-| Chat: «Ahora que sean 3 y mantén el plazo» | CentroPeças: R$ 4.401,99 para 3 unidades; plazo 2 días |
+| Chat: «Necesito 5 unidades de PEC-01-0001 con plazo máximo de 7 días» | CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días |
+| Chat: «Ahora que sean 6 y mantén el plazo» | CentroPeças: R$ 8.718,75 para 6 unidades; plazo 2 días |
 | Chat: «¿A qué ciudad corresponde el CEP 01001000?» | CEP 01001000: São Paulo/SP (ViaCEP, modo real) |
 | Chat: «¿Se puede mandar en varias cajas?» | Regla de entrega parcial, con su fuente |
 | Botón «Nuevo chat» | Sesión distinta y pantalla vacía |
 | Reabrir la conversación anterior | Vuelven sus 8 mensajes |
 | Vista «Catálogo de piezas» | 2640 piezas, 20 por página |
-| Vista «Comparación local»: PEC-01-0001, 3 unidades | BR-06: R$ 4.401,99, con las 3 ofertas |
+| Vista «Comparación local»: PEC-01-0001, 6 unidades | BR-06: R$ 8.718,75, con las 3 ofertas, su origen y su pedido mínimo |
 
-Dos comprobaciones salen de esa tabla: **la memoria funciona en la interfaz** (el segundo turno depende del primero y la conversación se puede reabrir) y **el chat y el formulario dan el mismo importe** para la misma compra, R$ 4.401,99, porque comparten cálculo y verificador.
+Dos comprobaciones salen de esa tabla: **la memoria funciona en la interfaz** (el segundo turno depende del primero y la conversación se puede reabrir) y **el chat y el formulario dan el mismo importe** para la misma compra, R$ 8.718,75, porque comparten cálculo y verificador.
 
 ### 4. Funciona sin credenciales
 
@@ -1934,11 +2003,11 @@ Sin `OPENAI_API_KEY` la interfaz no se rompe: lista piezas, muestra fichas, comp
 
 > ¿El alumno evaluó la calidad de las respuestas y la trayectoria de llamadas de herramientas del agente con LangSmith, justificando las conclusiones a partir de las métricas obtenidas?
 
-**Respuesta corta.** Sí. Se ejecutaron seis experimentos en LangSmith sobre 30 casos, con seis métricas de calidad y de trayectoria. Con `gpt-4.1-mini` el agente acertó el ganador y el importe en **14 de 14** recomendaciones, también en la versión final. En ningún experimento se publicó una recomendación equivocada. La evaluación además encontró un defecto del agente y un error en la propia forma de evaluar; los dos se corrigieron y se volvieron a medir.
+**Respuesta corta.** Sí. Se ejecutaron siete experimentos en LangSmith sobre 30 casos, con seis métricas de calidad y de trayectoria. En el último, con la comparación de proveedores corregida, `gpt-4.1-mini` acertó el ganador y el importe en **14 de 14** recomendaciones y las 24 propuestas pasaron la verificación a la primera. En ningún experimento se publicó una recomendación equivocada. La evaluación además encontró un defecto del agente y un error en la propia forma de evaluar; los dos se corrigieron y se volvieron a medir.
 
 ### 1. Qué se evalúa
 
-El agente evaluado es el mismo flujo que usa la interfaz (`crear_flujo`), con el modelo real, el verificador y el NLI. El conjunto de casos está en LangSmith como `pedro-infnet-casos-derivados-7610315f`: 30 casos sintéticos con la respuesta y las herramientas esperadas.
+El agente evaluado es el mismo flujo que usa la interfaz (`crear_flujo`), con el modelo real, el verificador y el NLI. Hay dos conjuntos de casos en LangSmith, de 30 casos sintéticos cada uno, con la respuesta y las herramientas esperadas: `pedro-infnet-casos-derivados-7610315f` (los seis primeros experimentos) y `pedro-infnet-casos-derivados-9399546b` (el séptimo, con el pedido mínimo en la regla de referencia).
 
 | Grupo | Casos | Qué se espera |
 |---|---|---|
@@ -1983,7 +2052,27 @@ Los seis experimentos:
 | `…gpt-4o-mini-memoria-limpia-035aa38a` | 4o-mini | CEP corregido; memoria nueva | 13/14 | 15/16 | 22/30 | 19/23 |
 | `…gpt-4.1-mini-version-final-c4842e8a` | 4.1-mini | **Versión final** (planificador, intérprete, anclaje de la comparación, text-to-SQL en el chat); memoria nueva | 14/14 | 16/16 | 13/30 | 24/24 |
 
-### 3. La versión final del agente
+### 3. El resultado vigente: con la comparación de proveedores corregida
+
+Los seis primeros experimentos se hicieron cuando la comparación ignoraba el **pedido mínimo** de cada proveedor. Tanto el agente como los casos de referencia tenían ese hueco, y por eso coincidían: 14 de 14 medía que el agente y la referencia estaban de acuerdo, no que la recomendación fuera buena para un comprador. **Ninguna métrica lo detectó.**
+
+Al corregir la regla se regeneraron los casos con una referencia independiente del agente (SQL propio en [crear_casos_eval.py](../scripts/crear_casos_eval.py)). Cambiaron 5 de los 14 casos de recomendación: 2 de ganador y 3 pasaron a «ninguna oferta». Una prueba comprueba que el comparador del agente coincide con esa referencia en los 19 casos de compra. El séptimo experimento, `…gpt-4.1-mini-pedido-minimo-4e396dfb`, es el resultado vigente:
+
+| Métrica | Resultado |
+|---|---|
+| Ganador correcto | 14 de 14 |
+| Importe correcto | 14 de 14 |
+| Contenido | 16 de 16 |
+| Herramienta decisiva | 23 de 23 |
+| Primera propuesta aceptada | 24 de 24 |
+| Errores de verificación | 0 |
+| Trayectoria completa | 16 de 30 |
+
+Ejemplo de un caso que cambió, «Compara 2 unidades de PEC-01-0001»: antes ganaba CentroPeças con R$ 2.963,07; ahora gana Atlantic Repair Parts con R$ 3.200,27, porque CentroPeças exige un pedido mínimo de 5 unidades.
+
+Los seis experimentos anteriores se conservan como historia del proyecto: siguen sirviendo para comparar modelos y para ver el efecto del CEP y de la memoria, pero sus importes corresponden a la regla antigua.
+
+### 4. La versión final del agente (antes de corregir la comparación)
 
 Después de estos experimentos el agente cambió: se añadieron el planificador de turno, el intérprete con modelo, el anclaje de la comparación y el text-to-SQL en el chat. Se volvió a evaluar, con memoria nueva:
 
@@ -2002,7 +2091,7 @@ Dos lecturas:
 - **La calidad se mantuvo y la fiabilidad subió.** Ninguna propuesta fue rechazada: con el anclaje, las cifras de la comparación ya no las transcribe el modelo.
 - **La trayectoria completa bajó, y hay que explicarlo.** La referencia espera `consultar_catalogo` y después `comparar_ofertas`. En la versión final el agente llamó solo a `comparar_ofertas` en 17 de 19 compras: es el camino más corto y da el mismo resultado, porque esa herramienta ya devuelve todas las ofertas. La métrica mide que el agente siga un camino concreto, no que el camino sea bueno. Los casos están congelados y no se ajustaron para mejorar el número.
 
-### 4. Conclusiones, cada una con su métrica
+### 5. Conclusiones, cada una con su métrica
 
 **1. Se mantiene `gpt-4.1-mini`.** Gana o empata en todas las métricas: 14/14 frente a 13/14 en ganador e importe, y 22/23 frente a 19/23 en propuestas aceptadas a la primera. `gpt-4o-mini` falló cuatro veces el formato JSON (`OutputParserException`) y eligió mal un ganador.
 
@@ -2012,9 +2101,11 @@ Dos lecturas:
 
 **4. La evaluación encontró un error en la forma de evaluar.** Todos los experimentos compartían la misma memoria, así que los recuerdos de una corrida entraban al contexto de la siguiente. Con 73 episodios acumulados, la trayectoria de `gpt-4.1-mini` cayó de 25/30 a 15/30 —el agente dejaba de consultar el catálogo— y `gpt-4o-mini` acertó solo 10/14 ganadores. Con memoria nueva volvieron a 24/30 y 13/14. Ahora cada experimento crea su propia memoria. La lección vale también para el producto: **la memoria episódica cambia el comportamiento del agente** y hay que vigilarla.
 
+**6. Una métrica perfecta no garantiza que la regla de negocio sea correcta.** Durante seis experimentos el agente obtuvo 14 de 14 recomendando ofertas que el proveedor no habría aceptado, porque la referencia compartía el mismo error. La evaluación mide el acuerdo con la referencia; la referencia hay que revisarla aparte, con criterio de negocio.
+
 **5. La trayectoria «completa» pide un paso que no siempre hace falta.** La referencia exige `consultar_catalogo` y después `comparar_ofertas`. Antes de las mejoras, en 6 de 19 compras el agente llamó solo a `comparar_ofertas`, que ya devuelve todas las ofertas, y la respuesta fue correcta; en la versión final lo hizo en 17 de 19. Por eso la herramienta decisiva es siempre 23/23 mientras la trayectoria completa pasó de 24/30 a 13/30. No es un fallo de calidad: es un atajo válido que la referencia no contempla. Los casos están congelados y no se cambiaron.
 
-### 5. Cómo se ejecuta
+### 6. Cómo se ejecuta
 
 ```bash
 uv run python evals/evaluar_flujo.py --modelo gpt-4.1-mini --salida docs/trazas/r29_resultado.json
@@ -2026,14 +2117,16 @@ El script comprueba que el modelo responde antes de empezar, crea el conjunto de
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| Seis experimentos con sus métricas y trazas | LangSmith, conjunto `pedro-infnet-casos-derivados-7610315f` | **Ejecución real remota** (OpenAI, ViaCEP y LangSmith) |
+| Siete experimentos con sus métricas y trazas | LangSmith, conjuntos `pedro-infnet-casos-derivados-7610315f` y `…-9399546b` | **Ejecución real remota** (OpenAI, ViaCEP y LangSmith) |
 | Copia local de cada experimento, caso por caso | [trazas/](trazas/): `r29_langsmith_*.json` | Registro de ejecución real |
 | Evaluadores y casos | [evaluar_flujo.py](../evals/evaluar_flujo.py); [casos_derivados.json](../evals/casos_derivados.json) | Código |
-| Los casos congelados corresponden al catálogo | [tests/test_evals.py](../tests/test_evals.py) | Prueba automática |
+| Los casos corresponden al catálogo y el comparador coincide con la referencia independiente en los 19 casos de compra | [tests/test_evals.py](../tests/test_evals.py) | Pruebas automáticas |
 
 ### Pendientes y limitaciones
 
 - **Los 30 casos son derivados y sintéticos, no los casos oficiales** del enunciado.
+- **Los casos se regeneraron una vez**, al corregir la regla del pedido mínimo. No se tocaron para mejorar un número: la regla de negocio cambió y la referencia anterior era incorrecta.
+- La evaluación no cubre la preferencia de origen: el usuario de evaluación no tiene preferencias guardadas.
 - **La referencia de trayectoria quedó desfasada** respecto al agente final, que usa un camino más corto. Habría que revisarla con los casos oficiales.
 - **Una corrida por configuración.** El modelo no es determinista: antes de las mejoras, la trayectoria completa de `gpt-4.1-mini` varió entre 22 y 25 de 30 en corridas comparables. Las diferencias de uno o dos casos no son concluyentes.
 - Los evaluadores de calidad comprueban que la respuesta **contenga** un texto; no juzgan la redacción.

@@ -11,6 +11,8 @@ class Solicitud(BaseModel):
     presupuesto_centavos: int | None = Field(default=None, ge=0)
     plazo_max_dias: int | None = Field(default=None, ge=0)
     cep: str | None = None
+    # Preferencia guardada del usuario; la fija el sistema, no el mensaje ni el modelo.
+    origen_preferido: Literal["nacional", "internacional"] | None = None
 
     @model_validator(mode="after")
     def validar_producto(self):
@@ -52,13 +54,15 @@ class Oferta(BaseModel):
     flete_centavos: int = Field(ge=0)
     stock: int = Field(ge=0)
     plazo_dias: int = Field(ge=0)
+    pedido_minimo: int = Field(default=1, ge=1)
+    nacional: bool = True
 
 
 class Alternativa(BaseModel):
     oferta: Oferta
     total_centavos: int
     cumple: bool
-    motivos: list[Literal["stock", "plazo", "presupuesto"]] = Field(default_factory=list)
+    motivos: list[Literal["stock", "pedido_minimo", "plazo", "presupuesto"]] = Field(default_factory=list)
 
 
 class Evidencia(BaseModel):

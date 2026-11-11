@@ -11,7 +11,7 @@ from langchain_core.runnables import ConfigurableFieldSpec, RunnableLambda, Runn
 from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import StructuredTool
 
-from .business import brl
+from .business import brl, describir_motivos, origen_preferido
 from .catalog import Escenario, buscar, ficha, listar, ofertas
 from .contracts import Evidencia, RespuestaCompra, Solicitud
 from .dialogue import EstadoCompra, crear_interprete, interpretar_turno
@@ -28,7 +28,8 @@ from .prompts import EJEMPLOS_ACCIONES, PLANTILLA_AGENTE
 from .query import crear_generador_sql, ejecutar, planear, responder_sql
 from .rag import consultar, diagnosticar_reescritura
 from .verification import (anclar_catalogo, anclar_cep, anclar_citas, anclar_preferencia,
-                           anclar_recomendacion, respuesta_local, verificar)
+                           anclar_recomendacion, mejor_sin_preferencia, respuesta_local,
+                           verificar)
 
 
 class Traza(BaseCallbackHandler):
@@ -94,9 +95,11 @@ def herramientas(escenario: Escenario, memoria_db: Path, user_id: str,
                          plazo_max_dias: int | None = None) -> str:
         """Calcula todas las ofertas y sus descartes exactos en centavos."""
         from .verification import respuesta_local
+        # La preferencia guardada del usuario la aplica la herramienta, no el modelo.
         solicitud = Solicitud(producto_id=producto_id, cantidad=cantidad,
                              presupuesto_centavos=presupuesto_centavos,
-                             plazo_max_dias=plazo_max_dias)
+                             plazo_max_dias=plazo_max_dias,
+                             origen_preferido=origen_preferido(preferencias(memoria_db, user_id)))
         return respuesta_local(escenario, solicitud).model_dump_json()
 
     def consultar_politicas(pregunta: str) -> str:
@@ -207,9 +210,17 @@ def renderizar(respuesta: RespuestaCompra, *, indice=None) -> str:
                   f"para {respuesta.solicitud.cantidad} unidades; plazo {ganadora.oferta.plazo_dias} días.")
     lineas = [inicio]
     for a in respuesta.alternativas:
-        lineas.append(f"- {a.oferta.proveedor_nombre}: {brl(a.total_centavos)}; "
-                      f"{'cumple' if a.cumple else 'descartada por ' + ', '.join(a.motivos)} "
+        lineas.append(f"- {a.oferta.proveedor_nombre} ({'nacional' if a.oferta.nacional else 'internacional'}): "
+                      f"{brl(a.total_centavos)}; "
+                      f"{'cumple' if a.cumple else 'descartada por ' + describir_motivos(a)} "
                       f"[{a.oferta.id}]")
+    if respuesta.solicitud.origen_preferido:
+        nota = f"Se aplicó tu preferencia por proveedores {respuesta.solicitud.origen_preferido}es."
+        barata = mejor_sin_preferencia(respuesta)
+        if barata is not None:
+            nota += (f" Sin ella, la más barata sería {barata.oferta.proveedor_nombre} "
+                     f"por {brl(barata.total_centavos)}.")
+        lineas.append(nota)
     lineas.append("Fuentes: " + ", ".join(e.fuente_id for e in respuesta.evidencias))
     return "\n".join(lineas)
 
@@ -420,6 +431,8 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
             if aclaracion is not None:
                 return AIMessage(content=aclaracion)
             solicitud_actual = estado.solicitud
+            # La preferencia guardada entra en la solicitud: así también se puede verificar.
+            solicitud_actual.origen_preferido = origen_preferido(preferencias(memoria_db, usuario))
             if llm is None:
                 propuesta = respuesta_local(escenario, solicitud_actual)
                 errores = verificar(propuesta, escenario)

@@ -8,7 +8,7 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from pedro.agent import crear_flujo, es_diagnostico_t24
-from pedro.business import brl
+from pedro.business import brl, describir_motivos
 from pedro.catalog import abrir_escenario, crear_escenario, ficha, listar, ofertas
 from pedro.contracts import Solicitud
 from pedro.memory import MODELO_RECUERDOS, Historial, nueva_sesion, sesiones
@@ -209,7 +209,9 @@ else:
                 if not errores:
                     st.dataframe([{"Proveedor": a.oferta.proveedor_nombre,
                                    "Total": brl(a.total_centavos), "Cumple": a.cumple,
-                                   "Descartes": ", ".join(a.motivos), "Fuente": a.oferta.id}
+                                   "Origen": "nacional" if a.oferta.nacional else "internacional",
+                                   "Pedido mínimo": a.oferta.pedido_minimo,
+                                   "Descartes": describir_motivos(a), "Fuente": a.oferta.id}
                                   for a in respuesta.alternativas], hide_index=True,
                                  alt="Todas las ofertas, totales y descartes")
         except (ValueError, InvalidOperation) as exc:

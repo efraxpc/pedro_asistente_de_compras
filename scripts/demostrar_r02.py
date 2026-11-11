@@ -18,12 +18,12 @@ from pedro.nli import MODELO, REVISION, ModeloNLI
 from pedro.policy_demo import ORIGEN, crear_indice_demo
 
 ROOT = Path(__file__).resolve().parents[1]
-MIXTA = ("Compara 2 unidades de PEC-01-0001 con plazo de 7 días y dime qué dice la política de "
+MIXTA = ("Compara 5 unidades de PEC-01-0001 con plazo de 7 días y dime qué dice la política de "
          "devoluciones sobre piezas dañadas, y confirma el CEP 01001000")
-POR_TURNOS = ["Compara 2 unidades de PEC-01-0001 con plazo de 7 días",
+POR_TURNOS = ["Compara 5 unidades de PEC-01-0001 con plazo de 7 días",
               "¿Qué dice la política de devoluciones sobre piezas dañadas?",
               "Confirma el CEP 01001000",
-              "ahora 3 unidades"]
+              "ahora 6 unidades"]
 
 
 def main() -> None:

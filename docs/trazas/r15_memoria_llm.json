@@ -1,7 +1,7 @@
 {
   "rubrica": "R15",
   "modo": "real remoto (OpenAI); embeddings reales locales; catálogo sintético",
-  "fecha_utc": "2026-11-11T12:23:57+00:00",
+  "fecha_utc": "2026-11-11T13:57:42+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "versiones": {
     "langmem": "0.0.30",
@@ -19,20 +19,16 @@
         ]
       },
       {
-        "usuario": "Compara 2 unidades de PEC-01-0001 con plazo de 7 días.",
-        "respuesta": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.",
+        "usuario": "Compara 5 unidades de PEC-01-0001 con plazo de 7 días.",
+        "respuesta": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.",
         "herramientas": [
-          "consultar_catalogo",
           "comparar_ofertas"
         ]
       },
       {
         "usuario": "Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.",
-        "respuesta": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.",
-        "herramientas": [
-          "consultar_catalogo",
-          "comparar_ofertas"
-        ]
+        "respuesta": "¿Cuántas unidades necesitas?",
+        "herramientas": []
       }
     ],
     "guardado_para_ana": {
@@ -40,8 +36,7 @@
         "proveedor": "nacionales"
       },
       "episodios": [
-        "Compara 2 unidades de PEC-01-0001 con plazo de 7 días. | CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07;",
-        "Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño. | CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças"
+        "Compara 5 unidades de PEC-01-0001 con plazo de 7 días. | CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R"
       ]
     },
     "guardado_para_otro_usuario": {
@@ -53,14 +48,14 @@
     "turnos": [
       {
         "usuario": "Prefiero proveedores nacionales, recuérdalo.",
-        "respuesta": "Perfecto, recordaré que prefieres proveedores nacionales para las piezas de repuesto. ¿En qué puedo ayudarte hoy?",
+        "respuesta": "He registrado que prefieres proveedores nacionales para futuras consultas. ¿En qué repuesto estás interesado?",
         "herramientas": [
-          "manage_memory({'content': 'Prefiere proveedores nacionales para las piezas de repuesto.', 'action': 'create'})"
+          "manage_memory({'content': 'Prefiere proveedores nacionales.', 'action': 'create'})"
         ]
       },
       {
-        "usuario": "Compara 2 unidades de PEC-01-0001 con plazo de 7 días.",
-        "respuesta": "Para 2 unidades del compresor PEC-01-0001 con plazo de 7 días, el único proveedor nacional con stock y plazo menor es CentroPeças, con precio unitario de $1,438.92 y plazo de 2 días; los otros proveedores no cumplen con el plazo o no tienen stock. ¿Quieres que te ayude a hacer el pedido con CentroPeças?",
+        "usuario": "Compara 5 unidades de PEC-01-0001 con plazo de 7 días.",
+        "respuesta": "El compresor PEC-01-0001 no tiene stock con plazo de 7 días en proveedores nacionales, pero CentroPeças tiene 67 unidades con plazo de 2 días a $1438.92 cada una; Litoral Parts y Atlantic Repair Parts no cumplen el plazo. ¿Quieres que busque otra pieza o proveedor?",
         "herramientas": [
           "buscar_pieza({'texto': 'PEC-01-0001'})",
           "ofertas_de_pieza({'producto_id': 'PEC-01-0001'})"
@@ -68,28 +63,28 @@
       },
       {
         "usuario": "Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.",
-        "respuesta": "Entiendo, prefieres opciones más económicas para tu taller pequeño; puedo ayudarte a buscar alternativas más accesibles o piezas similares si quieres.",
+        "respuesta": "Entiendo, buscaré opciones más económicas o con mejores condiciones para tu taller pequeño; ¿quieres que te ayude a buscar repuestos alternativos o de menor costo?",
         "herramientas": []
       }
     ],
     "guardado_para_ana": [
       {
-        "content": "Prefiere proveedores nacionales para las piezas de repuesto."
+        "content": "Prefiere proveedores nacionales."
       }
     ],
     "guardado_para_otro_usuario": [],
     "sesion_nueva": {
       "usuario": "¿Qué recuerdas de mis preferencias?",
-      "respuesta": "Recuerdo que prefieres proveedores nacionales para las piezas de repuesto. ¿Quieres que te ayude a buscar algo específico?",
+      "respuesta": "Recuerdo que prefieres proveedores nacionales. ¿Quieres que tenga eso en cuenta para futuras búsquedas?",
       "herramientas": [
-        "search_memory({'query': 'preferencias', 'limit': 5})"
+        "search_memory({'query': 'preferencias', 'limit': 1})"
       ]
     },
     "otro_usuario": {
       "usuario": "¿Qué recuerdas de mis preferencias?",
-      "respuesta": "No tengo registrado ninguna preferencia tuya hasta ahora. ¿Quieres que recuerde alguna para futuras consultas?",
+      "respuesta": "No tengo registrado ninguna preferencia tuya hasta ahora. ¿Quieres que recuerde alguna?",
       "herramientas": [
-        "search_memory({'query': 'preferencias', 'limit': 5})"
+        "search_memory({'query': 'preferencias', 'limit': 1})"
       ]
     },
     "quien_decide": "el modelo, con las herramientas manage_memory y search_memory"

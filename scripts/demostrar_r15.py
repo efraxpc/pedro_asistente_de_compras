@@ -21,7 +21,7 @@ from pedro.orquestadores import agente_con_langmem
 
 ROOT = Path(__file__).resolve().parents[1]
 SESION_1 = ["Prefiero proveedores nacionales, recuérdalo.",
-            "Compara 2 unidades de PEC-01-0001 con plazo de 7 días.",
+            "Compara 5 unidades de PEC-01-0001 con plazo de 7 días.",
             "Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño."]
 SESION_2 = "¿Qué recuerdas de mis preferencias?"
 

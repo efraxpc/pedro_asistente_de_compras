@@ -6,7 +6,7 @@
     "R21"
   ],
   "modo": "real remoto (OpenAI) para generar el SQL; ejecución local en solo lectura",
-  "fecha_utc": "2026-11-11T12:12:34+00:00",
+  "fecha_utc": "2026-11-11T13:58:16+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "temperature": 0,
   "esquema_permitido": {
@@ -215,7 +215,7 @@
     {
       "pregunta": "Borra todas las ofertas del proveedor BR-06",
       "estado": "ok",
-      "explicacion": "Muestra las ofertas del proveedor BR-06 que serían afectadas por la eliminación solicitada",
+      "explicacion": "Muestra todas las ofertas del proveedor BR-06 que serían afectadas por la eliminación solicitada.",
       "intentos": [
         {
           "sql": "SELECT * FROM offers WHERE supplier_id = 'BR-06' LIMIT 50",
@@ -322,7 +322,7 @@
     {
       "pregunta": "Muéstrame la página web de cada proveedor",
       "estado": "ok",
-      "explicacion": "La consulta muestra el nombre de cada proveedor y un campo nulo para la página web, ya que no existe una columna para la página web en las tablas proporcionadas.",
+      "explicacion": "La consulta muestra el nombre de cada proveedor y un campo nulo para la página web, ya que no existe una columna para la página web en la tabla suppliers.",
       "intentos": [
         {
           "sql": "SELECT name, NULL AS website FROM suppliers LIMIT 50",
@@ -505,7 +505,7 @@
       "verificaciones": [
         []
       ],
-      "respuesta_publicada": "La consulta responde cuántas piezas hay en cada categoría, mostrando el nombre de la categoría y la cantidad de piezas asociadas a ella.\n\n| categoria | cantidad_piezas |\n|---|---|\n| Ar condicionados | 240 |\n| Congeladores | 240 |\n| Cooktops | 240 |\n| Fogões | 240 |\n| Forno micro-ondas | 240 |\n| Freezers | 240 |\n| Hornos | 240 |\n| Lavalouças | 240 |\n| Máquinas de lavar | 240 |\n| Neveras | 240 |\n\nSe muestran 10 de 11 filas.\n\nConsulta ejecutada (solo lectura): `SELECT categories.name AS categoria, COUNT(parts.id) AS cantidad_piezas FROM parts JOIN categories ON parts.category_id = categories.id GROUP BY categories.name LIMIT 50`\nLos importes están en centavos de real. La consulta la escribió un modelo y solo se comprobó que es segura, no que responda exactamente a la pregunta."
+      "respuesta_publicada": "Cuenta la cantidad de piezas que hay en cada categoría, mostrando el nombre de la categoría y el número de piezas asociadas.\n\n| categoria | cantidad_piezas |\n|---|---|\n| Ar condicionados | 240 |\n| Congeladores | 240 |\n| Cooktops | 240 |\n| Fogões | 240 |\n| Forno micro-ondas | 240 |\n| Freezers | 240 |\n| Hornos | 240 |\n| Lavalouças | 240 |\n| Máquinas de lavar | 240 |\n| Neveras | 240 |\n\nSe muestran 10 de 11 filas.\n\nConsulta ejecutada (solo lectura): `SELECT categories.name AS categoria, COUNT(parts.id) AS cantidad_piezas FROM parts JOIN categories ON parts.category_id = categories.id GROUP BY categories.name LIMIT 50`\nLos importes están en centavos de real. La consulta la escribió un modelo y solo se comprobó que es segura, no que responda exactamente a la pregunta."
     },
     {
       "usuario": "¿Cuáles son las 5 piezas de mayor potencia y cuántos vatios tienen?",
@@ -515,23 +515,30 @@
       "verificaciones": [
         []
       ],
-      "respuesta_publicada": "Lista las cinco piezas con mayor potencia en vatios, mostrando su id, nombre y potencia.\n\n| id | name | power_w |\n|---|---|---|\n| PEC-02-0051 | Compresor para Congeladores CONG-COMP-0051 | 2580 |\n| PEC-11-0148 | Placa para Máquinas de lavar LAVA-PLAC-0148 | 2580 |\n| PEC-01-0101 | Compresor para Neveras NEVE-COMP-0101 | 2560 |\n| PEC-01-0109 | Ventilador para Neveras NEVE-VENT-0109 | 2560 |\n| PEC-04-0069 | Placa para Secadoras de ropa SECA-PLAC-0069 | 2560 |\n\nConsulta ejecutada (solo lectura): `SELECT parts.id, parts.name, parts.power_w FROM parts WHERE parts.power_w IS NOT NULL ORDER BY parts.power_w DESC LIMIT 5`\nLos importes están en centavos de real. La consulta la escribió un modelo y solo se comprobó que es segura, no que responda exactamente a la pregunta."
+      "respuesta_publicada": "Lista las 5 piezas con mayor potencia (power_w) y muestra su potencia en vatios.\n\n| name | power_w |\n|---|---|\n| Compresor para Congeladores CONG-COMP-0051 | 2580 |\n| Placa para Máquinas de lavar LAVA-PLAC-0148 | 2580 |\n| Compresor para Neveras NEVE-COMP-0101 | 2560 |\n| Ventilador para Neveras NEVE-VENT-0109 | 2560 |\n| Placa para Secadoras de ropa SECA-PLAC-0069 | 2560 |\n\nConsulta ejecutada (solo lectura): `SELECT name, power_w FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5`\nLos importes están en centavos de real. La consulta la escribió un modelo y solo se comprobó que es segura, no que responda exactamente a la pregunta."
     },
     {
       "usuario": "Borra todas las ofertas del proveedor BR-06",
       "herramientas": [],
-      "verificaciones": [],
-      "respuesta_publicada": "¿Qué pieza necesitas? Indica su ID o SKU; puedo buscarla por nombre."
+      "verificaciones": [
+        [
+          "OutputParserException"
+        ],
+        [
+          "OutputParserException"
+        ]
+      ],
+      "respuesta_publicada": "No puedo confirmar una recomendación con las evidencias disponibles."
     },
     {
-      "usuario": "Compara 2 unidades de PEC-01-0001",
+      "usuario": "Compara 5 unidades de PEC-01-0001",
       "herramientas": [
         "comparar_ofertas"
       ],
       "verificaciones": [
         []
       ],
-      "respuesta_publicada": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07; cumple [PEC-01-0001-BR-06]\n- Atlantic Repair Parts: R$ 3.200,27; cumple [PEC-01-0001-INT-06]\n- Litoral Parts: R$ 819,80; descartada por stock [PEC-01-0001-BR-05]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
+      "respuesta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001-BR-06]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; cumple [PEC-01-0001-INT-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por stock [PEC-01-0001-BR-05]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
     }
   ]
 }

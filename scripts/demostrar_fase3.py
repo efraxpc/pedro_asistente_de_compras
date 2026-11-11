@@ -34,12 +34,13 @@ MENSAJES = ["Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
             "Quiero media docena de PEC-02-0001 sin límite de gasto",
             "Hola, ¿qué puedes hacer?"]
 COMPLEJA = ["Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días",
-            "Ahora que sean 3 y mantén el plazo",
-            "Mejor sin límite de plazo, pero con presupuesto de R$ 5.000",
+            "Ahora que sean 5 y mantén el plazo",
+            "Mejor sin límite de plazo, pero con presupuesto de R$ 10.000",
             "Prefiero proveedores nacionales, recuérdalo",
             "¿A qué ciudad corresponde el CEP 01001000?",
             "¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?",
-            "Vuelve a comparar con lo último que te pedí"]
+            "Vuelve a comparar con lo último que te pedí",
+            "Compara 2 unidades de PEC-11-0001"]
 
 
 def main() -> None:

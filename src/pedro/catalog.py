@@ -100,6 +100,7 @@ def ofertas(escenario: Escenario, producto_id: str) -> list[Oferta]:
         filas = db.execute("SELECT o.id,o.part_id AS producto_id,o.supplier_id AS proveedor_id,"
                            "s.name AS proveedor_nombre,o.estimated_brl_cents AS precio_unitario_centavos,"
                            "o.shipping_brl_cents AS flete_centavos,o.stock_qty AS stock,"
-                           "o.lead_days AS plazo_dias FROM offers o JOIN suppliers s ON s.id=o.supplier_id "
+                           "o.lead_days AS plazo_dias,o.min_order_qty AS pedido_minimo,"
+                           "s.domestic AS nacional FROM offers o JOIN suppliers s ON s.id=o.supplier_id "
                            "WHERE o.part_id=? ORDER BY o.supplier_id", (producto_id,)).fetchall()
     return [Oferta(dataset_id=escenario.dataset_id, **dict(f)) for f in filas]

@@ -1,4 +1,7 @@
-"""Congela 30 referencias derivadas del catálogo, sin usar el comparador del agente."""
+"""Congela 30 referencias derivadas del catálogo, sin usar el comparador del agente.
+
+La regla de referencia incluye el pedido mínimo de cada oferta.
+"""
 import hashlib
 import json
 import sqlite3
@@ -14,19 +17,27 @@ def brl(centavos):
 
 
 casos = []
-ids = [f"PEC-{categoria:02d}-0001" for categoria in range(1, 12)]
-ids += ["PEC-01-0002", "PEC-02-0002", "PEC-03-0002"]
+candidatos = [f"PEC-{categoria:02d}-0001" for categoria in range(1, 12)]
+candidatos += [f"PEC-{categoria:02d}-0002" for categoria in range(1, 12)]
+bloqueados_por_minimo = []
 with sqlite3.connect(FUENTE) as db:
-    for producto_id in ids:
+    for producto_id in candidatos:
         filas = db.execute(
             "SELECT o.id,o.supplier_id,o.estimated_brl_cents,o.shipping_brl_cents,"
-            "o.stock_qty,o.lead_days FROM offers o WHERE o.part_id=?",
+            "o.stock_qty,o.lead_days,o.min_order_qty FROM offers o WHERE o.part_id=?",
             (producto_id,)).fetchall()
+        # Regla de referencia, escrita aquí aparte: stock suficiente, pedido mínimo cumplido,
+        # plazo y presupuesto dentro de los límites; gana el menor total.
         validas = [(2 * precio + flete, plazo, proveedor, oferta)
-                   for oferta, proveedor, precio, flete, stock, plazo in filas
-                   if stock >= 2 and plazo <= 60 and 2 * precio + flete <= 10_000_000]
+                   for oferta, proveedor, precio, flete, stock, plazo, minimo in filas
+                   if stock >= 2 and minimo <= 2 and plazo <= 60 and 2 * precio + flete <= 10_000_000]
         if not validas:
-            raise RuntimeError(f"sin referencia válida: {producto_id}")
+            con_stock = any(stock >= 2 and plazo <= 60 for *_, stock, plazo, _ in filas)
+            if con_stock:
+                bloqueados_por_minimo.append(producto_id)
+            continue
+        if sum(c["grupo"] == "recomendacion" for c in casos) == 14:
+            continue
         total, _, proveedor, oferta = min(validas)
         casos.append({
             "id": f"rec-{len(casos)+1:02d}", "grupo": "recomendacion",
@@ -37,11 +48,15 @@ with sqlite3.connect(FUENTE) as db:
                          "fuente_ganadora": oferta,
                          "herramientas": ["consultar_catalogo", "comparar_ofertas"]},
         })
+if sum(c["grupo"] == "recomendacion" for c in casos) != 14 or len(bloqueados_por_minimo) < 3:
+    raise RuntimeError("no hay suficientes referencias")
 
-for producto_id in ids[:5]:
+# Sin oferta: dos por cantidad imposible y tres porque ningún proveedor acepta un pedido de 2.
+for producto_id, cantidad in [(candidatos[0], 1000), (candidatos[1], 1000),
+                              *[(producto_id, 2) for producto_id in bloqueados_por_minimo[:3]]]:
     casos.append({
         "id": f"sin-{len(casos)+1:02d}", "grupo": "sin_oferta",
-        "pregunta": (f"Compara 1000 unidades de {producto_id}; presupuesto R$ 100000 "
+        "pregunta": (f"Compara {cantidad} unidades de {producto_id}; presupuesto R$ 100000 "
                      "y plazo máximo 60 días."),
         "esperado": {"estado": "sin_oferta", "contiene": "Ninguna oferta",
                      "herramientas": ["consultar_catalogo", "comparar_ofertas"]},

@@ -1,7 +1,7 @@
 {
   "rubrica": "R28",
   "modo": "app.py ejecutada con streamlit.testing.v1.AppTest; agente real remoto (OpenAI, ViaCEP); NLI real local; índice de políticas cargado de disco",
-  "fecha_utc": "2026-11-11T01:03:05+00:00",
+  "fecha_utc": "2026-11-11T13:56:39+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "arranque": {
     "titulos": [
@@ -13,13 +13,13 @@
   "vista_chat": {
     "turnos": [
       {
-        "usuario": "Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días",
-        "pedro": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07; cumple [PEC-01-0001-BR-06]\n- Litoral Parts: R$ 819,80; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts: R$ 3.200,27; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06",
+        "usuario": "Necesito 5 unidades de PEC-01-0001 con plazo máximo de 7 días",
+        "pedro": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001-BR-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06",
         "avisos": []
       },
       {
-        "usuario": "Ahora que sean 3 y mantén el plazo",
-        "pedro": "CentroPeças: R$ 4.401,99 para 3 unidades; plazo 2 días.\n- CentroPeças: R$ 4.401,99; cumple [PEC-01-0001-BR-06]\n- Litoral Parts: R$ 1.190,00; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts: R$ 4.581,82; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06",
+        "usuario": "Ahora que sean 6 y mantén el plazo",
+        "pedro": "CentroPeças: R$ 8.718,75 para 6 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 8.718,75; cumple [PEC-01-0001-BR-06]\n- Litoral Parts (nacional): R$ 2.300,60; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts (internacional): R$ 8.726,47; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06",
         "avisos": []
       },
       {
@@ -41,7 +41,7 @@
   },
   "conversacion_reabierta": {
     "mensajes_en_pantalla": 8,
-    "primer_mensaje": "Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días"
+    "primer_mensaje": "Necesito 5 unidades de PEC-01-0001 con plazo máximo de 7 días"
   },
   "vista_catalogo": {
     "titulo": "Catálogo de piezas",
@@ -53,7 +53,7 @@
   "vista_comparacion": {
     "titulo": "Comparación local",
     "resultado": [
-      "BR-06: R$ 4.401,99"
+      "BR-06: R$ 8.718,75"
     ],
     "avisos": [],
     "ofertas_mostradas": [

@@ -148,7 +148,7 @@ from pedro.business import comparar
 from pedro.catalog import ofertas
 from pedro.dialogue import interpretar_compra
 from pedro.verification import respuesta_local, verificar
-mensaje = 'Necesito 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días'
+mensaje = 'Necesito 5 unidades de PEC-01-0001 hasta R$ 10.000 en 7 días'
 estado, aclaracion = interpretar_compra(escenario, None, mensaje)
 print('1 extraer  ', estado.solicitud.model_dump(exclude_none=True), '| falta:', aclaracion)
 disponibles = ofertas(escenario, estado.solicitud.producto_id)
@@ -165,7 +165,7 @@ sesion_a = nueva_sesion(memoria, 'alumna', escenario.dataset_id)
 local = crear_flujo(escenario, memoria)
 def cfg(usuario, sesion):
     return {'configurable': {'user_id': usuario, 'session_id': sesion}}
-for texto in ('Necesito 2 unidades de PEC-01-0001 en 7 días', 'ahora 3 unidades'):
+for texto in ('Necesito 5 unidades de PEC-01-0001 en 7 días', 'ahora 6 unidades'):
     salida = local.invoke({'input': texto}, config=cfg('alumna', sesion_a)).content
     print(texto, '->', salida.splitlines()[0])
     print('  borrador (corto plazo):', {k: v for k, v in
@@ -179,7 +179,7 @@ sesion_b = nueva_sesion(memoria, 'alumna', escenario.dataset_id)
 print('sesión nueva -> borrador:', leer_borrador(memoria, 'alumna', sesion_b),
       '| preferencia (largo plazo):', preferencias(memoria, 'alumna'),
       '| otro usuario:', preferencias(memoria, 'otro'))"""),
-    ("md", "Lectura: al cambiar la cantidad a 3 el plazo de 7 días se conserva en el borrador. El historial guarda 18 mensajes pero el agente solo ve 12. La sesión nueva empieza sin borrador y conserva la preferencia del usuario."),
+    ("md", "Lectura: al cambiar la cantidad a 6 el plazo de 7 días se conserva en el borrador. El historial guarda 18 mensajes pero el agente solo ve 12. La sesión nueva empieza sin borrador y conserva la preferencia del usuario."),
 ])
 
 guardar("02_react_herramientas.ipynb", [
@@ -283,11 +283,11 @@ escenario = crear_escenario(Path('storage/notebooks/catalogos'))
 ruta13 = Path('storage/notebooks/r13.sqlite3')
 sesion13 = nueva_sesion(ruta13, 'alumna', escenario.dataset_id)
 local = crear_flujo(escenario, ruta13)
-for texto in ('Necesito 2 unidades de PEC-01-0001 con plazo 7 días', 'Ahora que sean 3 y mantén el plazo'):
+for texto in ('Necesito 5 unidades de PEC-01-0001 con plazo 7 días', 'Ahora que sean 6 y mantén el plazo'):
     print(texto, '->', local.invoke({'input': texto}, config={'configurable': {
         'user_id': 'alumna', 'session_id': sesion13}}).content.splitlines()[0])
 guardar_preferencia(ruta13, 'alumna', 'proveedor', 'nacionales', explicita=True)
-guardar_episodio(ruta13, 'alumna', sesion13, 'pidió 3 unidades de PEC-01-0001 con plazo 7 días', emb)
+guardar_episodio(ruta13, 'alumna', sesion13, 'pidió 6 unidades de PEC-01-0001 con plazo 7 días', emb)
 for memoria_coala, contenido in mapa_memorias(ruta13, 'alumna', sesion13).items():
     print(memoria_coala, '->', json.dumps(contenido, ensure_ascii=False))"""),
     ("md", "## R16 · chatbot con ConversationBufferMemory\n**Doble de prueba:** `FakeListLLM` devuelve respuestas fijas. Lo real es `ConversationChain` con `ConversationBufferMemory`: se imprime el prompt del último turno para ver que lleva la conversación entera. La conversación con el modelo real está en `docs/trazas/fase3_memoria_llm.json`."),
@@ -413,7 +413,7 @@ from pedro.verification import respuesta_local, verificar
 from pedro.agent import renderizar, crear_flujo
 from pedro.memory import nueva_sesion, Historial
 escenario = crear_escenario(Path('storage/notebooks/catalogos'))
-solicitud = Solicitud(producto_id='PEC-01-0001', cantidad=2,
+solicitud = Solicitud(producto_id='PEC-01-0001', cantidad=5,
     presupuesto_centavos=1_000_000, plazo_max_dias=7)
 respuesta = respuesta_local(escenario, solicitud)
 print('errores', verificar(respuesta, escenario))
@@ -424,6 +424,22 @@ flujo = crear_flujo(escenario, memoria)
 print(flujo.invoke({'input':'lista piezas'}, config={'configurable':{
     'user_id':'alumna','session_id':sesion}}).content[:300])
 print([m.type for m in Historial(memoria, 'alumna', sesion).todos()])"""),
+    ("md", "## Comparación de proveedores: pedido mínimo, origen y preferencia\nEjecución real local, sin modelo. Es el núcleo del asistente: para cada oferta se comprueba stock, **pedido mínimo**, plazo y presupuesto, y se muestra si el proveedor es nacional o internacional. Una preferencia guardada del usuario ordena las ofertas válidas, nunca hace ganar a una que no cumple, y la respuesta dice cuánto cuesta respetarla."),
+    ("code", """from pedro.business import origen_preferido
+casos = [('2 unidades: el proveedor más barato con stock exige un pedido mínimo de 5',
+          Solicitud(producto_id='PEC-01-0001', cantidad=2)),
+         ('5 unidades: ya se alcanza el pedido mínimo',
+          Solicitud(producto_id='PEC-01-0001', cantidad=5)),
+         ('sin preferencia: gana la más barata',
+          Solicitud(producto_id='PEC-11-0001', cantidad=2)),
+         ('con la preferencia guardada «proveedor = nacionales»',
+          Solicitud(producto_id='PEC-11-0001', cantidad=2,
+                    origen_preferido=origen_preferido({'proveedor': 'nacionales'})))]
+for titulo, pedido in casos:
+    comparacion = respuesta_local(escenario, pedido)
+    print('###', titulo, '| errores de verificación:', verificar(comparacion, escenario))
+    print(renderizar(comparacion))
+    print()"""),
     ("md", "La evaluación remota se ejecuta con evals/evaluar_flujo.py. No se reportan métricas sin esa corrida."),
 ])
 print("Cinco notebooks creados")

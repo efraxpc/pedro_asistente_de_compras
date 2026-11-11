@@ -13,8 +13,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
-TURNOS = ["Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días",
-          "Ahora que sean 3 y mantén el plazo",
+TURNOS = ["Necesito 5 unidades de PEC-01-0001 con plazo máximo de 7 días",
+          "Ahora que sean 6 y mantén el plazo",
           "¿A qué ciudad corresponde el CEP 01001000?",
           "¿Se puede mandar en varias cajas?"]
 
@@ -75,7 +75,7 @@ def main() -> None:
                                  "excepciones": [str(e.value) for e in app.exception]}
     app.sidebar.button_group[0].set_value("Comparación local").run()
     app.text_input[0].set_value("PEC-01-0001")
-    app.number_input[0].set_value(3)
+    app.number_input[0].set_value(6)
     next(b for b in app.button if b.label == "Comparar").click().run()
     informe["vista_comparacion"] = {"titulo": app.title[0].value,
                                     "resultado": [s.value for s in app.success],

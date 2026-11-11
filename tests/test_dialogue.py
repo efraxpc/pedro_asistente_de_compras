@@ -192,3 +192,16 @@ def test_la_pieza_la_resuelven_las_reglas_aunque_haya_modelo(contexto):
     assert estado.esperando == "producto" and "No encontré PEC-99-9999" in aclaracion
     sin_pieza, informe = interpretar_turno(escenario, None, "Hola", interprete)
     assert sin_pieza is None and informe == {"fuente": "reglas"}
+
+
+def test_la_preferencia_guardada_cambia_la_recomendacion_del_chat(contexto):
+    from pedro.memory import guardar_preferencia
+
+    _, memoria, _, preguntar = contexto
+    antes = preguntar("Necesito 5 unidades de PEC-01-0001")
+    assert antes.startswith("CentroPeças") and "preferencia" not in antes
+    guardar_preferencia(memoria, "ana", "proveedor", "internacionales", explicita=True)
+    despues = preguntar("Vuelve a comparar 5 unidades de PEC-01-0001")
+    assert despues.startswith("Atlantic Repair Parts")
+    assert "Se aplicó tu preferencia por proveedores internacionales." in despues
+    assert "Sin ella, la más barata sería CentroPeças" in despues

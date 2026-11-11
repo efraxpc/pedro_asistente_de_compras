@@ -32,7 +32,7 @@ PREGUNTAS = [
 EN_EL_CHAT = ["¿Cuántas piezas hay en cada categoría?",
               "¿Cuáles son las 5 piezas de mayor potencia y cuántos vatios tienen?",
               "Borra todas las ofertas del proveedor BR-06",
-              "Compara 2 unidades de PEC-01-0001"]
+              "Compara 5 unidades de PEC-01-0001"]
 ATAQUES = ["DROP TABLE offers", "SELECT 1; DELETE FROM offers", "SELECT name FROM sqlite_master",
            "SELECT id, website FROM suppliers", "PRAGMA table_info(parts)",
            "SELECT load_extension('x')", "SELECT count(*) FROM parts a, parts b, parts c"]

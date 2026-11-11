@@ -1,20 +1,20 @@
 {
   "rubrica": "R02",
   "modo": "real remoto (OpenAI y ViaCEP); NLI real local; datos sintéticos",
-  "fecha_utc": "2026-11-11T12:07:05+00:00",
+  "fecha_utc": "2026-11-11T13:55:19+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "modelo_nli": "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
   "revision_nli": "8adb042d524ecd5c26d3e3ba0e3fbcf7e2d0864c",
-  "dataset_id": "b9ab734d-263c-46ad-927d-2a4e15ac13e8",
+  "dataset_id": "45485955-8757-4eb2-8db7-c171b4d85591",
   "origen_politicas": "ficticio_demo",
   "nota": "Cada turno admite hasta dos propuestas del agente; la lista de herramientas incluye las de ambas. La trayectoria depende del modelo y puede variar.",
   "solicitud_mixta_en_un_turno": [
     {
-      "pregunta": "Compara 2 unidades de PEC-01-0001 con plazo de 7 días y dime qué dice la política de devoluciones sobre piezas dañadas, y confirma el CEP 01001000",
+      "pregunta": "Compara 5 unidades de PEC-01-0001 con plazo de 7 días y dime qué dice la política de devoluciones sobre piezas dañadas, y confirma el CEP 01001000",
       "plan": [
         {
           "tipo": "compra",
-          "peticion": "Compara 2 unidades de PEC-01-0001 con plazo de 7 días"
+          "peticion": "Compara 5 unidades de PEC-01-0001 con plazo de 7 días"
         },
         {
           "tipo": "politica",
@@ -28,7 +28,11 @@
       "herramientas": [
         {
           "nombre": "comparar_ofertas",
-          "argumentos": "{'producto_id': 'PEC-01-0001', 'cantidad': 2, 'plazo_max_dias': 7}"
+          "argumentos": "{'producto_id': 'PEC-01-0001', 'cantidad': 5, 'plazo_max_dias': 7}"
+        },
+        {
+          "nombre": "consultar_politicas",
+          "argumentos": "{'pregunta': 'política de devoluciones sobre piezas dañadas'}"
         },
         {
           "nombre": "consultar_politicas",
@@ -42,27 +46,45 @@
       "errores_de_ejecucion": [],
       "verificaciones": [
         [],
+        [
+          "NLI sin entailment"
+        ],
         [],
         []
       ],
       "citas_ancladas": [
         {
           "fuente_id": "FIC-DEV-01-S05-C01",
+          "estado": "literal",
+          "cobertura": 1.0
+        },
+        {
+          "fuente_id": "FIC-GAR-01-S05-C01",
+          "estado": "literal",
+          "cobertura": 1.0
+        },
+        {
+          "fuente_id": "FIC-DEV-01-S05-C01",
+          "estado": "reanclada",
+          "cobertura": 0.998
+        },
+        {
+          "fuente_id": "FIC-DEV-01-S06-C01",
           "estado": "reanclada",
           "cobertura": 0.998
         }
       ],
-      "respuesta_publicada": "Tu mensaje tenía 3 peticiones; respondo cada una por separado.\n\n**1. Compara 2 unidades de PEC-01-0001 con plazo de 7 días**\nCentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07; cumple [PEC-01-0001-BR-06]\n- Litoral Parts: R$ 819,80; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts: R$ 3.200,27; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06\n\n**2. ¿Qué dice la política de devoluciones sobre piezas dañadas?**\nPolítica ficticia de demostración. La política de devoluciones sobre piezas dañadas establece que, al recibir el paquete, se inspecciona la pieza para verificar daño declarado, uso en instalación o componentes faltantes, registrando el resultado con fecha y explicación. En caso de daño visible confirmado se puede proceder a reemplazo o devolución del importe original. Además, la resolución se comunica con un código para que el cliente pueda seguir el trámite.\nFuentes: FIC-DEV-01-S05-C01\n\n**3. Confirma el CEP 01001000**\nCEP 01001000: São Paulo/SP (ViaCEP, modo real)."
+      "respuesta_publicada": "Tu mensaje tenía 3 peticiones; respondo cada una por separado.\n\n**1. Compara 5 unidades de PEC-01-0001 con plazo de 7 días**\nCentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001-BR-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06\n\n**2. ¿Qué dice la política de devoluciones sobre piezas dañadas?**\nPolítica ficticia de demostración. La política de devoluciones sobre piezas dañadas indica que al recibir el paquete se inspecciona la pieza, cantidad y accesorios, diferenciando daño declarado, uso en instalación y faltantes. Se registra la inspección con fecha y explicación. En caso de daño visible confirmado, se puede optar por reemplazo o devolución del importe pagado originalmente. La resolución se comunica vía código de autorización. Además, se aclara que piezas instaladas para prueba entran en revisión y no se consideran sin usar automáticamente, y modificaciones como corte o soldadura excluyen la devolución automática.\nFuentes: FIC-DEV-01-S05-C01, FIC-DEV-01-S06-C01\n\n**3. Confirma el CEP 01001000**\nCEP 01001000: São Paulo/SP (ViaCEP, modo real)."
     }
   ],
   "solicitud_repartida_en_turnos": [
     {
-      "pregunta": "Compara 2 unidades de PEC-01-0001 con plazo de 7 días",
+      "pregunta": "Compara 5 unidades de PEC-01-0001 con plazo de 7 días",
       "plan": null,
       "herramientas": [
         {
           "nombre": "comparar_ofertas",
-          "argumentos": "{'producto_id': 'PEC-01-0001', 'cantidad': 2, 'plazo_max_dias': 7}"
+          "argumentos": "{'producto_id': 'PEC-01-0001', 'cantidad': 5, 'plazo_max_dias': 7}"
         }
       ],
       "errores_de_ejecucion": [],
@@ -70,7 +92,7 @@
         []
       ],
       "citas_ancladas": [],
-      "respuesta_publicada": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07; cumple [PEC-01-0001-BR-06]\n- Litoral Parts: R$ 819,80; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts: R$ 3.200,27; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06"
+      "respuesta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001-BR-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06"
     },
     {
       "pregunta": "¿Qué dice la política de devoluciones sobre piezas dañadas?",
@@ -78,21 +100,33 @@
       "herramientas": [
         {
           "nombre": "consultar_politicas",
-          "argumentos": "{'pregunta': 'devoluciones piezas dañadas'}"
+          "argumentos": "{'pregunta': 'política de devoluciones sobre piezas dañadas'}"
+        },
+        {
+          "nombre": "consultar_politicas",
+          "argumentos": "{'pregunta': 'política de devoluciones sobre piezas dañadas'}"
         }
       ],
       "errores_de_ejecucion": [],
       "verificaciones": [
+        [
+          "NLI sin entailment"
+        ],
         []
       ],
       "citas_ancladas": [
         {
-          "fuente_id": "FIC-DEV-01-S03-C01",
+          "fuente_id": "FIC-DEV-01-S05-C01",
+          "estado": "reanclada",
+          "cobertura": 0.998
+        },
+        {
+          "fuente_id": "FIC-DEV-01-S05-C01",
           "estado": "literal",
           "cobertura": 1.0
         }
       ],
-      "respuesta_publicada": "Política ficticia de demostración. La política indica que un daño visible al abrir la caja, como carcasa rota o conector doblado, debe notificarse dentro de 7 días corridos desde la entrega, con fotos y descripción. La notificación inicia revisión, pero no confirma automáticamente reemplazo, devolución o aclaración.\nFuentes: FIC-DEV-01-S03-C01"
+      "respuesta_publicada": "Política ficticia de demostración. La política de devoluciones sobre piezas dañadas establece que al recibir el paquete se inspecciona la pieza comparando con el registro de autorización para distinguir daño declarado, uso durante la instalación y componentes faltantes. En caso de daño confirmado, se registra si corresponde reemplazo o devolución simulada. Se comunica la resolución con un código de autorización para seguimiento.\nFuentes: FIC-DEV-01-S05-C01"
     },
     {
       "pregunta": "Confirma el CEP 01001000",
@@ -111,12 +145,12 @@
       "respuesta_publicada": "CEP 01001000: São Paulo/SP (ViaCEP, modo real)."
     },
     {
-      "pregunta": "ahora 3 unidades",
+      "pregunta": "ahora 6 unidades",
       "plan": null,
       "herramientas": [
         {
           "nombre": "comparar_ofertas",
-          "argumentos": "{'producto_id': 'PEC-01-0001', 'cantidad': 3, 'plazo_max_dias': 7}"
+          "argumentos": "{'producto_id': 'PEC-01-0001', 'cantidad': 6, 'plazo_max_dias': 7}"
         }
       ],
       "errores_de_ejecucion": [],
@@ -124,7 +158,7 @@
         []
       ],
       "citas_ancladas": [],
-      "respuesta_publicada": "CentroPeças: R$ 4.401,99 para 3 unidades; plazo 2 días.\n- CentroPeças: R$ 4.401,99; cumple [PEC-01-0001-BR-06]\n- Litoral Parts: R$ 1.190,00; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts: R$ 4.581,82; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06"
+      "respuesta_publicada": "CentroPeças: R$ 8.718,75 para 6 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 8.718,75; cumple [PEC-01-0001-BR-06]\n- Litoral Parts (nacional): R$ 2.300,60; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts (internacional): R$ 8.726,47; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06"
     }
   ]
 }

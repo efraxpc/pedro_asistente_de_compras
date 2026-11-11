@@ -3,7 +3,7 @@ from difflib import SequenceMatcher
 
 from .business import comparar
 from .catalog import Escenario, buscar, ofertas
-from .contracts import RespuestaCompra
+from .contracts import Alternativa, RespuestaCompra
 
 
 def verificar(respuesta: RespuestaCompra, escenario: Escenario, *, indice=None,
@@ -183,6 +183,8 @@ def anclar_cep(respuesta: RespuestaCompra, observaciones: list[tuple[str, dict]]
 
 
 CAMPOS_SOLICITUD = ("producto_id", "cantidad", "presupuesto_centavos", "plazo_max_dias")
+# Lo que el sistema añade a la solicitud y el modelo no tiene por qué repetir.
+CAMPOS_DEL_SISTEMA = ("origen_preferido",)
 
 
 def anclar_recomendacion(respuesta: RespuestaCompra,
@@ -211,6 +213,8 @@ def anclar_recomendacion(respuesta: RespuestaCompra,
         for campo in ("estado", "dataset_id", "producto_id", "proveedor_id", "total_centavos",
                       "alternativas", "evidencias"):
             setattr(respuesta, campo, getattr(calculada, campo))
+        for campo in CAMPOS_DEL_SISTEMA:
+            setattr(respuesta.solicitud, campo, getattr(calculada.solicitud, campo))
         return {"estado": "anclada", "campos_corregidos": cambios}
     return {"estado": "sin_calculo_para_esa_solicitud"}
 
@@ -284,3 +288,13 @@ def respuesta_local(escenario: Escenario, solicitud) -> RespuestaCompra:
                              dataset_id=escenario.dataset_id,
                              texto=(f"{a.oferta.proveedor_nombre} stock {a.oferta.stock} "
                                     f"entrega {a.oferta.plazo_dias} días")) for a in alternativas])
+
+
+def mejor_sin_preferencia(respuesta: RespuestaCompra) -> Alternativa | None:
+    """La oferta válida más barata, si la preferencia del usuario hizo ganar a otra más cara."""
+    if respuesta.solicitud.origen_preferido is None or respuesta.estado != "recomendacion":
+        return None
+    validas = [a for a in respuesta.alternativas if a.cumple]
+    barata = min(validas, key=lambda a: (a.total_centavos, a.oferta.plazo_dias, a.oferta.proveedor_id))
+    ganadora = validas[0]
+    return barata if barata.total_centavos < ganadora.total_centavos else None
