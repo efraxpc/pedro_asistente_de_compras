@@ -1,117 +1,308 @@
-# Informe técnico — Pedro Infnet
+# Informe técnico — Pedro, asistente de compras
 
-**Fecha:** 2026-11-08; actualizaciones T15/T24: 2026-11-09. **Proyecto:** reconstrucción independiente de asistente de compras sobre piezas ficticias. **Estado:** núcleo local y ejecuciones remotas con el modelo real registradas; el índice FAISS es propio y los casos de evaluación son derivados, no los oficiales.
+**Curso:** Agentes Cognitivos com LangChain (Infnet). **Actualizado:** 2026-11-11. **Modelo:** gpt-4.1-mini. **Pruebas automáticas:** 142, todas en verde.
 
-## Objetivo y datos
+Este informe explica cómo el proyecto responde a las 29 rúbricas de la guía integrada (R01–R29). Cada rúbrica tiene aquí un resumen; la respuesta completa, con sus tablas y sus límites, está en docs/respuestas_rubricas.md. Las ejecuciones con el modelo real están guardadas en docs/trazas/ y el registro de lo ejecutado, en docs/evidencias.md.
 
-Pedro consulta y compara ofertas sintéticas de repuestos de electrodomésticos. El generador usa semilla 20261107 y produce 2640 piezas, 7920 ofertas, 7920 compatibilidades y 47520 precios históricos. Cada escenario copia la base a un SQLite propio con UUID y manifiesto SHA-256. La ficha técnica identifica la fuente sintética; precios y stock vigentes se leen siempre del escenario. No se hacen compras ni pagos.
+## 1. Resumen
 
-## Comparación de proveedores
+Pedro es un asistente que ayuda a comprar repuestos de electrodomésticos: compara las ofertas de varios proveedores para una pieza y una cantidad, y recomienda una. Todos los datos son sintéticos.
 
-Es el núcleo del asistente. Para una pieza y una cantidad, cada oferta se evalúa con cuatro reglas: stock suficiente, pedido mínimo del proveedor, plazo máximo y presupuesto, estos dos últimos solo si el usuario los dio. El total es cantidad por precio unitario más flete, en centavos enteros. Las ofertas se ordenan así: primero las que cumplen; entre ellas, las del origen que prefiere el usuario si guardó esa preferencia; después por total, plazo e identificador del proveedor. La preferencia ordena las ofertas válidas, nunca hace ganar a una que no cumple, y si respetarla cuesta más la respuesta lo dice. Cada respuesta muestra todas las ofertas con su origen, su total y el motivo de descarte.
+- **Qué hace bien.** Compara proveedores con reglas exactas, mantiene una conversación de varios turnos, responde preguntas sobre políticas con su fuente, confirma un código postal con una API real y no publica nada sin verificarlo.
+- **Resultado medido.** En la evaluación vigente en LangSmith acierta el ganador y el importe en 14 de 14 recomendaciones y las 24 propuestas del modelo pasan la verificación a la primera.
+- **Cómo se trabajó.** Cada rúbrica tiene una ejecución guardada. Varias ejecuciones con el modelo real destaparon fallos que las pruebas no veían; se diagnosticaron, se corrigieron y se volvieron a medir, y el antes y el después se conservan.
+- **Qué queda abierto.** El vídeo de demostración, y tres supuestos que debe confirmar el profesor: el índice FAISS, los casos de evaluación y la escala de madurez.
 
-Durante casi todo el proyecto la comparación ignoró el pedido mínimo. El ejemplo usado en las demostraciones, 2 unidades de PEC-01-0001, recomendaba a CentroPeças por R$ 2.963,07, aunque ese proveedor exige 5 unidades; en el catálogo hay 1.151 ofertas con stock y pedido mínimo mayor que 2. Ninguna prueba ni métrica lo detectó, porque la referencia compartía el hueco. Ahora esa oferta se descarta «por pedido mínimo (5 unidades)» y con 5 unidades CentroPeças gana por R$ 7.279,83. El catálogo guarda además seis precios mensuales por oferta. Para cada oferta válida, la respuesta sitúa el precio de hoy en ese historial: el del mes anterior, la media de los cinco meses previos y si está en su punto más bajo o más alto. El historial informa y no decide: el ganador sigue siendo el de menor total hoy, porque un precio pasado no se puede comprar.
+## 2. Problema y dominio
 
-El historial sí genera un aviso de precio cuando el precio de hoy se aparta al menos un 10 % de su media. Ese aviso reúne las técnicas del curso sobre el problema central del asistente. Tres funciones hardcoded calculan la señal de cada precio, redactan los hechos y componen un aviso de plantilla, que además señala una alternativa válida que cueste casi lo mismo y esté en mejor momento. En paralelo, mediante RunnableParallel con with_fallbacks, un prompt PTCF con ejemplos few-shot pide al modelo un consejo de una o dos frases, que llega como objeto Pydantic. El consejo solo se publica si pasa dos puertas: una verificación exacta (ninguna cifra fuera de los hechos, un proveedor comparado nombrado, ninguna predicción) y un modelo NLI que comprueba que los hechos lo sustentan. Si falla, queda el aviso de plantilla. Con gpt-4.1-mini y el NLI real, sobre quince piezas, pasaron 5 consejos con el primer prompt y 14 con el prompt ajustado: el modelo añadía valoraciones como «una buena oportunidad», imitando un ejemplo few-shot, y el NLI las rechazaba. El único rechazo final era un consejo cierto: el NLI no es exacto, pero falla hacia el lado seguro. Es aquí, verificando texto libre, donde el modelo NLI aporta lo que el cálculo exacto no puede.
+Un comprador necesita una pieza, en cierta cantidad, a veces con un presupuesto y un plazo. Varios proveedores la ofrecen con distinto precio, flete, stock, plazo y pedido mínimo. El asistente debe decir cuál conviene y por qué las demás no.
 
-## Arquitectura
+El catálogo es una base SQLite sintética y reproducible (semilla 20261107): 2.640 piezas, 7.920 ofertas, 7.920 compatibilidades y 47.520 precios históricos. Cada conversación trabaja sobre un escenario aislado: una copia de la base con un identificador propio y un manifiesto con su huella. El asistente solo lee: no compra ni paga.
 
-La interfaz conserva user_id, session_id y dataset_id. Un borrador estructurado por sesión reúne pieza, cantidad y restricciones explícitas entre turnos. La petición actual prevalece: un cambio de cantidad conserva los límites anteriores y «sin presupuesto/plazo» los elimina. Solo se pregunta por pieza o cantidad cuando faltan. El flujo del chat carga los 12 mensajes previos y recuerdos por usuario, crea un agente OpenAI tools con seis herramientas, analiza una RespuestaCompra Pydantic, verifica todas las ofertas activas y sus evidencias, aplica NLI local a las afirmaciones publicables y solo entonces renderiza. Se permite una corrección interna total. RunnableWithMessageHistory escribe la petición y la respuesta pública; las propuestas rechazadas solo viven en la traza de ejecución. Sin clave, el chat compara mediante el mismo cálculo y verificador exacto.
+## 3. El núcleo: comparar proveedores
 
-La comparación local usa el mismo cálculo y el mismo verificador exacto. Presupuesto, precio unitario, flete y total son enteros en centavos. La regla exige stock suficiente y, cuando se indican, plazo no superior al máximo y total no superior al presupuesto; desempata por total, plazo e ID de proveedor. La vista de catálogo presenta 20 piezas por página.
+Todo lo demás existe para que esta comparación sea correcta y se pueda confiar en ella.
 
-Text-to-query valida un PlanConsulta y compila exclusivamente plantillas SELECT con parámetros; SQLite se abre en modo solo lectura. Para T15 se construye en memoria un índice FAISS local de tres políticas ficticias, con fragmentos, fuentes y filtros de metadatos; el chat lo usa si no hay índice autorizado. T24 reproduce en ese corpus una consulta cuyo fragmento correcto queda fuera del top 4 y una reformulación que lo sitúa primero, con fuente, ID y distancia L2 registrados en docs/t24_recuperacion.md. Las respuestas de ese corpus se etiquetan como ficticias y pasan por verificación de fuente y NLI. El índice preexistente de políticas se carga solo tras revisar manifiesto, hashes, dimensión, métrica, recuento, modelo y confianza explícita para el docstore pickle. Ese índice autorizado aún no está disponible.
+### Reglas
 
-## Anatomía, tipo y madurez del agente (R01)
+| Regla | La oferta se descarta si… |
+|---|---|
+| Stock | No hay unidades suficientes |
+| Pedido mínimo | El proveedor exige comprar más unidades de las pedidas |
+| Plazo | Tarda más que el plazo máximo del usuario, si lo dio |
+| Presupuesto | El total supera el presupuesto del usuario, si lo dio |
 
-Anatomía. El ambiente es un escenario aislado: una copia SQLite del catálogo con UUID y manifiesto, el corpus de políticas y el servicio ViaCEP. El motor cognitivo es ChatOpenAI (gpt-4.1-mini por defecto). El system message sigue PTCF e incluye ejemplos few-shot. Cuatro herramientas actúan como sensores (buscar_productos, consultar_catalogo, consultar_politicas y consultar_cep), una calcula (comparar_ofertas) y una escribe (guardar_preferencia). La memoria combina una ventana de 12 mensajes y un borrador por sesión con preferencias y episodios vectoriales por usuario. El orquestador es LangChain: create_openai_tools_agent, AgentExecutor con seis iteraciones como máximo y RunnableWithMessageHistory. Una puerta de publicación aplica verificación exacta y NLI local. Esta anatomía se lee de los objetos reales del agente en src/pedro/anatomia.py y su salida está guardada en el notebook 01.
+El total es cantidad por precio unitario más flete, siempre en centavos enteros. Las ofertas se ordenan así: primero las que cumplen; entre ellas, las del origen que prefiere el usuario (nacional o internacional), si guardó esa preferencia; después por total, plazo y proveedor. La preferencia nunca hace ganar a una oferta que no cumple, y si respetarla cuesta más, la respuesta lo dice. Cada respuesta muestra todas las ofertas, con su origen y el motivo de descarte.
 
-Tipo. Pedro es un agente híbrido. La capa reactiva son reglas fijas: pedir la cantidad que falta, listar el catálogo, comparar ofertas en centavos y enrutar las preguntas de entrega parcial. La capa deliberativa es el LLM, que elige herramientas, mantiene estado entre turnos y corrige una vez su propuesta frente a la verificación. No es reactivo puro porque conserva estado y elige herramientas; no es deliberativo puro porque no construye un plan explícito de varios pasos. El notebook 01 lo demuestra con un modelo doble guionado: dos turnos se resuelven por regla sin pasar por el agente y un tercero pasa por el agente, que recibe seis herramientas y ejecuta consultar_cep.
+### El hallazgo que cambió la comparación
 
-Madurez. Se usa una escala genérica de cinco niveles (chain fija, enrutamiento, agente con herramientas, agente con memoria y autoverificación, sistema multiagente autónomo) como supuesto declarado, porque la escala de la primera clase no está en este workspace. El punto de partida era el nivel 4 en diseño, demostrado solo en local, y el objetivo, ese mismo nivel demostrado con mediciones. Tras las ejecuciones con el modelo real, la madurez actual es el nivel 4 demostrado: ganador e importe correctos en 14 de 14 casos, ninguna recomendación contraria a la regla publicada y una conversación de ocho turnos con estado correcto. Queda una reserva: las mediciones son corridas únicas sobre casos derivados. No se busca el nivel 5: el problema no requiere varios agentes ni ejecutar compras. El detalle, con la arquitectura según CoALA, está en docs/respuestas_rubricas.md.
+Durante casi todo el proyecto la comparación ignoró el pedido mínimo, aunque el dato estaba en el catálogo. El ejemplo de todas las demostraciones, 2 unidades de PEC-01-0001, recomendaba a CentroPeças por R$ 2.963,07, y ese proveedor exige 5 unidades. Hay 1.151 ofertas con stock y pedido mínimo mayor que 2. Ninguna prueba ni métrica lo detectó: la referencia de evaluación tenía el mismo hueco, así que el agente y la referencia coincidían. Se encontró al revisar qué datos del proveedor usaba la comparación. Al corregirlo cambiaron 5 de los 14 casos de recomendación de la evaluación.
 
-## Planificación y memoria aumentada (R02)
+### Historial y aviso de precio
 
-Planificación. Una solicitud se divide en cinco subtareas con salida observable: extraer las restricciones del mensaje, consultar los datos, comparar las ofertas, verificar la propuesta y publicar o corregir. Una compra con ID y cantidad sigue ese plan fijo sin modelo. Una solicitud que mezcla acciones la planifica el LLM dentro del AgentExecutor, con seis iteraciones como máximo y un plan visible en el prompt. Un mensaje con varias intenciones pasa antes por un planificador de turno explícito: el modelo escribe un plan con una petición por intención, el plan se valida (no puede añadir datos que el usuario no escribió) y cada petición se resuelve y verifica por separado. Con el modelo real, una solicitud que mezclaba compra, política y CEP produjo tres peticiones, las tres publicadas; antes del planificador no se publicaba nada.
+El catálogo guarda seis precios mensuales por oferta. Para cada oferta válida la respuesta sitúa el precio de hoy: el del mes anterior, la media de los cinco meses previos y si está en su punto más bajo o más alto. El historial informa y no decide: gana el menor total de hoy.
 
-Memoria. El corto plazo vive en la sesión: el mensaje actual, el borrador de compra y la ventana de 12 mensajes. El largo plazo vive en el usuario: preferencias explícitas, episodios vectoriales de recomendaciones verificadas y, como memoria procedimental, el prompt y las reglas. Precios, stock y plazos no son memoria: siempre se releen del escenario activo. El notebook 01 guarda la ejecución: al pedir «ahora 6 unidades» el borrador conserva el plazo de 7 días, el historial tiene 18 mensajes y el agente ve 12, y una sesión nueva empieza sin borrador pero con la preferencia del usuario. Con el modelo real (gpt-4.1-mini), una sesión por turnos planificó bien la compra, el CEP y el cambio de cantidad; la pregunta general de política no se publicó porque el modelo citó el fragmento casi literal y la verificación exigía texto idéntico. Se corrigió con citas ancladas: el modelo elige la fuente y el sistema sustituye la cita por el tramo literal del fragmento recuperado; si el resumen no obtiene entailment, se publica solo la cita textual. Repetida la pregunta, la respuesta se publicó con dos fuentes (docs/citas_ancladas.md). Una solicitud mixta en un solo turno sigue sin publicarse y queda declarada como limitación.
+Cuando el precio de hoy se aparta al menos un 10 % de su media, se añade un aviso. Ese aviso reúne las técnicas del curso sobre el problema central:
 
-## Salida estructurada y laboratorio de salidas rotas (R04)
+| Paso | Técnica | Rúbrica |
+|---|---|---|
+| Señal del precio, hechos y aviso de plantilla | Funciones hardcoded | R19 |
+| Consejo redactado por el modelo | Prompt PTCF con few-shot | R11 |
+| El consejo llega como objeto validado | Output parser Pydantic | R04 |
+| Aviso y consejo se calculan en dos ramas, con plan B | RunnableParallel y with_fallbacks | R06, R09, R12 |
+| El consejo solo se publica si sus cifras salen de los hechos y el NLI lo respalda | Verificación exacta y NLI | R24 |
 
-La cadena de extracción convierte una solicitud en un objeto Extraccion validado con Pydantic. Para comprobar su robustez se construyó un laboratorio con ocho salidas típicas de un modelo. Cada defecto lo resuelve una capa distinta: el parser tolera cercas de markdown; una segunda cadena, montada con with_fallbacks, repara los errores de sintaxis y de esquema a partir de la solicitud, la salida inválida y el error; y una regla de dominio recalcula los faltantes sin confiar en el modelo. Con gpt-4.1-mini como reparador, las cinco reparaciones devolvieron los datos correctos. El laboratorio reveló que el parser acepta JSON truncado y pierde datos sin avisar: una salida cortada dejó la solicitud sin su plazo de 7 días. La cadena robusta añade una comprobación estricta y envía ese caso a reparación. También se ejecutó with_structured_output sobre las mismas solicitudes, con resultado idéntico; se mantiene el parser porque permite ver y reparar la salida cruda y probar sin credenciales.
+Con el modelo y el NLI reales, sobre quince piezas, pasaron la verificación 5 consejos con el primer prompt y 14 con el prompt ajustado. El modelo añadía valoraciones («una buena oportunidad») imitando un ejemplo few-shot, y el NLI las rechazaba. Es aquí, verificando texto libre, donde el modelo NLI hace un trabajo que el cálculo exacto no puede hacer.
 
-## Interfaz Runnable y composición imperativa (R05)
+## 4. Arquitectura
 
-Los tres métodos de Runnable se ejecutaron con gpt-4.1-mini. Con invoke, una solicitud produjo un objeto validado. Con batch, tres solicitudes tardaron 1,43 s frente a 4,55 s de tres invoke en serie, con los mismos resultados. Con stream, una cadena con parser de JSON parcial entregó 19 estados, el primero a los 0,45 s de 1,07 s; la cadena con parser Pydantic entregó un único fragmento, porque necesita el JSON completo para validarlo. Son mediciones únicas, no un benchmark. La composición imperativa usa @chain en dos cadenas: una simple y otra que repara errores con try/except. Esta última resolvió los ocho casos del laboratorio igual que la versión declarativa.
+Un turno sigue siempre el mismo recorrido: interpretar el mensaje, decidir el camino, consultar, verificar y responder.
 
-## Composición declarativa y elección del patrón (R06)
+- **Interpretar.** Las reglas identifican la pieza, que tiene formato fijo; un intérprete con modelo decide si el mensaje es una compra y qué cambia. Si el mensaje trae varias intenciones, un planificador lo divide en peticiones.
+- **Decidir.** Lo que se reconoce sin ambigüedad va por una ruta fija (listado, ficha, aclaración). El resto va al agente.
+- **Consultar.** El agente, construido con create_openai_tools_agent y AgentExecutor, elige entre seis herramientas: tres de SQL, una de RAG, una de API y una de memoria.
+- **Verificar.** Toda propuesta pasa una verificación exacta y un modelo NLI. Antes, un paso de anclaje rellena con datos de las herramientas lo que el modelo copiaría mal.
+- **Responder.** Solo se guarda en memoria la pregunta y la respuesta publicada.
 
-Hay cuatro cadenas LCEL: una secuencia simple, una con reparación mediante with_fallbacks, una que transmite JSON parcial y una con ramas paralelas. La cadena con reparación existe además en versión imperativa con @chain. Las dos dan el mismo resultado en los ocho casos del laboratorio; lo que cambia es lo observable. En la versión declarativa la traza registra 16 pasos cuando hay reparación, incluido el error del parser y la validación de dominio, y el grafo muestra el fallback. En la imperativa registra 9 y no ve ni el error ni la validación, porque el try/except y la regla son Python normal. Por eso LCEL es el patrón principal para las tuberías. El código imperativo se reserva para orquestar el turno en crear_flujo, que tiene salidas anticipadas y un bucle de dos propuestas, y donde lo que LangChain no ve, como el anclaje de citas, se anota a mano en la traza.
+Un principio recorre el diseño: **el modelo decide qué responder; los datos los pone el sistema.** Importes, ganador, citas, ciudad de un CEP y tablas de resultados salen siempre de las herramientas, nunca de lo que escribe el modelo.
 
-## Fase 2: agente con herramientas, ReAct y confiabilidad (R07–R12)
+La interfaz es Streamlit (app.py) y toda la lógica vive en src/pedro/. Sin clave de OpenAI la aplicación funciona en modo degradado con las rutas fijas.
 
-Orquestadores (R07). Se comparan LangChain, LangGraph, LlamaIndex, AutoGen, Semantic Kernel y Langflow por autonomía, abstracción y modularidad. LangChain se mantiene porque Pedro es un solo agente que necesita muchas piezas distintas bajo control estricto: el proyecto usa 13 tipos de componentes suyos, según un inventario leído de los imports. Además, el mismo agente pequeño se ejecutó en LangChain y en LangGraph con el modelo real: dieron las mismas respuestas, pero LangGraph guardó en su estado el resultado de una herramienta y no la volvió a llamar, mientras que LangChain repitió la consulta. Para Pedro, donde precios y stock deben releerse, esa diferencia importa. Los otros cuatro orquestadores se comparan de forma conceptual. Tres de las APIs que pide la rúbrica están marcadas como obsoletas y la migración natural sería a LangGraph.
+## 5. Fase 1 — Chain ejecutable y arquitectura (R01–R06)
 
-ReAct (R08). Un agente construido con initialize_agent y ZERO_SHOT_REACT_DESCRIPTION, con dos herramientas y ConversationBufferMemory, se ejecutó con gpt-4.1-mini. Con el historial dentro del prompt resolvió una pregunta de seguimiento (CentroPeças, 2 días); con el prompt zero-shot original, que no lee la memoria, pidió de nuevo el identificador de la pieza.
+| Rúbrica | Qué se hizo | Resultado principal |
+|---|---|---|
+| R01 | Anatomía, tipo y madurez del agente | Agente híbrido; madurez nivel 4 demostrada |
+| R02 | Planificación y memoria aumentada | Cinco pasos observables y planificador de turno |
+| R03 | Plantillas de prompt reutilizables | Nueve ChatPromptTemplate con nombre propio |
+| R04 | Salida estructurada en JSON | Laboratorio de ocho salidas rotas |
+| R05 | invoke, batch, stream y @chain | Los tres medidos con el modelo real |
+| R06 | LCEL y justificación | Los dos estilos comparados por lo que deja ver la traza |
 
-Routing (R09). Dos routers sobre RouterChain, uno por reglas y otro decidido por el modelo, se compararon en siete preguntas: reglas 2 de 7, LLM 6 de 7. Las preguntas se eligieron para poner a prueba las reglas.
+### R01 — Anatomía, tipo y madurez
 
-API externa (R10). El agente llama a ViaCEP real por function calling. Se guardaron el esquema enviado al modelo, los argumentos, la respuesta de la API y la respuesta publicada en tres casos: válido, inexistente e inválido. La primera ejecución no publicó la ciudad porque el modelo copiaba mal un identificador; la respuesta se rellena ahora con lo que devolvió la herramienta.
+La anatomía se lee de los objetos reales del agente, no se escribe a mano: modelo, ejecutor, prompt PTCF, seis herramientas, memoria, base de conocimiento y puerta de publicación. Pedro es un agente **híbrido**: una capa reactiva de reglas resuelve lo que no debe quedar a criterio del modelo, y una capa deliberativa elige herramientas, mantiene estado y revisa su propuesta. La madurez se sitúa en el nivel 4 de una escala genérica de cinco (agente con memoria y autoverificación) y está demostrada con mediciones. No se busca el nivel 5: el problema no requiere varios agentes ni ejecutar compras. La escala es un supuesto declarado, porque la de la primera clase no está disponible.
 
-Prompts (R11). El prompt del agente sigue PTCF con cuatro ejemplos. En diez solicitudes difíciles, la extracción acertó 6 sin ejemplos, 10 con few-shot y 10 con few-shot y chain-of-thought; el razonamiento queda escrito antes de los datos.
+### R02 — Planificación y memoria aumentada
 
-Confiabilidad (R12). Parsers con reparación, memoria que guarda solo lo publicado, búsqueda FAISS sobre el índice guardado y un callback que registra cada herramienta y cada verificación. Ese registro permitió encontrar y corregir dos fallos reales. El detalle de cada rúbrica está en docs/respuestas_rubricas.md.
+Una solicitud se divide en cinco pasos con salida observable: extraer, consultar, comparar, verificar y publicar. Un mensaje con varias intenciones pasa antes por un planificador de turno: el modelo escribe un plan con una petición por intención, el plan se valida (no puede añadir datos que el usuario no escribió) y cada petición se resuelve y verifica por separado. Con el modelo real, un mensaje que mezclaba compra, política y CEP produjo tres peticiones, las tres publicadas; antes del planificador no se publicaba nada. La memoria se reparte en dos niveles: la sesión guarda lo que solo sirve para la compra en curso y el usuario guarda lo que debe sobrevivir. Precios y stock no son memoria: siempre se releen.
 
-## Fase 3: memoria y conversación (R13–R18)
+### R03 — Plantillas de prompt reutilizables
 
-Memorias (R13). Pedro tiene las cuatro memorias de CoALA: de trabajo (mensaje actual, borrador de compra y ventana de 12 mensajes, por sesión), episódica (recomendaciones pasadas con vector, por usuario), semántica (preferencias, catálogo y políticas) y procedimental (prompt, ejemplos y reglas). Precios, stock y plazos no son memoria: se releen del escenario.
+Las plantillas están reunidas en src/pedro/prompts.py, todas ChatPromptTemplate: extracción (en tres variantes), reparación, text-to-SQL, planificador, intérprete, consejo de precio y agente. La de extracción se reutiliza en la cadena declarativa y en la imperativa, y se ejecutó con el modelo real sobre tres solicitudes del dominio. Se eligió ChatPromptTemplate porque separa las reglas (mensaje de sistema) de lo que escribe el usuario (mensaje humano).
 
-Ventana y recuperación (R14). El agente recibe una ventana deslizante de 12 mensajes más los tres episodios más parecidos a la pregunta. Tras una conversación real había 16 mensajes guardados y 12 en la ventana; en una sesión nueva se recuperaron tres episodios (similitud entre 0,21 y 0,35) y ninguno para otro usuario. Se eligió ventana y no resumen porque la ventana no puede alterar una cifra.
+### R04 — Salida estructurada en JSON
 
-Herramientas de memoria (R15). Mem0, Letta/MemGPT y LangMem se comparan con la implementación propia por arquitectura y caso de uso. Se mantiene la propia porque lo que entra en memoria debe ser comprobable: solo recomendaciones verificadas y preferencias citadas por el usuario. LangMem se ejecutó con la misma conversación que la memoria propia: las dos guardaron la preferencia y aislaron por usuario; LangMem deja que el modelo decida qué recordar y supo responder qué recordaba, pero su agente dio un precio sin verificar y ofreció hacer un pedido. Mem0 y Letta se comparan de forma conceptual.
+La cadena convierte una solicitud en un objeto validado con Pydantic. Para probar su robustez se construyó un laboratorio con ocho salidas típicas de un modelo; cada defecto lo resuelve una capa distinta: el parser (cercas de markdown), una segunda cadena que repara (JSON cortado, tipos incorrectos, texto libre) o una regla de dominio (los faltantes los calcula el código). Con el modelo real como reparador, las cinco reparaciones devolvieron los datos correctos. El laboratorio reveló que el parser acepta JSON truncado y pierde un dato sin avisar; la cadena robusta lo comprueba. También se ejecutó with_structured_output, con resultado idéntico; se mantiene el parser porque deja ver y reparar la salida cruda.
 
-Chatbot (R16). Un chatbot con ConversationChain y ConversationBufferMemory mantuvo una conversación real de cuatro turnos y recordó el nombre, la cantidad, el presupuesto y el plazo. La memoria creció de 240 a 885 caracteres: el buffer no tiene límite, y por eso el agente final usa la ventana.
+### R05 — Runnable y composición imperativa
 
-Intenciones y entidades (R17). El flujo reconoce seis intenciones y cinco entidades, y pregunta solo lo que bloquea. El chat combina reglas y modelo: las reglas identifican la pieza, que tiene formato fijo, y un intérprete few-shot decide si el mensaje es una compra y qué cambia en cantidad, presupuesto y plazo. En catorce mensajes difíciles, las reglas solas acertaron 8 y las reglas con el modelo, 14. Sin credenciales actúan solo las reglas.
+Con el modelo real: invoke produce un objeto validado; batch procesó tres solicitudes en 1,43 s frente a 4,55 s de tres invoke en serie; stream entregó 19 estados parciales, el primero a los 0,45 s. Lo aprendido: stream solo transmite si todos los pasos saben transmitir, y con el parser Pydantic llega un único fragmento. La composición imperativa usa @chain en dos cadenas; una repite con try/except la reparación de R04 y da el mismo resultado en el laboratorio. Son mediciones únicas, no un benchmark.
 
-Conversación real (R18). En ocho turnos con el modelo real el agente descartó una compra de 2 unidades por el pedido mínimo del proveedor, la recalculó con 5 unidades conservando el plazo, sustituyó el plazo por un presupuesto, guardó una preferencia, respondió un CEP y una política sin tocar el borrador, volvió a comparar con el estado correcto y aplicó la preferencia guardada a otra pieza, donde el proveedor nacional ganó aunque costaba más. La primera ejecución falló en tres turnos por reglas de diálogo demasiado estrechas; se corrigieron y las dos trazas se conservan.
+### R06 — Composición declarativa y elección
 
-## Fase 4: herramientas, APIs y text-to-query (R19–R21)
+Hay cuatro cadenas LCEL (secuencia, fallback, stream parcial y paralelo). La cadena con reparación existe en los dos estilos y da el mismo resultado; lo que cambia es lo observable: en la versión declarativa la traza registra 16 pasos cuando hay reparación, incluido el error, y en la imperativa 9, sin el error. Decisión: LCEL para lo que es una tubería, e imperativo para decidir el camino de cada turno, que tiene ramas y salidas anticipadas.
 
-Herramientas (R19). El agente tiene seis herramientas: cuatro de lógica fija, una semántica y una mixta (consultar_catalogo usa un modelo solo en preguntas abiertas). Todo lo que es un número o una regla lo hace código fijo; lo semántico se reserva para buscar por significado en las políticas y nunca decide un importe.
+## 6. Fase 2 — Agente con herramientas y ReAct (R07–R12)
 
-APIs (R20). Tres externas (ViaCEP para confirmar el destino, OpenAI como motor y LangSmith para evaluar) y cuatro internas (catálogo en solo lectura, políticas en FAISS, memoria aislada por usuario y sesión, y verificación fuera del alcance del modelo). El tipo de uso fija la integración. Ninguna API compra, paga o modifica el catálogo.
+| Rúbrica | Qué se hizo | Resultado principal |
+|---|---|---|
+| R07 | Comparación de orquestadores | Seis comparados; LangChain y LangGraph ejecutados |
+| R08 | ReAct con initialize_agent | Responde bien con memoria y falla sin ella |
+| R09 | Chains y RouterChain | Router por reglas 2 de 7; router LLM 6 de 7 |
+| R10 | API externa por function calling | ViaCEP real en tres casos |
+| R11 | PTCF, few-shot y chain-of-thought | Zero-shot 6 de 10; few-shot 10 de 10 |
+| R12 | Componentes de confiabilidad | Los cuatro, con caso normal y de error |
 
-Text-to-query (R21). La herramienta del agente usa un plan con dos plantillas fijas. Además hay un text-to-SQL completo: el modelo escribe un SELECT, se comprueba su forma, el autorizador de SQLite solo permite leer las tablas y columnas de una lista y la ejecución es de solo lectura, con 50 filas como máximo. Con gpt-4.1-mini, las cinco preguntas de prueba se respondieron bien tras mejorar el prompt; antes fueron tres de cinco, porque dos consultas válidas estaban mal planteadas. Las siete consultas hostiles se rechazaron. Válida no significa correcta. Este text-to-SQL está conectado al chat para las preguntas abiertas sobre el catálogo: la respuesta es una tabla que arma el sistema con las filas de la consulta, junto con la consulta ejecutada y un aviso de que solo se comprobó su seguridad. El índice FAISS guardado (R22) y el diagnóstico de recuperación (R23) se describen en docs/respuestas_rubricas.md.
+### R07 — Orquestadores
 
-## Fase 5: agente final verificado (R24–R28)
+Se comparan LangChain, LangGraph, LlamaIndex, AutoGen, Semantic Kernel y Langflow por autonomía, abstracción y modularidad. El mismo agente pequeño se ejecutó en LangChain y en LangGraph: dieron las mismas respuestas, pero LangGraph guardó en su estado el resultado de una herramienta y no la volvió a llamar. Para Pedro, donde precios y stock deben releerse, esa diferencia importa. LangChain se mantiene porque el proyecto usa 13 tipos de componentes suyos y porque la rúbrica nombra sus APIs. Tres de ellas están marcadas como obsoletas; la migración natural sería a LangGraph. Los otros cuatro orquestadores se comparan de forma conceptual.
 
-Verificación (R24). Ninguna respuesta se muestra sin pasar dos puertas dentro del flujo: una verificación exacta (total, stock, presupuesto, plazo, ganador, identificadores y procedencia) y un modelo NLI local de tres clases, donde solo entailment permite publicar. Un paso previo de anclaje rellena con datos de las herramientas lo que el modelo copiaba mal: el texto de las citas, la ciudad de un CEP, la confirmación de una preferencia, las cifras de una comparación y la tabla de una consulta al catálogo. Si la verificación falla hay una corrección; si vuelve a fallar, no se publica.
+### R08 — ReAct
 
-Agente único (R25) y ejecutor (R26). Un solo agente, construido con create_openai_tools_agent y AgentExecutor, reúne herramientas de SQL, RAG y API. En una conversación real de ocho turnos usó las tres categorías con el mismo ejecutor, la misma memoria y el mismo verificador.
+Un agente con initialize_agent y ZERO_SHOT_REACT_DESCRIPTION, dos herramientas y ConversationBufferMemory se ejecutó con el modelo real y dejó escrito su ciclo de pensamiento, acción y observación. Lo aprendido: el prompt zero-shot original no lee la memoria. Con el historial dentro del prompt resolvió una pregunta de seguimiento (CentroPeças, 2 días); sin él, pidió de nuevo la pieza.
 
-Historial (R27). El agente está envuelto en RunnableWithMessageHistory, con el historial en SQLite por usuario y sesión. Solo se guarda lo publicado: tras ocho turnos había 16 mensajes, ocho del usuario y ocho respuestas. El historial sobrevive a recrear el flujo.
+### R09 — Chains y routing
 
-Interfaz (R28). app.py conecta Streamlit al mismo flujo. Ejecutada con AppTest y el modelo real respondió cuatro turnos de chat (compra, cambio de cantidad, CEP y política), abrió un chat nuevo, reabrió la conversación anterior con sus 8 mensajes y mostró las vistas de catálogo y comparación sin excepciones. El chat y el formulario dieron el mismo importe para la misma compra (R$ 8.718,75 por 6 unidades). Falta el vídeo de demostración.
+Hay cadenas secuenciales y una paralela, y dos routers sobre RouterChain. En siete preguntas, el router por reglas acertó 2 rutas y el decidido por el modelo, 6. Las preguntas se eligieron para poner a prueba las reglas. El chat no usa ninguno como puerta de entrada: el agente ya enruta al elegir herramienta.
 
-## Evaluación con LangSmith (R29)
+### R10 — API externa
 
-El flujo final se evaluó en LangSmith sobre 30 casos derivados sintéticos con seis métricas: ganador, importe y contenido para la calidad; trayectoria completa, herramienta decisiva y primera propuesta aceptada para la trayectoria. Se ejecutaron ocho experimentos. En igualdad de condiciones, gpt-4.1-mini acertó el ganador y el importe en 14 de 14 recomendaciones y el contenido en 16 de 16, con 22 de 23 propuestas aceptadas a la primera; gpt-4o-mini obtuvo 13 de 14, 15 de 16 y 19 de 23. Por eso se mantiene gpt-4.1-mini. En ningún experimento se publicó una recomendación equivocada: cuando el modelo propuso un ganador incorrecto, la verificación lo rechazó.
+El agente llama a ViaCEP, una API pública real, por function calling. Están guardados el esquema que recibe el modelo, los argumentos que envía, la respuesta de la API y lo publicado, en tres casos: válido (São Paulo/SP), inexistente e inválido. La primera ejecución no publicó la ciudad porque el modelo copiaba mal un identificador; ahora la respuesta se rellena con lo que devolvió la herramienta.
 
-La evaluación produjo dos hallazgos. Primero, un defecto del agente: una respuesta de CEP no se publicaba porque el modelo copiaba mal un identificador; tras la corrección, contenido pasó de 15 a 16 de 16. Segundo, un error de método: los experimentos compartían memoria, y con 73 episodios acumulados la trayectoria completa cayó de 25 a 15 de 30 y gpt-4o-mini acertó solo 10 de 14 ganadores; con memoria nueva volvieron a 24 de 30 y 13 de 14. Cada experimento usa ahora su propia memoria. La trayectoria completa es menor que la herramienta decisiva (23 de 23) porque la referencia exige consultar el catálogo antes de comparar, y el agente a veces compara directamente con resultado correcto. Tras añadir el planificador de turno, el intérprete con modelo, el anclaje de la comparación y el text-to-SQL en el chat, la versión final se evaluó de nuevo: ganador e importe 14 de 14, contenido 16 de 16 y 24 de 24 propuestas aceptadas a la primera, sin ningún error de verificación. La trayectoria completa bajó a 13 de 30 porque el agente llama casi siempre solo a comparar_ofertas, un camino más corto que el de la referencia y con el mismo resultado; los casos, congelados, no se ajustaron. Por último, al revisar qué datos del proveedor usaba la comparación se vio que ignoraba el pedido mínimo, y que la referencia de evaluación tenía el mismo hueco: las métricas eran perfectas sobre una regla incompleta. Corregida la regla y regenerados los casos con una referencia independiente (cambiaron 5 de los 14 de recomendación), el último experimento, ya con el historial y el aviso de precio, es el resultado vigente: ganador e importe 14 de 14, contenido 16 de 16, 24 de 24 propuestas aceptadas a la primera y trayectoria completa 23 de 30 (16 en la corrida anterior, sin cambios que la afecten: es una métrica inestable). Cuatro de las 14 recomendaciones llevaron un consejo de precio verificado. Limitaciones: casos derivados y no oficiales, una corrida por configuración y un modelo no determinista.
+### R11 — Prompts
 
-## Enseñanza y comparación
+El prompt del agente sigue PTCF (Persona, Tarea, Contexto, Formato) y lleva ejemplos few-shot. Se midieron tres técnicas en diez solicitudes difíciles: sin ejemplos 6 aciertos, con few-shot 10 y con few-shot y chain-of-thought 10. El razonamiento se escribe en un campo antes que los datos, de modo que es observable. En el agente, el pensamiento paso a paso son sus llamadas a herramientas, que quedan registradas. El aviso de precio añadió otra lección: el modelo imita el estilo del ejemplo, no solo su formato.
 
-Los notebooks 01–05 cubren extracción LCEL y @chain; ReAct clásico y RouterChain; memoria CoALA; SQL con una demostración FAISS sintética para T15; y el integrador. El ReAct textual, ConversationBufferMemory y FakeListLLM son demostraciones didácticas. El integrador usa herramientas ligadas al escenario y una puerta de publicación. AutoGen, Mem0 y Letta se comparan conceptualmente en docs/comparaciones.md; no se atribuyen pruebas ejecutadas a esas bibliotecas. Los ejemplos few-shot del prompt describen acciones observables y no incluyen casos de evaluación.
+### R12 — Confiabilidad
 
-## Verificación observada
+Los cuatro componentes tienen un caso normal y uno de error: parser con reparación, memoria que guarda solo lo publicado, búsqueda FAISS con filtro y un callback que registra cada herramienta y cada verificación. Ese registro es lo que permitió encontrar los fallos del agente con el modelo real.
 
-Nota: este apartado conserva las primeras comprobaciones del proyecto. Los importes que cita para 2 y 3 unidades de PEC-01-0001 (R$ 2.963,07 y R$ 4.401,99 con BR-06) son anteriores a la regla del pedido mínimo; hoy esa oferta se descarta para menos de 5 unidades. El comportamiento vigente es el descrito en «Comparación de proveedores».
+## 7. Fase 3 — Chatbot con memoria (R13–R18)
 
-La sincronización bloqueada de dependencias terminó correctamente. Ciento cuarenta y dos pruebas pasaron y los cinco notebooks se ejecutaron con NotebookClient; el notebook 04 incluye T15 y T24. Streamlit respondió ready por Agent API en Chat, Catálogo y Comparación local; la comparación de dos unidades de PEC-01-0001 con R$ 100000 y 60 días eligió BR-06 por R$ 2.963,07. En otra sesión del Agent API, «Compara PEC-01-0001» pidió solo cantidad; «2» eligió BR-06 por R$ 2.963,07 y «ahora 3 unidades» recalculó R$ 4.401,99 sin repetir la pregunta. Una llamada HTTP real a ViaCEP para 01001000 devolvió São Paulo/SP. FastEmbed produjo vectores de 384 dimensiones, recuperó un episodio actualizado entre sesiones e indexó 75 fragmentos ficticios para T15. Cinco consultas del notebook cubren reglas generales y ejemplos cotejados con la base de semilla `20261107`; las políticas no representan pedidos ni entregas almacenados.
+| Rúbrica | Qué se hizo | Resultado principal |
+|---|---|---|
+| R13 | Memorias según CoALA | Las cuatro, con su contenido tras una conversación real |
+| R14 | Ventana y búsqueda vectorial | Ventana de 12 sobre 16 mensajes; tres recuerdos recuperados |
+| R15 | Herramientas de memoria | LangMem ejecutado frente a la memoria propia |
+| R16 | ConversationBufferMemory | Chatbot de cuatro turnos que recuerda todo |
+| R17 | Intención y entidades | Reglas solas 8 de 14; reglas y modelo 14 de 14 |
+| R18 | Conversación real multi-turno | Ocho turnos con el estado correcto |
 
-El experimento T24 dejó `FIC-ENT-01-S05-C01` fuera del top 4 inicial y lo recuperó primero tras reformular, con el mismo índice y top-k. El comando `/t24` mostró este contraste sin clave OpenAI. Antes del ajuste, la pregunta coloquial «¿Se puede mandar en varias cajas?» recibió una aclaración de pieza; una prueba posterior con ChatOpenAI citó la política, pero repetir la pregunta en una sesión existente produjo dos fallbacks genéricos. La versión actual enruta esa intención de entrega de forma determinista a `consultar_politicas`, extrae la regla del fragmento recuperado y la publica solo tras verificar fuente y NLI. En el flujo local, tres repeticiones con borrador de compra pendiente pasaron con NLI real; en Streamlit Agent API pasaron otras tres repeticiones en una sesión nueva. Esa ruta no llamó al LLM remoto. El modelo NLI fijado clasificó tres pares ilustrativos como entailment, contradiction y neutral; una recomendación local completa obtuvo verificación exacta sin errores y NLI positivo. Las pruebas de reparación usan un executor guionado y se registran separadas de las llamadas remotas puntuales; estas no miden la calidad general del LLM.
+### R13 — Memorias
 
-## Riesgos y trabajo dependiente
+Pedro tiene las cuatro memorias de CoALA: de trabajo (mensaje, borrador de compra y ventana, por sesión), episódica (comparaciones pasadas con vector, por usuario), semántica (preferencias, catálogo y políticas) y procedimental (prompt y reglas). Una preferencia es un hecho y se aplica: ordena las ofertas de cada comparación. Un episodio es un suceso y solo se recuerda, porque sus datos pueden haber caducado.
 
-La guía integrada de fases, temas y rúbricas (guide/) permitió remapear la matriz a las 29 rúbricas R01–R29; el enunciado original en portugués sigue fuera de este workspace y el cotejo contra su redacción exacta está pendiente. El índice FAISS es propio: la actividad no entregó uno, así que se construyó a partir del corpus ficticio y se guardó en knowledge/politicas/; si el curso entrega un índice oficial, hay que sustituir la carpeta y repetir el diagnóstico. Los 30 casos de LangSmith son derivados y sintéticos, no los oficiales, y cada configuración se midió una sola vez con un modelo no determinista. El planificador de turno admite como mucho una petición de cada tipo y solo actúa con el modelo disponible. La búsqueda semántica de piezas no se implementó; la búsqueda actual es SQL. El modelo NLI se ejecuta en CPU, admite 512 tokens y su descarga inicial puede tardar. Quedan por grabar el vídeo con webcam y verificar el enlace Drive.
+### R14 — Ventana de contexto
+
+El agente recibe una ventana deslizante de los últimos 12 mensajes más los tres episodios más parecidos a la pregunta. Tras una conversación real había 16 mensajes guardados y 12 en la ventana; en una sesión nueva se recuperaron tres episodios (similitud entre 0,21 y 0,35) y ninguno para otro usuario. Se eligió ventana y no resumen porque la ventana no puede alterar una cifra.
+
+### R15 — Herramientas de memoria
+
+Se comparan Mem0, Letta/MemGPT y LangMem con la memoria propia. LangMem se ejecutó con la misma conversación: las dos guardaron la preferencia y aislaron por usuario. LangMem deja que el modelo decida qué recordar y supo responder qué recordaba; su agente, sin verificación, dio una respuesta contradictoria sobre el stock. Se mantiene la memoria propia porque lo que entra debe ser comprobable. Mem0 y Letta se comparan de forma conceptual.
+
+### R16 — Chatbot con buffer
+
+Un chatbot con ConversationChain y ConversationBufferMemory recordó en cuatro turnos el nombre, la cantidad, el presupuesto y el plazo. La memoria creció de 240 a 885 caracteres: el buffer no tiene límite, y por eso el agente final usa la ventana.
+
+### R17 — Intención y entidades
+
+El chat reconoce seis intenciones y cinco entidades. Las reglas identifican la pieza y un intérprete few-shot decide si el mensaje es una compra y qué cambia. En catorce mensajes difíciles, las reglas solas acertaron 8 y con el modelo 14: entiende «súbelo a media docena», «olvida el plazo» o «duplica la cantidad». Cuando falta la pieza o la cantidad, pregunta en vez de inventar.
+
+### R18 — Conversación real
+
+En ocho turnos con el modelo real el agente descartó una compra de 2 unidades por pedido mínimo, la recalculó con 5 conservando el plazo, cambió el plazo por un presupuesto, guardó una preferencia, respondió un CEP y una política sin tocar la compra, volvió a comparar con el estado correcto y aplicó la preferencia a otra pieza, donde el proveedor nacional ganó costando más. La primera versión de esta conversación falló en tres turnos; las dos trazas se conservan.
+
+## 8. Fase 4 — SQL, APIs y RAG (R19–R23)
+
+| Rúbrica | Qué se hizo | Resultado principal |
+|---|---|---|
+| R19 | Herramientas hardcoded y semánticas | Seis herramientas catalogadas |
+| R20 | APIs por tipo de uso | Tres externas y cuatro internas |
+| R21 | Text-to-query | 5 de 5 preguntas; 7 de 7 consultas hostiles rechazadas |
+| R22 | Índice FAISS existente | El agente lo carga, no lo construye |
+| R23 | Fallo de recuperación | Diagnosticado y corregido, con antes y después |
+
+### R19 — Herramientas
+
+Seis herramientas: cuatro de lógica fija, una semántica (políticas) y una mixta (catálogo). La regla de reparto: todo lo que es un número o una regla lo hace código fijo; lo semántico busca por significado y nunca decide un importe.
+
+### R20 — APIs
+
+Tres externas (ViaCEP para confirmar el destino, OpenAI como motor y LangSmith para evaluar) y cuatro internas (catálogo en solo lectura, políticas en FAISS, memoria aislada y verificación). El tipo de uso fija la integración: lo que lee es de solo lectura, lo que llama a un tercero tiene límite de tiempo y estados de error, y la verificación queda fuera del alcance del modelo. Ninguna API compra ni modifica el catálogo.
+
+### R21 — Text-to-query
+
+La herramienta de catálogo tiene dos modos. Con un ID de pieza usa plantillas fijas. Para preguntas abiertas hay un text-to-SQL completo: el modelo escribe un SELECT y el motor decide si lo ejecuta. Tres barreras: la forma (una sola sentencia SELECT), el autorizador de SQLite (solo las tablas y columnas de una lista) y los límites (solo lectura, 50 filas). Con el modelo real respondió bien 5 de 5 preguntas, y 3 de 5 antes de mejorar el prompt: dos consultas eran válidas pero estaban mal planteadas. Válida no significa correcta, y por eso el chat muestra siempre la consulta ejecutada. La tabla de resultados la arma el sistema.
+
+### R22 — Índice FAISS existente
+
+El índice se construye una vez, fuera del agente, y se guarda con un manifiesto. El agente solo lo carga, en 0,03 s. Como su almacén es un archivo pickle, la carga exige un manifiesto completo, huellas que coincidan y confianza explícita; se probó que rechaza un archivo alterado. El índice es propio: la actividad no entregó ninguno.
+
+### R23 — Fallo de recuperación
+
+La pregunta «¿Se puede mandar en varias cajas?» no recuperaba la regla correcta, que está en el corpus. Diagnóstico: desajuste de vocabulario; el usuario dice «varias cajas» y la política dice «entrega parcial». Corrección: reformular la consulta con el término del dominio. Con el mismo índice y los mismos cuatro resultados, el fragmento pasó de no aparecer a la primera posición.
+
+## 9. Fase 5 — Agente final verificado y evaluado (R24–R29)
+
+| Rúbrica | Qué se hizo | Resultado principal |
+|---|---|---|
+| R24 | Verificación factual y lógica | Ninguna recomendación contraria a la regla publicada |
+| R25 | Agente único | SQL, RAG y API bajo el mismo ejecutor |
+| R26 | create_openai_tools_agent y AgentExecutor | Ejecutado en conversación, evaluación e interfaz |
+| R27 | RunnableWithMessageHistory | Solo se guarda lo publicado |
+| R28 | Streamlit | La app ejecutada con el agente real |
+| R29 | LangSmith | Ocho experimentos con seis métricas |
+
+### R24 — Verificación
+
+Ninguna respuesta se muestra sin pasar dos puertas dentro del flujo. La verificación exacta recalcula la respuesta con los datos del escenario: total, stock, pedido mínimo, presupuesto, plazo, ganador, identificadores y procedencia. El modelo NLI clasifica la relación entre evidencia y afirmación en tres clases, y solo entailment permite publicar. Un paso previo de anclaje rellena con datos de las herramientas las citas, el CEP, las preferencias, las cifras de la comparación y las tablas del catálogo. Si la verificación falla hay una corrección; si vuelve a fallar, no se publica. Límite importante: la verificación comprueba contra la regla de negocio, no la regla; mientras la comparación ignoró el pedido mínimo, aprobó recomendaciones que un proveedor no aceptaría.
+
+### R25 y R26 — Agente único y ejecutor
+
+Un solo agente, construido con create_openai_tools_agent y AgentExecutor (seis iteraciones como máximo), reúne herramientas de SQL, RAG y API. En la conversación de ocho turnos usó las tres categorías con el mismo ejecutor, la misma memoria y el mismo verificador.
+
+### R27 — Historial
+
+El agente está envuelto en RunnableWithMessageHistory, con el historial en SQLite por usuario y sesión. Solo se guarda lo publicado: tras ocho turnos había 16 mensajes, ocho del usuario y ocho respuestas. El historial sobrevive a recrear el flujo.
+
+### R28 — Interfaz
+
+app.py conecta Streamlit al mismo flujo. Ejecutada con la herramienta de pruebas de Streamlit y el modelo real, respondió cuatro turnos de chat, abrió un chat nuevo, reabrió la conversación anterior con sus 8 mensajes y mostró las vistas de catálogo y de comparación sin errores. El chat y el formulario dieron el mismo importe para la misma compra (R$ 8.718,75 por 6 unidades).
+
+### R29 — Evaluación con LangSmith
+
+El flujo final se evaluó sobre 30 casos derivados con seis métricas. Resultado vigente:
+
+| Métrica | Resultado |
+|---|---|
+| Ganador correcto | 14 de 14 |
+| Importe correcto | 14 de 14 |
+| Contenido correcto | 16 de 16 |
+| Herramienta decisiva | 23 de 23 |
+| Primera propuesta aceptada | 24 de 24 |
+| Errores de verificación | 0 |
+| Trayectoria completa | 23 de 30 |
+
+Conclusiones, cada una con su dato:
+
+- **Se mantiene gpt-4.1-mini.** En igualdad de condiciones, gpt-4o-mini acertó 13 de 14 ganadores y 19 de 23 propuestas a la primera.
+- **La verificación cumple.** Cuando un modelo propuso un ganador equivocado, se rechazó y no se publicó.
+- **La evaluación encontró un defecto del agente** (el CEP no se publicaba) y **un error de método**: los experimentos compartían memoria, y con 73 recuerdos acumulados la trayectoria cayó de 25 a 15 de 30.
+- **La trayectoria completa es una métrica inestable.** Varió entre 13 y 25 de 30 entre corridas, porque la referencia exige un paso que el agente a veces se salta con el mismo resultado.
+- **Una métrica perfecta no garantiza una regla correcta.** Durante seis experimentos el agente obtuvo 14 de 14 recomendando ofertas que incumplían el pedido mínimo, porque la referencia compartía el error.
+
+## 10. Lo que enseñaron las ejecuciones reales
+
+Estos fallos solo aparecieron al ejecutar con el modelo real. Las pruebas automáticas ya pasaban.
+
+| Fallo observado | Causa | Corrección |
+|---|---|---|
+| Las preguntas de política no se publicaban | El modelo citaba el fragmento casi literal | El sistema ancla la cita al texto de la fuente |
+| La ciudad de un CEP no se publicaba | El modelo copiaba mal un identificador | La respuesta se rellena con la observación de la API |
+| Una compra válida no se publicaba | El modelo transcribía mal el ganador | Las cifras las pone la herramienta |
+| Un mensaje con varias intenciones no se publicaba | La respuesta admite un solo tipo | Planificador de turno |
+| No entendía «que sean 3» ni «olvida el plazo» | Reglas de diálogo demasiado estrechas | Intérprete con modelo |
+| El parser perdía un dato con JSON cortado | Tolerancia del parser | Comprobación estricta |
+| Dos consultas SQL válidas daban mal el resultado | El modelo confundía ID y SKU | Formato de los valores en el prompt |
+| La trayectoria cambiaba entre experimentos | Memoria compartida | Memoria nueva en cada experimento |
+| Recomendaba ofertas que el proveedor no aceptaría | La comparación ignoraba el pedido mínimo | Regla nueva y casos regenerados |
+| Los consejos de precio se rechazaban | Un ejemplo few-shot invitaba a valorar | Ejemplos que solo enuncian hechos |
+
+## 11. Limitaciones
+
+- **Supuestos sin confirmar.** El índice FAISS es propio, los 30 casos de evaluación son derivados y no los oficiales, y la escala de madurez es genérica. El enunciado original en portugués no está disponible para un cotejo final.
+- **Mediciones de una sola corrida.** El modelo no es determinista; las diferencias de uno o dos casos no son concluyentes.
+- **Pedro no conversa.** No responde «¿qué recuerdas de mí?» ni sabe contestar a un comentario sin petición.
+- **La verificación comprueba que la respuesta sea cierta, no que venga al caso**, y comprueba contra la regla de negocio, no la regla.
+- **El aviso de precio salta mucho** (en cuatro de cada diez recomendaciones); sus umbrales no están calibrados.
+- **El modelo NLI no es exacto.** Rechazó un consejo que era cierto; falla hacia el lado seguro. Admite 512 tokens.
+- **Comparaciones conceptuales.** LlamaIndex, AutoGen, Semantic Kernel, Langflow, Mem0 y Letta no se ejecutaron.
+- **Sin credenciales** el chat interpreta solo con reglas, que son frágiles ante formas de hablar no previstas.
+- **La comparación no reparte un pedido entre proveedores** ni calcula el flete según el destino.
+
+## 12. Mejoras futuras
+
+- Añadir un tipo de respuesta conversacional, para saludos, comentarios y «¿qué recuerdas de mí?».
+- Migrar la orquestación del turno a LangGraph y conservar los componentes de LangChain.
+- Calibrar los umbrales del aviso de precio y del anclaje de citas con datos.
+- Revisar la referencia de trayectoria con los casos oficiales.
+- Usar el CEP para estimar flete y plazo según el destino.
+- Resumir el historial que sale de la ventana de 12 mensajes.
+
+## 13. Cómo reproducir las evidencias
+
+- Instalar: uv sync --python 3.13 --all-extras --locked
+- Pruebas: uv run pytest -q
+- Notebooks, sin credenciales: uv run python scripts/crear_notebooks.py y uv run python scripts/ejecutar_notebooks.py
+- Ejecuciones con el modelo real (requieren OPENAI_API_KEY): los scripts scripts/demostrar_*.py, que escriben en docs/trazas/
+- Evaluación (requiere además LANGSMITH_API_KEY): uv run python evals/evaluar_flujo.py
+- Interfaz: uv run streamlit run app.py
+
+Los notebooks usan dobles de prueba y lo dicen en cada celda. Las trazas de docs/trazas/ con sufijo «antes» o «sin plan» y los primeros seis experimentos de LangSmith corresponden a versiones anteriores del agente y se conservan como registro.
+
+## 14. Pendientes de entrega
+
+- Grabar el vídeo de demostración y verificar el enlace de Drive.
+- Cotejar las rúbricas con el enunciado original en portugués.
+- Confirmar con el profesor el índice FAISS, los casos de evaluación y la escala de madurez.
