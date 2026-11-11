@@ -286,10 +286,7 @@ if "pasos" not in st.session_state:
 with st.sidebar:
     st.title(":material/shopping_cart: Pedro")
     st.caption("Asistente de compras · datos ficticios")
-    with st.container(horizontal=True):
-        st.button("Nuevo chat", on_click=nuevo_chat, icon=":material/edit_square:", width="stretch")
-        st.button("Nuevo escenario", on_click=nuevo_escenario, icon=":material/refresh:",
-                  width="stretch", help="Crea otra copia del catálogo y un chat nuevo")
+    st.button("Nuevo chat", on_click=nuevo_chat, icon=":material/edit_square:", width="stretch")
     st.subheader("Conversaciones")
     for sesion in sesiones(MEMORIA, USUARIO)[:CONVERSACIONES_VISIBLES]:
         try:

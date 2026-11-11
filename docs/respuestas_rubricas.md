@@ -2020,7 +2020,7 @@ En la conversación de ocho turnos (R18):
 |---|---|---|
 | **Chat** | Conversación con el agente | `crear_flujo`: agente, memoria, verificación y NLI |
 
-En la barra lateral: nuevo chat (misma base de datos, conversación nueva), nuevo escenario (otra copia del catálogo) y la lista de conversaciones para reabrirlas, cada una con el título de su primera pregunta.
+En la barra lateral: nuevo chat (misma base de datos, conversación nueva) y la lista de conversaciones para reabrirlas, cada una con el título de su primera pregunta.
 
 **Qué se ve en una respuesta del chat.** La comparación de proveedores es el núcleo, así que la interfaz la dibuja con datos, no solo con texto:
 
