@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** redactadas y con ejecución guardada R01–R12 (Fases 1 y 2 completas), R22, R23 y R29. Pendientes de redactar: R13–R21 y R24–R28.
+**Avance de redacción:** redactadas y con ejecución guardada R01–R18 (Fases 1, 2 y 3 completas), R22, R23 y R29. Pendientes de redactar: R19–R21 y R24–R28.
 
 ---
 
@@ -837,27 +837,347 @@ Los dos tenían la misma causa: se pedía al modelo copiar datos que el sistema 
 
 ## R13 — Memoria de corto y largo plazo según CoALA
 
-*Pendiente de redactar.*
+> ¿El alumno diferenció memoria de corto y largo plazo para el agente con base en la taxonomía CoALA?
+
+**Respuesta corta.** Sí. Pedro tiene las cuatro memorias de CoALA, cada una con su lugar, su alcance y sus reglas. Tras una conversación real se puede leer qué hay en cada una.
+
+### 1. El mapa de memorias
+
+CoALA distingue una memoria de trabajo (corto plazo) y tres de largo plazo. En clase (21-10-2026) se presentó como el marco estándar para ordenar las memorias de un agente.
+
+| Memoria CoALA | Plazo | Qué guarda Pedro | Alcance | Dónde |
+|---|---|---|---|---|
+| **De trabajo** | Corto | El mensaje actual, el borrador de compra y los últimos 12 mensajes | Una sesión | SQLite: `borradores`, `mensajes` |
+| **Episódica** | Largo | Qué se pidió y qué se recomendó en ocasiones pasadas | Un usuario, entre sesiones | SQLite con vector: `episodios` |
+| **Semántica** | Largo | Hechos: las preferencias del usuario y el conocimiento del dominio (catálogo y políticas) | Usuario y escenario | SQLite `preferencias`, catálogo, índice FAISS |
+| **Procedimental** | Largo | Cómo actuar: prompt, ejemplos, reglas de diálogo y verificación | Todo el sistema | Código y `prompts.py` |
+
+### 2. Ejemplos concretos, tras una conversación real
+
+Después de siete turnos con el modelo real, `mapa_memorias` devolvió:
+
+| Memoria | Contenido observado |
+|---|---|
+| De trabajo | Borrador: PEC-01-0001, 3 unidades, presupuesto 500000 centavos. 14 mensajes guardados, 12 en la ventana |
+| Episódica | 4 episodios de una sesión, cada uno con la petición y la recomendación publicada |
+| Semántica | Preferencia `proveedor = nacionales`, guardada cuando el usuario dijo «Prefiero proveedores nacionales, recuérdalo» |
+| Procedimental | Sin cambios: solo cambia con una nueva versión del proyecto |
+
+### 3. La regla que separa corto y largo plazo
+
+- **Corto plazo es lo que solo sirve para la compra en curso.** El borrador desaparece al cambiar de sesión. Así no se arrastra la cantidad de una compra a otra.
+- **Largo plazo es lo que debe sobrevivir a la sesión.** Una preferencia o un episodio aparecen en una sesión nueva del mismo usuario, y nunca en la de otro.
+- **Precios, stock y plazos no son memoria.** Se releen siempre del escenario activo. Un episodio puede decir «te recomendé CentroPeças por R$ 2.963,07», pero ese importe se trata como histórico.
+
+**Decisión técnica.** Las preferencias se clasifican como semánticas (son hechos sobre el usuario) y las recomendaciones pasadas como episódicas (son sucesos con fecha). La distinción importa al usarlas: un hecho se aplica; un suceso solo se recuerda, porque sus datos pueden haber caducado.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Mapa de memorias tras una conversación de siete turnos, con persistencia y aislamiento | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r13_mapa_de_memorias`; [scripts/demostrar_fase3.py](../scripts/demostrar_fase3.py) | **Ejecución real remota** (`gpt-4.1-mini`) con memoria real local |
+| Mapa de memorias reproducible sin credenciales | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb) §«R13» | Ejecución real local |
+| El mapa refleja lo guardado; aislamiento por usuario y sesión | [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- La memoria procedimental es estática: el agente no aprende reglas nuevas de la experiencia.
+- La memoria semántica del usuario son solo preferencias explícitas en forma de clave y valor.
 
 ## R14 — Ventana de contexto con búsqueda vectorial
 
-*Pendiente de redactar.*
+> ¿El alumno gestionó ventanas de contexto combinando sliding window o summarization con búsqueda vectorial?
+
+**Respuesta corta.** Sí. El agente recibe una **ventana deslizante** de los últimos 12 mensajes y, además, los recuerdos más parecidos a la pregunta, recuperados por **búsqueda vectorial**. Lo que sale de la ventana no se pierde: puede volver como recuerdo.
+
+### 1. Las dos piezas
+
+| Pieza | Qué hace | Detalle |
+|---|---|---|
+| Ventana deslizante | Limita lo que se envía al modelo | Últimos 12 mensajes de la sesión; el historial completo se conserva en SQLite |
+| Búsqueda vectorial | Trae lo relevante de fuera de la ventana | Episodios del usuario ordenados por similitud coseno; se usan los 3 mejores |
+
+Los episodios se convierten en vectores de 384 dimensiones con un modelo local multilingüe (`paraphrase-multilingual-MiniLM-L12-v2`).
+
+### 2. Ejecución
+
+Tras una conversación real de siete turnos:
+
+| Medida | Valor |
+|---|---|
+| Mensajes guardados en la sesión | 14 |
+| Mensajes que ve el agente (ventana) | 12 |
+| Episodios guardados del usuario | 4 |
+
+En una **sesión nueva** del mismo usuario, la pregunta «¿Qué proveedor me convenía para el compresor PEC-01-0001?» recuperó:
+
+| Similitud | Recuerdo recuperado |
+|---|---|
+| 0,355 | «Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días → CentroPeças: R$ 2.963,07…» |
+| 0,317 | «Vuelve a comparar con lo último que te pedí → CentroPeças: R$ 4.401,99…» |
+| 0,312 | «Mejor sin límite de plazo, pero con presupuesto de R$ 5.000 → CentroPeças: R$ 4.401,99…» |
+
+Para otro usuario, la misma pregunta no recuperó nada.
+
+### 3. Reglas para recuerdos obsoletos
+
+| Situación | Regla |
+|---|---|
+| El usuario cambia de opinión | La preferencia nueva **reemplaza** a la anterior (misma clave) |
+| Un episodio se corrige | Se **actualiza** el texto y se recalcula su vector |
+| El episodio trae precio o stock | Se **ignora** como dato: entra al contexto con la etiqueta «histórico» y la instrucción de no usar sus precios ni su stock |
+| El episodio es de otro catálogo | Lleva su `dataset_id`, así que queda identificado |
+| El vector se calculó con otro modelo | No se compara: solo se recuperan episodios del mismo modelo y versión |
+
+**Decisión técnica.** Se eligió ventana deslizante y no resumen por dos razones. La ventana es exacta: no puede alterar una cifra, y un resumen hecho por un modelo sí. Y es gratuita: un resumen cuesta una llamada más por turno. La contrapartida es que el detalle antiguo desaparece del contexto; lo compensa la memoria episódica, que guarda lo importante (las recomendaciones) y lo trae cuando es relevante.
+
+La evaluación de R29 mostró el otro lado de esta memoria: con 73 episodios acumulados, el agente cambió su trayectoria. Recuperar recuerdos no es neutro.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| 14 mensajes guardados y 12 en ventana; tres recuerdos recuperados en una sesión nueva; ninguno para otro usuario | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r14_r18_persistencia_y_aislamiento` | **Ejecución real remota** para la conversación; embeddings reales locales |
+| Episodio guardado, actualizado y recuperado; ventana de 12 sobre 18 mensajes | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb); [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · memoria» | Ejecución real local (FastEmbed) |
+| Ventana, aislamiento y actualización de episodios | [tests/test_memory_nli.py](../tests/test_memory_nli.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- No hay resumen del historial ni recorte por número de tokens: la ventana cuenta mensajes.
+- La recuperación usa solo similitud; no pondera la antigüedad ni la frecuencia de uso del recuerdo.
+- Las similitudes observadas son bajas (0,31 a 0,36) y no hay un umbral mínimo: siempre se devuelven los tres mejores.
 
 ## R15 — Comparación de herramientas especializadas de memoria
 
-*Pendiente de redactar.*
+> ¿El alumno comparó herramientas especializadas de memoria por arquitectura y caso de uso?
+
+**Respuesta corta.** Sí. Se comparan Mem0, Letta (MemGPT) y LangMem con la implementación propia de Pedro, por arquitectura y por caso de uso. Se mantiene la implementación propia porque el dominio exige controlar qué se guarda, y lo que hay que guardar es poco y está bien delimitado.
+
+### 1. Comparación por arquitectura
+
+| | Mem0 | Letta (MemGPT) | LangMem | Pedro (propia) |
+|---|---|---|---|---|
+| Idea central | Una capa de memoria que se añade a cualquier agente | Un agente que administra su propia memoria, como un sistema operativo | Utilidades de memoria de largo plazo para agentes de LangChain y LangGraph | Tablas SQLite con reglas explícitas |
+| Quién decide qué guardar | Un LLM extrae hechos de la conversación | El propio agente, con herramientas para editar su memoria | El agente con herramientas, o un proceso en segundo plano | El código: solo recomendaciones verificadas y preferencias citadas |
+| Dónde se guarda | Almacén vectorial, opcionalmente un grafo | Memoria central siempre en contexto y memoria de archivo fuera de él | El almacén de LangGraph | SQLite; los episodios llevan vector |
+| Cómo se recupera | Búsqueda semántica por usuario, sesión o agente | El agente pagina y busca en su archivo | Búsqueda semántica en el almacén | Ventana de 12 mensajes y similitud coseno, top 3 |
+| Actualizar y olvidar | Fusiona y deduplica hechos automáticamente | El agente reescribe sus bloques | Consolida memorias | Reemplazo por clave y actualización explícita |
+
+### 2. Comparación por caso de uso
+
+| Herramienta | Encaja mejor cuando… | En Pedro |
+|---|---|---|
+| Mem0 | Se quiere personalizar un asistente sin diseñar la memoria a mano | Guardaría hechos inferidos por un modelo, sin control sobre cuáles |
+| Letta | El agente vive mucho tiempo y debe gestionar un contexto que no cabe en la ventana | Añade un agente autónomo sobre su propia memoria: más de lo que pide el problema |
+| LangMem | El agente ya está en LangGraph y necesita memoria entre conversaciones | Requiere el almacén de LangGraph, que este proyecto no usa |
+| Propia | Lo que se guarda es poco, conocido y debe poder auditarse | Es el caso |
+
+### 3. Decisión
+
+Se mantiene la implementación propia por tres razones:
+
+1. **Qué entra en memoria debe ser comprobable.** Solo se guarda un episodio cuando la respuesta pasó la verificación, y solo una preferencia que el usuario dijo con sus palabras. Una herramienta que deja a un modelo decidir qué recordar podría guardar una inferencia errónea como si fuera un hecho.
+2. **El aislamiento por usuario, sesión y escenario es un requisito.** Con tablas propias es una condición en cada consulta y se prueba directamente.
+3. **El volumen es pequeño.** Unos pocos episodios y preferencias por usuario no justifican un servicio adicional.
+
+Lo que sí se tomó de estas herramientas es una idea de LangMem vista en clase: **el agente guarda preferencias durante la conversación con una herramienta**. Pedro la tiene (`guardar_preferencia`), con una condición añadida: la herramienta rechaza el guardado si el valor no aparece en una cita literal del mensaje del usuario.
+
+Ejecutado con el modelo real: ante «Prefiero proveedores nacionales, recuérdalo», el agente llamó a `guardar_preferencia` y respondió «Guardé tu preferencia: proveedor = nacionales». En una sesión nueva la preferencia seguía ahí; para otro usuario, no.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| El agente guarda una preferencia con una herramienta y la recupera en otra sesión | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), turno 4 de `r18_conversacion_compleja` y `r14_r18_persistencia_y_aislamiento` | **Ejecución real remota** (`gpt-4.1-mini`) |
+| Tablas comparativas y decisión | Esta sección; [comparaciones.md](comparaciones.md) | Documentación |
+| La preferencia solo se confirma si la herramienta la guardó | [tests/test_dialogue.py](../tests/test_dialogue.py) | Prueba automática |
+
+### Pendientes y limitaciones
+
+- **Mem0, Letta y LangMem no se instalaron ni se ejecutaron.** La comparación es conceptual, a partir de su arquitectura; la única memoria medida es la de Pedro.
+- La implementación propia no deduplica episodios ni extrae hechos por sí sola.
 
 ## R16 — Chatbot con ConversationBufferMemory
 
-*Pendiente de redactar.*
+> ¿El alumno construyó un chatbot conversacional con ConversationBufferMemory?
+
+**Respuesta corta.** Sí. Hay un chatbot construido con `ConversationChain` y `ConversationBufferMemory`. En una conversación real de cuatro turnos recordó el nombre de la usuaria y todos los datos que fue dando.
+
+### 1. El chatbot
+
+`crear_chatbot_buffer`, en [legacy.py](../src/pedro/legacy.py):
+
+| Parte | Detalle |
+|---|---|
+| Cadena | `ConversationChain` |
+| Memoria | `ConversationBufferMemory`, con los prefijos «Usuario» y «Pedro» |
+| Prompt | Una plantilla con dos variables: `{history}` (toda la conversación) y `{input}` (el mensaje nuevo) |
+
+La memoria de buffer guarda la conversación completa y la inserta entera en cada prompt. Es la memoria más simple que existe.
+
+### 2. Conversación real
+
+| Turno | Usuario | Pedro | Memoria |
+|---|---|---|---|
+| 1 | Hola, soy Ana. Necesito un termostato para mi nevera. | Hola Ana, ¿podrías indicarme la cantidad, tu presupuesto aproximado y el plazo?… | 260 caracteres |
+| 2 | Que sean 2 unidades. | Perfecto, Ana, entonces necesito saber tu presupuesto y el plazo para las 2 unidades del termostato… | 436 |
+| 3 | Tengo hasta R$ 900 y lo necesito en 5 días. | Gracias, Ana. Consultaré el catálogo para las 2 unidades del termostato dentro de tu presupuesto de R$ 900 y plazo de 5 días… | 679 |
+| 4 | Resume mi solicitud completa y dime cómo me llamo. | Claro, Ana. Solicitas 2 unidades de termostato para nevera, con un presupuesto de R$ 900 y un plazo de entrega de 5 días… | 935 |
+
+El turno 4 solo se puede responder con memoria: el nombre se dijo en el turno 1, la cantidad en el 2 y el presupuesto y el plazo en el 3.
+
+### 3. Lo que muestra la última columna
+
+La memoria crece en cada turno: de 260 a 935 caracteres en cuatro turnos. Con el buffer, **cada mensaje nuevo hace más largo y más caro el siguiente prompt**, sin límite. Por eso el agente final no usa esta memoria: usa una ventana de 12 mensajes más recuperación de recuerdos (R14).
+
+**Decisión técnica.** Este chatbot está aislado en `legacy.py` como demostración. Es útil para ver la memoria conversacional en su forma más simple, pero no sirve para el producto por dos motivos: no tiene límite de tamaño, y no tiene herramientas, así que no puede consultar el catálogo. Su prompt le prohíbe inventar precios y por eso responde «consultaré el catálogo».
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Conversación de cuatro turnos con el tamaño de la memoria en cada uno y el buffer final | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r16_chatbot_conversation_buffer_memory` | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
+| El mismo chatbot sin credenciales | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb) §«R16» | Ejecución con **doble** (`FakeListLLM`) |
+| `ConversationBufferMemory` también en el agente ReAct, con dos turnos reales | [trazas/r08_react_llm.json](trazas/r08_react_llm.json) | Ejecución real remota |
+| El historial completo llega al prompt de cada turno | [tests/test_legacy.py](../tests/test_legacy.py) | Prueba automática con doble |
+
+### Pendientes y limitaciones
+
+- La memoria de buffer vive en el proceso: se pierde al reiniciar. La persistencia se demuestra con el agente final (R18).
+- `ConversationChain` y `ConversationBufferMemory` están marcadas como obsoletas por LangChain.
 
 ## R17 — Reconocimiento de intención y extracción de entidades
 
-*Pendiente de redactar.*
+> ¿El alumno estructuró flujos de conversación con reconocimiento de intención y extracción de entidades?
+
+**Respuesta corta.** Sí, de dos formas: con un modelo (cadena few-shot) y con reglas (las que usa el chat). El flujo reconoce seis intenciones, extrae cinco entidades y, cuando falta un dato que bloquea, lo pregunta en vez de inventarlo.
+
+### 1. Intenciones y entidades
+
+| Intención | Ejemplo | Qué hace el flujo |
+|---|---|---|
+| `comparar` | Compara 2 unidades de PEC-01-0001… | Extrae la solicitud y compara ofertas |
+| `consultar` | Necesito un termostato para nevera | Busca candidatos; si hay varios, pregunta cuál |
+| `politica` | ¿Qué dice la política de devoluciones? | Consulta el índice de políticas |
+| `cep` | ¿A qué ciudad corresponde el CEP 01001000? | Llama a ViaCEP |
+| `preferencia` | Prefiero proveedores nacionales, recuérdalo | Guarda la preferencia |
+| `otro` | Hola, ¿qué puedes hacer? | Pide concretar |
+
+Entidades: **pieza** (ID o nombre), **cantidad**, **presupuesto** (en centavos), **plazo** (en días) y **destino** (CEP).
+
+### 2. Mensajes reales
+
+Siete mensajes interpretados por el modelo real con la cadena few-shot:
+
+| Mensaje | Intención | Entidades | Falta |
+|---|---|---|---|
+| Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días | comparar | PEC-01-0001; 2; 500000 centavos; 7 días | — |
+| Necesito un termostato para nevera | consultar | «termostato para nevera» | cantidad |
+| ¿A qué ciudad corresponde el CEP 01001000? | cep | CEP 01001000 | — |
+| ¿Qué dice la política de devoluciones? | politica | — | — |
+| Prefiero proveedores nacionales, recuérdalo | preferencia | — | — |
+| Quiero media docena de PEC-02-0001 sin límite de gasto | comparar | PEC-02-0001; 6 | — |
+| Hola, ¿qué puedes hacer? | otro | — | — |
+
+### 3. Pedir lo que falta en lugar de inventarlo
+
+Dos aclaraciones reales del chat:
+
+- «Necesito un termostato para nevera» → *«Encontré varias piezas. ¿Cuál necesitas? PEC-01-0002 (NEVE-TERM-0002), PEC-01-0012…»*
+- «Compara PEC-01-0001» → *«¿Cuántas unidades de PEC-01-0001 necesitas? Puedo comparar sin presupuesto o plazo máximo si no tienes esos límites.»*
+
+Solo se pregunta por lo que bloquea: la pieza y la cantidad. Presupuesto y plazo son opcionales; si no se dan, quedan vacíos, nunca en cero.
+
+### 4. Modelo o reglas
+
+| | Cadena con modelo (few-shot) | Reglas del chat |
+|---|---|---|
+| Aciertos en diez solicitudes difíciles (R11) | 10 de 10 | No se midió en ese conjunto |
+| Entiende expresiones nuevas | Sí | Solo las previstas |
+| Coste por turno | Una llamada al modelo | Ninguno |
+| Funciona sin credenciales | No | Sí |
+| Reproducible | Casi | Sí |
+
+**Decisión técnica.** El chat usa reglas para extraer la solicitud de compra porque debe funcionar sin clave de OpenAI y dar siempre el mismo resultado. Todo lo que las reglas no reconocen como compra pasa al agente, que lo interpreta con el modelo.
+
+Esa decisión tiene un coste, y una conversación real lo mostró. Las reglas fallaron en tres mensajes: no entendieron «que sean 3», tomaron una pregunta sobre «instalar una pieza» por una compra de una unidad, y una declaración de preferencia acabó en una comparación. Se corrigieron los tres casos y se añadieron pruebas, pero la lección queda: **las reglas solo cubren lo que alguien previó**.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Siete mensajes con intención, entidades, faltantes y lo que hacen las reglas del chat | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r17_intencion_y_entidades` | **Ejecución real remota** (`gpt-4.1-mini`) para el modelo; reglas locales |
+| La conversación en la que fallaron las reglas, antes de la corrección | [trazas/fase3_memoria_llm_antes.json](trazas/fase3_memoria_llm_antes.json) | Ejecución real remota |
+| Reglas: cantidad dicha de pasada, preguntas que no son compra, aclaraciones | [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- Las reglas reconocen la compra; las demás intenciones las decide el agente al elegir herramienta, no un clasificador aparte.
+- El destino se extrae como CEP; no se interpreta una dirección escrita.
+- Las reglas siguen siendo frágiles ante formas de hablar no previstas.
 
 ## R18 — Contexto y descomposición en una conversación real multi-turno
 
-*Pendiente de redactar.*
+> ¿El alumno validó, con evidencia de una conversación real, que el agente mantiene contexto y descompone consultas complejas en diálogos multi-turno?
+
+**Respuesta corta.** Sí. En una conversación real de siete turnos el agente cambió la cantidad conservando el plazo, quitó el plazo y añadió presupuesto, guardó una preferencia, respondió un CEP y una política sin perder la compra en curso, y al final volvió a comparar con el estado correcto.
+
+### 1. La conversación
+
+Agente final, `gpt-4.1-mini`, ViaCEP real, índice de políticas cargado de disco. La columna «Estado» es el borrador de compra después de cada turno.
+
+| # | Usuario | Herramientas | Estado (pieza PEC-01-0001) | Respuesta |
+|---|---|---|---|---|
+| 1 | Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días | `consultar_catalogo`, `comparar_ofertas` | 2 uds · plazo 7 | CentroPeças: R$ 2.963,07 |
+| 2 | Ahora que sean 3 y mantén el plazo | `comparar_ofertas` | **3 uds** · plazo 7 | CentroPeças: R$ 4.401,99 |
+| 3 | Mejor sin límite de plazo, pero con presupuesto de R$ 5.000 | `comparar_ofertas` | 3 uds · **sin plazo** · **R$ 5.000** | CentroPeças: R$ 4.401,99 |
+| 4 | Prefiero proveedores nacionales, recuérdalo | `guardar_preferencia` | sin cambios | Guardé tu preferencia: proveedor = nacionales |
+| 5 | ¿A qué ciudad corresponde el CEP 01001000? | `consultar_cep` | sin cambios | CEP 01001000: São Paulo/SP |
+| 6 | ¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza? | `consultar_politicas` | sin cambios | Resumen de la política, con su fuente |
+| 7 | Vuelve a comparar con lo último que te pedí | `consultar_catalogo`, `comparar_ofertas` | 3 uds · R$ 5.000 | CentroPeças: R$ 4.401,99 |
+
+### 2. Qué demuestra
+
+- **Mantiene el contexto.** En el turno 2 el usuario no repite la pieza ni el plazo. En el turno 7 no repite nada, y el agente compara con 3 unidades y R$ 5.000, después de tres turnos sobre otros temas.
+- **Actualiza solo lo que cambia.** El turno 3 quita un límite y añade otro; la cantidad se conserva.
+- **No mezcla los temas.** Los turnos 4, 5 y 6 no tocan el borrador de compra.
+- **Descompone la consulta compleja.** Comprar, fijar una preferencia, confirmar el destino y consultar una política se resuelven turno a turno, cada uno con sus herramientas.
+- **Se corrige sola.** En el turno 3 la primera propuesta del modelo tenía mal el ganador o el total; la verificación la rechazó y la segunda fue correcta.
+
+### 3. Aislamiento y persistencia
+
+| Comprobación | Resultado |
+|---|---|
+| Se crea un flujo nuevo sobre la misma base, como tras reiniciar | 14 mensajes recuperados; el agente ve los últimos 12 |
+| Sesión nueva del mismo usuario | Sin borrador; conserva la preferencia; recupera tres episodios |
+| Otro usuario | Sin borrador, sin preferencias, sin episodios |
+
+### 4. La primera ejecución falló, y eso también es evidencia
+
+La primera vez que se ejecutó esta conversación, tres turnos salieron mal:
+
+| Turno | Qué pasó | Causa | Corrección |
+|---|---|---|---|
+| 2 | No se publicó respuesta | La regla de cantidad no entendía «que sean 3»; el borrador siguió en 2 y la propuesta del modelo (3) no coincidía | Nuevos patrones de cantidad |
+| 4 | Comparó ofertas en vez de guardar la preferencia | No existía una respuesta de tipo «preferencia» | Nuevo estado `preferencia`, confirmado con lo que guardó la herramienta |
+| 6 | No se publicó, y el borrador pasó a 1 unidad | «Instalar **una pieza**» se leyó como una compra de 1 unidad | Las preguntas sobre garantía, compatibilidad o instalación ya no se tratan como compra |
+
+Las dos trazas se conservan. Las pruebas automáticas ya pasaban antes: el fallo solo apareció con una conversación real y variada.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Conversación de siete turnos con herramientas, verificaciones, estado y respuesta de cada turno | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r18_conversacion_compleja` | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
+| La misma conversación antes de las correcciones | [trazas/fase3_memoria_llm_antes.json](trazas/fase3_memoria_llm_antes.json) | Ejecución real remota |
+| Persistencia tras reinicio y aislamiento | Mismo archivo, `r14_r18_persistencia_y_aislamiento` | Ejecución real local |
+| Los tres casos corregidos | [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- Es una conversación, con una pieza y en un solo idioma.
+- **Una solicitud que mezcla varias intenciones en un mismo mensaje no se publica**: la respuesta admite un solo tipo. La descomposición ocurre entre turnos, no dentro de uno.
+- En el turno 7 el agente interpretó «lo último que te pedí» gracias al borrador; sin borrador habría pedido la pieza.
 
 ---
 

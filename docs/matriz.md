@@ -32,12 +32,12 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Rúbrica | Pregunta resumida | ID previo | Ubicación | Evidencia o condición | Estado |
 |---|---|---|---|---|---|
-| R13 | Memoria corto/largo plazo con taxonomía CoALA | R3.6 | NB03; docs/comparaciones.md §Memoria | Mapa de capas (trabajo, episódica, preferencias, procedimental) con ejemplos del dominio | Local |
-| R14 | Ventana de contexto + búsqueda vectorial | R3.2, R3.4 | src/pedro/memory.py; NB03 | Ventana de 12 probada con pytest; episodios FastEmbed 384d guardados, actualizados y recuperados entre sesiones (0.674 vs. 0.113) | Real local |
-| R15 | Comparación de herramientas especializadas de memoria | R3.6 | docs/comparaciones.md; NB03 | Mem0 y Letta/MemGPT comparados por arquitectura y caso de uso frente a la implementación propia; sin ejecutarlas (declarado) | Local |
-| R16 | Chatbot con ConversationBufferMemory | R2.2 | src/pedro/legacy.py; NB02; NB03 | Conversación de varios turnos con ConversationBufferMemory y doble | Demostrado con doble |
-| R17 | Intención y extracción de entidades | R3.5 | src/pedro/dialogue.py; tests/test_dialogue.py | Extracción de pieza, cantidad, presupuesto y plazo por turno; pregunta solo datos bloqueantes | Local |
-| R18 | Contexto y descomposición validados en conversación real | R3.1, R3.5, R5.5 | app.py; src/pedro/memory.py; evidencias.md | Agent API: «Compara PEC-01-0001» → «2» → «ahora 3 unidades» recalculó conservando límites, con borrador aislado por sesión; **conversación equivalente con LLM remoto pendiente** | Parcial |
+| R13 | Memoria corto/largo plazo con taxonomía CoALA | R3.6 | docs/respuestas_rubricas.md §R13; src/pedro/memory.py (mapa_memorias); NB03; docs/trazas/fase3_memoria_llm.json | Mapa de las cuatro memorias CoALA con alcance y reglas; contenido observado tras una conversación real de siete turnos (borrador, 4 episodios, preferencia guardada) | Real remoto puntual y local |
+| R14 | Ventana de contexto + búsqueda vectorial | R3.2, R3.4 | docs/respuestas_rubricas.md §R14; src/pedro/memory.py; NB03; docs/trazas/fase3_memoria_llm.json | Ventana deslizante de 12 (14 guardados) combinada con recuperación vectorial: tres episodios recuperados en una sesión nueva (similitud 0,31–0,36) y ninguno para otro usuario; reglas de reemplazo, actualización e ignorado de recuerdos | Real remoto puntual y local |
+| R15 | Comparación de herramientas especializadas de memoria | R3.6 | docs/respuestas_rubricas.md §R15; docs/comparaciones.md; docs/trazas/fase3_memoria_llm.json | Mem0, Letta/MemGPT y LangMem comparados con la implementación propia por arquitectura y caso de uso; decisión argumentada; guardado de preferencias por herramienta ejecutado con el modelo real; las tres herramientas no se ejecutaron (declarado) | Local y remoto puntual |
+| R16 | Chatbot con ConversationBufferMemory | R2.2 | docs/respuestas_rubricas.md §R16; src/pedro/legacy.py (crear_chatbot_buffer); NB03; tests/test_legacy.py; docs/trazas/fase3_memoria_llm.json | ConversationChain con ConversationBufferMemory en una conversación real de cuatro turnos: recuerda nombre, cantidad, presupuesto y plazo; la memoria crece de 260 a 935 caracteres | Real remoto puntual y doble |
+| R17 | Intención y extracción de entidades | R3.5 | docs/respuestas_rubricas.md §R17; src/pedro/dialogue.py; src/pedro/chains.py; tests/test_dialogue.py; docs/trazas/fase3_memoria_llm.json | Seis intenciones y cinco entidades; siete mensajes interpretados por gpt-4.1-mini con la cadena few-shot; aclaraciones reales por pieza ambigua y cantidad ausente; reglas del chat corregidas tras fallar en una conversación real | Real remoto puntual y local |
+| R18 | Contexto y descomposición validados en conversación real | R3.1, R3.5, R5.5 | docs/respuestas_rubricas.md §R18; scripts/demostrar_fase3.py; docs/trazas/fase3_memoria_llm.json; docs/trazas/fase3_memoria_llm_antes.json | Conversación real de siete turnos con el agente final: cambia cantidad conservando plazo, cambia límites, guarda preferencia, responde CEP y política sin perder el borrador y vuelve a comparar; persistencia tras reinicio y aislamiento; tres fallos de la primera ejecución diagnosticados y corregidos | Real remoto puntual |
 
 ## Fase 4 — SQL, APIs y RAG existente (R19–R23)
 
@@ -75,7 +75,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Entregable | Estado |
 |---|---|
-| Código y notebooks reproducibles con dobles identificados | Local: 66/66 pruebas, 5/5 notebooks reejecutados |
+| Código y notebooks reproducibles con dobles identificados | Local: 79/79 pruebas, 5/5 notebooks reejecutados |
 | Informe técnico en PDF | Local: docs/informe.md y docs/informe.pdf; actualizar tras cerrar pendientes |
 | Registro de evaluación en LangSmith | Real: cinco experimentos sobre el conjunto pedro-infnet-casos-derivados-7610315f (ver R29) |
 | Video de demostración + enlace Drive institucional | Pendiente: requiere grabación y acceso del alumno |
@@ -83,6 +83,5 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 ## Pendientes que bloquean el cierre
 
 1. **R01**: sustituir la escala genérica de madurez por la de la clase 1 cuando esté disponible.
-2. **R05, R18, R26**: documentar ejecuciones reales con OPENAI_API_KEY (extracción, conversación multi-turno y sesión del agente final).
 4. **R22–R23**: confirmar con el profesor si la actividad entrega un índice FAISS; hoy se usa uno propio guardado en knowledge/politicas/.
 6. Cotejo final contra el enunciado original en portugués cuando esté disponible, y actualización del diagrama rubricas_proyecto.mmd/svg a los IDs oficiales.

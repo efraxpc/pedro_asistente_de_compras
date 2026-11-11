@@ -23,6 +23,10 @@ Ejemplo D — «¿Se puede mandar en varias cajas?».
 Plan observable: tratar como pregunta de entrega; llamar consultar_politicas con la pregunta
 original. La herramienta puede reformular «varias cajas» como «envío parcial» y devuelve
 fragmentos antes/después. Citar la regla recuperada; no pedir ID de pieza ni cantidad.
+
+Ejemplo E — «Prefiero proveedores nacionales, recuérdalo».
+Plan observable: llamar guardar_preferencia con clave=proveedor, valor=nacionales y la cita
+literal del usuario. Salida: preferencia. No comparar ofertas ni pedir datos en ese turno.
 """
 
 # Interpreta una solicitud de compra. Variables: texto (solicitud) y formato (parser).
@@ -107,6 +111,8 @@ PLANTILLA_AGENTE = ChatPromptTemplate.from_messages([
      "en mensaje resume la regla en una o dos frases usando solo lo que dice el fragmento, y en cada "
      "evidencia copia la frase del fragmento que la respalda; "
      "si el metadato origen es ficticio_demo, indica que la política es ficticia. "
+     "Si el usuario declara una preferencia y pide recordarla, llama guardar_preferencia con su cita "
+     "literal y usa estado=preferencia; no compares ofertas en ese turno. "
      "para CEP usa estado=cep con cidade, uf, modo_cep y evidencia ViaCEP. "
      "Si dos piezas coinciden, pide el ID. Ejemplos de acciones observables: "
      "{ejemplos} {formato}"),

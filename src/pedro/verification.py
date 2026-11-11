@@ -17,6 +17,10 @@ def verificar(respuesta: RespuestaCompra, escenario: Escenario, *, indice=None,
         return [] if respuesta.solicitud.faltantes() or ambiguo else ["aclaración injustificada"]
     if respuesta.estado == "sin_evidencia":
         return []
+    if respuesta.estado == "preferencia":
+        guardada = any(nombre == "guardar_preferencia" and dato.get("estado") == "ok"
+                       for nombre, dato in (observaciones or []))
+        return [] if guardada else ["preferencia no guardada"]
     if respuesta.estado == "cep":
         cep = respuesta.solicitud.cep
         if not cep or not respuesta.cidade or not respuesta.uf or not respuesta.modo_cep:
@@ -167,6 +171,19 @@ def anclar_cep(respuesta: RespuestaCompra, observaciones: list[tuple[str, dict]]
     # Una respuesta de CEP no usa datos del catálogo: el escenario lo fija el sistema.
     respuesta.dataset_id = dataset_id
     return {"estado": "anclada", "cep": dato["cep"]}
+
+
+def anclar_preferencia(respuesta: RespuestaCompra,
+                       observaciones: list[tuple[str, dict]] | None) -> dict | None:
+    """Redacta la confirmación de una preferencia con lo que la herramienta guardó de verdad."""
+    if respuesta.estado != "preferencia":
+        return None
+    guardada = next((dato for nombre, dato in (observaciones or [])
+                     if nombre == "guardar_preferencia" and dato.get("estado") == "ok"), None)
+    if guardada is None:
+        return {"estado": "sin_guardado"}
+    respuesta.mensaje = f"Guardé tu preferencia: {guardada['clave']} = {guardada['valor']}."
+    return {"estado": "anclada", "clave": guardada["clave"], "valor": guardada["valor"]}
 
 
 def respuesta_local(escenario: Escenario, solicitud) -> RespuestaCompra:

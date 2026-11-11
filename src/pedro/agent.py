@@ -26,7 +26,8 @@ from .policy_demo import (FRAGMENTO_T24_ESPERADO, ORIGEN as ORIGEN_DEMO,
 from .prompts import EJEMPLOS_ACCIONES, PLANTILLA_AGENTE
 from .query import ejecutar, planear
 from .rag import consultar, diagnosticar_reescritura
-from .verification import anclar_cep, anclar_citas, respuesta_local, verificar
+from .verification import (anclar_cep, anclar_citas, anclar_preferencia, respuesta_local,
+                           verificar)
 
 
 class Traza(BaseCallbackHandler):
@@ -174,6 +175,8 @@ def renderizar(respuesta: RespuestaCompra, *, indice=None) -> str:
         return "¿Cuál es el ID exacto de la pieza?"
     if respuesta.estado == "sin_evidencia":
         return "No puedo confirmar la respuesta con las fuentes disponibles."
+    if respuesta.estado == "preferencia":
+        return respuesta.mensaje + " La tendré en cuenta, pero tu petición de cada momento manda."
     if respuesta.estado == "cep":
         return (f"CEP {respuesta.solicitud.cep}: {respuesta.cidade}/{respuesta.uf} "
                 f"(ViaCEP, modo {respuesta.modo_cep}).")
@@ -434,6 +437,9 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                     traza.registrar_citas(citas)
                     if cep:
                         traza.eventos.append({"evento": "cep_anclado", **cep})
+                preferencia = anclar_preferencia(propuesta, observaciones)
+                if traza and preferencia:
+                    traza.eventos.append({"evento": "preferencia_anclada", **preferencia})
                 errores = verificar(propuesta, escenario, indice=indice,
                                     observaciones=observaciones)
                 if solicitud_actual is not None and propuesta.estado not in (

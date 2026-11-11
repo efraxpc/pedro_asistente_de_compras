@@ -204,3 +204,29 @@ def recuperar(ruta: Path, user_id: str, pregunta: str, embedder: Embedder, k: in
             candidatos.append({"id": eid, "dataset_id": dataset_id, "texto": texto,
                                "similitud": producto / norma})
     return sorted(candidatos, key=lambda x: (-x["similitud"], x["id"]))[:k]
+
+
+def mapa_memorias(ruta: Path, user_id: str, session_id: str) -> dict:
+    """Qué hay guardado en cada tipo de memoria (taxonomía CoALA) para un usuario y una sesión."""
+    preparar(ruta)
+    historial = Historial(ruta, user_id, session_id)
+    borrador = leer_borrador(ruta, user_id, session_id)
+    with sqlite3.connect(ruta) as db:
+        episodios = db.execute("SELECT COUNT(*), COUNT(DISTINCT session_id) FROM episodios "
+                               "WHERE user_id=?", (user_id,)).fetchone()
+    return {
+        "trabajo (corto plazo, por sesión)": {
+            "borrador_de_compra": {k: v for k, v in (borrador or {}).get("solicitud", {}).items()
+                                   if v is not None},
+            "mensajes_en_la_ventana": len(historial.messages),
+            "mensajes_guardados": len(historial.todos())},
+        "episódica (largo plazo, por usuario)": {
+            "episodios": episodios[0], "sesiones_de_origen": episodios[1],
+            "recuperación": "similitud coseno, top 3, modelo " + MODELO_RECUERDOS},
+        "semántica (largo plazo)": {
+            "preferencias_del_usuario": preferencias(ruta, user_id),
+            "conocimiento_del_dominio": "catálogo SQLite del escenario y políticas en FAISS"},
+        "procedimental (largo plazo)": {
+            "donde": "prompt PTCF, ejemplos few-shot, reglas de diálogo y código de verificación",
+            "cambia": "solo con una nueva versión del proyecto"},
+    }

@@ -1,0 +1,307 @@
+{
+  "fase": 3,
+  "rubricas": [
+    "R13",
+    "R14",
+    "R15",
+    "R16",
+    "R17",
+    "R18"
+  ],
+  "modo": "real remoto (OpenAI y ViaCEP); NLI y embeddings reales locales; datos sintéticos",
+  "fecha_utc": "2026-11-11T00:47:49+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "r16_chatbot_conversation_buffer_memory": {
+    "turnos": [
+      {
+        "usuario": "Hola, soy Ana. Necesito un termostato para mi nevera.",
+        "pedro": "Hola Ana, ¿podrías indicarme la cantidad que necesitas, tu presupuesto aproximado y el plazo en que requieres el termostato? Consultaré el catálogo para confirmarte disponibilidad y precios.",
+        "caracteres_en_memoria": 260
+      },
+      {
+        "usuario": "Que sean 2 unidades.",
+        "pedro": "Perfecto, Ana, entonces necesito saber tu presupuesto aproximado y el plazo en que requieres las 2 unidades del termostato para la nevera.",
+        "caracteres_en_memoria": 436
+      },
+      {
+        "usuario": "Tengo hasta R$ 900 y lo necesito en 5 días.",
+        "pedro": "Gracias, Ana. Consultaré el catálogo para confirmar disponibilidad y precios de las 2 unidades del termostato dentro de tu presupuesto de R$ 900 y plazo de 5 días. Te aviso en breve.",
+        "caracteres_en_memoria": 679
+      },
+      {
+        "usuario": "Resume mi solicitud completa y dime cómo me llamo.",
+        "pedro": "Claro, Ana. Tu solicitud es de 2 unidades de termostato para nevera, con un presupuesto de hasta R$ 900 y un plazo de entrega de 5 días. ¿Quieres que te confirme la disponibilidad y precios en el catálogo?",
+        "caracteres_en_memoria": 952
+      }
+    ],
+    "memoria_final": "Usuario: Hola, soy Ana. Necesito un termostato para mi nevera.\nPedro: Hola Ana, ¿podrías indicarme la cantidad que necesitas, tu presupuesto aproximado y el plazo en que requieres el termostato? Consultaré el catálogo para confirmarte disponibilidad y precios.\nUsuario: Que sean 2 unidades.\nPedro: Perfecto, Ana, entonces necesito saber tu presupuesto aproximado y el plazo en que requieres las 2 unidades del termostato para la nevera.\nUsuario: Tengo hasta R$ 900 y lo necesito en 5 días.\nPedro: Gracias, Ana. Consultaré el catálogo para confirmar disponibilidad y precios de las 2 unidades del termostato dentro de tu presupuesto de R$ 900 y plazo de 5 días. Te aviso en breve.\nUsuario: Resume mi solicitud completa y dime cómo me llamo.\nPedro: Claro, Ana. Tu solicitud es de 2 unidades de termostato para nevera, con un presupuesto de hasta R$ 900 y un plazo de entrega de 5 días. ¿Quieres que te confirme la disponibilidad y precios en el catálogo?"
+  },
+  "r17_intencion_y_entidades": [
+    {
+      "mensaje": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
+      "intencion_llm": "comparar",
+      "entidades_llm": {
+        "producto_id": "PEC-01-0001",
+        "cantidad": 2,
+        "presupuesto_centavos": 500000,
+        "plazo_max_dias": 7
+      },
+      "faltantes": [],
+      "reglas_del_chat": {
+        "entidades": {
+          "producto_id": "PEC-01-0001",
+          "cantidad": 2,
+          "presupuesto_centavos": 500000,
+          "plazo_max_dias": 7
+        },
+        "aclaracion": null
+      }
+    },
+    {
+      "mensaje": "Necesito un termostato para nevera",
+      "intencion_llm": "consultar",
+      "entidades_llm": {
+        "producto": "termostato para nevera"
+      },
+      "faltantes": [
+        "cantidad"
+      ],
+      "reglas_del_chat": {
+        "entidades": {},
+        "aclaracion": "Encontré varias piezas. ¿Cuál necesitas? PEC-01-0002 (NEVE-TERM-0002), PEC-01-0012 (NEVE-TERM-0012), PEC-01-0022 (NEVE-TERM-0022), PEC-01-0032 (NEVE-TERM-0032)."
+      }
+    },
+    {
+      "mensaje": "¿A qué ciudad corresponde el CEP 01001000?",
+      "intencion_llm": "cep",
+      "entidades_llm": {
+        "cep": "01001000"
+      },
+      "faltantes": [
+        "producto",
+        "cantidad"
+      ],
+      "reglas_del_chat": null
+    },
+    {
+      "mensaje": "¿Qué dice la política de devoluciones?",
+      "intencion_llm": "politica",
+      "entidades_llm": {},
+      "faltantes": [
+        "producto",
+        "cantidad"
+      ],
+      "reglas_del_chat": null
+    },
+    {
+      "mensaje": "Prefiero proveedores nacionales, recuérdalo",
+      "intencion_llm": "preferencia",
+      "entidades_llm": {},
+      "faltantes": [
+        "producto",
+        "cantidad"
+      ],
+      "reglas_del_chat": null
+    },
+    {
+      "mensaje": "Quiero media docena de PEC-02-0001 sin límite de gasto",
+      "intencion_llm": "comparar",
+      "entidades_llm": {
+        "producto_id": "PEC-02-0001",
+        "cantidad": 6
+      },
+      "faltantes": [],
+      "reglas_del_chat": {
+        "entidades": {
+          "producto_id": "PEC-02-0001"
+        },
+        "aclaracion": "¿Cuántas unidades de PEC-02-0001 necesitas? Puedo comparar sin presupuesto o plazo máximo si no tienes esos límites."
+      }
+    },
+    {
+      "mensaje": "Hola, ¿qué puedes hacer?",
+      "intencion_llm": "otro",
+      "entidades_llm": {},
+      "faltantes": [
+        "producto",
+        "cantidad"
+      ],
+      "reglas_del_chat": null
+    }
+  ],
+  "r18_conversacion_compleja": [
+    {
+      "usuario": "Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días",
+      "herramientas": [
+        "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 2, 'plazo_max_dias': 7}"
+      ],
+      "verificaciones": [
+        []
+      ],
+      "borrador_tras_el_turno": {
+        "producto_id": "PEC-01-0001",
+        "cantidad": 2,
+        "plazo_max_dias": 7
+      },
+      "respuesta_publicada": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07; cumple [PEC-01-0001-BR-06]\n- Litoral Parts: R$ 819,80; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts: R$ 3.200,27; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06"
+    },
+    {
+      "usuario": "Ahora que sean 3 y mantén el plazo",
+      "herramientas": [
+        "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 3, 'plazo_max_dias': 7}",
+        "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 3, 'plazo_max_dias': 7}"
+      ],
+      "verificaciones": [
+        [
+          "solicitud distinta de la petición vigente"
+        ],
+        [
+          "ganador o total incorrecto",
+          "solicitud distinta de la petición vigente"
+        ]
+      ],
+      "borrador_tras_el_turno": {
+        "producto_id": "PEC-01-0001",
+        "cantidad": 2,
+        "plazo_max_dias": 7
+      },
+      "respuesta_publicada": "No puedo confirmar una recomendación con las evidencias disponibles."
+    },
+    {
+      "usuario": "Mejor sin límite de plazo, pero con presupuesto de R$ 5.000",
+      "herramientas": [
+        "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 2, 'presupuesto_centavos': 500000}"
+      ],
+      "verificaciones": [
+        []
+      ],
+      "borrador_tras_el_turno": {
+        "producto_id": "PEC-01-0001",
+        "cantidad": 2,
+        "presupuesto_centavos": 500000
+      },
+      "respuesta_publicada": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07; cumple [PEC-01-0001-BR-06]\n- Atlantic Repair Parts: R$ 3.200,27; cumple [PEC-01-0001-INT-06]\n- Litoral Parts: R$ 819,80; descartada por stock [PEC-01-0001-BR-05]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
+    },
+    {
+      "usuario": "Prefiero proveedores nacionales, recuérdalo",
+      "herramientas": [
+        "consultar_catalogo {'pregunta': 'ofertas PEC-01-0001'}",
+        "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 3, 'presupuesto_centavos': 500000}"
+      ],
+      "verificaciones": [
+        []
+      ],
+      "borrador_tras_el_turno": {
+        "producto_id": "PEC-01-0001",
+        "cantidad": 2,
+        "presupuesto_centavos": 500000
+      },
+      "respuesta_publicada": "CentroPeças: R$ 4.401,99 para 3 unidades; plazo 2 días.\n- CentroPeças: R$ 4.401,99; cumple [PEC-01-0001-BR-06]\n- Atlantic Repair Parts: R$ 4.581,82; cumple [PEC-01-0001-INT-06]\n- Litoral Parts: R$ 1.190,00; descartada por stock [PEC-01-0001-BR-05]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
+    },
+    {
+      "usuario": "¿A qué ciudad corresponde el CEP 01001000?",
+      "herramientas": [
+        "consultar_cep {'cep': '01001000'}"
+      ],
+      "verificaciones": [
+        []
+      ],
+      "borrador_tras_el_turno": {
+        "producto_id": "PEC-01-0001",
+        "cantidad": 2,
+        "presupuesto_centavos": 500000
+      },
+      "respuesta_publicada": "CEP 01001000: São Paulo/SP (ViaCEP, modo real)."
+    },
+    {
+      "usuario": "¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?",
+      "herramientas": [
+        "consultar_politicas {'pregunta': '¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?'}",
+        "consultar_politicas {'pregunta': '¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?'}"
+      ],
+      "verificaciones": [
+        [
+          "respuesta ajena a la comparación solicitada"
+        ],
+        [
+          "respuesta ajena a la comparación solicitada"
+        ]
+      ],
+      "borrador_tras_el_turno": {
+        "producto_id": "PEC-01-0001",
+        "cantidad": 1,
+        "presupuesto_centavos": 500000
+      },
+      "respuesta_publicada": "No puedo confirmar una recomendación con las evidencias disponibles."
+    },
+    {
+      "usuario": "Vuelve a comparar con lo último que te pedí",
+      "herramientas": [
+        "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 1, 'presupuesto_centavos': 500000}"
+      ],
+      "verificaciones": [
+        []
+      ],
+      "borrador_tras_el_turno": {
+        "producto_id": "PEC-01-0001",
+        "cantidad": 1,
+        "presupuesto_centavos": 500000
+      },
+      "respuesta_publicada": "CentroPeças: R$ 1.524,15 para 1 unidades; plazo 2 días.\n- CentroPeças: R$ 1.524,15; cumple [PEC-01-0001-BR-06]\n- Atlantic Repair Parts: R$ 1.818,72; cumple [PEC-01-0001-INT-06]\n- Litoral Parts: R$ 449,60; descartada por stock [PEC-01-0001-BR-05]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
+    }
+  ],
+  "r13_mapa_de_memorias": {
+    "trabajo (corto plazo, por sesión)": {
+      "borrador_de_compra": {
+        "producto_id": "PEC-01-0001",
+        "cantidad": 1,
+        "presupuesto_centavos": 500000
+      },
+      "mensajes_en_la_ventana": 12,
+      "mensajes_guardados": 14
+    },
+    "episódica (largo plazo, por usuario)": {
+      "episodios": 4,
+      "sesiones_de_origen": 1,
+      "recuperación": "similitud coseno, top 3, modelo sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    },
+    "semántica (largo plazo)": {
+      "preferencias_del_usuario": {},
+      "conocimiento_del_dominio": "catálogo SQLite del escenario y políticas en FAISS"
+    },
+    "procedimental (largo plazo)": {
+      "donde": "prompt PTCF, ejemplos few-shot, reglas de diálogo y código de verificación",
+      "cambia": "solo con una nueva versión del proyecto"
+    }
+  },
+  "r14_r18_persistencia_y_aislamiento": {
+    "tras_reiniciar_el_flujo": {
+      "mensajes_guardados": 14,
+      "ventana_que_ve_el_agente": 12
+    },
+    "sesion_nueva_del_mismo_usuario": {
+      "borrador": null,
+      "preferencias": {},
+      "episodios_recuperados": [
+        {
+          "similitud": 0.384,
+          "texto": "Prefiero proveedores nacionales, recuérdalo | CentroPeças: R$ 4.401,99 para 3 unidades; plazo 2 días.\n- CentroPeças: R$ 4.401,99; cumple [PEC-01-0001-BR-06]\n- A"
+        },
+        {
+          "similitud": 0.355,
+          "texto": "Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días | CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07; cumple [PEC-"
+        },
+        {
+          "similitud": 0.318,
+          "texto": "Vuelve a comparar con lo último que te pedí | CentroPeças: R$ 1.524,15 para 1 unidades; plazo 2 días.\n- CentroPeças: R$ 1.524,15; cumple [PEC-01-0001-BR-06]\n- A"
+        }
+      ]
+    },
+    "otro_usuario": {
+      "borrador": null,
+      "preferencias": {},
+      "episodios_recuperados": []
+    },
+    "pregunta_usada_para_recuperar": "¿Qué proveedor me convenía para el compresor PEC-01-0001?"
+  }
+}

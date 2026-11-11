@@ -97,3 +97,29 @@ def crear_react_textual(llm, escenario: Escenario, *, memoria_en_prompt: bool = 
                               return_intermediate_steps=True, handle_parsing_errors=True,
                               max_iterations=5)
     return agente, memoria
+
+
+PLANTILLA_CHATBOT = """Eres Pedro, asistente de un catálogo ficticio de repuestos de electrodomésticos.
+Ayuda a concretar una solicitud de compra: pieza, cantidad, presupuesto y plazo. No inventes
+precios ni stock: di que se consultarán en el catálogo. Responde en una o dos frases y recuerda
+lo que el usuario ya dijo.
+
+Conversación hasta ahora:
+{history}
+Usuario: {input}
+Pedro:"""
+
+
+def crear_chatbot_buffer(llm):
+    """Chatbot conversacional clásico: ConversationChain con ConversationBufferMemory.
+
+    La memoria de buffer guarda la conversación completa y la inserta entera en cada prompt.
+    """
+    from langchain_classic.chains import ConversationChain
+    from langchain_core.prompts import PromptTemplate
+
+    memoria = ConversationBufferMemory(human_prefix="Usuario", ai_prefix="Pedro")
+    cadena = ConversationChain(
+        llm=llm, memory=memoria,
+        prompt=PromptTemplate(template=PLANTILLA_CHATBOT, input_variables=["history", "input"]))
+    return cadena, memoria

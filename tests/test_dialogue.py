@@ -66,3 +66,53 @@ def test_cep_no_reutiliza_borrador_de_compra(contexto):
     preguntar("Compara PEC-01-0001")
     previo = EstadoCompra.model_validate(leer_borrador(memoria, "ana", sesion))
     assert interpretar_compra(escenario, previo, "Consulta el CEP 01001000") is None
+
+
+@pytest.mark.parametrize("mensaje, cantidad", [
+    ("Ahora que sean 3 y mantén el plazo", 3),
+    ("Mejor 4", 4),
+    ("cambia a 5", 5),
+    ("que sean seis", 6),
+    ("ahora media docena", 6),
+])
+def test_cambio_de_cantidad_dicho_de_pasada_conserva_el_plazo(contexto, mensaje, cantidad):
+    escenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001 con plazo 7 días")
+    estado, aclaracion = interpretar_compra(escenario, previo, mensaje)
+    assert aclaracion is None
+    assert (estado.solicitud.cantidad, estado.solicitud.plazo_max_dias) == (cantidad, 7)
+
+
+def test_cambiar_el_plazo_no_se_confunde_con_la_cantidad(contexto):
+    escenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001")
+    estado, _ = interpretar_compra(escenario, previo, "mejor 10 días de plazo")
+    assert (estado.solicitud.cantidad, estado.solicitud.plazo_max_dias) == (2, 10)
+
+
+@pytest.mark.parametrize("mensaje", [
+    "¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?",
+    "¿Qué cubre la garantía de una pieza?",
+    "Prefiero proveedores nacionales, recuérdalo",
+    "¿A qué ciudad corresponde el CEP 01001000?",
+])
+def test_preguntas_que_no_son_compra_no_tocan_el_borrador(contexto, mensaje):
+    escenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001")
+    assert interpretar_compra(escenario, previo, mensaje) is None
+
+
+def test_preferencia_se_confirma_solo_si_la_herramienta_la_guardo(tmp_path):
+    from pedro.contracts import RespuestaCompra, Solicitud
+    from pedro.verification import anclar_preferencia, verificar
+
+    escenario = crear_escenario(tmp_path / "catalogos")
+    respuesta = RespuestaCompra(estado="preferencia", dataset_id=escenario.dataset_id,
+                                solicitud=Solicitud(), mensaje="Hecho, y además te recomiendo BR-06.")
+    guardada = ("guardar_preferencia", {"estado": "ok", "clave": "proveedor", "valor": "nacionales"})
+    assert verificar(respuesta, escenario, observaciones=[]) == ["preferencia no guardada"]
+    assert anclar_preferencia(respuesta, [guardada])["estado"] == "anclada"
+    assert respuesta.mensaje == "Guardé tu preferencia: proveedor = nacionales."
+    assert verificar(respuesta, escenario, observaciones=[guardada]) == []
+    rechazada = ("guardar_preferencia", {"estado": "invalido", "error": "sin petición explícita"})
+    assert verificar(respuesta, escenario, observaciones=[rechazada]) == ["preferencia no guardada"]

@@ -49,3 +49,26 @@ def test_router_por_reglas_y_router_llm_ejecutan_la_cadena_del_destino(tmp_path)
     assert ofertas["ruta"] == "comparacion" and len(ofertas["resultado"]) == 3
     ninguna = ejecutar_ruta(crear_router_llm(decide("DEFAULT")), escenario, "Hola")
     assert ninguna["ruta"] == "aclaracion"
+
+
+def test_chatbot_buffer_envia_todo_el_historial_en_cada_turno(tmp_path):
+    from langchain_core.runnables import RunnableLambda
+
+    from pedro.legacy import crear_chatbot_buffer
+
+    prompts = []
+
+    def modelo(prompt, **kwargs):
+        prompts.append(prompt.to_string())
+        return f"respuesta {len(prompts)}"
+
+    chatbot, memoria = crear_chatbot_buffer(RunnableLambda(modelo))
+    chatbot.invoke({"input": "Hola, soy Ana"})
+    chatbot.invoke({"input": "Que sean 2 unidades"})
+    salida = chatbot.invoke({"input": "¿Cómo me llamo?"})
+    assert salida["response"] == "respuesta 3"
+    assert "Hola, soy Ana" in prompts[2] and "Que sean 2 unidades" in prompts[2]
+    assert "respuesta 1" in prompts[2] and "respuesta 2" in prompts[2]
+    assert "respuesta" not in prompts[0]  # el primer turno aún no tiene historial
+    historial = memoria.load_memory_variables({})["history"]
+    assert historial.count("Usuario:") == 3 and historial.count("Pedro:") == 3

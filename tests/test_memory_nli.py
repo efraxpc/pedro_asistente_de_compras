@@ -52,3 +52,22 @@ def test_nli_triclase(tmp_path, etiqueta, esperado):
             return etiqueta
 
     assert verificar_nli(respuesta, Clasificador()) is esperado
+
+
+def test_mapa_de_memorias_refleja_lo_guardado_por_usuario_y_sesion(tmp_path):
+    from pedro.memory import guardar_borrador, mapa_memorias
+
+    ruta = tmp_path / "memoria.sqlite3"
+    sesion = nueva_sesion(ruta, "ana", "demo")
+    guardar_borrador(ruta, "ana", sesion, {"solicitud": {"producto_id": "PEC-01-0001", "cantidad": 3,
+                                                          "plazo_max_dias": None}})
+    guardar_preferencia(ruta, "ana", "proveedor", "nacionales", explicita=True)
+    mapa = mapa_memorias(ruta, "ana", sesion)
+    assert mapa["trabajo (corto plazo, por sesión)"]["borrador_de_compra"] == {
+        "producto_id": "PEC-01-0001", "cantidad": 3}
+    assert mapa["semántica (largo plazo)"]["preferencias_del_usuario"] == {"proveedor": "nacionales"}
+    assert mapa["episódica (largo plazo, por usuario)"]["episodios"] == 0
+    otra = nueva_sesion(ruta, "luis", "demo")
+    ajeno = mapa_memorias(ruta, "luis", otra)
+    assert ajeno["trabajo (corto plazo, por sesión)"]["borrador_de_compra"] == {}
+    assert ajeno["semántica (largo plazo)"]["preferencias_del_usuario"] == {}

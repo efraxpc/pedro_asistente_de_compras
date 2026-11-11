@@ -271,6 +271,35 @@ print('antes', recuperar(ruta, 'alumna', 'proveedor nacional', emb))
 actualizar_episodio(ruta, 'alumna', eid, 'corrigió: acepta proveedor internacional', emb)
 print('después', recuperar(ruta, 'alumna', 'proveedor internacional', emb))"""),
     ("md", "Precio y stock guardados en episodios son históricos. La petición actual prevalece."),
+    ("md", "## R13 · mapa de memorias (CoALA)\nEjecución real local, sin modelo. Tras dos turnos de compra y una preferencia, `mapa_memorias` muestra qué hay en cada tipo de memoria. La conversación equivalente con el modelo real está en `docs/trazas/fase3_memoria_llm.json`."),
+    ("code", """import json
+from pedro.agent import crear_flujo
+from pedro.catalog import crear_escenario
+from pedro.memory import mapa_memorias
+escenario = crear_escenario(Path('storage/notebooks/catalogos'))
+ruta13 = Path('storage/notebooks/r13.sqlite3')
+sesion13 = nueva_sesion(ruta13, 'alumna', escenario.dataset_id)
+local = crear_flujo(escenario, ruta13)
+for texto in ('Necesito 2 unidades de PEC-01-0001 con plazo 7 días', 'Ahora que sean 3 y mantén el plazo'):
+    print(texto, '->', local.invoke({'input': texto}, config={'configurable': {
+        'user_id': 'alumna', 'session_id': sesion13}}).content.splitlines()[0])
+guardar_preferencia(ruta13, 'alumna', 'proveedor', 'nacionales', explicita=True)
+guardar_episodio(ruta13, 'alumna', sesion13, 'pidió 3 unidades de PEC-01-0001 con plazo 7 días', emb)
+for memoria_coala, contenido in mapa_memorias(ruta13, 'alumna', sesion13).items():
+    print(memoria_coala, '->', json.dumps(contenido, ensure_ascii=False))"""),
+    ("md", "## R16 · chatbot con ConversationBufferMemory\n**Doble de prueba:** `FakeListLLM` devuelve respuestas fijas. Lo real es `ConversationChain` con `ConversationBufferMemory`: se imprime el prompt del último turno para ver que lleva la conversación entera. La conversación con el modelo real está en `docs/trazas/fase3_memoria_llm.json`."),
+    ("code", """from langchain_core.language_models.fake import FakeListLLM
+from pedro.legacy import crear_chatbot_buffer
+chatbot, buffer = crear_chatbot_buffer(FakeListLLM(responses=[
+    'Hola Ana, ¿cuántas unidades necesitas?', 'Anotado: 2 unidades. ¿Presupuesto y plazo?',
+    'Ana, pediste 2 termostatos, hasta R$ 900, en 5 días.']))
+for texto in ('Hola, soy Ana. Necesito un termostato para mi nevera.', 'Que sean 2 unidades.',
+              'Tengo hasta R$ 900 y lo necesito en 5 días. Resume mi solicitud.'):
+    print('Usuario:', texto)
+    print('Pedro  :', chatbot.invoke({'input': texto})['response'])
+    print('   caracteres en memoria:', len(buffer.load_memory_variables({})['history']))
+print('--- memoria de buffer ---')
+print(buffer.load_memory_variables({})['history'])"""),
 ])
 
 guardar("04_rag_text_to_query.ipynb", [

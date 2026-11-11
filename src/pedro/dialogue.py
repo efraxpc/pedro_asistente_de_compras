@@ -40,6 +40,9 @@ def _cantidad(texto: str, esperando: str | None) -> int | None:
         rf"\b{numero}\s*(?:unidad(?:es)?|piezas?|repuestos?)\b",
         rf"\bcantidad(?:\s+(?:de|a))?\s*[:=]?\s*{numero}\b",
         rf"\b(?:ahora|quiero|necesito|compara|comparar|son|ser[ií]an?)\s+{numero}\b",
+        # Cambios dichos de pasada: «que sean 3», «mejor 4», «cambia a 5».
+        rf"\b(?:sean|mejor|cambia(?:r)?\s+a|sube(?:r)?\s+a|baja(?:r)?\s+a)\s+{numero}\b"
+        r"(?!\s*(?:d[ií]as?|semanas?|reales|mil)\b|[.,]\d)",
     )
     for patron in patrones:
         if coincidencia := re.search(patron, texto, re.I):
@@ -48,12 +51,20 @@ def _cantidad(texto: str, esperando: str | None) -> int | None:
             r"\s*(\d+)\s*(?:unidad(?:es)?|piezas?|repuestos?)?"
             r"\s*(?:,?\s*por favor)?[.!]?\s*", texto, re.I)):
         return int(coincidencia.group(1))
-    palabras = {"una": 1, "un": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5}
-    if coincidencia := re.search(r"\b(una|un|dos|tres|cuatro|cinco)\s+"
-                                 r"(?:unidad(?:es)?|piezas?|repuestos?)\b", texto, re.I):
+    if re.search(r"\bmedia\s+docena\b", texto, re.I):
+        return 6
+    if re.search(r"\buna\s+docena\b", texto, re.I):
+        return 12
+    if re.search(r"\bun\s+par\b", texto, re.I):
+        return 2
+    palabras = {"una": 1, "un": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5, "seis": 6,
+                "siete": 7, "ocho": 8, "nueve": 9, "diez": 10}
+    nombres = "|".join(palabras)
+    if coincidencia := re.search(rf"\b({nombres})\s+(?:unidad(?:es)?|piezas?|repuestos?)\b",
+                                 texto, re.I):
         return palabras[coincidencia.group(1).lower()]
-    if coincidencia := re.search(r"\b(?:ahora|cantidad\s+(?:de|a)?)\s*"
-                                 r"(una|un|dos|tres|cuatro|cinco)\b", texto, re.I):
+    if coincidencia := re.search(rf"\b(?:ahora|sean|mejor|cantidad\s+(?:de|a)?)\s*({nombres})\b"
+                                 r"(?!\s*(?:d[ií]as?|semanas?)\b)", texto, re.I):
         return palabras[coincidencia.group(1).lower()]
     if esperando == "cantidad" and texto.lower().strip(" .!") in palabras:
         return palabras[texto.lower().strip(" .!")]
@@ -74,13 +85,17 @@ def interpretar_compra(escenario: Escenario, previo: EstadoCompra | None,
                        mensaje: str) -> tuple[EstadoCompra, str | None] | None:
     """Devuelve un borrador y, si falta una decisión, una pregunta concreta."""
     texto = mensaje.strip()
-    if re.search(r"\b(cep|pol[ií]tica|devoluci[oó]n|preferencia|recuerda|guarda)\b", texto, re.I):
+    # Preguntas que no son una compra: CEP, políticas y preferencias van al agente.
+    if re.search(r"\b(cep|pol[ií]ticas?|devoluci[oó]n|devolver|garant[ií]a|reembolso|compatibilidad|"
+                 r"instalar|instalaci[oó]n|preferencia|prefiero|recuerda|recu[eé]rda(?:lo|me)|guarda)\b",
+                 texto, re.I):
         return None
     ids = re.findall(r"\bPEC-[0-9]{2}-[0-9]{4}\b", texto.upper())
     intencion = bool(re.search(r"\b(quiero|necesito|compara|comparar|recomienda|cotiza|"
                                r"comprar|precio|ofertas?)\b", texto, re.I))
     seguimiento = previo is not None and bool(re.search(
-        r"\b(ahora|cambia|cambiar|mismo|mant[eé]n|unidad(?:es)?|piezas?|cantidad|plazo|presupuesto)\b",
+        r"\b(ahora|cambia|cambiar|mismo|mant[eé]n|cantidad|plazo|presupuesto|sean|mejor|"
+        r"vuelve|de\s+nuevo|otra\s+vez)\b|\b\d+\s*(?:unidad(?:es)?|piezas?|repuestos?)\b|R\$",
         texto, re.I))
     if previo is not None and previo.esperando is not None:
         seguimiento = True
