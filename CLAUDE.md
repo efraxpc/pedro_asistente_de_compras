@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Pedro is a purchase-assistant agent for a fictitious appliance-parts catalog, built as an Infnet course project. All data (catalog, suppliers, stock, prices, policies) is synthetic. Code, comments, docs, and UI text are in Brazilian Portuguese — keep new code and user-facing strings in Portuguese to match (naming glossary: `docs/glossario_migracao.md`).
+Pedro is a purchase-assistant agent for a fictitious appliance-parts catalog, built as an Infnet course project. All data (catalog, suppliers, stock, prices, policies) is synthetic. Code, comments, docs, and UI text are in Brazilian Portuguese — keep new code, docs and user-facing strings in Brazilian Portuguese to match. `docs/glossario_migracao.md` is the naming glossary (the project was migrated from Spanish on 2026-11-11): use it for every identifier, file name and domain term. This file and `AGENTS.md` stay in English.
 
 ## Commands
 
@@ -46,7 +46,7 @@ Type-check edited code with `ty` when available. Run the full test suite before 
 - `policy_demo.py` + `knowledge/politicas_demo/` — extensive fictitious policy corpus indexed in-memory with FastEmbed/FAISS; the chat uses this demo index when no authorized index exists.
 - `orquestradores.py` — the same two-tool agent built with LangChain classic and with LangGraph (`create_agent` + checkpointer) for the R07 comparison, plus a LangGraph agent whose long-term memory is managed by LangMem for the R15 comparison; LangGraph and LangMem are optional extras (`comparacion`) imported lazily, not used by the product.
 - `chains.py` + `laboratorio.py` — teaching chains (LCEL, `@chain`, and `criar_lcel_robusta` with a one-shot repair fallback and a strict complete-JSON check) and the broken-output lab that exercises them; not used by the chat flow.
-- `prompts.py` — the two named reusable templates (`MODELO_EXTRACAO`, `MODELO_AGENTE`, PTCF) and the observable-action few-shot examples.
+- `prompts.py` — the nine named reusable templates (`MODELO_*`, e.g. `MODELO_EXTRACAO` and the PTCF `MODELO_AGENTE`) and the observable-action few-shot examples.
 
 **Security gate:** the persisted index at `knowledge/politicas/` (our own, built from the fictitious corpus; committed with its manifest) requires `index.faiss`, `index.pkl`, and a complete `manifest.json`; its docstore is pickle, so `PEDRO_TRUST_POLICY_INDEX=true` must only be set after verifying provenance, hashes, model, dimension, metric, and metadata. The in-memory demo index never uses that flag.
 
@@ -60,5 +60,6 @@ Python 3.13, four-space indentation, `snake_case`, type hints on public function
 
 - External calls and test doubles must be labeled separately in `docs/evidencias.md`; notebooks identify their test doubles explicitly.
 - The matrix in `docs/matriz.md` maps evidence to the 29 rubrics (R01–R29) of the integrated guide in `guide/`; those codes are the guide's labels, and the final check against the original Portuguese enunciado is still pending.
-- Derived eval cases in `evals/casos_derivados.json` are frozen and are not the official cases. They were regenerated once (2026-11-11) when the minimum-order rule was added; regenerate them with `scripts/criar_casos_eval.py` only when a business rule changes, never to improve a metric, and keep its reference rule independent from `comparar`.
+- Derived eval cases in `evals/casos_derivados.json` are frozen and are not the official cases. They were regenerated on 2026-11-11 when the minimum-order rule was added and again for the Portuguese catalog (same products, quantities, limits, expected suppliers and totals); regenerate them with `scripts/criar_casos_eval.py` only when a business rule changes, never to improve a metric, and keep its reference rule independent from `comparar`.
 - `docs/respostas_rubricas.md` answers each rubric (what, evidence, decision, limitations); `docs/rastros/` holds the saved real-LLM runs it cites. When behaviour changes, re-run the affected `scripts/demonstrar_*.py` and update both.
+- Historical traces: `docs/rastros/*_antes.json`, `*_sin_plan.json` and every `r29_langsmith_*` file that does not end in `_portugues.json` are runs of the earlier Spanish version of the project (Spanish keys and messages). They back the before/after comparisons in the docs: never regenerate, rename, translate or edit them. The current LangSmith run is `docs/rastros/r29_langsmith_gpt-4.1-mini_portugues.json`.

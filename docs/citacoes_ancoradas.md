@@ -1,69 +1,86 @@
-# Citas ancladas: diagnóstico y corrección de un fallo de respaldo
+# Citações ancoradas: diagnóstico e correção de uma falha de respaldo
 
-Fecha: 2026-11-10. Modelo: ChatOpenAI `gpt-4.1-mini`. NLI real local. Corpus de políticas ficticio.
+Data do diagnóstico: 2026-11-10 (versão anterior do projeto, em espanhol). Reexecução em português: 2026-11-11. Modelo: ChatOpenAI `gpt-4.1-mini`. NLI real local. Corpus de políticas fictício.
 
-Este documento registra un fallo real observado con el modelo remoto, su diagnóstico y la corrección. Sirve de evidencia para **R24** (verificación integrada), **R12** (confiabilidad con tratamiento de errores) y, como apoyo, para el tema **T26** (qué hace el agente cuando los documentos recuperados no respaldan la respuesta). No sustituye a R23, que trata un fallo de *recuperación*.
+Este documento registra uma falha real observada com o modelo remoto, o diagnóstico e a correção. Serve de evidência para **R24** (verificação integrada), **R12** (confiabilidade com tratamento de erros) e, como apoio, para o tema **T26** (o que o agente faz quando os documentos recuperados não respaldam a resposta). Não substitui R23, que trata de uma falha de *recuperação*.
 
-## 1. Fallo observado
+## 1. Falha observada
 
-Pregunta: «¿Qué dice la política de devoluciones sobre piezas dañadas?»
+A falha foi observada na versão anterior, em espanhol. Essa execução não foi refeita; a pergunta e a resposta ficam em espanhol, como estão no rastro.
+
+Pergunta: «¿Qué dice la política de devoluciones sobre piezas dañadas?»
 
 | | Antes |
 |---|---|
-| Herramienta llamada | `consultar_politicas` (dos propuestas) |
-| Fragmentos recuperados | Correctos, de `devoluciones.md` |
-| Respuesta publicada | «No pude verificar la respuesta sobre políticas…» |
-| Traza | [trazas/r02_planificacion_llm_antes.json](trazas/r02_planificacion_llm_antes.json) |
+| Ferramenta chamada | `consultar_politicas` (duas propostas) |
+| Fragmentos recuperados | Corretos, de `devoluciones.md` (hoje `devolucoes.md`) |
+| Resposta publicada | «No pude verificar la respuesta sobre políticas…» |
+| Rastro | [rastros/r02_planificacion_llm_antes.json](rastros/r02_planificacion_llm_antes.json) (versão anterior, em espanhol) |
 
 ## 2. Diagnóstico
 
-La recuperación **no** falló: el fragmento correcto estaba entre los devueltos. Falló el paso siguiente, el respaldo de la cita.
+A recuperação **não** falhou: o fragmento correto estava entre os devolvidos. Falhou o passo seguinte, o respaldo da citação.
 
-- La verificación exigía que el texto citado por el modelo fuera idéntico, carácter por carácter, al fragmento.
-- El modelo copió el fragmento casi entero, con una diferencia mínima (cobertura observada después: 0,998). Los fragmentos se cortan a 700 caracteres y terminan sin punto final; el modelo tiende a «completarlos».
-- Resultado: errores `fragmento no corresponde` y `fuente no recuperada` en las dos propuestas. No se publicó nada falso, pero el usuario se quedó sin respuesta.
+- A verificação exigia que o texto citado pelo modelo fosse idêntico, caractere por caractere, ao fragmento.
+- O modelo copiou o fragmento quase inteiro, com uma diferença mínima (cobertura observada depois: 0,998). Os fragmentos são cortados em 700 caracteres e terminam sem ponto final; o modelo tende a «completá-los».
+- Resultado: erros de fragmento que não corresponde e de fonte não recuperada (hoje `fragmento não corresponde` e `fonte não recuperada`) nas duas propostas. Nada falso foi publicado, mas o usuário ficou sem resposta.
 
-El defecto de diseño era pedirle al modelo una tarea mecánica (copiar texto sin cambiar un carácter) y castigarlo con un rechazo total.
+O defeito de projeto era pedir ao modelo uma tarefa mecânica (copiar texto sem mudar um caractere) e puni-lo com uma rejeição total.
 
-## 3. Corrección: el modelo elige la fuente, el sistema pone el texto
+## 3. Correção: o modelo escolhe a fonte, o sistema põe o texto
 
-Se añadieron tres piezas, todas deterministas:
+Foram acrescentadas três peças, todas determinísticas:
 
-1. **Anclaje de citas** (`anclar_citas` en [verification.py](../src/pedro/verification.py)). Antes de verificar, cada cita se busca dentro del fragmento que la herramienta recuperó en ese turno. Si coincide al menos en un 80 %, se sustituye por el tramo literal del fragmento. El texto final siempre sale de la fuente, nunca del modelo.
-2. **Cuatro estados registrados en la traza**: `literal`, `reanclada`, `por_identificador` (cita vacía con fuente válida) y `rechazada` o `fuente_no_recuperada`. Una cita inventada no alcanza el umbral y la verificación exacta la sigue bloqueando.
-3. **Degradación extractiva.** Si las citas son válidas pero el resumen del modelo no obtiene *entailment* en NLI tras la corrección, se publica solo el texto literal de la fuente con su identificador, sin el resumen.
+1. **Ancoragem de citações** (`ancorar_citacoes` em [verification.py](../src/pedro/verification.py)). Antes de verificar, cada citação é procurada dentro do fragmento que a ferramenta recuperou naquele turno. Se coincide em pelo menos 80 %, é substituída pelo trecho literal do fragmento. O texto final sempre sai da fonte, nunca do modelo.
+2. **Quatro estados registrados no rastro**: `literal`, `reancorada`, `por_identificador` (citação vazia com fonte válida) e `rejeitada` ou `fonte_nao_recuperada`. Uma citação inventada não atinge o limiar e a verificação exata continua bloqueando.
+3. **Degradação extrativa.** Se as citações são válidas, mas o resumo do modelo não obtém *entailment* no NLI depois da correção, publica-se só o texto literal da fonte com o seu identificador, sem o resumo.
 
-La verificación exacta y el NLI no se relajaron: siguen siendo la puerta. El anclaje solo evita rechazar citas que ya eran correctas.
+A verificação exata e o NLI não foram afrouxados: continuam sendo a porta. A ancoragem só evita rejeitar citações que já estavam corretas.
 
-| Situación | Antes | Ahora |
+| Situação | Antes | Agora |
 |---|---|---|
-| Cita literal y resumen respaldado | Publica | Publica |
-| Cita casi literal y resumen respaldado | **Rechaza** | Reancla y publica |
-| Cita válida y resumen sin respaldo NLI | Rechaza | Publica solo la cita textual |
-| Cita inventada | Rechaza | Rechaza |
+| Citação literal e resumo respaldado | Publica | Publica |
+| Citação quase literal e resumo respaldado | **Rejeita** | Reancora e publica |
+| Citação válida e resumo sem respaldo NLI | Rejeita | Publica só a citação textual |
+| Citação inventada | Rejeita | Rejeita |
 
-## 4. Resultado tras la corrección
+## 4. Resultado após a correção
 
-Misma pregunta, mismo índice, mismo modelo.
+**Versão anterior, em espanhol** (execução histórica, não refeita). Mesma pergunta, mesmo índice, mesmo modelo.
 
-| | Después |
+| | Depois |
 |---|---|
-| Primera propuesta | 3 citas `reanclada` (cobertura 0,998); el resumen no pasó NLI |
-| Segunda propuesta | 2 citas `literal`; el resumen obtuvo *entailment* |
-| Respuesta publicada | Resumen de la política con fuentes `FIC-DEV-01-S05-C01` y `FIC-GAR-01-S05-C01` |
-| Traza | [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json) |
+| Primeira proposta | 3 citações `reanclada` (hoje `reancorada`; cobertura 0,998); o resumo não passou no NLI |
+| Segunda proposta | 2 citações `literal`; o resumo obteve *entailment* |
+| Resposta publicada | Resumo da política com as fontes `FIC-DEV-01-S05-C01` e `FIC-GAR-01-S05-C01` |
+| Rastro | [rastros/r02_planificacion_llm_sin_plan.json](rastros/r02_planificacion_llm_sin_plan.json) (versão anterior, em espanhol) |
 
-## 5. Evidencia
+**Versão atual, em português** (2026-11-11, uma execução de cada). Nenhuma citação precisou ser reancorada nestas execuções: o modelo copiou os trechos de forma literal.
 
-| Evidencia | Tipo |
+| Pergunta | Citações | Resposta publicada | Rastro |
+|---|---|---|---|
+| «O que a política de devoluções diz sobre peças danificadas?» | 2 `literal` (cobertura 1,0), uma só proposta, sem erros de verificação | Resumo da política com as fontes `FIC-DEV-01-S05-C01` e `FIC-DEV-01-S06-C01` | [rastros/r02_planejamento_llm.json](rastros/r02_planejamento_llm.json) |
+| A mesma pergunta dentro de uma mensagem com três pedidos | 1 `literal` (cobertura 1,0) | Resumo com a fonte `FIC-DEV-01-S05-C01` | [rastros/r02_planejamento_llm.json](rastros/r02_planejamento_llm.json) |
+| «Como se verifica a compatibilidade elétrica antes de instalar uma peça?» (índice em memória) | Uma proposta, sem erros de verificação | Resumo com a fonte `FIC-DEV-01-S06-C01` | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json) |
+| A mesma pergunta (índice salvo em disco) | Duas propostas: 2 `literal` (cobertura 1,0) e 1 `rejeitada` (`FIC-DEV-01-S02-C01`, cobertura 0,474) | Só a citação textual, sem resumo (degradação extrativa) | [rastros/r22_indice_existente.json](rastros/r22_indice_existente.json) |
+
+Resposta publicada na última linha, com o texto literal de `knowledge/politicas_demo/devolucoes.md`:
+
+> Política fictícia de demonstração. Não consegui verificar um resumo próprio, então cito o texto literal da fonte:
+> - «Antes de selecionar uma peça, o usuário deve conferir marca, modelo, voltagem e dimensões com a ficha técnica fictícia. Uma compra simulada de uma peça incompatível, ainda sem instalar, pode seguir o procedimento de devolução de 30 dias se conserva suas condições originais.» [FIC-DEV-01-S06-C01]
+
+## 5. Evidência
+
+| Evidência | Tipo |
 |---|---|
-| Trazas antes y después con el modelo real | Real remoto puntual (una ejecución cada una) |
-| [tests/test_citas_ancladas.py](../tests/test_citas_ancladas.py): cita casi literal se reancla; cita inventada o muy corta se rechaza; el chat publica, degrada a cita textual o bloquea según el caso | Pruebas con doble (executor y NLI guionados) |
+| Rastros de antes e depois com o modelo real (versão anterior, em espanhol) | Real remoto pontual (uma execução de cada) |
+| Rastros da versão atual, em português (tabela da seção 4) | Real remoto pontual (uma execução de cada) |
+| [tests/test_citacoes_ancoradas.py](../tests/test_citacoes_ancoradas.py): citação quase literal é reancorada; citação inventada ou curta demais é rejeitada; o chat publica, degrada para citação textual ou bloqueia conforme o caso | Testes com duplo (executor e NLI roteirizados) |
 
-## 6. Limitaciones
+## 6. Limitações
 
-- Una ejecución antes y otra después no miden una tasa de éxito; la medición corresponde a R29.
-- La degradación extractiva está probada con dobles; no se observó en la ejecución real.
-- El umbral del 80 % se fijó por criterio, sin calibrarlo con datos.
-- El modelo NLI admite 512 tokens: con varias citas largas la premisa se trunca (se observó un aviso de 652 tokens).
-- Cuando se escribió este diagnóstico, una solicitud mixta en un solo turno no se publicaba; se resolvió después con el planificador de turno (R02).
+- Uma execução antes e outra depois não medem uma taxa de sucesso; a medição corresponde a R29.
+- A degradação extrativa está testada com duplos e foi observada uma vez com o modelo real (rastro R22). O estado `reancorada` só foi observado com o modelo real na versão anterior, em espanhol; nas execuções em português todas as citações aceitas foram `literal`.
+- O limiar de 80 % foi fixado por critério, sem calibração com dados.
+- O modelo NLI aceita 512 tokens: com várias citações longas a premissa é truncada (observou-se um aviso de 539 tokens na execução em português de R02; na versão anterior, em espanhol, de 652 tokens).
+- Quando este diagnóstico foi escrito, uma solicitação mista em um só turno não era publicada; isso foi resolvido depois com o planejador de turno (R02).

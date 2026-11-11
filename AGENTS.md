@@ -2,7 +2,7 @@
 
 ## Structure
 
-`app.py` is the Streamlit entry point. Reusable logic lives in `src/pedro/`: `catalog.py` and `business.py` handle scenarios and exact comparisons; `agent.py`, `query.py`, `rag.py`, and `nli.py` handle the agent and verification; `memory.py` persists sessions and preferences. Add focused tests in `tests/test_*.py`. `datasets/` contains the synthetic SQLite catalog, `scripts/` its generator and artifact scripts, `notebooks/` the five teaching demos, `evals/` the derived cases and LangSmith runner, and `docs/` the report and evidence. Runtime files belong in ignored `storage/`.
+`app.py` is the Streamlit entry point. Reusable logic lives in `src/pedro/`: `catalog.py` and `business.py` handle scenarios and exact comparisons; `agent.py`, `query.py`, `rag.py`, and `nli.py` handle the agent and verification; `memory.py` persists sessions and preferences. Add focused tests in `tests/test_*.py`. `datasets/` contains the synthetic SQLite catalog, `scripts/` its generator and artifact scripts, `notebooks/` the five teaching demos, `evals/` the derived cases and LangSmith runner, and `docs/` the report and evidence. Runtime files belong in ignored `storage/`. Code, docs, and UI text are in Brazilian Portuguese; follow the naming glossary in `docs/glossario_migracao.md`.
 
 ## Commands
 
@@ -20,4 +20,4 @@ Use Python 3.13, four-space indentation, `snake_case` names, and type hints on p
 
 ## Data, Secrets, and Evidence
 
-Never commit `.env`, `storage/`, or API keys. The SQLite catalog and offers are fictitious. Preserve `dataset_id` isolation and compare integer centavos, not floats. Keep external calls and test doubles labeled separately in `docs/evidencias.md`. Only enable `PEDRO_TRUST_POLICY_INDEX` after verifying the FAISS index source, manifest, hashes, model, dimension, metric, and document metadata; its docstore uses pickle. The provisional matrix must not be called official until the Infnet PDF is supplied and checked.
+Never commit `.env`, `storage/`, or API keys. The SQLite catalog and offers are fictitious. Preserve `dataset_id` isolation and compare integer centavos, not floats. Keep external calls and test doubles labeled separately in `docs/evidencias.md`. Only enable `PEDRO_TRUST_POLICY_INDEX` after verifying the FAISS index source, manifest, hashes, model, dimension, metric, and document metadata; its docstore uses pickle. The matrix in `docs/matriz.md` uses the R01–R29 labels of the integrated guide in `guide/`; do not call it official until it is checked against the original Infnet enunciado. In `docs/rastros/`, the `*_antes.json`, `*_sin_plan.json`, and `r29_langsmith_*` files not ending in `_portugues.json` are historical runs of the earlier Spanish version: do not regenerate or edit them.

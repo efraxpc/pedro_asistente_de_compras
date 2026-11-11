@@ -1,39 +1,45 @@
-# T24: diagnóstico de recuperación
+# T24: diagnóstico de recuperação
 
-## Corpus y método
+## Corpus e método
 
-Esta prueba local usa el **índice ficticio en memoria** de `knowledge/politicas_demo/`, no un índice preexistente autorizado. La versión 1.1 contiene 75 fragmentos con IDs, documento, tema y sección. Huella SHA-256 del corpus: `b9dec4509b36aa722e03bff45c14876339e52831e12f8b311de6287ed5bce6c3`. Se usó FastEmbed `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, FAISS con métrica **L2**, `k=4`, `fetch_k=20` y sin filtro en ambas consultas. En L2, menor distancia indica mayor cercanía.
+O diagnóstico foi medido em dois índices do mesmo corpus fictício de `knowledge/politicas_demo/`: o **índice salvo em disco** em `knowledge/politicas/` (rastro [rastros/r23_t24_indice_existente.json](rastros/r23_t24_indice_existente.json)) e o **índice fictício em memória** (`scripts/diagnosticar_t24.py`). Os dois deram as mesmas posições e distâncias. A versão 1.1 do corpus, em português, contém 75 fragmentos com IDs, documento, tema e seção. Impressão digital SHA-256 do corpus: `a1caf6bc396988b7b84bb318a68d4d48be3685fdc92b979248db39e71dceb4c2`. Foram usados FastEmbed `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, FAISS com métrica **L2**, `k=4`, `fetch_k=20` e sem filtro nas duas consultas. Em L2, menor distância indica maior proximidade.
 
-El fragmento esperado, `FIC-ENT-01-S05-C01`, existe en el docstore: `entrega.md`, sección «5. Entrega parcial y stock». Su texto exige un acuerdo simulado explícito para describir una entrega parcial, con unidades, proveedor y plazos de cada envío.
+O fragmento esperado, `FIC-ENT-01-S05-C01`, existe no docstore: `entrega.md`, seção «5. Entrega parcial e estoque». O texto exige um acordo simulado explícito para descrever uma entrega parcial, com unidades, fornecedor e prazos de cada envio.
 
-## Fallo observado
+## Falha observada
 
-Pregunta inicial: **«¿Se puede mandar en varias cajas?»**
+Pergunta inicial: **«Posso receber em várias caixas?»**
 
-| Posición | Fragmento | Fuente / sección | Distancia L2 |
+| Posição | Fragmento | Fonte / seção | Distância L2 |
 |---:|---|---|---:|
-| 1 | `FIC-ENT-01-S04-C01` | `entrega.md` / recepción | 12,845 |
-| 2 | `FIC-GAR-01-S06-C01` | `garantia.md` / exclusiones | 13,336 |
-| 3 | `FIC-DEV-01-S03-C01` | `devoluciones.md` / daño visible | 13,389 |
-| 4 | `FIC-GAR-01-S01-C01` | `garantia.md` / propósito | 14,045 |
+| 1 | `FIC-GAR-01-S01-C01` | `garantia.md` / propósito | 13,556 |
+| 2 | `FIC-ENT-01-S04-C01` | `entrega.md` / recebimento | 13,598 |
+| 3 | `FIC-DEV-01-S03-C01` | `devolucoes.md` / dano visível | 13,891 |
+| 4 | `FIC-ENT-01-S05-C00` | `entrega.md` / só o título da seção 5 | 14,344 |
 
-El fragmento que contiene la regla de entrega parcial quedó fuera del top 4. **Diagnóstico inferido:** «varias cajas» se relacionó con embalaje y daño, mientras la regla se expresa como «entrega parcial»; las coincidencias de otros temas ocuparon dos posiciones.
+O fragmento que contém a regra de entrega parcial ficou fora do top-4: está na posição 8 (L2 = 14,734). A posição 4 é o fragmento `C00`, que traz só o título «5. Entrega parcial e estoque», sem a regra. **Diagnóstico inferido:** «receber» e «várias caixas» ficaram perto de recebimento, embalagem e dano, enquanto a regra se expressa como «entrega parcial»; os outros temas ocuparam duas posições.
 
-## Corrección y contraste
+**Como a pergunta foi escolhida.** A tradução literal da pergunta da versão em espanhol, «Pode mandar em várias caixas?», deixou de falhar no corpus em português: o fragmento esperado fica na posição 4 do top-4 (L2 = 15,354). Com o filtro `tema=entrega`, fica na posição 2. Por isso foram medidas oito formulações naturais e foi escolhida «Posso receber em várias caixas?», que falha de verdade.
 
-Pregunta reformulada: **«¿Cuándo admite la política de entrega un envío parcial de las piezas solicitadas?»** La reformulación aclara la intención sin incluir la respuesta. Se mantuvieron índice, modelo, métrica, `k`, `fetch_k` y ausencia de filtro.
+**Nota histórica (versão anterior, em espanhol).** Com o corpus em espanhol (SHA-256 `b9dec4509b36aa722e03bff45c14876339e52831e12f8b311de6287ed5bce6c3`), a pergunta «¿Se puede mandar en varias cajas?» deixava o fragmento esperado fora do top-4 (posição 1: `FIC-ENT-01-S04-C01`, L2 = 12,845). A reformulação em espanhol o colocava na posição 1 (L2 = 10,216). Essas medições não foram refeitas.
 
-| Posición | Fragmento | Fuente / sección | Distancia L2 |
+## Correção e contraste
+
+Pergunta reformulada: **«Quando a política de entrega admite um envio parcial das peças solicitadas?»** A reformulação esclarece a intenção sem incluir a resposta. Foram mantidos índice, modelo, métrica, `k`, `fetch_k` e ausência de filtro.
+
+| Posição | Fragmento | Fonte / seção | Distância L2 |
 |---:|---|---|---:|
-| 1 | `FIC-ENT-01-S05-C01` | `entrega.md` / entrega parcial | 10,216 |
-| 2 | `FIC-ENT-01-S01-C01` | `entrega.md` / plazos | 11,819 |
-| 3 | `FIC-ENT-01-S04-C01` | `entrega.md` / recepción | 12,317 |
-| 4 | `FIC-DEV-01-S08-C02` | `devoluciones.md` / catálogo | 12,437 |
+| 1 | `FIC-ENT-01-S05-C01` | `entrega.md` / entrega parcial | 8,566 |
+| 2 | `FIC-ENT-01-S01-C01` | `entrega.md` / prazos | 10,385 |
+| 3 | `FIC-ENT-01-S04-C01` | `entrega.md` / recebimento | 10,765 |
+| 4 | `FIC-DEV-01-S05-C01` | `devolucoes.md` / inspeção e resolução | 11,550 |
 
-Como prueba separada, aplicar `tema=entrega` a la pregunta inicial sitúa el fragmento esperado en la posición 2 (L2 = 14,982); ese filtro **no** forma parte de la comparación antes/después. El [notebook 04](../notebooks/04_rag_text_to_query.ipynb) conserva la ejecución y `scripts/diagnosticar_t24.py` reproduce el informe JSON en `storage/evidencias/t24_demo.json`. En el chat de Streamlit, `/t24` muestra el mismo contraste sin invocar un LLM.
+A reformulação é feita pela regra `reescrever_consulta_entrega`, em [policy_demo.py](../src/pedro/policy_demo.py), que agora também reconhece o verbo «receber». Ela leva o fragmento esperado de fora do top-4 (posição 8) para a posição 1.
 
-Para probar el **flujo normal**, haga la pregunta inicial en el chat con el índice ficticio cargado. La ruta de entrega del flujo llama `consultar_politicas` de forma determinista para preguntas coloquiales sobre dividir paquetes y reformula la intención como entrega parcial sin añadir la regla. La respuesta extrae dos frases del fragmento recuperado, verifica su procedencia y usa NLI local antes de publicarlas. El resumen de recuperación se genera a partir de los resultados de la herramienta. Se verificaron tres repeticiones en la misma sesión, incluso con un borrador de compra pendiente, tanto en el flujo local con NLI real como en Streamlit. La ruta cubre esta intención del corpus sintético; otras formulaciones y el índice preexistente necesitan pruebas propias.
+Como teste separado, aplicar `tema=entrega` à pergunta inicial coloca o fragmento esperado na posição 3 (L2 = 14,734); esse filtro **não** faz parte da comparação antes/depois. O [notebook 04](../notebooks/04_rag_text_to_query.ipynb) conserva a execução e `scripts/diagnosticar_t24.py --saida storage/evidencias/t24_demo.json` reproduz o relatório JSON do índice em memória. No chat do Streamlit, `/t24` mostra o mesmo contraste sem chamar um LLM.
 
-## Límite de la evidencia
+Para testar o **fluxo normal**, faça a pergunta inicial no chat. A rota de entrega do fluxo chama `consultar_politicas` de forma determinística para perguntas coloquiais sobre dividir pacotes e reformula a intenção como entrega parcial, sem acrescentar a regra. A resposta extrai duas frases do fragmento recuperado, verifica a procedência e usa o NLI local antes de publicá-las. O resumo de recuperação é gerado a partir dos resultados da ferramenta. Isso foi observado uma vez no fluxo com NLI real e índice salvo em disco ([rastros/r22_indice_existente.json](rastros/r22_indice_existente.json)) e uma vez no Streamlit ([rastros/r28_streamlit.json](rastros/r28_streamlit.json)). O teste `tests/test_policy_demo.py` repete a pergunta duas vezes na mesma sessão, com um rascunho de compra pendente e NLI de duplo de teste, e obtém a mesma resposta. A rota cobre essa intenção do corpus sintético; outras formulações precisam de testes próprios.
 
-Esto demuestra el método de T24 sobre datos ficticios. Para acreditar R22/R23 de la guía aún falta obtener el índice FAISS **preexistente y autorizado**, verificar su manifiesto y repetir allí un fallo y una corrección observables sobre el mismo corpus.
+## Limite da evidência
+
+Isso demonstra o método de T24 sobre dados fictícios. A falha e a correção foram repetidas no índice FAISS salvo em disco (`knowledge/politicas/`), carregado depois de conferir o manifesto. Esse índice é próprio, construído a partir do mesmo corpus fictício por `scripts/construir_indice_politicas.py`; não é um índice fornecido por terceiros.

@@ -1,10 +1,10 @@
-# Guion de vídeo de entrega
+# Roteiro do vídeo de entrega
 
-Duración sugerida: 4–6 minutos. Requiere webcam y cuenta institucional del alumno.
+Duração sugerida: 4–6 minutos. Exige webcam e conta institucional do aluno.
 
-1. Mostrar README, semilla 20261107, manifiesto del escenario. En el chat, preguntar por PEC-01-0001 para ver sus datos del catálogo.
-2. Sin clave, pedir en el chat la comparación de PEC-01-0001, dos unidades, presupuesto R$ 100000 y plazo 60 días. Mostrar las tres ofertas, el ganador y descartes.
-3. Con OPENAI_API_KEY, pedir la misma comparación en Chat y mostrar la traza de herramientas, verificación exacta y puerta NLI. Cambiar a tres unidades conservando presupuesto y plazo; enseñar continuidad y nueva comparación. Este paso aún no tiene evidencia real.
-4. Consultar CEP 01001000 y mostrar la respuesta de ViaCEP São Paulo/SP. Distinguir ubicación real de ofertas ficticias.
-5. Mostrar las cinco prácticas, dieciocho pruebas y la matriz. Si se incorpora FAISS, enseñar consulta fallida y reescritura en el mismo corpus/top-k. Si no, indicar pendiente.
-6. Mostrar experimento LangSmith remoto con denominadores y trazas solo después de ejecutarlo; presentar informe PDF. Subir vídeo al Drive institucional y verificar que el enlace abre con los permisos indicados por la rúbrica.
+1. Mostrar o README, a semente 20261107 e o manifesto do cenário. A interface é só o chat: mostrar o selo «Cenário …» e clicar na sugestão «Liste as peças» para ver PEC-01-0001 no catálogo.
+2. Sem chave (selo «Modo local, sem modelo»), clicar na sugestão «Compare 5 unidades de PEC-01-0001 com prazo de 7 dias». Mostrar as três ofertas, o vencedor (CentroPeças, R$ 7.279,83) e os descartes por estoque e prazo.
+3. Com OPENAI_API_KEY (selo «Agente ativo»), pedir a mesma comparação no chat e abrir «Como cheguei a esta resposta» para mostrar a ferramenta, a verificação exata e a porta NLI. Dizer «Agora que sejam 6 e mantenha o prazo»; mostrar a continuidade e a nova comparação (R$ 8.718,75). Evidência real: docs/rastros/r28_streamlit.json.
+4. Clicar em «A que cidade corresponde o CEP 01001000?» e mostrar a resposta do ViaCEP, São Paulo/SP. Distinguir a localização real das ofertas fictícias.
+5. Mostrar os cinco notebooks, os 143 testes e a matriz. Clicar em «Posso receber em várias caixas?» e mostrar a regra de entrega parcial com a fonte `FIC-ENT-01-S05-C01`; digitar `/t24` para mostrar a consulta que falha e a reescrita no mesmo índice e top-k.
+6. Mostrar o experimento remoto do LangSmith (pedro-infnet-fluxo-gpt-4.1-mini-portugues-235aa9f1) com os denominadores e o rastro docs/rastros/r29_langsmith_gpt-4.1-mini_portugues.json; apresentar o relatório em PDF. Enviar o vídeo ao Drive institucional e verificar se o link abre com as permissões indicadas pela rubrica.

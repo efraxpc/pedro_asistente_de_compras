@@ -1,70 +1,70 @@
-%% Las 29 rúbricas (R01–R29) de la guía integrada y cómo las cumple Pedro.
-%% Cada caja: código · qué pide la rúbrica / cómo se cumple / dónde está.
-%% Detalle y evidencias: docs/respuestas_rubricas.md. Los códigos son las etiquetas de la guía.
+%% As 29 rubricas (R01–R29) do guia integrado e como o Pedro as atende.
+%% Cada caixa: código · o que a rubrica pede / como é atendida / onde está.
+%% Detalhe e evidências: docs/respostas_rubricas.md. Os códigos são os rótulos do guia.
 flowchart LR
-    NUCLEO(["Pedro: asistente de compras<br/>Núcleo: comparar proveedores<br/>stock · pedido mínimo · plazo · presupuesto · origen · historial de precios"])
+    NUCLEO(["Pedro: assistente de compras<br/>Núcleo: comparar fornecedores<br/>estoque · pedido mínimo · prazo · orçamento · origem · histórico de preços"])
 
-    subgraph F1["Fase 1 · Chain ejecutable y arquitectura"]
+    subgraph F1["Fase 1 · Chain executável e arquitetura"]
         direction TB
-        R01["R01 · Anatomía y tipo de agente<br/>Agente híbrido: reglas fijas + modelo<br/>src/pedro/anatomia.py"]
-        R02["R02 · Planificación y memoria aumentada<br/>Planificador de turno con plan validado<br/>src/pedro/planner.py"]
-        R03["R03 · Plantillas de prompt reutilizables<br/>9 plantillas con nombre<br/>src/pedro/prompts.py"]
-        R04["R04 · Parser con salida JSON<br/>Pydantic + comprobación de JSON completo<br/>src/pedro/chains.py"]
-        R05["R05 · invoke, batch, stream y @chain<br/>Cadena con reparación escrita con @chain<br/>src/pedro/chains.py"]
-        R06["R06 · LCEL: declarativo vs. imperativo<br/>La misma cadena en los dos estilos<br/>src/pedro/chains.py · laboratorio.py"]
+        R01["R01 · Anatomia e tipo de agente<br/>Agente híbrido: regras fixas + modelo<br/>src/pedro/anatomia.py"]
+        R02["R02 · Planejamento e memória aumentada<br/>Planejador de turno com plano validado<br/>src/pedro/planner.py"]
+        R03["R03 · Modelos de prompt reutilizáveis<br/>9 modelos de prompt com nome<br/>src/pedro/prompts.py"]
+        R04["R04 · Parser com saída JSON<br/>Pydantic + verificação de JSON completo<br/>src/pedro/chains.py"]
+        R05["R05 · invoke, batch, stream e @chain<br/>Cadeia com reparo escrita com @chain<br/>src/pedro/chains.py"]
+        R06["R06 · LCEL: declarativo vs. imperativo<br/>A mesma cadeia nos dois estilos<br/>src/pedro/chains.py · laboratorio.py"]
         R01 --> R02 --> R03 --> R04 --> R05 --> R06
     end
 
-    subgraph F2["Fase 2 · Agente con herramientas y ReAct"]
+    subgraph F2["Fase 2 · Agente com ferramentas e ReAct"]
         direction TB
-        R07["R07 · Comparar orquestadores<br/>LangChain clásico frente a LangGraph<br/>src/pedro/orquestadores.py"]
-        R08["R08 · ReAct con initialize_agent<br/>Agente ReAct con herramientas y memoria<br/>src/pedro/legacy.py"]
-        R09["R09 · Chains secuenciales, paralelas y Router<br/>RunnableParallel y RouterChain<br/>src/pedro/chains.py · legacy.py"]
-        R10["R10 · API externa por function calling<br/>ViaCEP como herramienta consultar_cep<br/>src/pedro/integrations.py"]
-        R11["R11 · PTCF, few-shot y chain-of-thought<br/>Extracción razonada y consejo de precio<br/>src/pedro/prompts.py · precios.py"]
-        R12["R12 · Confiabilidad<br/>Parsers con errores, fallbacks y callbacks (Traza)<br/>src/pedro/laboratorio.py · agent.py"]
+        R07["R07 · Comparar orquestradores<br/>LangChain clássico contra LangGraph<br/>src/pedro/orquestradores.py"]
+        R08["R08 · ReAct com initialize_agent<br/>Agente ReAct com ferramentas e memória<br/>src/pedro/legacy.py"]
+        R09["R09 · Chains sequenciais, paralelas e Router<br/>RunnableParallel e RouterChain<br/>src/pedro/chains.py · legacy.py"]
+        R10["R10 · API externa por function calling<br/>ViaCEP como ferramenta consultar_cep<br/>src/pedro/integrations.py"]
+        R11["R11 · PTCF, few-shot e chain-of-thought<br/>Extração raciocinada e conselho de preço<br/>src/pedro/prompts.py · precos.py"]
+        R12["R12 · Confiabilidade<br/>Parsers com erros, fallbacks e callbacks (Rastro)<br/>src/pedro/laboratorio.py · agent.py"]
         R07 --> R08 --> R09 --> R10 --> R11 --> R12
     end
 
-    subgraph F3["Fase 3 · Chatbot con memoria"]
+    subgraph F3["Fase 3 · Chatbot com memória"]
         direction TB
-        R13["R13 · Memoria corto y largo plazo (CoALA)<br/>Mensajes, borradores, preferencias y episodios<br/>src/pedro/memory.py"]
-        R14["R14 · Ventana + búsqueda vectorial<br/>12 mensajes y episodios con FastEmbed<br/>src/pedro/memory.py"]
-        R15["R15 · Comparar herramientas de memoria<br/>Memoria propia frente a LangMem<br/>src/pedro/orquestadores.py"]
-        R16["R16 · ConversationBufferMemory<br/>Chatbot clásico con ConversationChain<br/>src/pedro/legacy.py"]
-        R17["R17 · Intención y entidades<br/>Reglas para el ID + intérprete few-shot<br/>src/pedro/dialogue.py"]
-        R18["R18 · Contexto y descomposición<br/>Cambios de cantidad y turnos con varias intenciones<br/>src/pedro/dialogue.py · planner.py"]
+        R13["R13 · Memória de curto e longo prazo (CoALA)<br/>Mensagens, rascunhos, preferências e episódios<br/>src/pedro/memory.py"]
+        R14["R14 · Janela + busca vetorial<br/>12 mensagens e episódios com FastEmbed<br/>src/pedro/memory.py"]
+        R15["R15 · Comparar ferramentas de memória<br/>Memória própria contra LangMem<br/>src/pedro/orquestradores.py"]
+        R16["R16 · ConversationBufferMemory<br/>Chatbot clássico com ConversationChain<br/>src/pedro/legacy.py"]
+        R17["R17 · Intenção e entidades<br/>Regras para o ID + intérprete few-shot<br/>src/pedro/dialogue.py"]
+        R18["R18 · Contexto e decomposição<br/>Mudanças de quantidade e turnos com várias intenções<br/>src/pedro/dialogue.py · planner.py"]
         R13 --> R14 --> R15 --> R16 --> R17 --> R18
     end
 
-    subgraph F4["Fase 4 · SQL, APIs y RAG"]
+    subgraph F4["Fase 4 · SQL, APIs e RAG"]
         direction TB
-        R19["R19 · Herramientas fijas vs. semánticas<br/>comparar_ofertas (fija) y consultar_catalogo (semántica)<br/>src/pedro/agent.py"]
-        R20["R20 · APIs internas y externas<br/>SQLite interno y ViaCEP externo<br/>src/pedro/catalog.py · integrations.py"]
-        R21["R21 · Text-to-query<br/>Plan Pydantic a SELECT y text-to-SQL con lista blanca<br/>src/pedro/query.py"]
-        R22["R22 · RAG sobre índice FAISS existente<br/>Índice guardado con manifiesto y hashes<br/>src/pedro/rag.py · knowledge/politicas/"]
-        R23["R23 · Fallo de recuperación corregido<br/>Diagnóstico T24: entrega parcial<br/>scripts/diagnosticar_t24.py"]
+        R19["R19 · Ferramentas fixas vs. semânticas<br/>comparar_ofertas (fixa) e consultar_politicas (semântica)<br/>src/pedro/agent.py"]
+        R20["R20 · APIs internas e externas<br/>SQLite interno e ViaCEP externo<br/>src/pedro/catalog.py · integrations.py"]
+        R21["R21 · Text-to-query<br/>Plano Pydantic para SELECT e text-to-SQL com lista de permissões<br/>src/pedro/query.py"]
+        R22["R22 · RAG sobre índice FAISS existente<br/>Índice salvo com manifesto e hashes<br/>src/pedro/rag.py · knowledge/politicas/"]
+        R23["R23 · Falha de recuperação corrigida<br/>Diagnóstico T24: entrega parcial<br/>scripts/diagnosticar_t24.py"]
         R19 --> R20 --> R21 --> R22 --> R23
     end
 
-    subgraph F5["Fase 5 · Agente final verificado y evaluado"]
+    subgraph F5["Fase 5 · Agente final verificado e avaliado"]
         direction TB
-        R24["R24 · Verificación factual y coherencia<br/>Fuente exacta + NLI; el sistema pone los datos<br/>src/pedro/verification.py · nli.py"]
-        R25["R25 · Un agente, 2 o más tipos de herramienta<br/>SQL, RAG y API en el mismo agente<br/>src/pedro/agent.py"]
-        R26["R26 · create_openai_tools_agent + AgentExecutor<br/>Seis herramientas y una pasada de corrección<br/>src/pedro/agent.py"]
-        R27["R27 · RunnableWithMessageHistory<br/>Guarda solo la respuesta pública<br/>src/pedro/agent.py · memory.py"]
-        R28["R28 · Integración en Streamlit<br/>Chat con pasos del agente y tarjetas de comparación<br/>app.py"]
-        R29["R29 · Evaluación con LangSmith<br/>6 evaluadores de calidad y trayectoria<br/>evals/evaluar_flujo.py"]
+        R24["R24 · Verificação factual e coerência<br/>Fonte exata + NLI; o sistema fornece os dados<br/>src/pedro/verification.py · nli.py"]
+        R25["R25 · Um agente, 2 ou mais tipos de ferramenta<br/>SQL, RAG e API no mesmo agente<br/>src/pedro/agent.py"]
+        R26["R26 · create_openai_tools_agent + AgentExecutor<br/>Seis ferramentas e uma passada de correção<br/>src/pedro/agent.py"]
+        R27["R27 · RunnableWithMessageHistory<br/>Salva só a resposta pública<br/>src/pedro/agent.py · memory.py"]
+        R28["R28 · Integração no Streamlit<br/>Chat com passos do agente e cartões de comparação<br/>app.py"]
+        R29["R29 · Avaliação com LangSmith<br/>6 avaliadores de qualidade e trajetória<br/>evals/avaliar_fluxo.py"]
         R24 --> R25 --> R26 --> R27 --> R28 --> R29
     end
 
     NUCLEO --> F1
-    F1 -->|la cadena pasa a ser un agente| F2
-    F2 -->|el agente recuerda| F3
-    F3 -->|el agente consulta datos| F4
-    F4 -->|todo junto, verificado y medido| F5
+    F1 -->|a cadeia passa a ser um agente| F2
+    F2 -->|o agente lembra| F3
+    F3 -->|o agente consulta dados| F4
+    F4 -->|tudo junto, verificado e medido| F5
 
-    EVID[("Evidencias<br/>docs/respuestas_rubricas.md<br/>docs/trazas/*.json · docs/matriz.md")]
+    EVID[("Evidências<br/>docs/respostas_rubricas.md<br/>docs/rastros/*.json · docs/matriz.md")]
     F5 --> EVID
 
     classDef fase1 fill:#E8F0FE,stroke:#1F5FBF,color:#10233F

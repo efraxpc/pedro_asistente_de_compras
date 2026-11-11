@@ -1,25 +1,25 @@
-# Comparaciones didácticas
+# Comparações didáticas
 
-La comparación completa de los seis orquestadores vistos en clase (LangChain, LangGraph, LlamaIndex, AutoGen, Semantic Kernel y Langflow) y la justificación de LangChain están en respuestas_rubricas.md §R07. Allí figura también la comparación ejecutada entre LangChain y LangGraph. La tabla siguiente conserva el contraste inicial con AutoGen.
+A comparação completa dos seis orquestradores vistos em aula (LangChain, LangGraph, LlamaIndex, AutoGen, Semantic Kernel e Langflow) e a justificativa de LangChain estão em [respostas_rubricas.md](respostas_rubricas.md) §R07. Lá está também a comparação executada entre LangChain e LangGraph ([rastros/r07_orquestradores_llm.json](rastros/r07_orquestradores_llm.json)): mesmo modelo, mesmas duas ferramentas e mesmo prompt; 25 linhas e 4,8 s para três turnos com LangChain clássico, 19 linhas e 3,9 s com LangGraph. Foi uma execução por orquestrador: os tempos não são um benchmark. A tabela a seguir conserva o contraste inicial com AutoGen.
 
-## Agentes y composición
+## Agentes e composição
 
-| Aspecto | LangChain clásico / LCEL en este proyecto | AutoGen |
+| Aspecto | LangChain clássico / LCEL neste projeto | AutoGen |
 |---|---|---|
-| Unidad demostrada | Un agente con herramientas tipadas y una cadena de publicación | Conversaciones coordinadas entre agentes |
-| Traza visible | Nombre, argumentos y resultado de herramientas; parser y verificador | Mensajes y acciones entre participantes |
-| Uso en Pedro | El integrador necesita un solo agente y una puerta determinista | Se estudia como alternativa; no se ejecutó aquí |
-| Límite de evidencia | ReAct clásico se probó con FakeListLLM; agente final remoto pendiente | Sin experimento ejecutado |
+| Unidade demonstrada | Um agente com ferramentas tipadas e uma cadeia de publicação | Conversas coordenadas entre agentes |
+| Rastro visível | Nome, argumentos e resultado das ferramentas; parser e verificador | Mensagens e ações entre participantes |
+| Uso no Pedro | O integrador precisa de um só agente e de uma porta determinística | Estudado como alternativa; não foi executado aqui |
+| Limite de evidência | ReAct clássico testado com FakeListLLM (notebook 02) e executado com o modelo real ([rastros/r08_react_llm.json](rastros/r08_react_llm.json)); uma execução | Sem experimento executado |
 
-La comparación medida entre composición declarativa (LCEL) e imperativa (@chain), con la decisión del proyecto, está en respuestas_rubricas.md §R06. La composición secuencial encadena parser, modelo y validación; RunnableParallel consulta ramas independientes. RouterCompras envía consultas reales a catálogo o comparación. Estos ejemplos están en notebooks 01 y 02. No se solicita ni conserva razonamiento privado; los planes del prompt describen llamadas observables.
+A comparação medida entre composição declarativa (LCEL) e imperativa (@chain), com a decisão do projeto, está em [respostas_rubricas.md](respostas_rubricas.md) §R06. A composição sequencial encadeia parser, modelo e validação; RunnableParallel consulta ramos independentes. RouterCompras envia consultas reais para catálogo ou comparação. Esses exemplos estão nos notebooks 01 e 02. Não se solicita nem se guarda raciocínio privado; os planos do prompt descrevem chamadas observáveis.
 
-## Memoria
+## Memória
 
-| Capa | Pedro | Mem0 / Letta como referencia |
+| Camada | Pedro | Mem0 / Letta como referência |
 |---|---|---|
-| Trabajo | Últimos 12 mensajes de la sesión | Gestión de contexto propia de cada sistema |
-| Episódica | SQLite con vectores FastEmbed, modelo y versión; recuperación entre sesiones del mismo usuario | Abstracciones de memoria de terceros |
-| Preferencias | Solo cambios explícitos, aislados por user_id | Su política concreta requeriría integración y evaluación |
-| Procedimental | Prompt, herramientas y reglas de verificación | Configuración de agente propia |
+| Trabalho | Últimas 12 mensagens da sessão | Gestão de contexto própria de cada sistema |
+| Episódica | SQLite com vetores FastEmbed, modelo e versão; recuperação entre sessões do mesmo usuário | Abstrações de memória de terceiros |
+| Preferências | Só mudanças explícitas, isoladas por user_id | A política concreta de cada um exigiria integração e avaliação |
+| Procedimental | Prompt, ferramentas e regras de verificação | Configuração de agente própria |
 
-La comparación es arquitectónica. La única recuperación medida en este workspace es la de Pedro con FastEmbed. Los precios y el stock de episodios se tratan como históricos; la petición actual y el escenario activo gobiernan la decisión.
+A comparação com Mem0 e Letta é arquitetônica. Neste workspace foram executadas a memória do Pedro com FastEmbed e a do LangMem, com a mesma conversa de três mensagens ([rastros/r15_memoria_llm.json](rastros/r15_memoria_llm.json), uma execução). No Pedro, o código decide o que salvar: ficaram a preferência `fornecedor = nacionais` e 1 episódio. No LangMem, o modelo decide: ficou 1 lembrança («Prefere fornecedores nacionais para peças de reposição.»). Nos dois sistemas, outro usuário não recebeu nada. O detalhe está em [respostas_rubricas.md](respostas_rubricas.md) §R15. Os preços e o estoque dos episódios são tratados como históricos; o pedido atual e o cenário ativo governam a decisão.

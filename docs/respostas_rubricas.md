@@ -1,2227 +1,2270 @@
-# Respuestas a las rúbricas R01–R29
+# Respostas às rubricas R01–R29
 
-Este documento responde, una por una, a las 29 preguntas de la rúbrica según la guía integrada [guide/Fases_Temas_Tareas_Rubricas_ComprasLab_Leyendas.pdf](../guide/Fases_Temas_Tareas_Rubricas_ComprasLab_Leyendas.pdf). Cada respuesta indica qué se hizo, dónde está la evidencia, qué decisión técnica se tomó y qué queda pendiente. El estado resumido de todas las rúbricas vive en [matriz.md](matriz.md) y el registro de ejecuciones en [evidencias.md](evidencias.md).
+Este documento responde, uma por uma, às 29 perguntas da rubrica segundo o guia integrado [guide/Fases_Temas_Tareas_Rubricas_ComprasLab_Leyendas.pdf](../guide/Fases_Temas_Tareas_Rubricas_ComprasLab_Leyendas.pdf). Cada resposta indica o que foi feito, onde está a evidência, que decisão técnica foi tomada e o que fica pendente. O estado resumido de todas as rubricas está em [matriz.md](matriz.md) e o registro de execuções em [evidencias.md](evidencias.md).
 
-Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
+Todos os dados do projeto (catálogo, fornecedores, estoque, preços e políticas) são sintéticos.
 
-**Avance de redacción:** las 29 rúbricas (R01–R29) están redactadas y tienen ejecución guardada. Las limitaciones de cada una figuran en su sección.
+**Andamento da redação:** as 29 rubricas (R01–R29) estão redigidas e têm execução salva. As limitações de cada uma aparecem na sua seção.
 
 ---
 
-# El núcleo del asistente: comparar proveedores
+# O núcleo do assistente: comparar fornecedores
 
-Pedro es un asistente de compras. Todo lo demás —memoria, políticas, CEP, verificación— existe para que la comparación de proveedores sea correcta y se pueda confiar en ella. Esta sección describe esa comparación; las rúbricas la citan.
+Pedro é um assistente de compras. Todo o resto — memória, políticas, CEP, verificação — existe para que a comparação de fornecedores seja correta e confiável. Esta seção descreve essa comparação; as rubricas a citam.
 
-## Qué se compara
+## O que se compara
 
-Para una pieza y una cantidad, cada oferta de cada proveedor se evalúa con cuatro reglas ([business.py](../src/pedro/business.py)):
+Para uma peça e uma quantidade, cada oferta de cada fornecedor é avaliada com quatro regras ([business.py](../src/pedro/business.py)):
 
-| Regla | La oferta se descarta si… | Dato del catálogo |
+| Regra | A oferta é descartada se… | Dado do catálogo |
 |---|---|---|
-| Stock | No hay unidades suficientes | `stock_qty` |
-| **Pedido mínimo** | El proveedor exige comprar más unidades de las pedidas | `min_order_qty` |
-| Plazo | Tarda más que el plazo máximo del usuario (si lo dio) | `lead_days` |
-| Presupuesto | El total supera el presupuesto del usuario (si lo dio) | precio × cantidad + flete |
+| Estoque | Não há unidades suficientes | `stock_qty` |
+| **Pedido mínimo** | O fornecedor exige comprar mais unidades do que as pedidas | `min_order_qty` |
+| Prazo | Demora mais que o prazo máximo do usuário (se ele informou) | `lead_days` |
+| Orçamento | O total supera o orçamento do usuário (se ele informou) | preço × quantidade + frete |
 
-El total es `cantidad × precio unitario + flete`, siempre en centavos enteros.
+O total é `quantidade × preço unitário + frete`, sempre em centavos inteiros.
 
-## Cómo se ordena
+## Como se ordena
 
-1. Primero, las ofertas que cumplen todas las reglas.
-2. Entre ellas, las del **origen que prefiere el usuario** (nacional o internacional), si guardó esa preferencia.
-3. Después, el menor total; luego el menor plazo; luego el identificador del proveedor.
+1. Primeiro, as ofertas que atendem a todas as regras.
+2. Entre elas, as da **origem que o usuário prefere** (nacional ou internacional), se ele salvou essa preferência.
+3. Depois, o menor total; em seguida o menor prazo; em seguida o identificador do fornecedor.
 
-La preferencia ordena las ofertas válidas, pero **nunca hace ganar a una oferta que no cumple**. Y si respetarla cuesta más, la respuesta lo dice.
+A preferência ordena as ofertas válidas, mas **nunca faz vencer uma oferta que não atende**. E se respeitá-la custa mais, a resposta diz isso.
 
-## El historial de precios
+## O histórico de preços
 
-El catálogo guarda seis precios mensuales por oferta. Para cada oferta válida, la respuesta sitúa el precio de hoy en ese historial: cuánto costaba el mes anterior, cuál es la media de los cinco meses previos y si está en su punto más bajo o más alto.
+O catálogo guarda seis preços mensais por oferta. Para cada oferta válida, a resposta situa o preço de hoje nesse histórico: quanto custava no mês anterior, qual é a média dos cinco meses anteriores e se está no ponto mais baixo ou mais alto.
 
-**El historial informa, no decide.** El ganador sigue siendo el de menor total hoy. Se decidió así porque un precio pasado no se puede comprar: sirve al comprador para juzgar si es buen momento, no para cambiar qué oferta es la mejor ahora. Las medias se calculan con centavos enteros.
+**O histórico informa, não decide.** O vencedor continua sendo o de menor total hoje. A decisão foi essa porque um preço passado não pode ser comprado: ele ajuda o comprador a julgar se é um bom momento, não a mudar qual oferta é a melhor agora. As médias são calculadas com centavos inteiros.
 
-## El aviso de precio: las técnicas de las rúbricas aplicadas al núcleo
+## O aviso de preço: as técnicas das rubricas aplicadas ao núcleo
 
-El historial no cambia qué oferta gana, pero sí genera un **aviso** cuando el precio de hoy se aparta de lo normal. Ese aviso se construyó con las técnicas que piden las rúbricas, todas juntas sobre el problema central del asistente ([precios.py](../src/pedro/precios.py)):
+O histórico não muda qual oferta vence, mas gera um **aviso** quando o preço de hoje se afasta do normal. Esse aviso foi construído com as técnicas que as rubricas pedem, todas juntas sobre o problema central do assistente ([precos.py](../src/pedro/precos.py)):
 
-| Paso | Qué hace | Técnica | Rúbrica |
+| Passo | O que faz | Técnica | Rubrica |
 |---|---|---|---|
-| 1. Señal | Clasifica el precio de hoy frente a su media: muy por encima, por encima, en línea, por debajo o muy por debajo (umbrales de 10 y 20 %) | Función *hardcoded* | R19 |
-| 2. Hechos | Escribe los hechos en frases: quién gana, cómo está cada precio, cuánto más cuesta cada alternativa | Función *hardcoded* | R19 |
-| 3. Aviso de plantilla | Si el precio del ganador se aparta de su media, lo dice; y si otra oferta válida cuesta casi lo mismo y está en mejor momento, la señala | Función *hardcoded* | R19 |
-| 4. Consejo del modelo | Un prompt PTCF con dos ejemplos few-shot pide al modelo un consejo de una o dos frases a partir de los hechos | PTCF y few-shot | R11 |
-| 5. Salida estructurada | El consejo llega como un objeto Pydantic validado | Output parser | R04 |
-| 6. En paralelo, con plan B | El aviso de plantilla y el consejo del modelo se calculan en dos ramas (`RunnableParallel`); si la rama del modelo falla, devuelve vacío (`with_fallbacks`) | LCEL, paralelo, fallback | R06, R09, R12 |
-| 7. Verificación exacta | El consejo no puede traer una cifra que no esté en los hechos, debe nombrar a un proveedor comparado y no puede predecir precios | Coherencia lógica | R24 |
-| 8. NLI | Un modelo NLI comprueba que los hechos **sustentan** el consejo; solo *entailment* lo deja pasar | Consistencia factual | R24 |
-| 9. Publicación | Si el consejo pasa, se publica marcado como «redactado por el modelo y verificado»; si no, queda el aviso de plantilla | Degradación | R12 |
-| 10. Registro | La traza guarda la fuente publicada, el consejo rechazado y el motivo | Callbacks | R12 |
+| 1. Sinal | Classifica o preço de hoje em relação à sua média: muito acima, acima, em linha, abaixo ou muito abaixo (limiares de 10 e 20 %) | Função *hardcoded* | R19 |
+| 2. Fatos | Escreve os fatos em frases: quem vence, como está cada preço, quanto a mais custa cada alternativa | Função *hardcoded* | R19 |
+| 3. Aviso fixo | Se o preço do vencedor se afasta da sua média, diz isso; e se outra oferta válida custa quase o mesmo e está em melhor momento, aponta-a | Função *hardcoded* | R19 |
+| 4. Conselho do modelo | Um prompt PTCF com dois exemplos few-shot pede ao modelo um conselho de uma ou duas frases a partir dos fatos | PTCF e few-shot | R11 |
+| 5. Saída estruturada | O conselho chega como um objeto Pydantic validado | Output parser | R04 |
+| 6. Em paralelo, com plano B | O aviso fixo e o conselho do modelo são calculados em dois ramos (`RunnableParallel`); se o ramo do modelo falha, devolve vazio (`with_fallbacks`) | LCEL, paralelo, fallback | R06, R09, R12 |
+| 7. Verificação exata | O conselho não pode trazer um número que não esteja nos fatos, deve nomear um fornecedor comparado e não pode prever preços | Coerência lógica | R24 |
+| 8. NLI | Um modelo NLI confere que os fatos **sustentam** o conselho; só *entailment* o deixa passar | Consistência factual | R24 |
+| 9. Publicação | Se o conselho passa, é publicado marcado como «redigido pelo modelo e verificado»; se não, fica o aviso fixo | Degradação | R12 |
+| 10. Registro | O rastro guarda a fonte publicada, o conselho rejeitado e o motivo | Callbacks | R12 |
 
-Aquí el modelo NLI hace por fin un trabajo que el código exacto no puede hacer: en una recomendación numérica no aporta casi nada, pero un consejo es **texto libre**, y comprobar que un texto se desprende de unos hechos es justo lo que hace un NLI.
+Aqui o modelo NLI faz, enfim, um trabalho que o código exato não consegue fazer: em uma recomendação numérica ele não acrescenta quase nada, mas um conselho é **texto livre**, e conferir que um texto decorre de certos fatos é justamente o que um NLI faz.
 
-Ejemplo real, «Compara 5 unidades de PEC-02-0189»:
+Exemplo real, «Compare 5 unidades de PEC-02-0189» ([rastros/precos_conselho_llm.json](rastros/precos_conselho_llm.json)):
 
 ```text
-CentroPeças: R$ 2.182,51 para 5 unidades; plazo 2 días.
-- CentroPeças (nacional): R$ 2.182,51; cumple
-- Atlantic Repair Parts (internacional): R$ 2.195,40; cumple
-- Norte Reposição (nacional): R$ 3.286,45; descartada por stock
-Historial de precios (informativo; no cambia la recomendación):
-- CentroPeças: hoy R$ 425,59 por unidad; mes anterior R$ 402,59 (+6 %); media de 5 meses R$ 384,95 (+11 %).
-- Atlantic Repair Parts: hoy R$ 363,35 por unidad; mes anterior R$ 375,20 (-3 %); media de 5 meses R$ 404,40 (-10 %); es su precio más bajo del periodo.
-Consejo sobre el precio (redactado por el modelo y verificado): El precio de CentroPeças está 11 % por encima
-de su media de 5 meses. La oferta de Atlantic Repair Parts cuesta 1 % más que la recomendada, está 10 % por
-debajo de su media y es el precio más bajo del periodo.
+CentroPeças: R$ 2.182,51 para 5 unidades; prazo de 2 dias.
+- CentroPeças (nacional): R$ 2.182,51; atende [PEC-02-0189-BR-06]
+- Atlantic Repair Parts (internacional): R$ 2.195,40; atende [PEC-02-0189-INT-06]
+- Norte Reposição (nacional): R$ 3.286,45; descartada por estoque [PEC-02-0189-BR-03]
+Histórico de preços (informativo; não muda a recomendação):
+- CentroPeças: hoje R$ 425,59 por unidade; mês anterior R$ 402,59 (+6 %); média de 5 meses R$ 384,95 (+11 %).
+- Atlantic Repair Parts: hoje R$ 363,35 por unidade; mês anterior R$ 375,20 (-3 %); média de 5 meses R$ 404,40 (-10 %); é o seu preço mais baixo do período.
+Conselho sobre o preço (redigido pelo modelo e verificado): O preço de CentroPeças está 11 % acima da sua
+média de 5 meses. Atlantic Repair Parts custa 1 % a mais que a recomendada e o seu preço está 10 % abaixo
+da sua média de 5 meses, sendo o mais baixo do período.
+Fontes: PEC-02-0189-BR-06, PEC-02-0189-INT-06, PEC-02-0189-BR-03
 ```
 
-Sin modelo, la última línea es el aviso de plantilla: «Aviso de precio: El precio de CentroPeças está 11 % por encima de su media de 5 meses. Atlantic Repair Parts cuesta R$ 12,89 más (1 %) y su precio está 10 % por debajo de su media.»
+Sem modelo, no lugar do conselho aparece o aviso fixo: «Aviso de preço: O preço de CentroPeças está 11 % acima da sua média de 5 meses. Atlantic Repair Parts custa R$ 12,89 a mais (1 %) e o seu preço está 10 % abaixo da sua média.»
 
-**Medición con el modelo real** (`gpt-4.1-mini`) y el NLI real, sobre las primeras quince piezas con aviso:
+**Medição com o modelo real** (`gpt-4.1-mini`) e o NLI real, sobre as primeiras quinze peças com aviso. A coluna do primeiro prompt é uma execução da versão anterior do projeto, em espanhol, que não foi refeita ([rastros/precios_consejo_llm_antes.json](rastros/precios_consejo_llm_antes.json)). A coluna do prompt ajustado é a execução atual, em português ([rastros/precos_conselho_llm.json](rastros/precos_conselho_llm.json)):
 
-| | Primer prompt | Prompt ajustado |
+| | Primeiro prompt (versão anterior, em espanhol) | Prompt ajustado (execução atual, em português) |
 |---|---|---|
-| Consejos que pasaron la verificación | 5 de 15 | **14 de 15** |
-| Rechazados por NLI | 10 (8 *neutral*, 2 *contradiction*) | 1 (*contradiction*) |
-| Rechazados por cifras inventadas | 0 | 0 |
+| Conselhos que passaram na verificação | 5 de 15 | **14 de 15** |
+| Rejeitados pelo NLI | 10 (8 *neutral*, 2 *contradiction*) | 0 |
+| Rejeitados por números inventados | 0 | 1 |
 
-- **Por qué falló el primer prompt.** El modelo añadía valoraciones: «una buena oportunidad para comprar hoy», «conviene evaluar si la entrega justifica este costo». Los hechos no dicen eso, y el NLI las marcó como *neutral*. El propio ejemplo few-shot terminaba con «es un buen momento para esta compra»: el modelo imitaba el ejemplo.
-- **Qué se cambió.** Los ejemplos se reescribieron para que solo enuncien y comparen hechos, y se añadió la instrucción de no valorar.
-- **El NLI no es perfecto.** El único rechazo del segundo intento era un consejo cierto («cuestan más del doble», y los hechos decían 203 % y 233 % más). El error fue por el lado seguro: se publicó el aviso de plantilla.
+- **Por que o primeiro prompt falhou.** O modelo acrescentava avaliações (citações da execução histórica, em espanhol): «una buena oportunidad para comprar hoy», «conviene evaluar si la entrega en 8 días justifica este costo». Os fatos não dizem isso, e o NLI as marcou como *neutral*. O próprio exemplo few-shot terminava com «es un buen momento para esta compra»: o modelo imitava o exemplo.
+- **O que mudou.** Os exemplos foram reescritos para só enunciar e comparar fatos, e foi acrescentada a instrução de não avaliar.
+- **A verificação não é perfeita.** A única rejeição da execução atual foi de um conselho verdadeiro (PEC-01-0020). Ele dizia que as alternativas «custam mais de 200 % a mais que a recomendada», e os fatos diziam 203 % e 233 % a mais. Quem rejeitou foi a verificação exata, não o NLI: o número 200 não está nos fatos. O erro foi para o lado seguro: foi publicado o aviso fixo.
 
-El aviso salta en 1.049 de las 2.563 piezas que tienen una recomendación para 5 unidades: cuatro de cada diez.
+O aviso dispara em 1.049 das 2.563 peças que têm uma recomendação para 5 unidades: quatro em cada dez.
 
-**Decisión técnica.** El consejo del modelo aporta redacción —une en una frase lo que la plantilla dice por separado— pero no aporta ningún dato. Por eso su fallo no cuesta nada: detrás siempre está el aviso de plantilla, que dice lo mismo con menos gracia. Se descartó que el modelo decidiera si avisar o no: esa decisión es un umbral, y un umbral es código.
+**Decisão técnica.** O conselho do modelo contribui com a redação — une em uma frase o que o aviso fixo diz em separado — mas não traz nenhum dado. Por isso a falha dele não custa nada: atrás sempre está o aviso fixo, que diz o mesmo com menos graça. Foi descartado que o modelo decidisse se avisa ou não: essa decisão é um limiar, e um limiar é código.
 
-## Qué ve el usuario
+## O que o usuário vê
 
-Cada respuesta muestra **todas** las ofertas, no solo la ganadora: proveedor, origen, total, y si cumple o por qué se descartó.
+Cada resposta mostra **todas** as ofertas, não só a vencedora: fornecedor, origem, total, e se atende ou por que foi descartada.
+
+Exemplo da execução real ([rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json)):
 
 ```text
-Usuario: Compara 2 unidades de PEC-11-0001        (tiene guardada la preferencia «proveedores nacionales»)
+Usuário: Compare 2 unidades de PEC-11-0001        (tem salva a preferência «fornecedores nacionais»)
 
-Casa Técnica Brasil: R$ 1.970,38 para 2 unidades; plazo 9 días.
-- Casa Técnica Brasil (nacional): R$ 1.970,38; cumple [PEC-11-0001-BR-04]
-- Atlantic Repair Parts (internacional): R$ 619,38; cumple [PEC-11-0001-INT-06]
-- CentroPeças (nacional): R$ 1.179,23; descartada por stock [PEC-11-0001-BR-06]
-Historial de precios (informativo; no cambia la recomendación):
-- Casa Técnica Brasil: hoy R$ 976,71 por unidad; mes anterior R$ 1.262,04 (-23 %); media de 5 meses R$ 1.110,59 (-12 %); es su precio más bajo del periodo.
-- Atlantic Repair Parts: hoy R$ 97,40 por unidad; mes anterior R$ 111,90 (-13 %); media de 5 meses R$ 103,63 (-6 %).
-Se aplicó tu preferencia por proveedores nacionales. Sin ella, la más barata sería Atlantic Repair Parts por R$ 619,38.
+Casa Técnica Brasil: R$ 1.970,38 para 2 unidades; prazo de 9 dias.
+- Casa Técnica Brasil (nacional): R$ 1.970,38; atende [PEC-11-0001-BR-04]
+- Atlantic Repair Parts (internacional): R$ 619,38; atende [PEC-11-0001-INT-06]
+- CentroPeças (nacional): R$ 1.179,23; descartada por estoque [PEC-11-0001-BR-06]
+Histórico de preços (informativo; não muda a recomendação):
+- Casa Técnica Brasil: hoje R$ 976,71 por unidade; mês anterior R$ 1.262,04 (-23 %); média de 5 meses R$ 1.110,59 (-12 %); é o seu preço mais baixo do período.
+- Atlantic Repair Parts: hoje R$ 97,40 por unidade; mês anterior R$ 111,90 (-13 %); média de 5 meses R$ 103,63 (-6 %).
+Conselho sobre o preço (redigido pelo modelo e verificado): O preço de Casa Técnica Brasil está 12 % abaixo
+da sua média de 5 meses e é o mais baixo do período. Atlantic Repair Parts custa R$ 1.351,00 a menos que a
+recomendada, entrega em 29 dias e seu preço está em linha com a média de 5 meses.
+Foi aplicada a sua preferência por fornecedores nacionais. Sem ela, a mais barata seria Atlantic Repair Parts por R$ 619,38.
+Fontes: PEC-11-0001-BR-04, PEC-11-0001-INT-06, PEC-11-0001-BR-06
 ```
 
-## El hallazgo que cambió la comparación
+## A descoberta que mudou a comparação
 
-Durante casi todo el proyecto la comparación ignoró el pedido mínimo, aunque el dato estaba en el catálogo. El ejemplo que se usaba en todas las demostraciones era incorrecto como recomendación de compra:
+Durante quase todo o projeto a comparação ignorou o pedido mínimo, embora o dado estivesse no catálogo. O exemplo usado em todas as demonstrações estava errado como recomendação de compra:
 
-| «2 unidades de PEC-01-0001 con plazo de 7 días» | Antes | Ahora |
+| «2 unidades de PEC-01-0001 com prazo de 7 dias» | Antes | Agora |
 |---|---|---|
 | CentroPeças (pedido mínimo: 5 unidades) | **Recomendada**: R$ 2.963,07 | Descartada por pedido mínimo (5 unidades) |
-| Atlantic Repair Parts | Descartada por plazo | Descartada por plazo |
-| Resultado | Una recomendación que el proveedor no aceptaría | «Ninguna oferta cumple»; con 5 unidades sí: CentroPeças, R$ 7.279,83 |
+| Atlantic Repair Parts | Descartada por prazo | Descartada por prazo |
+| Resultado | Uma recomendação que o fornecedor não aceitaria | «Nenhuma oferta atende»; com 5 unidades sim: CentroPeças, R$ 7.279,83 |
 
-En el catálogo hay 1.151 ofertas con stock cuyo pedido mínimo es mayor que 2. El error no lo encontró ninguna prueba ni ninguna métrica: todas comprobaban que el agente coincidía con una referencia que tenía el mismo hueco. Se encontró al revisar qué datos del proveedor usaba la comparación y cuáles no. Al corregirlo:
+No catálogo há 1.151 ofertas com estoque cujo pedido mínimo é maior que 2. O erro não foi encontrado por nenhum teste nem por nenhuma métrica: todos conferiam que o agente coincidia com uma referência que tinha a mesma lacuna. Ele foi encontrado ao revisar quais dados do fornecedor a comparação usava e quais não. Ao corrigir:
 
-- 5 de los 14 casos de recomendación de la evaluación cambiaron: 2 de ganador y 3 pasaron a «ninguna oferta». Los casos se regeneraron con una regla de referencia independiente del agente, que incluye el pedido mínimo.
-- La preferencia «proveedores nacionales», que antes solo se guardaba, ahora cambia la recomendación.
-- Cada oferta muestra si el proveedor es nacional o internacional.
-- El historial de precios, que el catálogo tenía y nadie usaba, aparece en cada comparación.
+- 5 dos 14 casos de recomendação da avaliação mudaram: 2 de vencedor e 3 passaram a «nenhuma oferta». Os casos foram regenerados com uma regra de referência independente do agente, que inclui o pedido mínimo.
+- A preferência «fornecedores nacionais», que antes só era salva, agora muda a recomendação.
+- Cada oferta mostra se o fornecedor é nacional ou internacional.
+- O histórico de preços, que o catálogo tinha e ninguém usava, aparece em cada comparação.
 
-## Qué no se compara todavía
+## O que ainda não se compara
 
-- El aviso de precio informa pero no cambia el orden: el ganador sigue siendo el más barato hoy.
-- Los umbrales del aviso (10 y 20 %) se fijaron por criterio, sin calibrarlos; el aviso salta en cuatro de cada diez recomendaciones, que es mucho.
-- El consejo verificado no fue auditado frase por frase: se comprueban sus cifras, sus proveedores y el NLI, no cada comparación («más caro», «entrega más rápido»).
-- El historial son seis meses de datos sintéticos; no hay previsión de precios.
-- No se combinan proveedores para cubrir una cantidad: un pedido va entero a un proveedor.
-- La preferencia de origen es la única que cambia el orden; otras preferencias guardadas no tienen efecto.
-- El flete no depende del destino: ViaCEP solo confirma la ciudad.
+- O aviso de preço informa, mas não muda a ordem: o vencedor continua sendo o mais barato hoje.
+- Os limiares do aviso (10 e 20 %) foram fixados por critério, sem calibração; o aviso dispara em quatro de cada dez recomendações, o que é muito.
+- O conselho verificado não foi auditado frase por frase: são conferidos os seus números, os seus fornecedores e o NLI, não cada comparação («mais caro», «entrega mais rápido»).
+- O histórico são seis meses de dados sintéticos; não há previsão de preços.
+- Não se combinam fornecedores para cobrir uma quantidade: um pedido vai inteiro para um fornecedor.
+- A preferência de origem é a única que muda a ordem; outras preferências salvas não têm efeito.
+- O frete não depende do destino: o ViaCEP só confirma a cidade.
 
 ---
 
-# Fase 1 — Chain ejecutable y arquitectura
+# Fase 1 — Chain executável e arquitetura
 
-## R01 — Anatomía, arquitectura cognitiva, tipo de agente y madurez agéntica
+## R01 — Anatomia, arquitetura cognitiva, tipo de agente e maturidade agêntica
 
-> ¿El alumno estructuró la anatomía y la arquitectura cognitiva del agente, clasificando su tipo y nivel de madurez agéntica?
+> O aluno estruturou a anatomia e a arquitetura cognitiva do agente, classificando seu tipo e nível de maturidade agêntica?
 
-**Respuesta corta.** Pedro es un agente **híbrido**: una capa reactiva de reglas deterministas resuelve lo que no debe quedar a criterio del modelo, y una capa deliberativa, guiada por el LLM, elige herramientas, mantiene estado entre turnos y revisa su propia propuesta antes de publicarla. Su madurez actual es la de un **agente único con herramientas, memoria y autoverificación** (nivel 4 de 5 en la escala usada abajo), y esa es también su madurez objetivo, consolidada con evaluación medida.
+**Resposta curta.** O Pedro é um agente **híbrido**: uma camada reativa de regras determinísticas resolve o que não deve ficar a critério do modelo, e uma camada deliberativa, guiada pelo LLM, escolhe ferramentas, mantém estado entre turnos e revisa a própria proposta antes de publicá-la. Sua maturidade atual é a de um **agente único com ferramentas, memória e autoverificação** (nível 4 de 5 na escala usada abaixo), e essa é também a maturidade objetivo, consolidada com avaliação medida.
 
-### 1. Anatomía del agente
+### 1. Anatomia do agente
 
-En clase, la anatomía general de un agente se describió con cuatro elementos — ambiente, sensores, herramientas y motor cognitivo (el LLM) — más un orquestrador que comunica herramientas, prompts y memorias (clase del 14-10-2026, repaso de la primera clase). La tabla aplica esa anatomía a Pedro y añade los componentes que pide la guía: system message, memoria, base de conocimiento y flujo general.
+Em aula, a anatomia geral de um agente foi descrita com quatro elementos — ambiente, sensores, ferramentas e motor cognitivo (o LLM) — mais um orquestrador que comunica ferramentas, prompts e memórias (aula de 14-10-2026, revisão da primeira aula). A tabela aplica essa anatomia ao Pedro e acrescenta os componentes que o guia pede: system message, memória, base de conhecimento e fluxo geral.
 
-| Componente | En Pedro | Ubicación |
+| Componente | No Pedro | Localização |
 |---|---|---|
-| **Ambiente** | Un escenario aislado: copia SQLite del catálogo con `dataset_id` UUID y manifiesto SHA-256, el corpus de políticas y el servicio externo ViaCEP. El agente solo lee; no compra ni paga. | [catalog.py](../src/pedro/catalog.py) |
-| **Motor cognitivo (LLM)** | `ChatOpenAI`, modelo `gpt-4.1-mini` por defecto, configurable con `PEDRO_MODEL`. Sin `OPENAI_API_KEY` la aplicación funciona degradada con la capa determinista. | [app.py](../app.py) |
-| **System message** | Prompt con estructura PTCF (Persona, Tarea, Contexto, Formato), el `dataset_id` activo, cuatro ejemplos few-shot de acciones observables y las instrucciones de formato de `RespuestaCompra`. | `crear_agente` en [agent.py](../src/pedro/agent.py); [prompts.py](../src/pedro/prompts.py) |
-| **Sensores** (herramientas que perciben el ambiente) | `buscar_productos` (candidatos por ID, SKU o nombre), `consultar_catalogo` (text-to-query sobre SQLite), `consultar_politicas` (recuperación FAISS con fuentes) y `consultar_cep` (API externa ViaCEP). | `herramientas` en [agent.py](../src/pedro/agent.py); [query.py](../src/pedro/query.py); [rag.py](../src/pedro/rag.py); [integrations.py](../src/pedro/integrations.py) |
-| **Herramientas** (que calculan o actúan) | `comparar_ofertas` (cálculo exacto en centavos con descartes) y `guardar_preferencia` (única escritura: una preferencia citada explícitamente por el usuario). | `herramientas` en [agent.py](../src/pedro/agent.py); [business.py](../src/pedro/business.py) |
-| **Memoria** | Corto plazo: ventana de los últimos 12 mensajes y borrador de compra por sesión. Largo plazo: preferencias explícitas por usuario y episodios vectoriales FastEmbed (384 dimensiones) recuperables entre sesiones. Todo en SQLite, aislado por `user_id`. | [memory.py](../src/pedro/memory.py); [dialogue.py](../src/pedro/dialogue.py) |
-| **Base de conocimiento** | Datos estructurados: catálogo SQLite (2640 piezas, 7920 ofertas). Datos documentales: políticas indexadas en FAISS con metadatos y filtro por tema. | [catalog.py](../src/pedro/catalog.py); [policy_demo.py](../src/pedro/policy_demo.py); [knowledge/politicas_demo/](../knowledge/politicas_demo/) |
-| **Orquestrador** | LangChain: `create_openai_tools_agent` + `AgentExecutor` (máximo 6 iteraciones) envueltos en `RunnableWithMessageHistory`. | `crear_agente` y `crear_flujo` en [agent.py](../src/pedro/agent.py) |
-| **Puerta de publicación** | Verificación exacta (total, stock, presupuesto, plazo, IDs, procedencia) y NLI local triclase. Solo se muestra lo que pasa ambas. | [verification.py](../src/pedro/verification.py); [nli.py](../src/pedro/nli.py) |
-| **Interfaz** | Streamlit con un chat sobre el mismo agente, memoria y verificador. | [app.py](../app.py) |
+| **Ambiente** | Um cenário isolado: cópia SQLite do catálogo com `dataset_id` UUID e manifesto SHA-256, o corpus de políticas e o serviço externo ViaCEP. O agente só lê; não compra nem paga. | [catalog.py](../src/pedro/catalog.py) |
+| **Motor cognitivo (LLM)** | `ChatOpenAI`, modelo `gpt-4.1-mini` por padrão, configurável com `PEDRO_MODEL`. Sem `OPENAI_API_KEY` a aplicação funciona degradada com a camada determinística. | [app.py](../app.py) |
+| **System message** | Prompt com estrutura PTCF (Persona, Tarefa, Contexto, Formato), o `dataset_id` ativo, seis exemplos few-shot de ações observáveis e as instruções de formato de `RespostaCompra`. | `criar_agente` em [agent.py](../src/pedro/agent.py); [prompts.py](../src/pedro/prompts.py) |
+| **Sensores** (ferramentas que percebem o ambiente) | `buscar_produtos` (candidatos por ID, SKU ou nome), `consultar_catalogo` (text-to-query sobre SQLite), `consultar_politicas` (recuperação FAISS com fontes) e `consultar_cep` (API externa ViaCEP). | `ferramentas` em [agent.py](../src/pedro/agent.py); [query.py](../src/pedro/query.py); [rag.py](../src/pedro/rag.py); [integrations.py](../src/pedro/integrations.py) |
+| **Ferramentas** (que calculam ou agem) | `comparar_ofertas` (cálculo exato em centavos com descartes) e `salvar_preferencia` (única escrita: uma preferência citada explicitamente pelo usuário). | `ferramentas` em [agent.py](../src/pedro/agent.py); [business.py](../src/pedro/business.py) |
+| **Memória** | Curto prazo: janela das últimas 12 mensagens e rascunho de compra por sessão. Longo prazo: preferências explícitas por usuário e episódios vetoriais FastEmbed (384 dimensões) recuperáveis entre sessões. Tudo em SQLite, isolado por `user_id`. | [memory.py](../src/pedro/memory.py); [dialogue.py](../src/pedro/dialogue.py) |
+| **Base de conhecimento** | Dados estruturados: catálogo SQLite (2640 peças, 7920 ofertas). Dados documentais: políticas indexadas em FAISS com metadados e filtro por tema. | [catalog.py](../src/pedro/catalog.py); [policy_demo.py](../src/pedro/policy_demo.py); [knowledge/politicas_demo/](../knowledge/politicas_demo/) |
+| **Orquestrador** | LangChain: `create_openai_tools_agent` + `AgentExecutor` (máximo de 6 iterações) envolvidos em `RunnableWithMessageHistory`. | `criar_agente` e `criar_fluxo` em [agent.py](../src/pedro/agent.py) |
+| **Porta de publicação** | Verificação exata (total, estoque, orçamento, prazo, IDs, procedência) e NLI local triclasse. Só se mostra o que passa pelas duas. | [verification.py](../src/pedro/verification.py); [nli.py](../src/pedro/nli.py) |
+| **Interface** | Streamlit com um chat sobre o mesmo agente, memória e verificador. | [app.py](../app.py) |
 
-### 2. Arquitectura cognitiva y flujo general
+### 2. Arquitetura cognitiva e fluxo geral
 
 ```mermaid
 flowchart TD
-    U[Usuario en Streamlit] --> D[Extracción de restricciones del turno<br/>y borrador de compra]
-    D -->|falta pieza o cantidad| Q[Pregunta de aclaración]
-    D -->|regla determinista aplicable| R[Ruta directa:<br/>listado, comparación local, entrega parcial]
-    D -->|requiere decidir| M[Memoria: 12 mensajes,<br/>preferencias y episodios]
-    M --> A[LLM + AgentExecutor<br/>elige herramientas]
-    A <--> T[6 herramientas:<br/>SQL, FAISS, ViaCEP, cálculo, preferencias]
-    A --> J[Propuesta RespuestaCompra]
+    U[Usuário no Streamlit] --> D[Extração de restrições do turno<br/>e rascunho de compra]
+    D -->|falta peça ou quantidade| Q[Pergunta de esclarecimento]
+    D -->|regra determinística aplicável| R[Rota direta:<br/>listagem, comparação local, entrega parcial]
+    D -->|exige decidir| M[Memória: 12 mensagens,<br/>preferências e episódios]
+    M --> A[LLM + AgentExecutor<br/>escolhe ferramentas]
+    A <--> T[6 ferramentas:<br/>SQL, FAISS, ViaCEP, cálculo, preferências]
+    A --> J[Proposta RespostaCompra]
     R --> J
-    J --> V[Verificación exacta]
+    J --> V[Verificação exata]
     V --> N[NLI local]
-    N -->|respaldada| P[Respuesta pública]
-    N -->|rechazada, una vez| A
-    P --> H[(Historial: solo petición<br/>y respuesta pública)]
+    N -->|respaldada| P[Resposta pública]
+    N -->|rejeitada, uma vez| A
+    P --> H[(Histórico: só o pedido<br/>e a resposta pública)]
 ```
 
-La arquitectura cognitiva se describe con CoALA, el marco que el curso usa por defecto para agentes cognitivos (clase del 21-10-2026):
+A arquitetura cognitiva é descrita com CoALA, o marco que o curso usa por padrão para agentes cognitivos (aula de 21-10-2026):
 
-| Elemento CoALA | En Pedro |
+| Elemento CoALA | No Pedro |
 |---|---|
-| Memoria de trabajo | Mensaje actual, borrador de compra de la sesión y ventana de 12 mensajes |
-| Memoria episódica | Episodios vectoriales de recomendaciones pasadas, por usuario |
-| Memoria semántica | Catálogo SQLite, políticas en FAISS y preferencias explícitas del usuario |
-| Memoria procedimental | System message PTCF, ejemplos few-shot, reglas deterministas y código de verificación |
-| Acciones internas | Recuperar recuerdos y políticas (retrieval), razonar con el LLM, guardar un episodio o una preferencia (aprendizaje) |
-| Acciones externas | Leer SQLite, consultar ViaCEP y responder al usuario |
-| Ciclo de decisión | Proponer (regla o LLM con herramientas) → evaluar (verificación exacta y NLI) → ejecutar (publicar o corregir una vez) |
+| Memória de trabalho | Mensagem atual, rascunho de compra da sessão e janela de 12 mensagens |
+| Memória episódica | Episódios vetoriais de recomendações passadas, por usuário |
+| Memória semântica | Catálogo SQLite, políticas em FAISS e preferências explícitas do usuário |
+| Memória procedimental | System message PTCF, exemplos few-shot, regras determinísticas e código de verificação |
+| Ações internas | Recuperar lembranças e políticas (retrieval), raciocinar com o LLM, salvar um episódio ou uma preferência (aprendizado) |
+| Ações externas | Ler SQLite, consultar o ViaCEP e responder ao usuário |
+| Ciclo de decisão | Propor (regra ou LLM com ferramentas) → avaliar (verificação exata e NLI) → executar (publicar ou corrigir uma vez) |
 
-El ciclo de un turno es: **percibir** (extraer intención y restricciones del mensaje, cargar memoria), **decidir** (regla directa o agente con herramientas), **actuar** (consultar SQL, políticas o API y calcular), **verificar** (comprobaciones exactas y NLI) y **responder**. Si la propuesta no pasa la verificación, el agente dispone de una única pasada de corrección; si vuelve a fallar, no se publica la recomendación. El mismo flujo está en [arquitectura.mmd](arquitectura.mmd).
+O ciclo de um turno é: **perceber** (extrair intenção e restrições da mensagem, carregar memória), **decidir** (regra direta ou agente com ferramentas), **agir** (consultar SQL, políticas ou API e calcular), **verificar** (checagens exatas e NLI) e **responder**. Se a proposta não passa na verificação, o agente tem uma única passada de correção; se falhar de novo, a recomendação não é publicada. O mesmo fluxo está em [arquitetura.mmd](arquitetura.mmd).
 
-### 3. Clasificación: agente híbrido
+### 3. Classificação: agente híbrido
 
-| Capa | Comportamiento en Pedro | Por qué pertenece a esa capa |
+| Camada | Comportamento no Pedro | Por que pertence a essa camada |
 |---|---|---|
-| **Reactiva** | Pedir la cantidad cuando falta; enrutar «¿se puede mandar en varias cajas?» directamente a `consultar_politicas`; comparar ofertas en centavos enteros con desempate fijo; listar el catálogo; operar sin clave de OpenAI. | Estímulo → respuesta por regla fija, sin modelo del mundo ni planificación. Es predecible y verificable. |
-| **Deliberativa** | El LLM decide qué herramientas llamar y en qué orden (hasta 6 iteraciones); mantiene un estado interno entre turnos (borrador, ventana de mensajes, recuerdos); contrasta su propuesta con la evidencia y la corrige una vez antes de publicar. | Hay representación de estado, elección entre alternativas y revisión de la propia salida frente a un objetivo. |
+| **Reativa** | Pedir a quantidade quando falta; encaminhar «Posso receber em várias caixas?» diretamente a `consultar_politicas`; comparar ofertas em centavos inteiros com desempate fixo; listar o catálogo; operar sem chave da OpenAI. | Estímulo → resposta por regra fixa, sem modelo do mundo nem planejamento. É previsível e verificável. |
+| **Deliberativa** | O LLM decide quais ferramentas chamar e em que ordem (até 6 iterações); mantém um estado interno entre turnos (rascunho, janela de mensagens, lembranças); confronta sua proposta com a evidência e a corrige uma vez antes de publicar. | Há representação de estado, escolha entre alternativas e revisão da própria saída diante de um objetivo. |
 
-Pedro no es **reactivo puro** porque conserva estado entre turnos y elige herramientas según la solicitud. Tampoco es **deliberativo puro** porque no construye un plan explícito de varios pasos ni replanifica más allá de la única corrección, y porque una parte de las decisiones la toman reglas deterministas.
+O Pedro não é **reativo puro** porque conserva estado entre turnos e escolhe ferramentas conforme a solicitação. Também não é **deliberativo puro** porque não constrói um plano explícito de vários passos nem replaneja além da única correção, e porque uma parte das decisões é tomada por regras determinísticas.
 
-**Decisión técnica.** Se eligió el diseño híbrido de forma deliberada. En clase se definió la autonomía como un agente «pronto para tomar decisões e não só para obedecer direcionamentos», y se advirtió que usar un LLM solo para seguir órdenes es desperdiciar el recurso. Pedro aplica ese criterio donde aporta valor — interpretar la solicitud, elegir herramientas, redactar la respuesta — y lo retira donde un error tendría coste: los importes, el stock, los plazos y la procedencia de las fuentes se calculan y verifican con código determinista, nunca con el modelo.
+**Decisão técnica.** O desenho híbrido foi escolhido de propósito. Em aula, a autonomia foi definida como um agente «pronto para tomar decisões e não só para obedecer direcionamentos», e foi feito o alerta de que usar um LLM só para seguir ordens é desperdiçar o recurso. O Pedro aplica esse critério onde ele agrega valor — interpretar a solicitação, escolher ferramentas, redigir a resposta — e o retira onde um erro teria custo: os valores, o estoque, os prazos e a procedência das fontes são calculados e verificados com código determinístico, nunca com o modelo.
 
-### 4. Madurez agéntica: actual y objetivo
+### 4. Maturidade agêntica: atual e objetivo
 
-> **Supuesto declarado.** La escala de madurez se presentó en la primera clase, cuya transcripción no está en este workspace. Se usa aquí una escala genérica de cinco niveles; debe sustituirse por la escala exacta del curso cuando esté disponible, ajustando solo la etiqueta del nivel.
+> **Suposição declarada.** A escala de maturidade foi apresentada na primeira aula, cuja transcrição não está neste workspace. Usa-se aqui uma escala genérica de cinco níveis; ela deve ser substituída pela escala exata do curso quando estiver disponível, ajustando só o rótulo do nível.
 
-| Nivel | Descripción | ¿Pedro lo alcanza? |
+| Nível | Descrição | O Pedro alcança? |
 |---|---|---|
-| 1 | Chain fija: una llamada al LLM con entrada y salida estructuradas | Sí — [chains.py](../src/pedro/chains.py), notebook 01 |
-| 2 | Enrutamiento: el flujo elige entre caminos predefinidos | Sí — `RouterCompras` en [legacy.py](../src/pedro/legacy.py) y rutas directas en [agent.py](../src/pedro/agent.py) |
-| 3 | Agente con herramientas: el LLM decide qué herramienta usar | Sí — seis herramientas bajo `AgentExecutor` |
-| 4 | Agente con memoria y autoverificación: estado entre turnos y sesiones, y revisión de la propia salida antes de publicar | **Sí — nivel actual** |
-| 5 | Sistema multiagente o autónomo: planificación de largo horizonte, varios agentes, acciones con efecto real | No, y no es el objetivo |
+| 1 | Chain fixa: uma chamada ao LLM com entrada e saída estruturadas | Sim — [chains.py](../src/pedro/chains.py), notebook 01 |
+| 2 | Roteamento: o fluxo escolhe entre caminhos predefinidos | Sim — `RouterCompras` em [legacy.py](../src/pedro/legacy.py) e rotas diretas em [agent.py](../src/pedro/agent.py) |
+| 3 | Agente com ferramentas: o LLM decide qual ferramenta usar | Sim — seis ferramentas sob o `AgentExecutor` |
+| 4 | Agente com memória e autoverificação: estado entre turnos e sessões, e revisão da própria saída antes de publicar | **Sim — nível atual** |
+| 5 | Sistema multiagente ou autônomo: planejamento de longo horizonte, vários agentes, ações com efeito real | Não, e não é o objetivo |
 
-**Punto de partida: nivel 4 en diseño, demostrado solo en local.** Al empezar este documento el agente ya decidía herramientas, recordaba y se autoverificaba, con autonomía acotada a propósito: solo lee del escenario, su única escritura es una preferencia explícita del usuario, tiene un máximo de 6 iteraciones y una sola corrección. Faltaba la evidencia con el modelo real.
+**Ponto de partida: nível 4 no desenho, demonstrado só em local.** Quando este documento começou, o agente já decidia ferramentas, lembrava e se autoverificava, com autonomia limitada de propósito: só lê do cenário, sua única escrita é uma preferência explícita do usuário, tem um máximo de 6 iterações e uma única correção. Faltava a evidência com o modelo real.
 
-**Madurez objetivo: nivel 4 demostrado con mediciones.** Se fijaron cuatro criterios. Esta es su situación tras ejecutar el resto de rúbricas:
+**Maturidade objetivo: nível 4 demonstrado com medições.** Foram fixados quatro critérios. Esta é a situação de cada um depois de executar as demais rubricas:
 
-| Criterio | Cómo se midió | Resultado | Rúbrica |
+| Critério | Como foi medido | Resultado | Rubrica |
 |---|---|---|---|
-| El LLM real elige las herramientas correctas | Trayectoria en 30 casos de LangSmith | Herramienta decisiva 23 de 23; trayectoria completa 23 de 30 (16 en la corrida anterior): el agente a veces usa un camino más corto que el de la referencia | R29 |
-| Las respuestas son correctas | Ganador, importe y contenido en LangSmith | 14 de 14, 14 de 14 y 16 de 16 | R29 |
-| Nada se publica sin respaldo | Recomendaciones contrarias a la regla publicadas | 0 en ocho experimentos | R24 |
-| Hay continuidad entre turnos con el modelo real | Conversación real multi-turno | Ocho turnos con estado correcto | R18, R26, R27 |
+| O LLM real escolhe as ferramentas corretas | Trajetória em 30 casos do LangSmith | Ferramenta decisiva 23 de 23; trajetória completa 26 de 30 (16 e 23 nas execuções anteriores, em espanhol): o agente às vezes usa um caminho mais curto que o da referência | R29 |
+| As respostas são corretas | Vencedor, valor e conteúdo no LangSmith | 14 de 14, 14 de 14 e 16 de 16 | R29 |
+| Nada é publicado sem respaldo | Recomendações contrárias à regra publicadas | 0 em nove experimentos | R24 |
+| Há continuidade entre turnos com o modelo real | Conversa real multi-turno | Oito turnos com estado correto | R18, R26, R27 |
 
-**Madurez actual: nivel 4 demostrado**, con una reserva que impide darlo por consolidado: las mediciones son corridas únicas sobre casos derivados, no sobre los oficiales.
+Os números do LangSmith desta tabela são do experimento em português ([rastros/r29_langsmith_gpt-4.1-mini_portugues.json](rastros/r29_langsmith_gpt-4.1-mini_portugues.json)); dos nove experimentos, oito são da versão anterior do projeto, em espanhol, e o detalhe está em R29. A conversa de oito turnos foi refeita em português ([rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json)).
 
-No se persigue el nivel 5 porque el problema — recomendar una oferta verificada para una pieza — no requiere varios agentes ni ejecutar compras, y más autonomía reduciría la trazabilidad que la puerta de verificación garantiza.
+**Maturidade atual: nível 4 demonstrado**, com uma ressalva que impede dá-lo por consolidado: as medições são execuções únicas sobre casos derivados, não sobre os oficiais.
 
-### Evidencia
+Não se busca o nível 5 porque o problema — recomendar uma oferta verificada para uma peça — não exige vários agentes nem executar compras, e mais autonomia reduziria a rastreabilidade que a porta de verificação garante.
 
-| Evidencia | Ubicación | Tipo |
+### Evidência
+
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Anatomía leída de los objetos reales del agente: modelo, executor, system message PTCF, seis herramientas con su papel y lógica, memoria, base de conocimiento y puerta de publicación | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomía del agente»; [anatomia.py](../src/pedro/anatomia.py) | Ejecución real local (sin modelo) |
-| Agente híbrido en acción: «lista piezas» y «Compara PEC-01-0001» se resuelven por regla, sin pasar por el agente (en la segunda, el intérprete de turno lee el mensaje); la pregunta de CEP pasa por el agente, que recibe seis herramientas y ejecuta `consultar_cep` | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · agente híbrido» | Ejecución con **doble de prueba**: modelo guionado y ViaCEP simulado; el flujo, el executor, la herramienta y la verificación son los reales |
-| La anatomía descrita coincide con el agente construido | [tests/test_anatomia.py](../tests/test_anatomia.py) | Prueba automática (32/32 pruebas) |
-| Explicación de componentes, clasificación y madurez | Esta sección; [arquitectura.mmd](arquitectura.mmd) | Documentación |
+| Anatomia lida dos objetos reais do agente: modelo, executor, system message PTCF, seis ferramentas com seu papel e lógica, memória, base de conhecimento e porta de publicação | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomia do agente»; [anatomia.py](../src/pedro/anatomia.py) | Execução real local (sem modelo) |
+| Agente híbrido em ação: «lista peças» e «Compare PEC-01-0001» são resolvidas por regra, sem passar pelo agente (na segunda, o intérprete de turno lê a mensagem); a pergunta de CEP passa pelo agente, que recebe seis ferramentas e executa `consultar_cep` | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · agente híbrido» | Execução com **duplo de teste**: modelo roteirizado e ViaCEP simulado; o fluxo, o executor, a ferramenta e a verificação são os reais |
+| A anatomia descrita coincide com o agente construído | [tests/test_anatomia.py](../tests/test_anatomia.py) | Teste automático (143/143 testes na suíte) |
+| Explicação de componentes, classificação e maturidade | Esta seção; [arquitetura.mmd](arquitetura.mmd) | Documentação |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- La escala de madurez es genérica (supuesto declarado); sustituirla por la del curso cuando esté disponible la clase 1.
-- En la demostración de la capa deliberativa la herramienta la pide un modelo guionado, no un LLM. La elección hecha por el modelo real se documenta en R26.
-- El chat usa el índice de políticas demo en memoria; el índice preexistente que exige R22 aún no existe.
+- A escala de maturidade é genérica (suposição declarada); substituí-la pela do curso quando a aula 1 estiver disponível.
+- Na demonstração da camada deliberativa quem pede a ferramenta é um modelo roteirizado, não um LLM. A escolha feita pelo modelo real está documentada em R26.
+- O chat usa por padrão o índice de políticas demo em memória. O índice persistido que R22 exige está em `knowledge/politicas/` e só é carregado com `PEDRO_TRUST_POLICY_INDEX=true`.
 
 ---
 
-## R02 — Arquitectura de planificación y memoria aumentada
+## R02 — Arquitetura de planejamento e memória aumentada
 
-> ¿El alumno proyectó una arquitectura de planificación y memoria aumentada para el agente?
+> O aluno projetou uma arquitetura de planejamento e memória aumentada para o agente?
 
-**Respuesta corta.** Una solicitud compleja se divide en cinco subtareas con salida observable (extraer, consultar, comparar, verificar, publicar). La memoria se reparte en dos niveles: la **sesión** guarda lo que solo sirve para la compra en curso y el **usuario** guarda lo que debe sobrevivir a la sesión. Ningún precio ni stock se toma de la memoria: siempre se releen del escenario activo.
+**Resposta curta.** Uma solicitação complexa é dividida em cinco subtarefas com saída observável (extrair, consultar, comparar, verificar, publicar). A memória se reparte em dois níveis: a **sessão** guarda o que só serve para a compra em andamento e o **usuário** guarda o que deve sobreviver à sessão. Nenhum preço nem estoque vem da memória: eles são sempre relidos do cenário ativo.
 
-### 1. Planificación: cómo se divide una solicitud
+### 1. Planejamento: como uma solicitação é dividida
 
-| Paso | Subtarea | Quién la hace | Salida observable |
+| Passo | Subtarefa | Quem faz | Saída observável |
 |---|---|---|---|
-| 1 | Extraer pieza, cantidad, presupuesto y plazo del mensaje; detectar qué falta | Regla determinista | Borrador `EstadoCompra` o pregunta de aclaración |
-| 2 | Consultar los datos necesarios | Herramientas de lectura (SQL, FAISS, ViaCEP) | Ofertas, fragmentos de política o ciudad/UF |
-| 3 | Comparar ofertas con las restricciones | Cálculo determinista en centavos: stock, pedido mínimo, plazo, presupuesto y preferencia de origen | Alternativas con «cumple» o motivo de descarte |
-| 4 | Verificar la propuesta | Verificación exacta y NLI | Lista de errores (vacía si pasa) |
-| 5 | Publicar o corregir | Flujo | Respuesta pública, o una única corrección |
+| 1 | Extrair peça, quantidade, orçamento e prazo da mensagem; detectar o que falta | Regra determinística | Rascunho `EstadoCompra` ou pergunta de esclarecimento |
+| 2 | Consultar os dados necessários | Ferramentas de leitura (SQL, FAISS, ViaCEP) | Ofertas, fragmentos de política ou cidade/UF |
+| 3 | Comparar ofertas com as restrições | Cálculo determinístico em centavos: estoque, pedido mínimo, prazo, orçamento e preferência de origem | Alternativas com «atende» ou motivo de descarte |
+| 4 | Verificar a proposta | Verificação exata e NLI | Lista de erros (vazia se passa) |
+| 5 | Publicar ou corrigir | Fluxo | Resposta pública, ou uma única correção |
 
-Hay tres niveles de planificación, según el tipo de solicitud:
+Há três níveis de planejamento, conforme o tipo de solicitação:
 
-- **Plan fijo (capa reactiva).** Una compra con ID y cantidad sigue siempre los pasos 1 a 5 en ese orden, sin modelo.
-- **Plan decidido por el LLM (capa deliberativa).** Cuando interviene el modelo — por ejemplo para confirmar un CEP o recalcular tras «ahora 6 unidades» —, el agente elige qué herramientas llamar y en qué orden dentro del `AgentExecutor`, con un máximo de 6 iteraciones. El prompt le da un «plan visible»: `buscar_productos` para resolver el ID, `consultar_catalogo` para las ofertas y `comparar_ofertas` para todos los importes.
+- **Plano fixo (camada reativa).** Uma compra com ID e quantidade segue sempre os passos 1 a 5 nessa ordem, sem modelo.
+- **Plano decidido pelo LLM (camada deliberativa).** Quando o modelo intervém — por exemplo para confirmar um CEP ou recalcular depois de «agora 6 unidades» —, o agente escolhe quais ferramentas chamar e em que ordem dentro do `AgentExecutor`, com um máximo de 6 iterações. O prompt lhe dá um «plano visível»: `buscar_produtos` para resolver o ID, `consultar_catalogo` para as ofertas e `comparar_ofertas` para todos os valores.
 
-- **Plan de turno (planificador explícito).** Si el mensaje trae varias intenciones, el modelo escribe primero un plan con una petición por intención. Ejemplo real: «Compara 5 unidades de PEC-01-0001 con plazo de 7 días y dime qué dice la política de devoluciones sobre piezas dañadas, y confirma el CEP 01001000» produjo este plan, y cada petición se respondió y verificó por separado:
+- **Plano de turno (planejador explícito).** Se a mensagem traz várias intenções, o modelo escreve primeiro um plano com um pedido por intenção. Exemplo real: «Compare 5 unidades de PEC-01-0001 com prazo de 7 dias e diga o que a política de devoluções diz sobre peças danificadas, e confirme o CEP 01001000» produziu este plano, e cada pedido foi respondido e verificado separadamente:
 
-  | # | Tipo | Petición |
+  | # | Tipo | Pedido |
   |---|---|---|
-  | 1 | compra | Compara 5 unidades de PEC-01-0001 con plazo de 7 días |
-  | 2 | politica | ¿Qué dice la política de devoluciones sobre piezas dañadas? |
-  | 3 | cep | Confirma el CEP 01001000 |
+  | 1 | compra | Compare 5 unidades de PEC-01-0001 com prazo de 7 dias |
+  | 2 | politica | O que a política de devoluções diz sobre peças danificadas? |
+  | 3 | cep | Confirme o CEP 01001000 |
 
-Reglas de planificación:
+Regras de planejamento:
 
-- Solo se pregunta por lo que bloquea el plan: la pieza y la cantidad. Presupuesto y plazo son filtros opcionales.
-- La petición actual prevalece sobre el historial: un cambio de cantidad conserva los demás límites.
-- El plan nunca termina en una acción con efecto real: no hay compra ni pago.
+- Só se pergunta pelo que bloqueia o plano: a peça e a quantidade. Orçamento e prazo são filtros opcionais.
+- O pedido atual prevalece sobre o histórico: uma mudança de quantidade conserva os demais limites.
+- O plano nunca termina em uma ação com efeito real: não há compra nem pagamento.
 
-**Decisión técnica.** El planificador explícito se añadió después, cuando una ejecución real mostró que hacía falta. Al principio no existía: una solicitud que mezclaba compra, política y CEP hacía que el modelo llamara a las herramientas correctas, pero la respuesta no se publicaba, porque el formato admite un solo tipo. En lugar de complicar el formato, se añadió un paso previo ([planner.py](../src/pedro/planner.py)): si el mensaje muestra señales de dos o más intenciones, el modelo escribe un **plan** con una petición por intención, y cada petición se resuelve con el flujo normal y su propia verificación. El plan se valida antes de usarse: no puede repetir un tipo ni contener un identificador o una cifra que el usuario no escribiera. Para un mensaje de una sola intención no se llama al planificador. Lo que no se guarda es el razonamiento privado del modelo: se conservan el plan y las llamadas a herramientas, que son observables.
+**Decisão técnica.** O planejador explícito foi acrescentado depois, quando uma execução real mostrou que ele era necessário. No começo ele não existia: uma solicitação que misturava compra, política e CEP fazia o modelo chamar as ferramentas corretas, mas a resposta não era publicada, porque o formato admite um único tipo. Em vez de complicar o formato, foi acrescentado um passo prévio ([planner.py](../src/pedro/planner.py)): se a mensagem mostra sinais de duas ou mais intenções, o modelo escreve um **plano** com um pedido por intenção, e cada pedido é resolvido com o fluxo normal e sua própria verificação. O plano é validado antes de ser usado: não pode repetir um tipo nem conter um identificador ou um número que o usuário não tenha escrito. Para uma mensagem de uma única intenção o planejador não é chamado. O que não se guarda é o raciocínio privado do modelo: conservam-se o plano e as chamadas a ferramentas, que são observáveis.
 
-### 2. Memoria aumentada: qué va a cada nivel
+### 2. Memória aumentada: o que vai para cada nível
 
-| Información | Nivel | Dónde vive | Cuándo se actualiza o descarta |
+| Informação | Nível | Onde vive | Quando é atualizada ou descartada |
 |---|---|---|---|
-| Mensaje actual | Corto plazo | Entrada del turno | Se sustituye en cada turno |
-| Borrador de compra (pieza, cantidad, presupuesto, plazo) | Corto plazo | SQLite, por sesión | Cada turno; un ID distinto lo reinicia; «sin presupuesto/plazo» borra ese límite |
-| Ventana de conversación | Corto plazo | Últimos 12 mensajes de la sesión | Ventana deslizante; el historial completo se conserva pero no se envía |
-| Preferencias del usuario | Largo plazo (semántica) | SQLite, por usuario | Solo si el usuario la cita explícitamente; el valor nuevo reemplaza al anterior |
-| Episodios de recomendaciones | Largo plazo (episódica) | SQLite con vector FastEmbed, por usuario | Se guarda cuando el agente publica una respuesta de compra verificada; se recupera por similitud (top 3) |
-| Reglas, prompt y verificación | Largo plazo (procedimental) | Código y `prompts.py` | Cambia solo con una nueva versión del proyecto |
-| Precios, stock y plazos | **No es memoria** | Escenario SQLite activo | Siempre se releen; los valores de un episodio se tratan como históricos |
+| Mensagem atual | Curto prazo | Entrada do turno | É substituída a cada turno |
+| Rascunho de compra (peça, quantidade, orçamento, prazo) | Curto prazo | SQLite, por sessão | A cada turno; um ID diferente o reinicia; «sem orçamento/prazo» apaga esse limite |
+| Janela de conversa | Curto prazo | Últimas 12 mensagens da sessão | Janela deslizante; o histórico completo é conservado, mas não é enviado |
+| Preferências do usuário | Longo prazo (semântica) | SQLite, por usuário | Só se o usuário a cita explicitamente; o valor novo substitui o anterior |
+| Episódios de recomendações | Longo prazo (episódica) | SQLite com vetor FastEmbed, por usuário | É salvo quando o agente publica uma resposta de compra verificada; é recuperado por similaridade (top 3) |
+| Regras, prompt e verificação | Longo prazo (procedimental) | Código e `prompts.py` | Muda só com uma nova versão do projeto |
+| Preços, estoque e prazos | **Não é memória** | Cenário SQLite ativo | São sempre relidos; os valores de um episódio são tratados como históricos |
 
-**Decisión técnica.** La separación por sesión y por usuario evita dos errores del dominio: arrastrar la cantidad de una compra a otra, y recomendar con un precio viejo. Por eso el borrador muere con la sesión y los episodios se inyectan con la etiqueta «histórico» y la instrucción de no usar sus precios ni su stock. Cada recuerdo lleva su `dataset_id`, así que un episodio de otro catálogo queda identificado.
+**Decisão técnica.** A separação por sessão e por usuário evita dois erros do domínio: arrastar a quantidade de uma compra para outra, e recomendar com um preço velho. Por isso o rascunho morre com a sessão e os episódios são injetados com o rótulo «histórico» e a instrução de não usar seus preços nem seu estoque. Cada lembrança leva seu `dataset_id`, então um episódio de outro catálogo fica identificado.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Solicitud «Necesito 5 unidades de PEC-01-0001 hasta R$ 10.000 en 7 días» dividida en los cinco pasos, con la salida de cada uno | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · planificación» | Ejecución real local (sin modelo) |
-| Corto plazo: al pedir «ahora 6 unidades» el borrador conserva el plazo de 7 días; 18 mensajes guardados, 12 visibles | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · memoria aumentada» | Ejecución real local (sin modelo) |
-| Largo plazo: la preferencia aparece en una sesión nueva del mismo usuario y no en otro usuario; la sesión nueva empieza sin borrador | Mismo notebook | Ejecución real local |
-| Plan decidido por el LLM real, por turnos: compra → `comparar_ofertas` (CentroPeças, R$ 7.279,83 para 5 unidades); CEP → `consultar_cep` (São Paulo/SP); «ahora 6 unidades» → `comparar_ofertas` con cantidad 6 y el plazo de 7 días conservado (R$ 8.718,75) | [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json); [scripts/demostrar_r02.py](../scripts/demostrar_r02.py) | **Ejecución real remota** (OpenAI `gpt-4.1-mini`, ViaCEP real, NLI real local) |
-| Pregunta de política por turnos: antes no se publicaba; tras anclar las citas se publica con dos fuentes | [trazas/r02_planificacion_llm_antes.json](trazas/r02_planificacion_llm_antes.json) y [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json); [citas_ancladas.md](citas_ancladas.md) | Ejecución real remota, antes y después |
-| Solicitud mixta en un solo turno, **con planificador**: plan de tres peticiones (compra, política, CEP), las tres publicadas; la de política necesitó una corrección porque su primer resumen no pasó el NLI | [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json), `solicitud_mixta_en_un_turno` | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP) |
-| La misma solicitud **antes del planificador** (entonces con 2 unidades, antes de la regla del pedido mínimo): el LLM llamó a las herramientas correctas, pero la respuesta no se publicó | [trazas/r02_planificacion_llm_sin_plan.json](trazas/r02_planificacion_llm_sin_plan.json) | Ejecución real remota; resultado negativo conservado |
-| El plan se descarta si inventa datos, repite un tipo o no encaja; cada petición pasa por su verificación | [tests/test_planner.py](../tests/test_planner.py) | Pruebas automáticas con doble |
-| Episodios vectoriales guardados, actualizados y recuperados | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb) | Ejecución real local (FastEmbed) |
-| Reglas del borrador y aislamiento | [tests/test_dialogue.py](../tests/test_dialogue.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py) | Pruebas automáticas |
+| Solicitação «Preciso de 5 unidades de PEC-01-0001 até R$ 10.000 em 7 dias» dividida nos cinco passos, com a saída de cada um | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · planejamento» | Execução real local (sem modelo) |
+| Curto prazo: ao pedir «agora 6 unidades» o rascunho conserva o prazo de 7 dias; 18 mensagens salvas, 12 visíveis | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · memória aumentada» | Execução real local (sem modelo) |
+| Longo prazo: a preferência aparece em uma sessão nova do mesmo usuário e não em outro usuário; a sessão nova começa sem rascunho | Mesmo notebook | Execução real local |
+| Plano decidido pelo LLM real, por turnos: compra → `comparar_ofertas` (CentroPeças, R$ 7.279,83 para 5 unidades); CEP → `consultar_cep` (São Paulo/SP); «agora 6 unidades» → `comparar_ofertas` com quantidade 6 e o prazo de 7 dias conservado (R$ 8.718,75) | [rastros/r02_planejamento_llm.json](rastros/r02_planejamento_llm.json); [scripts/demonstrar_r02.py](../scripts/demonstrar_r02.py) | **Execução real remota** (OpenAI `gpt-4.1-mini`, ViaCEP real, NLI real local) |
+| Pergunta de política por turnos: antes não era publicada (execução da versão anterior, em espanhol); com as citações ancoradas é publicada com duas fontes | [rastros/r02_planificacion_llm_antes.json](rastros/r02_planificacion_llm_antes.json) (histórico, em espanhol) e [rastros/r02_planejamento_llm.json](rastros/r02_planejamento_llm.json); [citacoes_ancoradas.md](citacoes_ancoradas.md) | Execução real remota, antes e depois |
+| Solicitação mista em um único turno, **com planejador**: plano de três pedidos (compra, política, CEP), os três publicados; as três verificações passaram na primeira proposta, sem correção | [rastros/r02_planejamento_llm.json](rastros/r02_planejamento_llm.json), `solicitacao_mista_em_um_turno` | **Execução real remota** (`gpt-4.1-mini`, ViaCEP) |
+| A mesma solicitação **antes do planejador** (execução da versão anterior, em espanhol; na época com 2 unidades, antes da regra do pedido mínimo): o LLM chamou as ferramentas corretas, mas a resposta não foi publicada | [rastros/r02_planificacion_llm_sin_plan.json](rastros/r02_planificacion_llm_sin_plan.json) | Execução real remota; resultado negativo conservado |
+| O plano é descartado se inventa dados, repete um tipo ou não se encaixa; cada pedido passa pela sua verificação | [tests/test_planner.py](../tests/test_planner.py) | Testes automáticos com duplo |
+| Episódios vetoriais salvos, atualizados e recuperados | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb) | Execução real local (FastEmbed) |
+| Regras do rascunho e isolamento | [tests/test_dialogue.py](../tests/test_dialogue.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- **La solicitud mixta en un solo turno se resolvió con un planificador.** Antes no se publicaba. Límite actual: el planificador reconoce cuatro tipos de petición y como mucho uno de cada tipo; dos compras en el mismo mensaje se tratan como una sola petición.
-- **La pregunta general de política falló con el modelo real y se corrigió.** El modelo citaba el fragmento casi literal y la verificación exigía texto idéntico. Ahora el sistema ancla la cita al texto de la fuente; diagnóstico y antes/después en [citas_ancladas.md](citas_ancladas.md).
-- El planificador solo actúa con el modelo disponible; sin credenciales un mensaje mixto se trata como una sola petición.
-- No hay resumen del historial: lo que sale de la ventana de 12 mensajes solo vuelve si quedó como episodio o preferencia.
-- La trayectoria del LLM puede variar entre ejecuciones; la traza guardada es una observación, no una métrica.
+- **A solicitação mista em um único turno foi resolvida com um planejador.** Antes ela não era publicada. Limite atual: o planejador reconhece quatro tipos de pedido e no máximo um de cada tipo; duas compras na mesma mensagem são tratadas como um único pedido.
+- **A pergunta geral de política falhou com o modelo real e foi corrigida.** A falha é da versão anterior, em espanhol: o modelo citava o fragmento quase literal e a verificação exigia texto idêntico. Agora o sistema ancora a citação ao texto da fonte; diagnóstico e antes/depois em [citacoes_ancoradas.md](citacoes_ancoradas.md).
+- O planejador só atua com o modelo disponível; sem credenciais, uma mensagem mista é tratada como um único pedido.
+- Não há resumo do histórico: o que sai da janela de 12 mensagens só volta se ficou como episódio ou preferência.
+- A trajetória do LLM pode variar entre execuções; o rastro salvo é uma observação, não uma métrica.
 
-## R03 — Plantillas de prompt reutilizables
+## R03 — Modelos de prompt reutilizáveis
 
-> ¿El alumno construyó plantillas de prompt reutilizables con PromptTemplate o ChatPromptTemplate?
+> O aluno construiu modelos de prompt reutilizáveis com PromptTemplate ou ChatPromptTemplate?
 
-**Respuesta corta.** Sí. Hay dos `ChatPromptTemplate` con nombre propio en [prompts.py](../src/pedro/prompts.py): una para interpretar solicitudes de compra y otra para el agente final. La primera se reutiliza en dos cadenas distintas y se ejecutó con el modelo real sobre tres solicitudes del dominio.
+**Resposta curta.** Sim. Há dois `ChatPromptTemplate` com nome próprio em [prompts.py](../src/pedro/prompts.py): um para interpretar solicitações de compra e outro para o agente final. O primeiro é reutilizado em duas cadeias diferentes e foi executado com o modelo real sobre três solicitações do domínio.
 
-### 1. Las plantillas
+### 1. Os modelos de prompt
 
-| Plantilla | Para qué sirve | Variables | Dónde se reutiliza |
+| Modelo de prompt | Para que serve | Variáveis | Onde é reutilizado |
 |---|---|---|---|
-| `PLANTILLA_EXTRACCION` (alias `PROMPT` en [chains.py](../src/pedro/chains.py)) | Interpretar una solicitud y devolver intención, datos y faltantes | `texto` (la solicitud) y `formato` (instrucciones del parser) | Cadena LCEL (`crear_lcel`) y cadena `@chain` (`crear_chain`) |
-| `PLANTILLA_AGENTE`, usada por `crear_agente` en [agent.py](../src/pedro/agent.py) | System message PTCF del agente final | `dataset_id`, `ejemplos`, `formato`, `input`, `chat_history`, `agent_scratchpad` | Cada turno y cada corrección del agente, con cualquier escenario |
+| `MODELO_EXTRACAO` (alias `PROMPT` em [chains.py](../src/pedro/chains.py)) | Interpretar uma solicitação e devolver intenção, dados e faltantes | `texto` (a solicitação) e `formato` (instruções do parser) | Cadeia LCEL (`criar_lcel`) e cadeia `@chain` (`criar_chain`) |
+| `MODELO_AGENTE`, usado por `criar_agente` em [agent.py](../src/pedro/agent.py) | System message PTCF do agente final | `dataset_id`, `exemplos`, `formato`, `input`, `chat_history`, `agent_scratchpad` | Cada turno e cada correção do agente, com qualquer cenário |
 
-Las dos tienen la misma forma: un mensaje de sistema fijo con huecos y un mensaje humano con la solicitud. Los ejemplos few-shot están en el mismo archivo y entran a la plantilla del agente como una variable más.
+Os dois têm a mesma forma: uma mensagem de sistema fixa com lacunas e uma mensagem humana com a solicitação. Os exemplos few-shot estão no mesmo arquivo e entram no modelo de prompt do agente como mais uma variável.
 
-### 2. Qué las hace reutilizables
+### 2. O que os torna reutilizáveis
 
-- **Variables en lugar de texto fijo.** La solicitud, el escenario y los ejemplos se inyectan; el texto de la plantilla no cambia.
-- **`partial` para lo que no cambia por turno.** Las instrucciones de formato salen del parser Pydantic y se fijan una vez; queda libre solo `texto`.
-- **Un solo archivo.** Las dos plantillas y los ejemplos viven en `prompts.py`; el resto del código las importa.
-- **Un objeto, varias cadenas.** La misma `PROMPT` alimenta la versión declarativa y la imperativa, así que un cambio de redacción se hace en un solo sitio.
+- **Variáveis em vez de texto fixo.** A solicitação, o cenário e os exemplos são injetados; o texto do modelo de prompt não muda.
+- **`partial` para o que não muda por turno.** As instruções de formato saem do parser Pydantic e são fixadas uma vez; fica livre só `texto`.
+- **Um único arquivo.** Os dois modelos de prompt e os exemplos vivem em `prompts.py`; o resto do código os importa.
+- **Um objeto, várias cadeias.** O mesmo `PROMPT` alimenta a versão declarativa e a imperativa, então uma mudança de redação é feita em um só lugar.
 
-**Decisión técnica.** Se eligió `ChatPromptTemplate` y no `PromptTemplate` porque el modelo es de chat y la plantilla necesita separar papeles: las reglas van en el mensaje de sistema y la solicitud del usuario en el mensaje humano. Esa separación evita que el texto del usuario se mezcle con las instrucciones. Coincide con la indicación de clase de centrarse en `ChatPromptTemplate` como patrón actual. No se añadió un `PromptTemplate` de texto plano solo para exhibirlo: la rúbrica pide una u otra y ningún punto del flujo usa un modelo de texto.
+**Decisão técnica.** Foi escolhido `ChatPromptTemplate` e não `PromptTemplate` porque o modelo é de chat e o modelo de prompt precisa separar papéis: as regras vão na mensagem de sistema e a solicitação do usuário na mensagem humana. Essa separação evita que o texto do usuário se misture com as instruções. Coincide com a orientação dada em aula de focar em `ChatPromptTemplate` como padrão atual. Não foi acrescentado um `PromptTemplate` de texto puro só para exibi-lo: a rubrica pede um ou outro e nenhum ponto do fluxo usa um modelo de texto.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| La plantilla rellenada con tres solicitudes del dominio: clase, variables, `partial`, mensajes resultantes y comprobación de que la cadena LCEL usa la misma plantilla | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R03 · plantilla reutilizable» | Ejecución real local (sin modelo) |
-| La plantilla ejecutada con el modelo: «Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días» → comparar, 2 unidades, 500000 centavos, 7 días; «Necesito un termostato para nevera, sin prisa» → falta cantidad; «¿A qué ciudad corresponde el CEP 01001000?» → intención cep | [trazas/fase1_chain_llm.json](trazas/fase1_chain_llm.json); [scripts/demostrar_fase1.py](../scripts/demostrar_fase1.py) | **Ejecución real remota** (OpenAI `gpt-4.1-mini`, temperatura 0) |
-| Cada plantilla declara sus variables, separa sistema y humano, sirve para cualquier escenario y falla si falta una variable | [tests/test_prompts.py](../tests/test_prompts.py) | Pruebas automáticas |
-| La misma plantilla en las cadenas LCEL y `@chain` con modelo doble | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb), primera celda | Ejecución con doble de prueba |
+| O modelo de prompt preenchido com três solicitações do domínio: classe, variáveis, `partial`, mensagens resultantes e comprovação de que a cadeia LCEL usa o mesmo modelo de prompt | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R03 · modelo de prompt reutilizável» | Execução real local (sem modelo) |
+| O modelo de prompt executado com o LLM: «Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias» → comparar, 2 unidades, 500000 centavos, 7 dias; «Preciso de um termostato para geladeira, sem pressa» → intenção outro, falta quantidade; «A que cidade corresponde o CEP 01001000?» → intenção cep | [rastros/fase1_chain_llm.json](rastros/fase1_chain_llm.json); [scripts/demonstrar_fase1.py](../scripts/demonstrar_fase1.py) | **Execução real remota** (OpenAI `gpt-4.1-mini`, temperatura 0) |
+| Cada modelo de prompt declara suas variáveis, separa sistema e humano, serve para qualquer cenário e falha se falta uma variável | [tests/test_prompts.py](../tests/test_prompts.py) | Testes automáticos |
+| O mesmo modelo de prompt nas cadeias LCEL e `@chain` com modelo duplo | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb), primeira célula | Execução com duplo de teste |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- La ejecución real es una sola corrida de tres solicitudes; no mide la tasa de acierto de la extracción.
+- A execução real é uma única rodada de três solicitações; não mede a taxa de acerto da extração.
 
-## R04 — Output parser con salida estructurada en JSON
+## R04 — Output parser com saída estruturada em JSON
 
-> ¿El alumno implementó un output parser para generar salida estructurada en JSON a partir de la chain?
+> O aluno implementou um output parser para gerar saída estruturada em JSON a partir da chain?
 
-**Respuesta corta.** Sí. La cadena convierte una solicitud en un objeto `Extraccion` validado con Pydantic. Además se construyó un **laboratorio de salidas rotas**: ocho defectos típicos de un modelo, cada uno resuelto por una capa distinta, con el modelo real haciendo las reparaciones.
+**Resposta curta.** Sim. A cadeia converte uma solicitação em um objeto `Extracao` validado com Pydantic. Além disso foi construído um **laboratório de saídas quebradas**: oito defeitos típicos de um modelo, cada um resolvido por uma camada diferente, com o modelo real fazendo os reparos.
 
-### 1. De la solicitud al objeto validado
+### 1. Da solicitação ao objeto validado
 
-«Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días» produce, con el modelo real:
+«Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias» produz, com o modelo real:
 
 ```json
-{"intencion": "comparar",
- "solicitud": {"producto_id": "PEC-01-0001", "cantidad": 2,
-               "presupuesto_centavos": 500000, "plazo_max_dias": 7},
+{"intencao": "comparar",
+ "solicitacao": {"produto_id": "PEC-01-0001", "quantidade": 2,
+                 "orcamento_centavos": 500000, "prazo_max_dias": 7},
  "faltantes": []}
 ```
 
-El esquema está en [contracts.py](../src/pedro/contracts.py) y la cadena en [chains.py](../src/pedro/chains.py): plantilla → modelo → `PydanticOutputParser` → regla de dominio.
+O esquema está em [contracts.py](../src/pedro/contracts.py) e a cadeia em [chains.py](../src/pedro/chains.py): modelo de prompt → modelo → `PydanticOutputParser` → regra de domínio.
 
-### 2. Tres capas de defensa
+### 2. Três camadas de defesa
 
-Un modelo puede fallar de tres maneras distintas, y cada una necesita una defensa diferente:
+Um modelo pode falhar de três maneiras diferentes, e cada uma precisa de uma defesa diferente:
 
-| Capa | Qué defiende | Cómo |
+| Camada | O que defende | Como |
 |---|---|---|
-| **Sintaxis** | Que la salida sea JSON | El parser tolera cercas de markdown y texto alrededor |
-| **Esquema** | Que los datos tengan el tipo correcto | Pydantic rechaza «dos» como cantidad, una cantidad negativa o una intención fuera de la lista |
-| **Dominio** | Que el dato signifique lo correcto | Los faltantes los recalcula el código: no se confía en lo que el modelo declare. Un dato ausente es `null`, nunca cero |
+| **Sintaxe** | Que a saída seja JSON | O parser tolera cercas de markdown e texto ao redor |
+| **Esquema** | Que os dados tenham o tipo correto | O Pydantic rejeita «dois» como quantidade, uma quantidade negativa ou uma intenção fora da lista |
+| **Domínio** | Que o dado signifique o correto | Os faltantes são recalculados pelo código: não se confia no que o modelo declara. Um dado ausente é `null`, nunca zero |
 
-Cuando la sintaxis o el esquema fallan, una **segunda cadena repara** la salida (`crear_lcel_robusta`). Recibe la solicitud original, la salida inválida y el mensaje de error, y su respuesta vuelve a pasar por el mismo parser. Está montada con `with_fallbacks`, así que la reparación solo se ejecuta si hay error. Hay una sola reparación: si también falla, el error se propaga y no se publica nada.
+Quando a sintaxe ou o esquema falham, uma **segunda cadeia repara** a saída (`criar_lcel_robusta`). Ela recebe a solicitação original, a saída inválida e a mensagem de erro, e sua resposta passa de novo pelo mesmo parser. Está montada com `with_fallbacks`, então o reparo só é executado se houver erro. Há um único reparo: se ele também falhar, o erro se propaga e nada é publicado.
 
-### 3. El laboratorio de salidas rotas
+### 3. O laboratório de saídas quebradas
 
-Ocho salidas para la misma solicitud. El generador es un doble que emite el defecto; el reparador es `gpt-4.1-mini` real.
+Oito saídas para a mesma solicitação. O gerador é um duplo que emite o defeito; o reparador é o `gpt-4.1-mini` real.
 
-| Defecto | Capa que lo resolvió | Reparaciones | Datos finales correctos |
+| Defeito | Camada que o resolveu | Reparos | Dados finais corretos |
 |---|---|---|---|
-| JSON válido | Ninguna | 0 | Sí |
-| Cercas markdown y charla alrededor | Parser | 0 | Sí |
-| JSON truncado | Reparación | 1 | Sí |
-| Cantidad en letras («dos») | Reparación | 1 | Sí |
-| Cantidad negativa | Reparación | 1 | Sí |
-| Intención fuera de la lista | Reparación | 1 | Sí |
-| Texto libre sin JSON | Reparación | 1 | Sí |
-| Faltantes mal declarados | Regla de dominio | 0 | Sí (marca «cantidad» como faltante) |
+| JSON válido | Nenhuma | 0 | Sim |
+| Cercas markdown e conversa ao redor | Parser | 0 | Sim |
+| JSON truncado | Reparo | 1 | Sim |
+| Quantidade por extenso («dois») | Reparo | 1 | Sim |
+| Quantidade negativa | Reparo | 1 | Sim |
+| Intenção fora da lista | Reparo | 1 | Sim |
+| Texto livre sem JSON | Reparo | 1 | Sim |
+| Faltantes mal declarados | Regra de domínio | 0 | Sim (marca «quantidade» como faltante) |
 
-### 4. Hallazgo: un parser tolerante puede perder datos en silencio
+### 4. Achado: um parser tolerante pode perder dados em silêncio
 
-Al montar el laboratorio apareció algo que no estaba previsto. El parser de LangChain acepta JSON cortado. Con la cadena simple, una salida truncada se convirtió en un objeto válido **sin el plazo de 7 días y sin ningún error**. En este dominio eso es grave: la comparación se haría sin un límite que el usuario sí pidió.
+Ao montar o laboratório apareceu algo que não estava previsto. O parser do LangChain aceita JSON cortado. Com a cadeia simples, uma saída truncada virou um objeto válido **sem o prazo de 7 dias e sem nenhum erro**. Neste domínio isso é grave: a comparação seria feita sem um limite que o usuário pediu.
 
-La corrección fue añadir a la cadena robusta una comprobación estricta de que el JSON esté entero. Si no lo está, la salida va a reparación. La cadena simple conserva el comportamiento original, y una prueba deja documentados los dos resultados.
+A correção foi acrescentar à cadeia robusta uma checagem estrita de que o JSON esteja inteiro. Se não estiver, a saída vai para reparo. A cadeia simples conserva o comportamento original, e um teste deixa documentados os dois resultados.
 
-### 5. Parser frente a `with_structured_output`
+### 5. Parser versus `with_structured_output`
 
-En clase se vieron dos formas de obtener salida estructurada. Se ejecutaron las dos con el modelo real sobre las tres solicitudes y dieron **el mismo resultado**.
+Em aula foram vistas duas formas de obter saída estruturada. As duas foram executadas com o modelo real sobre as três solicitações. Deram **o mesmo resultado em duas das três**. Na solicitação «Preciso de um termostato para geladeira, sem pressa» os dados extraídos foram os mesmos, mas a intenção mudou: `outro` com o parser e `consultar` com `with_structured_output`.
 
 | | `PydanticOutputParser` | `with_structured_output` |
 |---|---|---|
-| Cómo fuerza el formato | Instrucciones dentro del prompt | Esquema enviado por la API del modelo |
-| Funciona con cualquier modelo | Sí, también con dobles de prueba | Solo si el modelo lo soporta |
-| Se puede probar sin credenciales | Sí | No |
-| Permite ver y reparar la salida cruda | Sí | No, la salida ya llega convertida |
+| Como força o formato | Instruções dentro do prompt | Esquema enviado pela API do modelo |
+| Funciona com qualquer modelo | Sim, também com duplos de teste | Só se o modelo tiver suporte |
+| Pode ser testado sem credenciais | Sim | Não |
+| Permite ver e reparar a saída bruta | Sim | Não, a saída já chega convertida |
 
-**Decisión técnica.** Se mantiene `PydanticOutputParser` como patrón principal por dos razones: la rúbrica pide un output parser, y es la única opción que deja ver el texto crudo del modelo, que es lo que hace posible el laboratorio, la reparación y las pruebas sin credenciales.
+**Decisão técnica.** O `PydanticOutputParser` é mantido como padrão principal por duas razões: a rubrica pede um output parser, e ele é a única opção que deixa ver o texto bruto do modelo, que é o que torna possíveis o laboratório, o reparo e os testes sem credenciais.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Objeto validado desde tres solicitudes, con `invoke` y `batch` | [trazas/fase1_chain_llm.json](trazas/fase1_chain_llm.json) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
-| Laboratorio: cinco reparaciones hechas por el modelo real, todas con datos finales correctos | Mismo archivo, `laboratorio_salidas_rotas`; [laboratorio.py](../src/pedro/laboratorio.py) | Real remoto para el reparador; el generador es un **doble** |
-| `with_structured_output` igual que el parser en las tres solicitudes | Mismo archivo, `with_structured_output` | Ejecución real remota |
-| Laboratorio y pérdida silenciosa de datos, reproducibles sin credenciales | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R04» | Ejecución con **doble** (generador y reparador) |
-| Cada defecto cae en su capa; la reparación recibe solicitud, salida y error; una reparación fallida no se publica; el parser simple pierde el plazo y la cadena robusta no | [tests/test_salida_estructurada.py](../tests/test_salida_estructurada.py) | Pruebas automáticas |
+| Objeto validado a partir de três solicitações, com `invoke` e `batch` | [rastros/fase1_chain_llm.json](rastros/fase1_chain_llm.json) | **Execução real remota** (`gpt-4.1-mini`, temperatura 0) |
+| Laboratório: cinco reparos feitos pelo modelo real, todos com dados finais corretos | Mesmo arquivo, `laboratorio_saidas_quebradas`; [laboratorio.py](../src/pedro/laboratorio.py) | Real remoto para o reparador; o gerador é um **duplo** |
+| `with_structured_output` igual ao parser em duas das três solicitações; na segunda a intenção foi diferente | Mesmo arquivo, `with_structured_output` | Execução real remota |
+| Laboratório e perda silenciosa de dados, reproduzíveis sem credenciais | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R04» | Execução com **duplo** (gerador e reparador) |
+| Cada defeito cai na sua camada; o reparo recebe solicitação, saída e erro; um reparo que falha não é publicado; o parser simples perde o prazo e a cadeia robusta não | [tests/test_saida_estruturada.py](../tests/test_saida_estruturada.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- La cadena de extracción es didáctica: el chat extrae las restricciones con reglas deterministas ([dialogue.py](../src/pedro/dialogue.py)), no con esta cadena. El agente final sí usa `PydanticOutputParser` para `RespuestaCompra`.
-- Las salidas rotas se escribieron a mano; no son fallos observados del modelo real, que en estas ejecuciones respondió siempre con JSON válido.
-- Una sola reparación por diseño. No se midió con qué frecuencia el modelo real necesitaría reparación.
+- A cadeia de extração é didática: o chat extrai as restrições com regras determinísticas ([dialogue.py](../src/pedro/dialogue.py)), não com esta cadeia. O agente final usa, sim, `PydanticOutputParser` para `RespostaCompra`.
+- As saídas quebradas foram escritas à mão; não são falhas observadas do modelo real, que nestas execuções respondeu sempre com JSON válido.
+- Um único reparo por desenho. Não foi medido com que frequência o modelo real precisaria de reparo.
+- As duas formas de saída estruturada não coincidiram em tudo: em uma de três solicitações a intenção foi diferente. É uma única execução.
 
-## R05 — Runnable (invoke, batch, stream) y composición con @chain
+## R05 — Runnable (invoke, batch, stream) e composição com @chain
 
-> ¿El alumno aplicó la interfaz Runnable (invoke, batch, stream) e implementó composición imperativa con el decorador @chain?
+> O aluno aplicou a interface Runnable (invoke, batch, stream) e implementou composição imperativa com o decorador @chain?
 
-**Respuesta corta.** Sí. Los tres métodos se ejecutaron con el modelo real y se midió para qué sirve cada uno. Hay dos cadenas con `@chain`: una simple y otra con reparación de errores escrita paso a paso.
+**Resposta curta.** Sim. Os três métodos foram executados com o modelo real e foi medido para que serve cada um. Há duas cadeias com `@chain`: uma simples e outra com reparo de erros escrita passo a passo.
 
-### 1. Los tres métodos, con el modelo real
+### 1. Os três métodos, com o modelo real
 
-Todo objeto de LangChain que sea `Runnable` ofrece los mismos tres métodos. Se usaron sobre la cadena de extracción:
+Todo objeto do LangChain que seja `Runnable` oferece os mesmos três métodos. Eles foram usados sobre a cadeia de extração:
 
-| Método | Para qué sirve | Qué se observó |
+| Método | Para que serve | O que foi observado |
 |---|---|---|
-| `invoke` | Una entrada, una salida | «Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días» → objeto validado |
-| `batch` | Varias entradas a la vez | 3 solicitudes en **1,43 s**; las mismas 3 con `invoke` en serie tardaron **4,55 s**. Mismos resultados |
-| `stream` | Recibir la salida a medida que se genera | **19 estados parciales**; el primero a los **0,45 s** de un total de 1,07 s |
+| `invoke` | Uma entrada, uma saída | «Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias» → objeto validado |
+| `batch` | Várias entradas de uma vez | 3 solicitações em **1,47 s**; as mesmas 3 com `invoke` em série levaram **4,83 s**. Mesmos resultados |
+| `stream` | Receber a saída à medida que é gerada | **20 estados parciais**; o primeiro aos **0,59 s** de um total de 1,27 s |
 
-Son una sola medición cada una: sirven para ver el efecto, no como benchmark.
+É uma única medição de cada: servem para ver o efeito, não como benchmark.
 
-### 2. Lo aprendido sobre `stream`
+### 2. O que se aprendeu sobre `stream`
 
-`stream` solo transmite si **todos** los pasos de la cadena saben transmitir. Se comprobó con dos cadenas:
+`stream` só transmite se **todos** os passos da cadeia sabem transmitir. Isso foi comprovado com duas cadeias:
 
-- Con el parser Pydantic llega **un único fragmento**: necesita el JSON completo para validarlo.
-- Con el parser de JSON parcial (`crear_lcel_parcial`) llega el objeto mientras se forma: `{}` → `{"intencion": "comparar", "solicitud": {"producto_id": "PEC"}}` → … → objeto completo.
+- Com o parser Pydantic chega **um único fragmento**: ele precisa do JSON completo para validá-lo.
+- Com o parser de JSON parcial (`criar_lcel_parcial`) o objeto chega enquanto se forma: `{}` → `{"intencao": "comparar", "solicitacao": {"produto_id": "PEC"}}` → … → objeto completo.
 
-La consecuencia práctica: para mostrar progreso al usuario sirve la segunda; para decidir una compra solo vale la primera, porque un estado parcial todavía no está validado.
+A consequência prática: para mostrar progresso ao usuário serve a segunda; para decidir uma compra só vale a primeira, porque um estado parcial ainda não está validado.
 
-### 3. Composición imperativa con `@chain`
+### 3. Composição imperativa com `@chain`
 
-`@chain` convierte una función de Python en un `Runnable`: dentro se escribe código normal y por fuera tiene `invoke`, `batch` y `stream`.
+`@chain` converte uma função Python em um `Runnable`: dentro se escreve código normal e por fora ela tem `invoke`, `batch` e `stream`.
 
-| Cadena | Qué hace |
+| Cadeia | O que faz |
 |---|---|
-| `crear_chain` | Envuelve la extracción en una función decorada |
-| `crear_chain_robusta` | La extracción con reparación de R04, escrita con `try/except`: genera, intenta validar y, si falla, llama a la cadena reparadora |
+| `criar_chain` | Envolve a extração em uma função decorada |
+| `criar_chain_robusta` | A extração com o reparo de R04, escrita com `try/except`: gera, tenta validar e, se falhar, chama a cadeia reparadora |
 
 ```python
 @chain
-def extraer_con_reparacion(dato: dict) -> Extraccion:
-    salida = generar.invoke(dato)
+def extrair_com_reparo(dado: dict) -> Extracao:
+    saida = gerar.invoke(dado)
     try:
-        extraccion = parser.parse(salida)
-        if not _json_completo(salida):
-            raise OutputParserException("JSON incompleto: la salida se cortó antes de cerrar")
-    except OutputParserException as error:
-        corregida = reparar.invoke({"texto": dato["texto"], "salida": salida, "error": error})
-        extraccion = parser.parse(corregida)
-    return _validar(extraccion)
+        extracao = parser.parse(saida)
+        if not _json_completo(saida):
+            raise OutputParserException("JSON incompleto: a saída foi cortada antes de fechar")
+    except OutputParserException as erro:
+        corrigida = reparar.invoke({"texto": dado["texto"], "saida": saida, "erro": erro})
+        extracao = parser.parse(corrigida)
+    return _validar(extracao)
 ```
 
-Se pasó el laboratorio de salidas rotas de R04 por esta versión y por la declarativa: las dos resolvieron los ocho casos en la misma capa y con los mismos datos, también con el modelo real como reparador.
+O laboratório de saídas quebradas de R04 passou por esta versão e pela declarativa: as duas resolveram os oito casos na mesma camada e com os mesmos dados, também com o modelo real como reparador.
 
-**Decisión técnica.** Se escribió la versión imperativa de la cadena con reparación, y no solo un envoltorio trivial, porque es donde `@chain` aporta algo: el control de errores se lee de arriba abajo y se puede depurar con un punto de parada. La comparación con la versión declarativa y la elección del patrón principal se justifican en R06.
+**Decisão técnica.** Foi escrita a versão imperativa da cadeia com reparo, e não só um invólucro trivial, porque é onde `@chain` agrega algo: o controle de erros é lido de cima para baixo e pode ser depurado com um ponto de parada. A comparação com a versão declarativa e a escolha do padrão principal são justificadas em R06.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| `invoke`, `batch` y `stream` con tiempos, estados parciales y resultado de `@chain` | [trazas/fase1_chain_llm.json](trazas/fase1_chain_llm.json); [scripts/demostrar_fase1.py](../scripts/demostrar_fase1.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0); una medición |
-| Cadena imperativa igual a la declarativa en los ocho casos del laboratorio, con el modelo real reparando | Mismo archivo, `laboratorio_con_chain_imperativa` | Real remoto para el reparador; generador **doble** |
-| Los tres métodos sobre `@chain`, stream de 1 fragmento frente a estados parciales, y código de la cadena imperativa | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R05» | Ejecución con **doble** (modelo que emite el JSON en trozos) |
-| `@chain` expone los tres métodos; el stream parcial emite varios estados; imperativa y declarativa son equivalentes | [tests/test_salida_estructurada.py](../tests/test_salida_estructurada.py) | Pruebas automáticas |
+| `invoke`, `batch` e `stream` com tempos, estados parciais e resultado de `@chain` | [rastros/fase1_chain_llm.json](rastros/fase1_chain_llm.json); [scripts/demonstrar_fase1.py](../scripts/demonstrar_fase1.py) | **Execução real remota** (`gpt-4.1-mini`, temperatura 0); uma medição |
+| Cadeia imperativa igual à declarativa nos oito casos do laboratório, com o modelo real reparando | Mesmo arquivo, `laboratorio_com_chain_imperativa` | Real remoto para o reparador; gerador **duplo** |
+| Os três métodos sobre `@chain`, stream de 1 fragmento versus estados parciais, e código da cadeia imperativa | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R05» | Execução com **duplo** (modelo que emite o JSON em pedaços) |
+| `@chain` expõe os três métodos; o stream parcial emite vários estados; imperativa e declarativa são equivalentes | [tests/test_saida_estruturada.py](../tests/test_saida_estruturada.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- Los tiempos son de una sola ejecución y dependen de la red.
-- El chat de Streamlit no usa `stream`: muestra la respuesta completa porque debe pasar la verificación antes de publicarse.
-- `batch` no se usa en el flujo del chat, que atiende una solicitud por turno; sí lo usaría una evaluación por lotes.
+- Os tempos são de uma única execução e dependem da rede.
+- O chat do Streamlit não usa `stream`: mostra a resposta completa porque ela deve passar pela verificação antes de ser publicada.
+- `batch` não é usado no fluxo do chat, que atende uma solicitação por turno; uma avaliação em lote o usaria.
 
-## R06 — Composición declarativa con LCEL y justificación
+## R06 — Composição declarativa com LCEL e justificativa
 
-> ¿El alumno implementó la composición declarativa de la chain con LCEL y justificó la elección entre composición imperativa y declarativa?
+> O aluno implementou a composição declarativa da chain com LCEL e justificou a escolha entre composição imperativa e declarativa?
 
-**Respuesta corta.** Sí. Hay cuatro cadenas LCEL y la misma cadena con reparación existe en los dos estilos. La elección no se justifica con opiniones: se midió qué deja ver cada estilo. **LCEL es el patrón principal para las cadenas; el código imperativo se reserva para decidir el camino de cada turno.**
+**Resposta curta.** Sim. Há quatro cadeias LCEL e a mesma cadeia com reparo existe nos dois estilos. A escolha não é justificada com opiniões: foi medido o que cada estilo deixa ver. **LCEL é o padrão principal para as cadeias; o código imperativo fica reservado para decidir o caminho de cada turno.**
 
-### 1. Las cadenas LCEL
+### 1. As cadeias LCEL
 
-| Cadena | Composición | Qué muestra de LCEL |
+| Cadeia | Composição | O que mostra de LCEL |
 |---|---|---|
-| `crear_lcel` | `plantilla \| modelo \| parser \| regla` | El operador `\|` como secuencia |
-| `crear_lcel_robusta` | `assign(salida=…) \| analizar.with_fallbacks([reparar]) \| regla` | Tratamiento de errores declarativo |
-| `crear_lcel_parcial` | `plantilla \| modelo \| JsonOutputParser` | Transmisión de estados parciales |
-| `composicion_paralela` | `RunnableParallel({…}) \| resumen` | Ramas independientes en paralelo |
+| `criar_lcel` | `modelo de prompt \| modelo \| parser \| regra` | O operador `\|` como sequência |
+| `criar_lcel_robusta` | `assign(saida=…) \| analisar.with_fallbacks([reparar]) \| regra` | Tratamento de erros declarativo |
+| `criar_lcel_parcial` | `modelo de prompt \| modelo \| JsonOutputParser` | Transmissão de estados parciais |
+| `composicao_paralela` | `RunnableParallel({…}) \| resumo` | Ramos independentes em paralelo |
 
-Todas están en [chains.py](../src/pedro/chains.py).
+Todas estão em [chains.py](../src/pedro/chains.py).
 
-### 2. La misma cadena en los dos estilos
+### 2. A mesma cadeia nos dois estilos
 
-`crear_lcel_robusta` (declarativa) y `crear_chain_robusta` (imperativa) hacen lo mismo: extraer, validar y reparar una vez si hace falta. Dan **el mismo resultado** en los ocho casos del laboratorio, también con el modelo real. Lo que cambia es lo que se puede observar desde fuera. Esto se midió ejecutando las dos:
+`criar_lcel_robusta` (declarativa) e `criar_chain_robusta` (imperativa) fazem o mesmo: extrair, validar e reparar uma vez se for preciso. Dão **o mesmo resultado** nos oito casos do laboratório, também com o modelo real. O que muda é o que se pode observar de fora. Isso foi medido executando as duas:
 
 | Medida | Declarativa (LCEL) | Imperativa (`@chain`) |
 |---|---|---|
-| Pasos que registra la traza, sin fallo | 10 | 5 |
-| Pasos que registra la traza, con reparación | 16 | 9 |
-| El fallo del parser queda anotado en la traza | Sí | No |
-| La validación de dominio queda anotada | Sí | No |
-| El grafo muestra la reparación | Sí (`WithFallbacks`) | No |
-| Resultado tras reparar | Correcto | Correcto |
+| Passos que o rastro registra, sem falha | 10 | 5 |
+| Passos que o rastro registra, com reparo | 16 | 9 |
+| A falha do parser fica anotada no rastro | Sim | Não |
+| A validação de domínio fica anotada | Sim | Não |
+| O grafo mostra o reparo | Sim (`WithFallbacks`) | Não |
+| Resultado depois de reparar | Correto | Correto |
 
-La razón: en `@chain`, el `try/except` y la llamada a la regla de dominio son Python normal, y LangChain no puede verlos. En LCEL cada paso es un objeto con nombre.
+A razão: em `@chain`, o `try/except` e a chamada à regra de domínio são Python normal, e o LangChain não consegue vê-los. Em LCEL cada passo é um objeto com nome.
 
-### 3. Comparación
+### 3. Comparação
 
-| Criterio | Declarativa (LCEL) | Imperativa (`@chain`) |
+| Critério | Declarativa (LCEL) | Imperativa (`@chain`) |
 |---|---|---|
-| Observabilidad | Cada paso y cada error aparecen en la traza | Solo se ven los componentes que se invocan dentro |
-| Lectura | Se lee como una tubería; el error es una rama declarada | Se lee de arriba abajo, como cualquier función |
-| Depuración | Por la traza | Con un punto de parada |
-| Control de flujo | Secuencia, paralelo y fallback | Cualquiera: bucles, varias ramas, salidas anticipadas |
-| Cambiar «una reparación» por «hasta tres» | Hay que reestructurar la cadena | Se cambia el `try` por un bucle |
-| `invoke`, `batch`, `stream` | Los tres | Los tres |
+| Observabilidade | Cada passo e cada erro aparecem no rastro | Só se veem os componentes invocados lá dentro |
+| Leitura | Lê-se como um encadeamento; o erro é um ramo declarado | Lê-se de cima para baixo, como qualquer função |
+| Depuração | Pelo rastro | Com um ponto de parada |
+| Controle de fluxo | Sequência, paralelo e fallback | Qualquer um: laços, vários ramos, saídas antecipadas |
+| Trocar «um reparo» por «até três» | É preciso reestruturar a cadeia | Troca-se o `try` por um laço |
+| `invoke`, `batch`, `stream` | Os três | Os três |
 
-### 4. Decisión
+### 4. Decisão
 
-- **Patrón principal: LCEL**, para todo lo que sea una tubería: plantilla, modelo, parser, reparación y ramas paralelas. En este proyecto la trazabilidad importa más que la flexibilidad: la rúbrica y el dominio piden poder demostrar qué pasó en cada paso, y con LCEL un error o una reparación quedan registrados sin escribir código adicional.
-- **Imperativo solo para orquestar el turno.** La función `turno` de `crear_flujo`, en [agent.py](../src/pedro/agent.py), es código imperativo envuelto como `Runnable`. Tiene salidas anticipadas (comando de diagnóstico, ruta directa, aclaración), un bucle de dos propuestas y condiciones que dependen del resultado anterior. Expresar eso con LCEL lo haría más difícil de leer. Lo que LangChain no ve ahí se anota a mano en la traza (`Traza`), como el anclaje de citas; las llamadas a herramientas las registra el callback.
+- **Padrão principal: LCEL**, para tudo o que seja um encadeamento: modelo de prompt, modelo, parser, reparo e ramos paralelos. Neste projeto a rastreabilidade importa mais que a flexibilidade: a rubrica e o domínio pedem poder demonstrar o que aconteceu em cada passo, e com LCEL um erro ou um reparo ficam registrados sem escrever código adicional.
+- **Imperativo só para orquestrar o turno.** A função `turno` de `criar_fluxo`, em [agent.py](../src/pedro/agent.py), é código imperativo envolvido como `Runnable`. Tem saídas antecipadas (comando de diagnóstico, rota direta, esclarecimento), um laço de duas propostas e condições que dependem do resultado anterior. Expressar isso com LCEL o tornaria mais difícil de ler. O que o LangChain não vê ali é anotado à mão no rastro (`Rastro`), como a ancoragem de citações; as chamadas a ferramentas são registradas pelo callback.
 
-En una frase: **declarativo para lo que es una tubería, imperativo para lo que es una decisión.**
+Em uma frase: **declarativo para o que é um encadeamento, imperativo para o que é uma decisão.**
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Medición de traza, error y grafo en los dos estilos, y diagrama Mermaid de la cadena LCEL | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R06»; `comparar_estilos` en [laboratorio.py](../src/pedro/laboratorio.py) | Ejecución real local con **dobles** (sin modelo) |
-| Los dos estilos dan el mismo resultado en el laboratorio, con el modelo real reparando | [trazas/fase1_chain_llm.json](trazas/fase1_chain_llm.json), `laboratorio_con_chain_imperativa` | Real remoto para el reparador; generador **doble** |
-| Cadena LCEL con el modelo real: `invoke`, `batch` y `stream` | Mismo archivo | **Ejecución real remota** |
-| Los estilos coinciden en resultado y difieren en lo que ve la traza | [tests/test_salida_estructurada.py](../tests/test_salida_estructurada.py) | Pruebas automáticas |
-| Composición paralela ejecutada | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) | Ejecución real local |
+| Medição de rastro, erro e grafo nos dois estilos, e diagrama Mermaid da cadeia LCEL | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R06»; `comparar_estilos` em [laboratorio.py](../src/pedro/laboratorio.py) | Execução real local com **duplos** (sem modelo) |
+| Os dois estilos dão o mesmo resultado no laboratório, com o modelo real reparando | [rastros/fase1_chain_llm.json](rastros/fase1_chain_llm.json), `laboratorio_com_chain_imperativa` | Real remoto para o reparador; gerador **duplo** |
+| Cadeia LCEL com o modelo real: `invoke`, `batch` e `stream` | Mesmo arquivo | **Execução real remota** |
+| Os estilos coincidem no resultado e diferem no que o rastro vê | [tests/test_saida_estruturada.py](../tests/test_saida_estruturada.py) | Testes automáticos |
+| Composição paralela executada | [notebooks/02_react_ferramentas.ipynb](../notebooks/02_react_ferramentas.ipynb) | Execução real local |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- Los recuentos de pasos corresponden a esta cadena y a la versión instalada de LangChain; pueden cambiar con otra versión.
-- No se midió rendimiento: los dos estilos llaman al modelo las mismas veces.
-- La función `turno` usa `RunnableLambda`, no el decorador `@chain`; el decorador se demuestra en las cadenas de extracción.
+- As contagens de passos correspondem a esta cadeia e à versão instalada do LangChain; podem mudar com outra versão.
+- Não foi medido desempenho: os dois estilos chamam o modelo o mesmo número de vezes.
+- A função `turno` usa `RunnableLambda`, não o decorador `@chain`; o decorador é demonstrado nas cadeias de extração.
 
 ---
 
-# Fase 2 — Agente con herramientas y ReAct
+# Fase 2 — Agente com ferramentas e ReAct
 
-## R07 — Comparación de orquestadores y elección de LangChain
+## R07 — Comparação de orquestradores e escolha do LangChain
 
-> ¿El alumno comparó orquestadores de agentes autónomos y justificó la elección de LangChain para el problema?
+> O aluno comparou orquestradores de agentes autônomos e justificou a escolha do LangChain para o problema?
 
-**Respuesta corta.** Sí. Se comparan los seis orquestadores vistos en clase con los criterios de clase (autonomía, abstracción y modularidad), y dos de ellos —LangChain y LangGraph— se ejecutaron con el mismo agente y el modelo real. LangChain se mantiene porque Pedro es **un solo agente** que necesita **muchas piezas distintas** bajo un control estricto, y LangChain las trae todas: el proyecto usa 13 tipos de componentes suyos.
+**Resposta curta.** Sim. Os seis orquestradores vistos em aula são comparados com os critérios da aula (autonomia, abstração e modularidade), e dois deles — LangChain e LangGraph — foram executados com o mesmo agente e o modelo real. O LangChain fica porque o Pedro é **um único agente** que precisa de **muitas peças diferentes** sob um controle estrito, e o LangChain traz todas: o projeto usa 13 tipos de componentes dele.
 
-### 1. Para qué sirve un orquestador
+### 1. Para que serve um orquestrador
 
-En clase (14-10-2026) se dieron cuatro razones para no programar el agente desde cero: escalabilidad, gestión de la complejidad, estandarización y confiabilidad. Se añadieron dos propiedades que un orquestador debe facilitar: **autonomía** (que el agente decida y no solo obedezca) y **modularidad** (poder añadir o quitar componentes).
+Em aula (14-10-2026) foram dadas quatro razões para não programar o agente do zero: escalabilidade, gestão da complexidade, padronização e confiabilidade. Foram acrescentadas duas propriedades que um orquestrador deve facilitar: **autonomia** (o agente decide, e não só obedece) e **modularidade** (poder acrescentar ou tirar componentes).
 
-### 2. Comparación
+### 2. Comparação
 
-| Orquestador | Idea central | Autonomía | Abstracción | Modularidad | Encaje con Pedro |
+| Orquestrador | Ideia central | Autonomia | Abstração | Modularidade | Encaixe com o Pedro |
 |---|---|---|---|---|---|
-| **LangChain** | Componentes que se encadenan: plantillas, modelos, parsers, herramientas, memoria | Media: el agente elige herramientas dentro de un ejecutor acotado | Media: se ve y se controla cada paso | Alta: cada pieza se cambia por separado | **Alto** |
-| **LangGraph** | Grafo de estados con ciclos y puntos de control; misma familia que LangChain | Alta y controlable: el flujo es un grafo explícito | Baja-media: hay que definir estado, nodos y aristas | Alta | Alto, pero más de lo necesario |
-| **LlamaIndex** | Centrado en datos: indexar documentos y consultarlos | Media | Alta para RAG | Media: gira en torno a índices | Parcial: Pedro es más que RAG |
-| **AutoGen** | Varios agentes que conversan entre sí | Alta: los agentes se coordinan solos | Alta | Media | Bajo: aquí hay un solo agente |
-| **Semantic Kernel** | Funciones («plugins») y planificadores, orientado a integrarse en aplicaciones de empresa | Media | Media | Alta | Medio: su ecosistema natural es otro |
-| **Langflow** | Construcción visual, sin código o con poco código | La que tenga el flujo dibujado | Muy alta | Media: se trabaja con cajas | Bajo para un entregable de código probado |
+| **LangChain** | Componentes que se encadeiam: modelos de prompt, modelos, parsers, ferramentas, memória | Média: o agente escolhe ferramentas dentro de um executor limitado | Média: cada passo é visível e controlável | Alta: cada peça é trocada separadamente | **Alto** |
+| **LangGraph** | Grafo de estados com ciclos e pontos de controle; mesma família do LangChain | Alta e controlável: o fluxo é um grafo explícito | Baixa-média: é preciso definir estado, nós e arestas | Alta | Alto, mas mais do que o necessário |
+| **LlamaIndex** | Centrado em dados: indexar documentos e consultá-los | Média | Alta para RAG | Média: gira em torno de índices | Parcial: o Pedro é mais que RAG |
+| **AutoGen** | Vários agentes que conversam entre si | Alta: os agentes se coordenam sozinhos | Alta | Média | Baixo: aqui há um único agente |
+| **Semantic Kernel** | Funções («plugins») e planejadores, voltado à integração em aplicações de empresa | Média | Média | Alta | Médio: o ecossistema natural dele é outro |
+| **Langflow** | Construção visual, sem código ou com pouco código | A que o fluxo desenhado tiver | Muito alta | Média: trabalha-se com caixas | Baixo para uma entrega de código testado |
 
-LangChain y LangGraph se ejecutaron (ver el apartado siguiente). Para LlamaIndex, AutoGen, Semantic Kernel y Langflow la tabla es conceptual: no se instalaron y no se les atribuye ninguna prueba.
+LangChain e LangGraph foram executados (ver a seção seguinte). Para LlamaIndex, AutoGen, Semantic Kernel e Langflow a tabela é conceitual: não foram instalados e nenhum teste é atribuído a eles.
 
-### 3. Comparación ejecutada: el mismo agente en LangChain y en LangGraph
+### 3. Comparação executada: o mesmo agente no LangChain e no LangGraph
 
-Para no comparar solo en teoría, se construyó el mismo agente pequeño en los dos ([orquestadores.py](../src/pedro/orquestadores.py)): mismo modelo, mismas dos herramientas (`buscar_pieza` y `ofertas_de_pieza`) y mismo prompt. LangGraph se usó como en clase: `create_agent` con un *checkpointer* y un `thread_id`.
+Para não comparar só em teoria, o mesmo agente pequeno foi construído nos dois ([orquestradores.py](../src/pedro/orquestradores.py)): mesmo modelo, mesmas duas ferramentas (`buscar_peca` e `ofertas_da_peca`) e mesmo prompt. O LangGraph foi usado como em aula: `create_agent` com um *checkpointer* e um `thread_id`.
 
-| | LangChain clásico | LangGraph |
+| | LangChain clássico | LangGraph |
 |---|---|---|
-| Cómo se construye | `create_openai_tools_agent` + `AgentExecutor` + `RunnableWithMessageHistory` | `create_agent` con `InMemorySaver` |
-| Líneas para construirlo | 25 | 19 |
-| Memoria | Un historial por `session_id`, que guarda solo pregunta y respuesta | El estado completo del grafo por `thread_id`, incluidos los resultados de las herramientas |
-| Estructura visible | Una cadena con un ejecutor | Un grafo: `model` ⇄ `tools` |
-| Turno 1: «Busca el compresor con SKU NEVE-COMP-0001…» | `buscar_pieza` → PEC-01-0001 | `buscar_pieza` → PEC-01-0001 |
-| Turno 2: «¿Cuál de sus proveedores entrega más rápido…?» | `ofertas_de_pieza` → CentroPeças, 2 días | `ofertas_de_pieza` → CentroPeças, 2 días |
-| Turno 3: «¿Y cuál es el más barato con stock?» | **Vuelve a llamar** a `ofertas_de_pieza` → Atlantic Repair Parts, R$ 1.381,55 | **No llama a nada**: usa el resultado del turno 2 → la misma respuesta |
-| Otro hilo: «¿De qué pieza estábamos hablando?» | No lo sabe (hilos aislados) | No lo sabe (hilos aislados) |
-| Tiempo de los tres turnos | 5,0 s | 3,6 s |
+| Como é construído | `create_openai_tools_agent` + `AgentExecutor` + `RunnableWithMessageHistory` | `create_agent` com `InMemorySaver` |
+| Linhas para construí-lo | 25 | 19 |
+| Memória | Um histórico por `session_id`, que guarda só pergunta e resposta | O estado completo do grafo por `thread_id`, incluídos os resultados das ferramentas |
+| Estrutura visível | Uma cadeia com um executor | Um grafo: `model` ⇄ `tools` |
+| Turno 1: «Busque o compressor com SKU GELA-COMP-0001…» | `buscar_peca` → PEC-01-0001 | `buscar_peca` → PEC-01-0001 |
+| Turno 2: «Qual dos fornecedores dele entrega mais rápido…?» | `ofertas_da_peca` → CentroPeças, 2 dias | `ofertas_da_peca` → CentroPeças, 2 dias |
+| Turno 3: «E qual é o mais barato com estoque?…» | **Chama de novo** `ofertas_da_peca` → Atlantic Repair Parts, R$ 1.381,55 | **Não chama nada**: usa o resultado do turno 2 → a mesma resposta |
+| Outro fio: «De qual peça estávamos falando?» | Não sabe (fios isolados) | Não sabe (fios isolados) |
+| Tempo dos três turnos | 4,8 s | 3,9 s |
 
-Lo que enseña la ejecución:
+O que a execução ensina:
 
-- **Los dos resuelven la tarea igual.** Mismas herramientas y mismas respuestas, todas correctas según el catálogo.
-- **La diferencia real está en la memoria.** LangGraph guarda el estado entero, también lo que devolvieron las herramientas, y por eso en el turno 3 no repite la consulta. El historial de LangChain guarda solo lo que se dijo, y el agente tiene que volver a preguntar.
-- **Esa diferencia tiene dos caras.** Reutilizar un resultado ahorra una llamada, pero en Pedro sería un riesgo: los precios y el stock no deben salir de la memoria, sino releerse (R13). Aquí el comportamiento de LangChain —volver a consultar— es el que el dominio exige.
-- **LangGraph pide menos código** para este caso y da el grafo hecho.
+- **Os dois resolvem a tarefa do mesmo jeito.** Mesmas ferramentas e mesmas respostas, todas corretas segundo o catálogo.
+- **A diferença real está na memória.** O LangGraph guarda o estado inteiro, também o que as ferramentas devolveram, e por isso no turno 3 não repete a consulta. O histórico do LangChain guarda só o que foi dito, e o agente precisa perguntar de novo.
+- **Essa diferença tem dois lados.** Reutilizar um resultado economiza uma chamada, mas no Pedro seria um risco: preços e estoque não devem sair da memória, devem ser relidos (R13). Aqui o comportamento do LangChain — consultar de novo — é o que o domínio exige.
+- **O LangGraph pede menos código** para este caso e entrega o grafo pronto.
 
-Los tiempos son de una sola ejecución y dependen de la red.
+Os tempos são de uma única execução e dependem da rede.
 
-### 4. Por qué LangChain para este problema
+### 4. Por que LangChain para este problema
 
-1. **El problema es de un solo agente.** Recomendar una oferta verificada no necesita agentes que conversen. La coordinación multiagente de AutoGen añadiría mensajes que auditar sin resolver nada.
-2. **Hacen falta muchas piezas distintas, no una sola.** El proyecto usa 13 tipos de componentes de LangChain (34 nombres importados): plantillas, parsers, composición LCEL, herramientas, agente y ejecutor, memoria, historial, callbacks, FAISS, embeddings, troceado, cadenas clásicas y el modelo de chat. Este inventario sale de leer los imports del código. Un orquestador centrado en datos como LlamaIndex cubriría bien la parte de políticas y dejaría fuera el resto.
-3. **El control importa más que la autonomía.** El dominio maneja importes, stock y plazos: el agente debe ser auditable. La abstracción media de LangChain deja ver cada paso —la traza de R06 lo demostró— y permite intercalar la verificación antes de publicar.
-4. **Se puede probar sin credenciales.** Cualquier componente se sustituye por un doble porque todos comparten la interfaz `Runnable`. Todas las pruebas automáticas del proyecto corren sin llamar a ningún modelo.
-5. **La rúbrica nombra APIs de LangChain**: `initialize_agent`, `RouterChain`, `ConversationBufferMemory`, `create_openai_tools_agent`, `AgentExecutor` y `RunnableWithMessageHistory`.
+1. **O problema é de um único agente.** Recomendar uma oferta verificada não precisa de agentes que conversem. A coordenação multiagente do AutoGen acrescentaria mensagens para auditar sem resolver nada.
+2. **São necessárias muitas peças diferentes, não uma só.** O projeto usa 13 tipos de componentes do LangChain (42 nomes importados): modelos de prompt, parsers, composição LCEL, ferramentas, agente e executor, memória, histórico, callbacks, FAISS, embeddings, divisão de documentos, cadeias clássicas e o modelo de chat. Esse inventário sai da leitura dos imports do código. Um orquestrador centrado em dados como o LlamaIndex cobriria bem a parte de políticas e deixaria o resto de fora.
+3. **O controle importa mais que a autonomia.** O domínio lida com valores, estoque e prazos: o agente deve ser auditável. A abstração média do LangChain deixa ver cada passo — o rastro de R06 demonstrou isso — e permite intercalar a verificação antes de publicar.
+4. **Dá para testar sem credenciais.** Qualquer componente é substituído por um duplo porque todos compartilham a interface `Runnable`. Todos os testes automáticos do projeto rodam sem chamar nenhum modelo.
+5. **A rubrica nomeia APIs do LangChain**: `initialize_agent`, `RouterChain`, `ConversationBufferMemory`, `create_openai_tools_agent`, `AgentExecutor` e `RunnableWithMessageHistory`.
 
-### 5. Lo que LangChain no resuelve bien aquí
+### 5. O que o LangChain não resolve bem aqui
 
-La elección tiene un coste, y conviene decirlo. Tres de las APIs que pide la rúbrica están marcadas como obsoletas por la propia biblioteca (`initialize_agent`, `ConversationBufferMemory` y `RunnableWithMessageHistory`), y sus avisos recomiendan pasar a LangGraph. En clase se usó la forma moderna, `create_agent` con memoria por `thread_id`.
+A escolha tem um custo, e convém dizê-lo. Três das APIs que a rubrica pede estão marcadas como obsoletas pela própria biblioteca (`initialize_agent`, `ConversationBufferMemory` e `RunnableWithMessageHistory`), e os avisos recomendam passar para o LangGraph. Em aula foi usada a forma moderna, `create_agent` com memória por `thread_id`.
 
-Por eso las APIs clásicas están aisladas en [legacy.py](../src/pedro/legacy.py) y el flujo del turno —que tiene ramas, un bucle de dos propuestas y salidas anticipadas— está escrito a mano. Ese flujo es justamente lo que LangGraph modelaría como un grafo. **Si el proyecto siguiera creciendo, el paso natural sería migrar la orquestación del turno a LangGraph y conservar los componentes de LangChain.** La comparación ejecutada muestra que esa migración es viable —el mismo agente funciona con menos código— y también qué habría que vigilar: que el estado guardado no convierta en memoria los datos que deben releerse.
+Por isso as APIs clássicas estão isoladas em [legacy.py](../src/pedro/legacy.py) e o fluxo do turno — que tem ramos, um laço de duas propostas e saídas antecipadas — está escrito à mão. Esse fluxo é justamente o que o LangGraph modelaria como um grafo. **Se o projeto continuasse crescendo, o passo natural seria migrar a orquestração do turno para o LangGraph e conservar os componentes do LangChain.** A comparação executada mostra que essa migração é viável — o mesmo agente funciona com menos código — e também o que seria preciso vigiar: que o estado guardado não transforme em memória os dados que devem ser relidos.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Inventario de piezas de LangChain usadas, obtenido de los imports | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) §«R07»; `inventario_langchain` en [anatomia.py](../src/pedro/anatomia.py) | Ejecución real local (sin modelo) |
-| El mismo agente en LangChain y en LangGraph: tres turnos y un hilo aparte en cada uno | [trazas/r07_orquestadores_llm.json](trazas/r07_orquestadores_llm.json); [scripts/demostrar_r07.py](../scripts/demostrar_r07.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
-| Los dos ejecutan la herramienta y separan los hilos | [tests/test_orquestadores.py](../tests/test_orquestadores.py) | Pruebas con doble |
-| Tabla comparativa y decisión | Esta sección; [comparaciones.md](comparaciones.md) | Documentación |
-| El inventario refleja el código | [tests/test_anatomia.py](../tests/test_anatomia.py) | Prueba automática |
+| Inventário de peças do LangChain usadas, obtido dos imports | [notebooks/02_react_ferramentas.ipynb](../notebooks/02_react_ferramentas.ipynb) §«R07»; `inventario_langchain` em [anatomia.py](../src/pedro/anatomia.py) | Execução real local (sem modelo) |
+| O mesmo agente no LangChain e no LangGraph: três turnos e um fio à parte em cada um | [rastros/r07_orquestradores_llm.json](rastros/r07_orquestradores_llm.json); [scripts/demonstrar_r07.py](../scripts/demonstrar_r07.py) | **Execução real remota** (`gpt-4.1-mini`, temperatura 0) |
+| Os dois executam a ferramenta e separam os fios | [tests/test_orquestradores.py](../tests/test_orquestradores.py) | Testes com duplo |
+| Tabela comparativa e decisão | Esta seção; [comparacoes.md](comparacoes.md) | Documentação |
+| O inventário reflete o código | [tests/test_anatomia.py](../tests/test_anatomia.py) | Teste automático |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- La comparación con LlamaIndex, AutoGen, Semantic Kernel y Langflow es conceptual: no se instalaron ni se ejecutaron.
-- La comparación ejecutada usa un agente de dos herramientas y una conversación; no es el agente completo de Pedro.
-- LangGraph es una dependencia opcional (extra `comparacion`); el producto no lo usa.
-- Las valoraciones de autonomía, abstracción y modularidad son cualitativas.
+- A comparação com LlamaIndex, AutoGen, Semantic Kernel e Langflow é conceitual: não foram instalados nem executados.
+- A comparação executada usa um agente de duas ferramentas e uma conversa; não é o agente completo do Pedro.
+- O LangGraph é uma dependência opcional (extra `comparacion`); o produto não o usa.
+- As avaliações de autonomia, abstração e modularidade são qualitativas.
 
-## R08 — Agente ReAct con initialize_agent, herramientas y memoria
+## R08 — Agente ReAct com initialize_agent, ferramentas e memória
 
-> ¿El alumno construyó un agente con herramientas y memoria e implementó el patrón ReAct con initialize_agent?
+> O aluno construiu um agente com ferramentas e memória e implementou o padrão ReAct com initialize_agent?
 
-**Respuesta corta.** Sí. Hay un agente ReAct construido con `initialize_agent` y `ZERO_SHOT_REACT_DESCRIPTION`, con dos herramientas y `ConversationBufferMemory`. Se ejecutó con el modelo real: razona, elige la herramienta y responde. Además se comprobó que la memoria solo sirve si el prompt la incluye.
+**Resposta curta.** Sim. Há um agente ReAct construído com `initialize_agent` e `ZERO_SHOT_REACT_DESCRIPTION`, com duas ferramentas e `ConversationBufferMemory`. Ele foi executado com o modelo real: raciocina, escolhe a ferramenta e responde. Também foi comprovado que a memória só serve se o prompt a incluir.
 
-### 1. El agente
+### 1. O agente
 
-Está en `crear_react_textual`, en [legacy.py](../src/pedro/legacy.py).
+Está em `criar_react_textual`, em [legacy.py](../src/pedro/legacy.py).
 
-| Parte | En el código |
+| Parte | No código |
 |---|---|
-| Patrón ReAct | `initialize_agent(..., agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)` |
-| Herramientas | `buscar_pieza` (por nombre, SKU o ID) y `ofertas_de_pieza` (proveedor, precio, stock y plazo de un ID) |
-| Memoria | `ConversationBufferMemory`, que guarda cada pregunta y respuesta |
-| Límites | 5 iteraciones como máximo y tolerancia a errores de formato del modelo |
+| Padrão ReAct | `initialize_agent(..., agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)` |
+| Ferramentas | `buscar_peca` (por nome, SKU ou ID) e `ofertas_da_peca` (fornecedor, preço, estoque e prazo de um ID) |
+| Memória | `ConversationBufferMemory`, que guarda cada pergunta e resposta |
+| Limites | No máximo 5 iterações e tolerância a erros de formato do modelo |
 
-ReAct significa razonar y actuar en ciclo: el modelo escribe un pensamiento, elige una acción, recibe una observación y repite hasta tener la respuesta.
+ReAct significa raciocinar e agir em ciclo: o modelo escreve um pensamento, escolhe uma ação, recebe uma observação e repete até ter a resposta.
 
-### 2. El ciclo ReAct, con el modelo real
+### 2. O ciclo ReAct, com o modelo real
 
-Segundo turno de la conversación, tal como lo escribió `gpt-4.1-mini`:
+Segundo turno da conversa, tal como o `gpt-4.1-mini` escreveu:
 
 ```text
-Pregunta:     ¿Cuál de sus proveedores entrega más rápido y en cuántos días?
-Thought:      Para responder a esta pregunta, necesito obtener las ofertas de la pieza
-              con ID PEC-01-0001 para ver los proveedores, precios, stock y plazos de entrega.
-Action:       ofertas_de_pieza
+Pergunta:     Qual dos fornecedores dele entrega mais rápido e em quantos dias?
+Thought:      Para responder qual fornecedor do compressor com ID PEC-01-0001 entrega
+              mais rápido e em quantos dias, preciso consultar as ofertas desse ID.
+Action:       ofertas_da_peca
 Action Input: PEC-01-0001
-Observation:  [ofertas del catálogo: proveedor, precio, stock y plazo]
-Respuesta:    El proveedor que entrega más rápido es CentroPeças, con un plazo de entrega de 2 días.
+Observation:  [ofertas do catálogo: fornecedor, preço, estoque e prazo]
+Resposta:     O fornecedor que entrega mais rápido é o CentroPeças, com prazo de 2 dias.
 ```
 
-El dato es correcto: en el catálogo, CentroPeças (BR-06) tiene plazo de 2 días para esa pieza.
+O dado está correto: no catálogo, a CentroPeças (BR-06) tem prazo de 2 dias para essa peça.
 
-### 3. Lo aprendido: la memoria no sirve si el prompt no la lee
+### 3. O que se aprendeu: a memória não serve se o prompt não a lê
 
-El prompt zero-shot original solo tiene dos variables: la pregunta y el borrador de razonamiento. `ConversationBufferMemory` guarda la conversación, pero **el modelo nunca la ve**. Se ejecutó la misma conversación de dos turnos de las dos maneras:
+O prompt zero-shot original só tem duas variáveis: a pergunta e o rascunho de raciocínio. `ConversationBufferMemory` guarda a conversa, mas **o modelo nunca a vê**. A mesma conversa de dois turnos foi executada das duas maneiras:
 
-| | Historial dentro del prompt | Prompt zero-shot original |
+| | Histórico dentro do prompt | Prompt zero-shot original |
 |---|---|---|
-| Variables del prompt | `input`, `chat_history`, `agent_scratchpad` | `input`, `agent_scratchpad` |
-| Turno 1: «Busca el compresor con SKU NEVE-COMP-0001 y dime su ID» | `buscar_pieza` → PEC-01-0001 | `buscar_pieza` → PEC-01-0001 |
-| Turno 2: «¿Cuál de **sus** proveedores entrega más rápido…?» | `ofertas_de_pieza(PEC-01-0001)` → CentroPeças, 2 días | No sabe a qué pieza se refiere y pide el ID |
+| Variáveis do prompt | `input`, `chat_history`, `agent_scratchpad` | `input`, `agent_scratchpad` |
+| Turno 1: «Busque o compressor com SKU GELA-COMP-0001 e diga o ID dele.» | `buscar_peca` → PEC-01-0001 | `buscar_peca` → PEC-01-0001 |
+| Turno 2: «Qual dos fornecedores **dele** entrega mais rápido…?» | `ofertas_da_peca(PEC-01-0001)` → CentroPeças, 2 dias | Não sabe de qual peça se trata e pede o nome ou o ID |
 
-La corrección fue añadir `{chat_history}` al sufijo del prompt mediante `agent_kwargs`. En los dos casos la memoria guardó lo mismo; la diferencia está en si llega al modelo.
+A correção foi acrescentar `{chat_history}` ao sufixo do prompt por meio de `agent_kwargs`. Nos dois casos a memória guardou a mesma coisa; a diferença está em chegar ou não ao modelo.
 
-**Decisión técnica.** Este agente clásico se conserva aislado en `legacy.py` como demostración del patrón. El agente final de Pedro usa `create_openai_tools_agent` (R26) por tres motivos: las herramientas reciben argumentos con tipo en vez de un único texto; la decisión de llamar a una herramienta la devuelve la API del modelo y no hay que interpretarla de un texto libre; y `initialize_agent` está marcado como obsoleto por LangChain.
+**Decisão técnica.** Esse agente clássico fica isolado em `legacy.py` como demonstração do padrão. O agente final do Pedro usa `create_openai_tools_agent` (R26) por três motivos: as ferramentas recebem argumentos com tipo em vez de um único texto; a decisão de chamar uma ferramenta vem da API do modelo e não precisa ser interpretada a partir de um texto livre; e `initialize_agent` está marcado como obsoleto pelo LangChain.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Conversación de dos turnos con pensamiento, acción, observación y respuesta, con y sin historial en el prompt | [trazas/r08_react_llm.json](trazas/r08_react_llm.json); [scripts/demostrar_r08.py](../scripts/demostrar_r08.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
-| El mismo agente con herramientas reales y memoria, reproducible sin credenciales | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) §«R08» | Ejecución con **doble** (`FakeListLLM` guionado) |
-| El agente ejecuta las dos herramientas y guarda memoria; el historial solo entra al prompt si se configura | [tests/test_legacy.py](../tests/test_legacy.py) | Pruebas automáticas con doble |
+| Conversa de dois turnos com pensamento, ação, observação e resposta, com e sem histórico no prompt | [rastros/r08_react_llm.json](rastros/r08_react_llm.json); [scripts/demonstrar_r08.py](../scripts/demonstrar_r08.py) | **Execução real remota** (`gpt-4.1-mini`, temperatura 0) |
+| O mesmo agente com ferramentas reais e memória, reproduzível sem credenciais | [notebooks/02_react_ferramentas.ipynb](../notebooks/02_react_ferramentas.ipynb) §«R08» | Execução com **duplo** (`FakeListLLM` roteirizado) |
+| O agente executa as duas ferramentas e guarda memória; o histórico só entra no prompt se for configurado | [tests/test_legacy.py](../tests/test_legacy.py) | Testes automáticos com duplo |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- Es una conversación; no mide con qué frecuencia el modelo elige bien la herramienta.
-- `initialize_agent` y `ConversationBufferMemory` emiten avisos de obsolescencia en la versión instalada de LangChain.
-- La memoria de buffer guarda todo el historial sin límite; el control de la ventana se trata en R14.
+- É uma conversa; não mede com que frequência o modelo escolhe bem a ferramenta.
+- `initialize_agent` e `ConversationBufferMemory` emitem avisos de obsolescência na versão instalada do LangChain.
+- A memória de buffer guarda todo o histórico sem limite; o controle da janela é tratado em R14.
 
-## R09 — Chains secuenciales o paralelas y RouterChain
+## R09 — Chains sequenciais ou paralelas e RouterChain
 
-> ¿El alumno construyó chains secuenciales o paralelas e implementó enrutamiento dinámico con RouterChain?
+> O aluno construiu chains sequenciais ou paralelas e implementou roteamento dinâmico com RouterChain?
 
-**Respuesta corta.** Sí. Hay cadenas secuenciales, una paralela y dos routers construidos sobre `RouterChain`: uno con reglas y otro que decide un modelo. Se compararon los dos con el modelo real: **el router por reglas acertó 2 de 7 rutas y el router LLM, 6 de 7.**
+**Resposta curta.** Sim. Há cadeias sequenciais, uma paralela e dois routers construídos sobre `RouterChain`: um com regras e outro em que um modelo decide. Os dois foram comparados com o modelo real: **o router por regras acertou 2 de 7 rotas e o router LLM, 6 de 7.**
 
-### 1. Composición secuencial y paralela
+### 1. Composição sequencial e paralela
 
-| Cadena | Tipo | Qué hace |
+| Cadeia | Tipo | O que faz |
 |---|---|---|
-| `crear_lcel` y `crear_lcel_robusta` | Secuencial | plantilla → modelo → parser → regla de dominio |
-| `ejecutar_ruta` | Secuencial | Decide la ruta y después ejecuta la cadena de ese destino |
-| `composicion_paralela` | Paralela (`RunnableParallel`) | Busca candidatos y conserva el texto en dos ramas independientes, y luego las une |
+| `criar_lcel` e `criar_lcel_robusta` | Sequencial | modelo de prompt → modelo → parser → regra de domínio |
+| `executar_rota` | Sequencial | Decide a rota e depois executa a cadeia desse destino |
+| `composicao_paralela` | Paralela (`RunnableParallel`) | Busca candidatos e conserva o texto em dois ramos independentes, e depois os une |
 
-Las ramas paralelas no dependen una de otra, así que se pueden ejecutar a la vez. La unión final sí es secuencial, porque necesita el resultado de las dos.
+Os ramos paralelos não dependem um do outro, então podem ser executados ao mesmo tempo. A união final é sequencial, porque precisa do resultado dos dois.
 
-### 2. Dos routers sobre `RouterChain`
+### 2. Dois routers sobre `RouterChain`
 
-Un router recibe la pregunta y devuelve el nombre de un destino. Los dos heredan de `RouterChain`, en [legacy.py](../src/pedro/legacy.py):
+Um router recebe a pergunta e devolve o nome de um destino. Os dois herdam de `RouterChain`, em [legacy.py](../src/pedro/legacy.py):
 
-| Router | Cómo decide | Destinos |
+| Router | Como decide | Destinos |
 |---|---|---|
-| `RouterCompras` | Reglas: si la pregunta contiene «oferta», «precio» o «stock» va a comparación; si no, a catálogo | catálogo, comparación |
-| `crear_router_llm` (`LLMRouterChain`) | El modelo lee la descripción de cada destino y elige; si ninguno encaja, devuelve «ninguno» | catálogo, comparación, CEP y aclaración |
+| `RouterCompras` | Regras: se a pergunta contém «oferta», «preço» ou «estoque» vai para comparação; se não, para catálogo | catálogo, comparação |
+| `criar_router_llm` (`LLMRouterChain`) | O modelo lê a descrição de cada destino e escolhe; se nenhum servir, não devolve destino e a cadeia pede esclarecimento | catálogo, comparação, CEP e esclarecimento |
 
-### 3. Comparación con el modelo real
+### 3. Comparação com o modelo real
 
-| Pregunta | Ruta correcta | Reglas | LLM |
+| Pergunta | Rota correta | Regras | LLM |
 |---|---|---|---|
-| precio de PEC-01-0001 | comparación | ✔ comparación | ✔ comparación |
-| Busca compresores para nevera | catálogo | ✔ catálogo | ✔ catálogo |
-| ¿Cuánto cuesta el compresor PEC-01-0001? | comparación | ✘ catálogo | ✔ comparación |
-| ¿Quién vende PEC-01-0001 y en cuántos días llega? | comparación | ✘ catálogo | ✔ comparación |
-| ¿A qué ciudad corresponde el CEP 01001-000? | CEP | ✘ catálogo | ✔ CEP |
-| ¿Tienen en stock algún termostato? | catálogo | ✘ comparación | ✘ comparación |
-| Hola, buenos días | aclaración | ✘ catálogo | ✔ aclaración |
-| **Aciertos** | | **2 de 7** | **6 de 7** |
+| preço de PEC-01-0001 | comparação | ✔ comparação | ✔ comparação |
+| Busque compressores para geladeira | catálogo | ✔ catálogo | ✔ catálogo |
+| Quanto custa o compressor PEC-01-0001? | comparação | ✘ catálogo | ✔ comparação |
+| Quem vende PEC-01-0001 e em quantos dias chega? | comparação | ✘ catálogo | ✔ comparação |
+| A que cidade corresponde o CEP 01001-000? | CEP | ✘ catálogo | ✔ CEP |
+| Vocês têm algum termostato em estoque? | catálogo | ✘ comparação | ✘ comparação |
+| Olá, bom dia | esclarecimento | ✘ catálogo | ✔ esclarecimento |
+| **Acertos** | | **2 de 7** | **6 de 7** |
 
-Qué muestra:
+O que mostra:
 
-- **Las reglas fallan con los sinónimos.** «¿Cuánto cuesta?» pregunta por el precio sin usar la palabra «precio».
-- **Las reglas no tienen salida para lo imprevisto.** Un saludo acaba en el catálogo; el router LLM lo manda a aclaración.
-- **El LLM también se equivoca.** «¿Tienen en stock algún termostato?» es una búsqueda sin ID, pero la palabra «stock» lo llevó a comparación, igual que a las reglas.
+- **As regras falham com os sinônimos.** «Quanto custa?» pergunta pelo preço sem usar a palavra «preço».
+- **As regras não têm saída para o imprevisto.** Uma saudação acaba no catálogo; o router LLM a manda para esclarecimento.
+- **O LLM também erra.** «Vocês têm algum termostato em estoque?» é uma busca sem ID, mas a palavra «estoque» a levou para comparação, igual às regras.
 
-**Decisión técnica.** El chat de Pedro no usa ninguno de estos dos routers como puerta de entrada. Usa reglas para lo que se reconoce sin ambigüedad —un ID con formato fijo, un comando— y deja el resto al agente, que elige herramienta por *function calling*: es un enrutamiento dinámico más fino, porque decide con argumentos y puede encadenar varias herramientas. Un router LLM previo añadiría una llamada al modelo por turno sin aportar una decisión nueva. Las reglas se conservan donde un error no es tolerable y la respuesta debe ser inmediata y reproducible.
+**Decisão técnica.** O chat do Pedro não usa nenhum desses dois routers como porta de entrada. Usa regras para o que se reconhece sem ambiguidade — um ID com formato fixo, um comando — e deixa o resto para o agente, que escolhe a ferramenta por *function calling*: é um roteamento dinâmico mais fino, porque decide com argumentos e pode encadear várias ferramentas. Um router LLM antes disso acrescentaria uma chamada ao modelo por turno sem trazer uma decisão nova. As regras ficam onde um erro não é tolerável e a resposta deve ser imediata e reproduzível.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Siete preguntas por los dos routers, con la ruta elegida y el resultado de la cadena ejecutada | [trazas/r09_router_llm.json](trazas/r09_router_llm.json); [scripts/demostrar_r09.py](../scripts/demostrar_r09.py) | Router LLM: **ejecución real remota** (`gpt-4.1-mini`, temperatura 0). Router por reglas: local. ViaCEP simulado |
-| Router por reglas con dos rutas, cadena paralela y router LLM con tres destinos | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb), primera celda y §«R09» | Ejecución local; el router LLM usa un **doble** (`FakeListLLM`) |
-| Cada router ejecuta la cadena de su destino; el destino «ninguno» pide aclaración | [tests/test_legacy.py](../tests/test_legacy.py) | Pruebas automáticas con doble |
+| Sete perguntas pelos dois routers, com a rota escolhida e o resultado da cadeia executada | [rastros/r09_router_llm.json](rastros/r09_router_llm.json); [scripts/demonstrar_r09.py](../scripts/demonstrar_r09.py) | Router LLM: **execução real remota** (`gpt-4.1-mini`, temperatura 0). Router por regras: local. ViaCEP simulado |
+| Router por regras com duas rotas, cadeia paralela e router LLM com três destinos | [notebooks/02_react_ferramentas.ipynb](../notebooks/02_react_ferramentas.ipynb), primeira célula e §«R09» | Execução local; o router LLM usa um **duplo** (`FakeListLLM`) |
+| Cada router executa a cadeia do seu destino; sem destino, a cadeia pede esclarecimento | [tests/test_legacy.py](../tests/test_legacy.py) | Testes automáticos com duplo |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- Son siete preguntas, y las rutas correctas se fijaron a mano. Varias se eligieron para poner a prueba las reglas, así que 2 de 7 no mide el router por reglas en uso normal.
-- La cadena paralela es pequeña: dos ramas locales, sin modelo.
-- `RouterChain` pertenece a las APIs clásicas de LangChain.
+- São sete perguntas, e as rotas corretas foram fixadas à mão. Várias foram escolhidas para pôr as regras à prova, então 2 de 7 não mede o router por regras em uso normal.
+- A cadeia paralela é pequena: dois ramos locais, sem modelo.
+- `RouterChain` pertence às APIs clássicas do LangChain.
 
-## R10 — API externa como herramienta vía function calling
+## R10 — API externa como ferramenta via function calling
 
-> ¿El alumno integró por lo menos una API externa como herramienta del agente vía function calling?
+> O aluno integrou pelo menos uma API externa como ferramenta do agente via function calling?
 
-**Respuesta corta.** Sí. El agente llama a **ViaCEP**, una API pública real de Brasil, para confirmar la ciudad y el estado de un código postal. El modelo decide llamarla, envía el argumento, recibe la respuesta de la API y la usa. Al ejecutarlo con el modelo real apareció un fallo, que se diagnosticó y se corrigió.
+**Resposta curta.** Sim. O agente chama o **ViaCEP**, uma API pública real do Brasil, para confirmar a cidade e o estado de um CEP. O modelo decide chamá-la, envia o argumento, recebe a resposta da API e a usa. Na primeira execução com o modelo real apareceu uma falha, que foi diagnosticada e corrigida.
 
-### 1. La herramienta
+### 1. A ferramenta
 
-| Parte | Detalle |
+| Parte | Detalhe |
 |---|---|
-| API | `https://viacep.com.br/ws/{cep}/json/`, pública y sin clave |
-| Para qué existe | Confirmar ciudad y UF del destino. No calcula flete |
-| Función | `consultar_cep` en [integrations.py](../src/pedro/integrations.py): valida los ocho dígitos, llama con un límite de 5 s y devuelve un estado |
-| Estados | `ok`, `no_encontrado`, `invalido` e `indisponible` (error de red) |
-| Registro en el agente | `StructuredTool` en [agent.py](../src/pedro/agent.py) |
+| API | `https://viacep.com.br/ws/{cep}/json/`, pública e sem chave |
+| Para que existe | Confirmar cidade e UF do destino. Não calcula frete |
+| Função | `consultar_cep` em [integrations.py](../src/pedro/integrations.py): valida os oito dígitos, chama com um limite de 5 s e devolve um estado |
+| Estados | `ok`, `nao_encontrado`, `invalido` e `indisponivel` (erro de rede) |
+| Registro no agente | `StructuredTool` em [agent.py](../src/pedro/agent.py) |
 
-### 2. Function calling, paso a paso
+### 2. Function calling, passo a passo
 
-*Function calling* significa que el modelo no escribe la llamada en texto libre: recibe la descripción de la herramienta y devuelve un nombre y unos argumentos estructurados.
+*Function calling* significa que o modelo não escreve a chamada em texto livre: recebe a descrição da ferramenta e devolve um nome e argumentos estruturados.
 
-1. **El modelo recibe este esquema:**
+1. **O modelo recebe este esquema:**
    ```json
    {"type": "function", "function": {"name": "consultar_cep",
-     "description": "Confirma ciudad y UF con ViaCEP; no calcula flete.",
+     "description": "Confirma cidade e UF com o ViaCEP; não calcula frete.",
      "parameters": {"type": "object", "required": ["cep"],
                     "properties": {"cep": {"type": "string"}}}}}
    ```
-2. **El modelo decide llamarla** ante «Voy a recibir el pedido en el CEP 01001000. ¿A qué ciudad y estado corresponde?» y envía `{"cep": "01001000"}`.
-3. **La API responde:** `{"estado": "ok", "cep": "01001000", "cidade": "São Paulo", "uf": "SP", "modo": "real"}`.
-4. **El agente usa el resultado:** se publica «CEP 01001000: São Paulo/SP (ViaCEP, modo real)».
+2. **O modelo decide chamá-la** diante de «Vou receber o pedido no CEP 01001000. A que cidade e estado ele corresponde?» e envia `{"cep": "01001000"}`.
+3. **A API responde:** `{"estado": "ok", "cep": "01001000", "cidade": "São Paulo", "uf": "SP", "modo": "real", "fonte": "ViaCEP:01001000"}`.
+4. **O agente usa o resultado:** é publicado «CEP 01001000: São Paulo/SP (ViaCEP, modo real).»
 
-### 3. Los tres casos, con el modelo real
+### 3. Os três casos, com o modelo real
 
-| Pregunta | Argumento que envió el modelo | Respuesta de la API | Respuesta publicada |
+| Pergunta | Argumento que o modelo enviou | Resposta da API | Resposta publicada |
 |---|---|---|---|
-| CEP 01001000 | `{"cep": "01001000"}` | `ok`, São Paulo/SP | CEP 01001000: São Paulo/SP (ViaCEP, modo real) |
-| CEP 99999999 | `{"cep": "99999999"}` | `no_encontrado` | ViaCEP no tiene registrado el CEP 99999999 |
-| CEP 123 | `{"cep": "123"}` | `invalido` | Un CEP debe tener ocho dígitos |
+| CEP 01001000 | `{"cep": "01001000"}` | `ok`, São Paulo/SP | CEP 01001000: São Paulo/SP (ViaCEP, modo real). |
+| CEP 99999999 | `{"cep": "99999999"}` | `nao_encontrado` | O ViaCEP não tem registro do CEP 99999999. |
+| CEP 123 | `{"cep": "123"}` | `invalido` | Um CEP deve ter oito dígitos. |
 
-En los dos últimos el agente no inventa una ciudad: dice lo que devolvió la API.
+Nos dois últimos o agente não inventa uma cidade: diz o que a API devolveu.
 
-### 4. El fallo encontrado y su corrección
+### 4. A falha encontrada e a correção
 
-La primera ejecución real no publicó la ciudad, aunque la API había respondido bien. La traza registra el motivo de cada rechazo, y decía `dataset ajeno`: el modelo tenía que copiar en su respuesta un identificador de escenario de 36 caracteres y lo escribía mal. En la evaluación de LangSmith apareció además `falta evidencia ViaCEP`: el modelo no construía la cita con el formato exacto.
+A primeira execução real não publicou a cidade, embora a API tivesse respondido bem. Essa execução é da versão anterior do projeto, em espanhol, e não foi refeita. O rastro registra o motivo de cada rejeição, e dizia `dataset ajeno` (hoje `dataset alheio`): o modelo tinha de copiar na resposta um identificador de cenário de 36 caracteres e o escrevia errado. Na avaliação do LangSmith dessa mesma versão apareceu também `falta evidencia ViaCEP`: o modelo não montava a citação com o formato exato.
 
-Es el mismo defecto que en las citas de política (R24): **se le pedía al modelo una tarea mecánica y se rechazaba todo si fallaba un carácter.** La corrección sigue el mismo principio:
+É o mesmo defeito das citações de política (R24): **pedia-se ao modelo uma tarefa mecânica e tudo era rejeitado se um caractere falhasse.** A correção segue o mesmo princípio:
 
-> El modelo decide qué responder; los datos los pone el sistema.
+> O modelo decide o que responder; os dados são postos pelo sistema.
 
-`anclar_cep`, en [verification.py](../src/pedro/verification.py), rellena ciudad, estado, modo y evidencia con lo que devolvió la herramienta en ese turno. Si la API no devolvió un resultado válido para ese CEP, no rellena nada y la verificación sigue rechazando la respuesta.
+`ancorar_cep`, em [verification.py](../src/pedro/verification.py), preenche cidade, estado, modo e evidência com o que a ferramenta devolveu nesse turno. Se a API não devolveu um resultado válido para esse CEP, não preenche nada e a verificação continua rejeitando a resposta.
 
-| | Antes | Después |
+| | Antes (versão anterior, em espanhol) | Depois (execução em português) |
 |---|---|---|
-| CEP válido | No se publica (`dataset ajeno`, dos intentos) | Se publica al primer intento |
-| CEP inexistente o inválido | «No puedo confirmar la respuesta…» | Mensaje con el motivo que dio la API |
+| CEP válido | Não é publicado (`dataset ajeno`, duas tentativas) | É publicado na primeira tentativa |
+| CEP inexistente ou inválido | «No puedo confirmar la respuesta con las fuentes disponibles.» | Mensagem com o motivo que a API deu |
 
-**Decisión técnica.** Se eligió ViaCEP porque es real, gratuita y propia del dominio (una compra necesita un destino), y porque sus respuestas se pueden comprobar. Existe un modo simulado para las pruebas, siempre etiquetado: la respuesta publicada dice «modo real» o «modo simulado».
+**Decisão técnica.** O ViaCEP foi escolhido porque é real, gratuito e próprio do domínio (uma compra precisa de um destino), e porque as respostas dele podem ser conferidas. Existe um modo simulado para os testes, sempre rotulado: a resposta publicada diz «modo real» ou «modo simulado».
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Esquema enviado al modelo, argumentos, respuesta de la API y respuesta publicada en tres casos | [trazas/r10_viacep_llm.json](trazas/r10_viacep_llm.json); [scripts/demostrar_r10.py](../scripts/demostrar_r10.py) | **Ejecución real remota**: OpenAI `gpt-4.1-mini` y ViaCEP |
-| La misma conversación antes de la corrección, con los errores de verificación | [trazas/r10_viacep_llm_antes.json](trazas/r10_viacep_llm_antes.json) | Ejecución real remota |
-| El anclaje rellena desde la observación y no acepta un CEP sin observación válida; el flujo explica un CEP inexistente sin inventar ciudad | [tests/test_policy_cep.py](../tests/test_policy_cep.py) | Pruebas con doble |
-| Llamada directa a la función en modo simulado | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) | Ejecución con doble (simulado) |
+| Esquema enviado ao modelo, argumentos, resposta da API e resposta publicada em três casos | [rastros/r10_viacep_llm.json](rastros/r10_viacep_llm.json); [scripts/demonstrar_r10.py](../scripts/demonstrar_r10.py) | **Execução real remota**: OpenAI `gpt-4.1-mini` e ViaCEP |
+| A mesma conversa antes da correção, com os erros de verificação | [rastros/r10_viacep_llm_antes.json](rastros/r10_viacep_llm_antes.json) | Execução real remota da versão anterior, em espanhol |
+| A ancoragem preenche a partir da observação e não aceita um CEP sem observação válida; o fluxo explica um CEP inexistente sem inventar cidade | [tests/test_policy_cep.py](../tests/test_policy_cep.py) | Testes com duplo |
+| Chamada direta à função em modo simulado | [notebooks/02_react_ferramentas.ipynb](../notebooks/02_react_ferramentas.ipynb) | Execução com duplo (simulado) |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- Una sola API externa. No calcula flete ni plazo según el destino: solo confirma la ubicación.
-- La disponibilidad depende de un servicio de terceros; si no responde, el agente lo dice y no publica ciudad.
-- En los casos de CEP inexistente e inválido el modelo aún propone una respuesta que la verificación rechaza dos veces antes de llegar al mensaje correcto: funciona, pero gasta una llamada de más.
+- Uma única API externa. Não calcula frete nem prazo conforme o destino: só confirma a localização.
+- A disponibilidade depende de um serviço de terceiros; se ele não responde, o agente diz isso e não publica cidade.
+- Nos casos de CEP inexistente e inválido, as duas propostas do modelo ainda são rejeitadas antes de chegar à mensagem correta. No CEP inexistente foram duas rejeições por `dataset alheio` e três chamadas à ferramenta (uma delas repetiu o CEP 01001000 do turno anterior). No CEP inválido foram um `OutputParserException`, um `dataset alheio` e duas chamadas. Funciona, mas gasta chamadas a mais.
 
-## R11 — Prompt PTCF, few-shot y chain-of-thought
+## R11 — Prompt PTCF, few-shot e chain-of-thought
 
-> ¿El alumno estructuró el prompt del agente con el framework PTCF y aplicó few-shot learning y chain-of-thought?
+> O aluno estruturou o prompt do agente com o framework PTCF e aplicou few-shot learning e chain-of-thought?
 
-**Respuesta corta.** Sí. El prompt del agente sigue PTCF y lleva cuatro ejemplos. Las tres técnicas se midieron con el modelo real sobre diez solicitudes difíciles: **sin ejemplos acertó 6 de 10; con ejemplos, 10 de 10; con ejemplos y razonamiento paso a paso, 10 de 10.**
+**Resposta curta.** Sim. O prompt do agente segue PTCF e leva seis exemplos. As três técnicas foram medidas com o modelo real em dez solicitações difíceis: **sem exemplos acertou 6 de 10; com exemplos, 10 de 10; com exemplos e raciocínio passo a passo, 10 de 10.**
 
-### 1. PTCF en el prompt del agente
+### 1. PTCF no prompt do agente
 
-`PLANTILLA_AGENTE`, en [prompts.py](../src/pedro/prompts.py), marca las cuatro partes:
+`MODELO_AGENTE`, em [prompts.py](../src/pedro/prompts.py), marca as quatro partes:
 
-| Parte | Qué contiene |
+| Parte | O que contém |
 |---|---|
-| **Persona** | «Pedro, asistente de compras ficticias» |
-| **Tarea** | Aclarar solo producto y cantidad; presupuesto y plazo son filtros opcionales; consultar herramientas y comparar ofertas del escenario |
-| **Contexto** | Los mensajes y recuerdos anteriores son históricos; la solicitud actual prevalece |
-| **Formato** | JSON `RespuestaCompra` válido, sin inventar datos ni fuentes |
+| **Persona** | «Pedro, assistente de compras fictícias» |
+| **Tarefa** | Esclarecer só produto e quantidade; orçamento e prazo são filtros opcionais; consultar ferramentas e comparar ofertas do cenário |
+| **Contexto** | As mensagens e lembranças anteriores são históricas; a solicitação atual prevalece |
+| **Formato** | JSON `RespostaCompra` válido, sem inventar dados nem fontes |
 
-Una prueba automática comprueba que las cuatro etiquetas están en el mensaje de sistema.
+Um teste automático confere que os quatro rótulos estão na mensagem de sistema.
 
 ### 2. Few-shot
 
-Hay dos juegos de ejemplos:
+Há dois conjuntos de exemplos:
 
-- **En el agente:** cuatro ejemplos (`EJEMPLOS_ACCIONES`) que muestran qué herramientas llamar y qué estado devolver en cada tipo de pregunta: pieza ambigua, comparación con límites, política y envío en varias cajas.
-- **En la extracción:** tres ejemplos (`EJEMPLOS_EXTRACCION`) insertados con `FewShotChatMessagePromptTemplate` como turnos ya resueltos de usuario y asistente. Cada uno enseña un error típico: cantidad en palabras, importe abreviado, corrección dentro de la frase y dato ausente.
+- **No agente:** seis exemplos (`EXEMPLOS_ACOES`) que mostram quais ferramentas chamar e qual estado devolver em cada tipo de pergunta: peça ambígua, comparação com limites, política, envio em várias caixas, pergunta aberta sobre o catálogo e preferência a lembrar.
+- **Na extração:** três exemplos (`EXEMPLOS_EXTRACAO`) inseridos com `FewShotChatMessagePromptTemplate` como turnos já resolvidos de usuário e assistente. Eles cobrem os erros típicos: quantidade por extenso, valor abreviado, correção dentro da frase e dado ausente.
 
 ### 3. Chain-of-thought
 
-La variante con CoT añade un campo `razonamiento` que el modelo debe rellenar **antes** de los datos. Como el modelo escribe en orden, primero razona y después concluye. Ejemplo real, para «PEC-01-0001: dos unidades... no, mejor tres. Tope R$ 2.000»:
+A variante com CoT acrescenta um campo `raciocinio` que o modelo deve preencher **antes** dos dados. Como o modelo escreve em ordem, primeiro raciocina e depois conclui. Exemplo real, para «PEC-01-0001: duas unidades... não, melhor três. Teto de R$ 2.000»:
 
 ```json
-{"razonamiento": ["se corrige cantidad a 3 unidades",
-                  "tope de R$ 2.000 son 200000 centavos",
-                  "no menciona plazo: queda null"],
- "solicitud": {"producto_id": "PEC-01-0001", "cantidad": 3, "presupuesto_centavos": 200000}}
+{"raciocinio": ["corrige-se para 3 unidades, não 2",
+                "teto de R$ 2.000 são 200000 centavos",
+                "não menciona prazo: fica null"],
+ "solicitacao": {"produto_id": "PEC-01-0001", "quantidade": 3, "orcamento_centavos": 200000}}
 ```
 
-El razonamiento queda escrito y se puede revisar: es CoT **observable**, no un pensamiento oculto del modelo.
+O raciocínio fica escrito e pode ser revisado: é CoT **observável**, não um pensamento oculto do modelo.
 
-### 4. La medición
+### 4. A medição
 
-Diez solicitudes elegidas por difíciles, con la respuesta correcta fijada a mano. Misma tarea, mismo modelo (`gpt-4.1-mini`, temperatura 0), tres prompts:
+Dez solicitações escolhidas por serem difíceis, com a resposta correta fixada à mão. Mesma tarefa, mesmo modelo (`gpt-4.1-mini`, temperatura 0), três prompts:
 
-| Técnica | Solicitudes correctas | Campos correctos |
+| Técnica | Solicitações corretas | Campos corretos |
 |---|---|---|
-| Zero-shot (sin ejemplos) | 6 de 10 | 36 de 40 |
+| Zero-shot (sem exemplos) | 6 de 10 | 36 de 40 |
 | Few-shot | 10 de 10 | 40 de 40 |
 | Few-shot + CoT | 10 de 10 | 40 de 40 |
 
-Qué falló sin ejemplos:
+O que falhou sem exemplos:
 
-- **«un par»** se leyó como 1 unidad.
-- En tres solicitudes el modelo puso el identificador en el campo `producto` (nombre libre) en vez de en `producto_id`. El esquema admitía las dos lecturas; los ejemplos enseñaron la convención.
+- **«um par»** foi lido como 1 unidade.
+- Em três solicitações o `produto_id` ficou vazio (`null`), embora o ID estivesse escrito na mensagem. O rastro guarda só os quatro campos medidos, então não mostra para onde o identificador foi. O esquema também tem o campo `produto` (nome livre) e admitia as duas leituras; os exemplos ensinaram a convenção.
 
-Qué se concluye:
+O que se conclui:
 
-- **Few-shot fue lo que marcó la diferencia.** Corrigió los cuatro fallos.
-- **CoT no añadió aciertos en esta prueba**, porque few-shot ya llegaba al máximo. Su aporte aquí es otro: deja escrito el porqué de cada dato, y cuesta más texto generado.
+- **O few-shot foi o que fez a diferença.** Corrigiu as quatro falhas.
+- **O CoT não acrescentou acertos neste teste**, porque o few-shot já chegava ao máximo. A contribuição dele aqui é outra: deixa escrito o porquê de cada dado, e custa mais texto gerado.
 
-### 5. Few-shot en el aviso de precio: el ejemplo manda
+### 5. Few-shot no aviso de preço: o exemplo manda
 
-El consejo de precio usa otro prompt PTCF con dos ejemplos. Su primera versión enseñó algo sobre few-shot que la medición anterior no mostraba: **el modelo imita el estilo del ejemplo, no solo su formato.** Un ejemplo terminaba con «es un buen momento para esta compra», y el modelo empezó a cerrar sus consejos con valoraciones parecidas, que la verificación rechazaba. Al reescribir los ejemplos para que solo enunciaran hechos, los consejos aceptados pasaron de 5 a 14 de 15.
+O conselho de preço usa outro prompt PTCF com dois exemplos. A primeira versão dele ensinou algo sobre few-shot que a medição anterior não mostrava: **o modelo imita o estilo do exemplo, não só o formato.** Na versão anterior, em espanhol, um exemplo terminava com «es un buen momento para esta compra», e o modelo passou a fechar os conselhos com avaliações parecidas, que a verificação rejeitava: só 5 de 15 conselhos foram aceitos (execução histórica em espanhol, não refeita). Depois de reescrever os exemplos para que só enunciassem fatos, os conselhos aceitos são 14 de 15 na execução em português.
 
-### 6. Por qué el agente final no usa CoT en texto libre
+### 6. Por que o agente final não usa CoT em texto livre
 
-En el agente, el «pensamiento paso a paso» son sus **llamadas a herramientas**: cada paso queda registrado con su nombre, sus argumentos y su resultado, y la respuesta final se contrasta con esos resultados. Un razonamiento en prosa no se podría verificar igual, y publicarlo iría contra la regla del proyecto de mostrar solo lo comprobado. El CoT en texto se demuestra donde sí aporta: en el campo `razonamiento` de la extracción y en los *Thought* del agente ReAct (R08).
+No agente, o «pensamento passo a passo» são as **chamadas a ferramentas**: cada passo fica registrado com nome, argumentos e resultado, e a resposta final é confrontada com esses resultados. Um raciocínio em prosa não poderia ser verificado do mesmo jeito, e publicá-lo iria contra a regra do projeto de mostrar só o que foi comprovado. O CoT em texto é demonstrado onde de fato ajuda: no campo `raciocinio` da extração e nos *Thought* do agente ReAct (R08).
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Diez solicitudes por tres prompts, con lo obtenido, lo esperado y el razonamiento | [trazas/r11_prompts_llm.json](trazas/r11_prompts_llm.json); [scripts/demostrar_r11.py](../scripts/demostrar_r11.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
-| PTCF presente en el prompt del agente; few-shot como turnos resueltos; CoT con el razonamiento antes de los datos | [tests/test_prompts.py](../tests/test_prompts.py); [tests/test_anatomia.py](../tests/test_anatomia.py) | Pruebas automáticas |
-| Los ejemplos del agente en uso: el modelo real sigue el plan de herramientas | [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json) | Ejecución real remota |
+| Dez solicitações por três prompts, com o obtido, o esperado e o raciocínio | [rastros/r11_prompts_llm.json](rastros/r11_prompts_llm.json); [scripts/demonstrar_r11.py](../scripts/demonstrar_r11.py) | **Execução real remota** (`gpt-4.1-mini`, temperatura 0) |
+| PTCF presente no prompt do agente; few-shot como turnos resolvidos; CoT com o raciocínio antes dos dados | [tests/test_prompts.py](../tests/test_prompts.py); [tests/test_anatomia.py](../tests/test_anatomia.py) | Testes automáticos |
+| Os exemplos do agente em uso: o modelo real segue o plano de ferramentas | [rastros/r02_planejamento_llm.json](rastros/r02_planejamento_llm.json) | Execução real remota |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- Diez casos elegidos a propósito por difíciles: 6 de 10 no describe el prompt sin ejemplos en uso normal.
-- Una sola ejecución por técnica, con temperatura 0.
-- No se midió el efecto de quitar los ejemplos al prompt del agente.
+- Dez casos escolhidos de propósito por serem difíceis: 6 de 10 não descreve o prompt sem exemplos em uso normal.
+- Uma única execução por técnica, com temperatura 0.
+- Não foi medido o efeito de tirar os exemplos do prompt do agente.
 
-## R12 — Componentes de confiabilidad
+## R12 — Componentes de confiabilidade
 
-> ¿El alumno implementó los componentes de confiabilidad del agente (output parsers con tratamiento de errores, memoria configurada en la chain, herramienta de búsqueda semántica con FAISS y callbacks de logging), justificando las decisiones técnicas?
+> O aluno implementou os componentes de confiabilidade do agente (output parsers com tratamento de erros, memória configurada na chain, ferramenta de busca semântica com FAISS e callbacks de logging), justificando as decisões técnicas?
 
-**Respuesta corta.** Sí, los cuatro. Cada uno tiene un caso normal y un caso de error ejecutados, y los callbacks dejaron la pista que permitió encontrar y corregir dos fallos reales del agente.
+**Resposta curta.** Sim, os quatro. Cada um tem um caso normal e um caso de erro executados, e os callbacks deixaram a pista que permitiu encontrar e corrigir duas falhas reais do agente.
 
-### 1. Los cuatro componentes
+### 1. Os quatro componentes
 
-| Componente | Qué hay | Caso normal | Caso de error y recuperación |
+| Componente | O que há | Caso normal | Caso de erro e recuperação |
 |---|---|---|---|
-| **Output parser con errores** | `PydanticOutputParser` en la extracción y en el agente; reparación con una segunda cadena; una corrección interna en el agente | JSON válido → objeto validado | JSON truncado, tipo incorrecto o texto libre → se repara (R04). En el agente, una propuesta que no se puede leer se descarta y se pide otra |
-| **Memoria en la cadena** | `RunnableWithMessageHistory` con historial en SQLite y ventana de 12 mensajes; `ConversationBufferMemory` en el agente ReAct | El turno siguiente recibe el historial | Una propuesta rechazada **no** entra en la memoria: solo se guardan la pregunta y la respuesta publicada |
-| **Búsqueda semántica con FAISS** | Herramienta `consultar_politicas` sobre el índice guardado, con filtro por metadatos | Devuelve fragmentos con fuente y distancia | Una consulta que no recupera la regla se reformula (R23); un índice alterado no se carga (R22) |
-| **Callbacks de logging** | `Traza`, un `BaseCallbackHandler` que registra cada herramienta, sus argumentos, su resultado y cada verificación | Bitácora ordenada del turno | Los errores de herramienta y de cadena quedan anotados; las claves de API se ocultan antes de guardar |
+| **Output parser com erros** | `PydanticOutputParser` na extração e no agente; reparo com uma segunda cadeia; uma correção interna no agente | JSON válido → objeto validado | JSON truncado, tipo incorreto ou texto livre → é reparado (R04). No agente, uma proposta que não pode ser lida é descartada e pede-se outra |
+| **Memória na cadeia** | `RunnableWithMessageHistory` com histórico em SQLite e janela de 12 mensagens; `ConversationBufferMemory` no agente ReAct | O turno seguinte recebe o histórico | Uma proposta rejeitada **não** entra na memória: só são guardadas a pergunta e a resposta publicada |
+| **Busca semântica com FAISS** | Ferramenta `consultar_politicas` sobre o índice salvo, com filtro por metadados | Devolve fragmentos com fonte e distância | Uma consulta que não recupera a regra é reformulada (R23); um índice alterado não é carregado (R22) |
+| **Callbacks de logging** | `Rastro`, um `BaseCallbackHandler` que registra cada ferramenta, os argumentos, o resultado e cada verificação | Registro ordenado do turno | Os erros de ferramenta e de cadeia ficam anotados; as chaves de API são ocultadas antes de salvar |
 
-### 2. Un turno con error y recuperación
+### 2. Um turno com erro e recuperação
 
-La bitácora de un turno real del flujo, con un modelo doble que falla a propósito en su primera propuesta:
+O registro de um turno real do fluxo, com um modelo duplo que falha de propósito na primeira proposta:
 
 ```text
 tool_start    consultar_cep  {'cep': '01001000'}
 tool_end      {"estado": "ok", "cep": "01001000", ...}
-verificacion  intento 1  errores: ['OutputParserException']     ← la respuesta no era JSON
+verificacao   tentativa 1  erros: ['OutputParserException']    ← a resposta não era JSON
 tool_start    consultar_cep  {'cep': '01001000'}
 tool_end      {"estado": "ok", "cep": "01001000", ...}
-cep_anclado   anclada
-verificacion  intento 2  estado: cep  errores: []               ← aceptada
+cep_ancorado  ancorada
+verificacao   tentativa 2  estado: cep  erros: []              ← aceita
 publicado:    CEP 01001000: Cidade Simulada/SP (ViaCEP, modo simulado).
-memoria:      [pregunta del usuario, respuesta publicada]
+memória:      [pergunta do usuário, resposta publicada]
 ```
 
-Se ven los cuatro componentes: el parser detecta el error, el flujo pide una segunda propuesta, el callback lo registra todo y la memoria guarda solo lo publicado.
+Veem-se os quatro componentes: o parser detecta o erro, o fluxo pede uma segunda proposta, o callback registra tudo e a memória guarda só o que foi publicado.
 
-### 3. Lo que los callbacks permitieron encontrar
+### 3. O que os callbacks permitiram encontrar
 
-Al principio la traza solo registraba las herramientas. Cuando una respuesta no se publicaba, no se sabía por qué. Se añadió el registro de **cada verificación con sus errores**, y eso sacó a la luz dos defectos con el modelo real:
+No começo o rastro só registrava as ferramentas. Quando uma resposta não era publicada, não se sabia por quê. Foi acrescentado o registro de **cada verificação com seus erros**, e isso trouxe à tona dois defeitos com o modelo real. Os textos de erro abaixo são os da versão anterior, em espanhol; hoje são `fragmento não corresponde`, `dataset alheio` e `falta evidência ViaCEP`.
 
-| Síntoma | Lo que mostró la traza | Corrección |
+| Sintoma | O que o rastro mostrou | Correção |
 |---|---|---|
-| Las preguntas de política no se publicaban | `fragmento no corresponde`: el modelo citaba el texto casi literal | Anclaje de citas al texto de la fuente (R24) |
-| Las respuestas de CEP no se publicaban | `dataset ajeno` y `falta evidencia ViaCEP`: el modelo copiaba mal un identificador | Anclaje del CEP a la respuesta de la API (R10) |
+| As perguntas de política não eram publicadas | `fragmento no corresponde`: o modelo citava o texto quase literal | Ancoragem das citações ao texto da fonte (R24) |
+| As respostas de CEP não eram publicadas | `dataset ajeno` e `falta evidencia ViaCEP`: o modelo copiava errado um identificador | Ancoragem do CEP à resposta da API (R10) |
 
-Los dos tenían la misma causa: se pedía al modelo copiar datos que el sistema ya tenía. La regla que quedó es: **el modelo decide qué responder; los datos los pone el sistema.**
+Os dois tinham a mesma causa: pedia-se ao modelo que copiasse dados que o sistema já tinha. A regra que ficou é: **o modelo decide o que responder; os dados são postos pelo sistema.**
 
-### 4. Decisiones técnicas
+### 4. Decisões técnicas
 
-- **Una sola reparación o corrección.** Limita el coste y evita bucles; si el segundo intento falla, no se publica.
-- **Reparar la forma, nunca el fondo.** El parser arregla JSON y tipos. Los importes, el ganador y las fuentes no se «arreglan»: se recalculan y se comparan.
-- **Memoria solo de lo publicado.** Si las propuestas rechazadas entraran al historial, el modelo las leería en el turno siguiente como si fueran ciertas.
-- **Callback propio en vez de solo LangSmith.** `Traza` funciona sin credenciales ni red y se puede comprobar en las pruebas. LangSmith se usa además para la evaluación (R29).
-- **FAISS con embeddings locales.** La recuperación no depende de un servicio externo.
+- **Um único reparo ou correção.** Limita o custo e evita laços; se a segunda tentativa falha, nada é publicado.
+- **Reparar a forma, nunca o conteúdo.** O parser conserta JSON e tipos. Os valores, o vencedor e as fontes não são «consertados»: são recalculados e comparados.
+- **Memória só do que foi publicado.** Se as propostas rejeitadas entrassem no histórico, o modelo as leria no turno seguinte como se fossem verdadeiras.
+- **Callback próprio em vez de só LangSmith.** `Rastro` funciona sem credenciais nem rede e pode ser conferido nos testes. O LangSmith é usado também para a avaliação (R29).
+- **FAISS com embeddings locais.** A recuperação não depende de um serviço externo.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Bitácora de un turno con error del parser, segunda propuesta, anclaje y memoria | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) §«R12» | Ejecución del flujo real con **doble** (modelo guionado, ViaCEP simulado) |
-| Reparación de salidas rotas con el modelo real | [trazas/fase1_chain_llm.json](trazas/fase1_chain_llm.json) | Real remoto para el reparador |
-| Errores de verificación registrados y corregidos con el modelo real | [trazas/r10_viacep_llm_antes.json](trazas/r10_viacep_llm_antes.json) y [trazas/r10_viacep_llm.json](trazas/r10_viacep_llm.json); [citas_ancladas.md](citas_ancladas.md) | Ejecución real remota, antes y después |
-| Herramienta FAISS sobre el índice guardado | [trazas/r22_indice_existente.json](trazas/r22_indice_existente.json) | Ejecución real remota |
-| La traza oculta claves, registra fuentes y cada verificación; el historial guarda solo lo público | [tests/test_tools_flow.py](../tests/test_tools_flow.py); [tests/test_salida_estructurada.py](../tests/test_salida_estructurada.py); [tests/test_citas_ancladas.py](../tests/test_citas_ancladas.py) | Pruebas automáticas |
+| Registro de um turno com erro do parser, segunda proposta, ancoragem e memória | [notebooks/02_react_ferramentas.ipynb](../notebooks/02_react_ferramentas.ipynb) §«R12» | Execução do fluxo real com **duplo** (modelo roteirizado, ViaCEP simulado) |
+| Reparo de saídas quebradas com o modelo real | [rastros/fase1_chain_llm.json](rastros/fase1_chain_llm.json) | Real remoto para o reparador |
+| Erros de verificação registrados e corrigidos com o modelo real | [rastros/r10_viacep_llm_antes.json](rastros/r10_viacep_llm_antes.json) (versão anterior, em espanhol) e [rastros/r10_viacep_llm.json](rastros/r10_viacep_llm.json); [citacoes_ancoradas.md](citacoes_ancoradas.md) | Execução real remota, antes e depois |
+| Ferramenta FAISS sobre o índice salvo | [rastros/r22_indice_existente.json](rastros/r22_indice_existente.json) | Execução real remota |
+| O rastro oculta chaves, registra fontes e cada verificação; o histórico guarda só o que é público | [tests/test_tools_flow.py](../tests/test_tools_flow.py); [tests/test_saida_estruturada.py](../tests/test_saida_estruturada.py); [tests/test_citacoes_ancoradas.py](../tests/test_citacoes_ancoradas.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- `Traza` vive en memoria durante el turno; no se guarda en un archivo de log permanente salvo en los scripts de evidencia.
-- No hay reintentos ante fallos de red del modelo: un error de la API cuenta como propuesta fallida.
-- La ventana de 12 mensajes no resume lo que queda fuera.
+- `Rastro` vive em memória durante o turno; não é salvo em um arquivo de log permanente, exceto nos scripts de evidência.
+- Não há novas tentativas diante de falhas de rede do modelo: um erro da API conta como proposta com falha.
+- A janela de 12 mensagens não resume o que fica de fora.
 
 ---
 
-# Fase 3 — Chatbot con memoria
+# Fase 3 — Chatbot com memória
 
-## R13 — Memoria de corto y largo plazo según CoALA
+## R13 — Memória de curto e longo prazo segundo o CoALA
 
-> ¿El alumno diferenció memoria de corto y largo plazo para el agente con base en la taxonomía CoALA?
+> O aluno diferenciou memória de curto e longo prazo para o agente com base na taxonomia CoALA?
 
-**Respuesta corta.** Sí. Pedro tiene las cuatro memorias de CoALA, cada una con su lugar, su alcance y sus reglas. Tras una conversación real se puede leer qué hay en cada una.
+**Resposta curta.** Sim. O Pedro tem as quatro memórias do CoALA, cada uma com seu lugar, seu alcance e suas regras. Depois de uma conversa real dá para ler o que há em cada uma.
 
-### 1. El mapa de memorias
+### 1. O mapa de memórias
 
-CoALA distingue una memoria de trabajo (corto plazo) y tres de largo plazo. En clase (21-10-2026) se presentó como el marco estándar para ordenar las memorias de un agente.
+O CoALA distingue uma memória de trabalho (curto prazo) e três de longo prazo. Em aula (21-10-2026) ele foi apresentado como o marco padrão para organizar as memórias de um agente.
 
-| Memoria CoALA | Plazo | Qué guarda Pedro | Alcance | Dónde |
+| Memória CoALA | Prazo | O que o Pedro guarda | Alcance | Onde |
 |---|---|---|---|---|
-| **De trabajo** | Corto | El mensaje actual, el borrador de compra y los últimos 12 mensajes | Una sesión | SQLite: `borradores`, `mensajes` |
-| **Episódica** | Largo | Qué se pidió y qué se recomendó en ocasiones pasadas | Un usuario, entre sesiones | SQLite con vector: `episodios` |
-| **Semántica** | Largo | Hechos: las preferencias del usuario y el conocimiento del dominio (catálogo y políticas) | Usuario y escenario | SQLite `preferencias`, catálogo, índice FAISS |
-| **Procedimental** | Largo | Cómo actuar: prompt, ejemplos, reglas de diálogo y verificación | Todo el sistema | Código y `prompts.py` |
+| **De trabalho** | Curto | A mensagem atual, o rascunho de compra e as últimas 12 mensagens | Uma sessão | SQLite: `rascunhos`, `mensagens` |
+| **Episódica** | Longo | O que foi pedido e o que foi recomendado em ocasiões passadas | Um usuário, entre sessões | SQLite com vetor: `episodios` |
+| **Semântica** | Longo | Fatos: as preferências do usuário e o conhecimento do domínio (catálogo e políticas) | Usuário e cenário | SQLite `preferencias`, catálogo, índice FAISS |
+| **Procedimental** | Longo | Como agir: prompt, exemplos, regras de diálogo e verificação | Todo o sistema | Código e `prompts.py` |
 
-### 2. Ejemplos concretos, tras una conversación real
+### 2. Exemplos concretos, depois de uma conversa real
 
-Después de ocho turnos con el modelo real, `mapa_memorias` devolvió:
+Depois de oito turnos com o modelo real, `mapa_memorias` devolveu:
 
-| Memoria | Contenido observado |
+| Memória | Conteúdo observado |
 |---|---|
-| De trabajo | Borrador: PEC-11-0001, 2 unidades. 16 mensajes guardados, 12 en la ventana |
-| Episódica | 5 episodios de una sesión, cada uno con la petición y la comparación publicada |
-| Semántica | Preferencia `proveedor = nacionales`, guardada cuando el usuario dijo «Prefiero proveedores nacionales, recuérdalo». Cuatro turnos después hizo ganar a un proveedor nacional |
-| Procedimental | Sin cambios: solo cambia con una nueva versión del proyecto |
+| De trabalho | Rascunho: PEC-11-0001, 2 unidades. 16 mensagens salvas, 12 na janela |
+| Episódica | 5 episódios de uma sessão, cada um com o pedido e a comparação publicada |
+| Semântica | Preferência `fornecedor = nacionais`, salva quando o usuário disse «Prefiro fornecedores nacionais, lembre-se disso». Quatro turnos depois ela fez ganhar um fornecedor nacional |
+| Procedimental | Sem mudanças: só muda com uma nova versão do projeto |
 
-### 3. La regla que separa corto y largo plazo
+### 3. A regra que separa curto e longo prazo
 
-- **Corto plazo es lo que solo sirve para la compra en curso.** El borrador desaparece al cambiar de sesión. Así no se arrastra la cantidad de una compra a otra.
-- **Largo plazo es lo que debe sobrevivir a la sesión.** Una preferencia o un episodio aparecen en una sesión nueva del mismo usuario, y nunca en la de otro.
-- **Precios, stock y plazos no son memoria.** Se releen siempre del escenario activo. Un episodio puede decir «te recomendé CentroPeças por R$ 7.279,83», pero ese importe se trata como histórico.
+- **Curto prazo é o que só serve para a compra em andamento.** O rascunho some ao trocar de sessão. Assim a quantidade de uma compra não é arrastada para outra.
+- **Longo prazo é o que deve sobreviver à sessão.** Uma preferência ou um episódio aparecem em uma sessão nova do mesmo usuário, e nunca na de outro.
+- **Preços, estoque e prazos não são memória.** São sempre relidos do cenário ativo. Um episódio pode dizer «recomendei a CentroPeças por R$ 7.279,83», mas esse valor é tratado como histórico.
 
-**Decisión técnica.** Las preferencias se clasifican como semánticas (son hechos sobre el usuario) y las recomendaciones pasadas como episódicas (son sucesos con fecha). La distinción importa al usarlas: **un hecho se aplica** —la preferencia de origen ordena las ofertas válidas de cada comparación— y **un suceso solo se recuerda**, porque sus datos pueden haber caducado.
+**Decisão técnica.** As preferências são classificadas como semânticas (são fatos sobre o usuário) e as recomendações passadas como episódicas (são acontecimentos com data). A distinção importa na hora de usar: **um fato se aplica** —a preferência de origem ordena as ofertas válidas de cada comparação— e **um acontecimento só se lembra**, porque seus dados podem ter vencido.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Mapa de memorias tras una conversación de ocho turnos, con persistencia y aislamiento | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r13_mapa_de_memorias`; [scripts/demostrar_fase3.py](../scripts/demostrar_fase3.py) | **Ejecución real remota** (`gpt-4.1-mini`) con memoria real local |
-| Mapa de memorias reproducible sin credenciales | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb) §«R13» | Ejecución real local |
-| El mapa refleja lo guardado; aislamiento por usuario y sesión | [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
+| Mapa de memórias depois de uma conversa de oito turnos, com persistência e isolamento | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json), `r13_mapa_de_memorias`; [scripts/demonstrar_fase3.py](../scripts/demonstrar_fase3.py) | **Execução real remota** (`gpt-4.1-mini`) com memória real local |
+| Mapa de memórias reproduzível sem credenciais | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb) §«R13 · mapa de memórias (CoALA)» | Execução real local |
+| O mapa reflete o que foi salvo; isolamento por usuário e sessão | [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_dialogue.py](../tests/test_dialogue.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- La memoria procedimental es estática: el agente no aprende reglas nuevas de la experiencia.
-- La memoria semántica del usuario son solo preferencias explícitas en forma de clave y valor, y de ellas solo la de origen del proveedor cambia la comparación.
+- A memória procedimental é estática: o agente não aprende regras novas com a experiência.
+- A memória semântica do usuário são só preferências explícitas em forma de chave e valor, e delas só a de origem do fornecedor muda a comparação.
 
-## R14 — Ventana de contexto con búsqueda vectorial
+## R14 — Janela de contexto com busca vetorial
 
-> ¿El alumno gestionó ventanas de contexto combinando sliding window o summarization con búsqueda vectorial?
+> O aluno gerenciou janelas de contexto combinando sliding window ou summarization com busca vetorial?
 
-**Respuesta corta.** Sí. El agente recibe una **ventana deslizante** de los últimos 12 mensajes y, además, los recuerdos más parecidos a la pregunta, recuperados por **búsqueda vectorial**. Lo que sale de la ventana no se pierde: puede volver como recuerdo.
+**Resposta curta.** Sim. O agente recebe uma **janela deslizante** das últimas 12 mensagens e, além disso, as lembranças mais parecidas com a pergunta, recuperadas por **busca vetorial**. O que sai da janela não se perde: pode voltar como lembrança.
 
-### 1. Las dos piezas
+### 1. As duas peças
 
-| Pieza | Qué hace | Detalle |
+| Peça | O que faz | Detalhe |
 |---|---|---|
-| Ventana deslizante | Limita lo que se envía al modelo | Últimos 12 mensajes de la sesión; el historial completo se conserva en SQLite |
-| Búsqueda vectorial | Trae lo relevante de fuera de la ventana | Episodios del usuario ordenados por similitud coseno; se usan los 3 mejores |
+| Janela deslizante | Limita o que é enviado ao modelo | Últimas 12 mensagens da sessão; o histórico completo fica no SQLite |
+| Busca vetorial | Traz o que é relevante de fora da janela | Episódios do usuário ordenados por similaridade de cosseno; são usados os 3 melhores |
 
-Los episodios se convierten en vectores de 384 dimensiones con un modelo local multilingüe (`paraphrase-multilingual-MiniLM-L12-v2`).
+Os episódios viram vetores de 384 dimensões com um modelo local multilíngue (`paraphrase-multilingual-MiniLM-L12-v2`).
 
-### 2. Ejecución
+### 2. Execução
 
-Tras una conversación real de ocho turnos:
+Depois de uma conversa real de oito turnos:
 
 | Medida | Valor |
 |---|---|
-| Mensajes guardados en la sesión | 16 |
-| Mensajes que ve el agente (ventana) | 12 |
-| Episodios guardados del usuario | 5 |
+| Mensagens salvas na sessão | 16 |
+| Mensagens que o agente vê (janela) | 12 |
+| Episódios salvos do usuário | 5 |
 
-En una **sesión nueva** del mismo usuario, la pregunta «¿Qué proveedor me convenía para el compresor PEC-01-0001?» recuperó:
+Em uma **sessão nova** do mesmo usuário, a pergunta «Qual fornecedor era melhor para mim no compressor PEC-01-0001?» recuperou:
 
-| Similitud | Recuerdo recuperado |
+| Similaridade | Lembrança recuperada |
 |---|---|
-| 0,349 | «Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días → Ninguna oferta cumple…» |
-| 0,218 | «Compara 2 unidades de PEC-11-0001 → Casa Técnica Brasil: R$ 1.970,38…» |
-| 0,207 | «Mejor sin límite de plazo, pero con presupuesto de R$ 10.000 → CentroPeças: R$ 7.279,83…» |
+| 0,274 | «Preciso de 2 unidades de PEC-01-0001 com prazo máximo de 7 dias → Nenhuma oferta atende às restrições indicadas…» |
+| 0,226 | «Melhor sem limite de prazo, mas com orçamento de R$ 10.000 → CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias…» |
+| 0,217 | «Volte a comparar com o último que eu pedi → CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias…» |
 
-Para otro usuario, la misma pregunta no recuperó nada.
+Para outro usuário, a mesma pergunta não recuperou nada.
 
-### 3. Reglas para recuerdos obsoletos
+### 3. Regras para lembranças desatualizadas
 
-| Situación | Regla |
+| Situação | Regra |
 |---|---|
-| El usuario cambia de opinión | La preferencia nueva **reemplaza** a la anterior (misma clave) |
-| Un episodio se corrige | Se **actualiza** el texto y se recalcula su vector |
-| El episodio trae precio o stock | Se **ignora** como dato: entra al contexto con la etiqueta «histórico» y la instrucción de no usar sus precios ni su stock |
-| El episodio es de otro catálogo | Lleva su `dataset_id`, así que queda identificado |
-| El vector se calculó con otro modelo | No se compara: solo se recuperan episodios del mismo modelo y versión |
+| O usuário muda de opinião | A preferência nova **substitui** a anterior (mesma chave) |
+| Um episódio é corrigido | O texto é **atualizado** e o vetor é recalculado |
+| O episódio traz preço ou estoque | É **ignorado** como dado: entra no contexto com o rótulo «Lembrança histórica» e a instrução de não usar preços nem estoque históricos |
+| O episódio é de outro catálogo | Leva o seu `dataset_id`, então fica identificado |
+| O vetor foi calculado com outro modelo | Não é comparado: só são recuperados episódios do mesmo modelo e versão |
 
-**Decisión técnica.** Se eligió ventana deslizante y no resumen por dos razones. La ventana es exacta: no puede alterar una cifra, y un resumen hecho por un modelo sí. Y es gratuita: un resumen cuesta una llamada más por turno. La contrapartida es que el detalle antiguo desaparece del contexto; lo compensa la memoria episódica, que guarda lo importante (las recomendaciones) y lo trae cuando es relevante.
+**Decisão técnica.** Escolhemos janela deslizante e não resumo por duas razões. A janela é exata: não pode alterar um número, e um resumo feito por um modelo pode. E é gratuita: um resumo custa uma chamada a mais por turno. A contrapartida é que o detalhe antigo some do contexto; quem compensa é a memória episódica, que guarda o importante (as recomendações) e o traz quando é relevante.
 
-La evaluación de R29 mostró el otro lado de esta memoria: con 73 episodios acumulados, el agente cambió su trayectoria. Recuperar recuerdos no es neutro.
+A avaliação da R29 mostrou o outro lado dessa memória: com 73 episódios acumulados, o agente mudou a sua trajetória (execução histórica da versão anterior do projeto, em espanhol). Recuperar lembranças não é neutro.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| 16 mensajes guardados y 12 en ventana; tres recuerdos recuperados en una sesión nueva; ninguno para otro usuario | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r14_r18_persistencia_y_aislamiento` | **Ejecución real remota** para la conversación; embeddings reales locales |
-| Episodio guardado, actualizado y recuperado; ventana de 12 sobre 18 mensajes | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb); [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · memoria» | Ejecución real local (FastEmbed) |
-| Ventana, aislamiento y actualización de episodios | [tests/test_memory_nli.py](../tests/test_memory_nli.py) | Pruebas automáticas |
+| 16 mensagens salvas e 12 na janela; três lembranças recuperadas em uma sessão nova; nenhuma para outro usuário | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json), `r14_r18_persistencia_e_isolamento` | **Execução real remota** para a conversa; embeddings reais locais |
+| Episódio salvo, atualizado e recuperado; janela de 12 sobre 18 mensagens | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb); [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R02 · memória aumentada» | Execução real local (FastEmbed) |
+| Janela, isolamento e atualização de episódios | [tests/test_memory_nli.py](../tests/test_memory_nli.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- No hay resumen del historial ni recorte por número de tokens: la ventana cuenta mensajes.
-- La recuperación usa solo similitud; no pondera la antigüedad ni la frecuencia de uso del recuerdo.
-- Las similitudes observadas son bajas (0,21 a 0,35) y no hay un umbral mínimo: siempre se devuelven los tres mejores. El segundo recuerdo recuperado es de otra pieza.
+- Não há resumo do histórico nem corte por número de tokens: a janela conta mensagens.
+- A recuperação usa só similaridade; não pondera a idade nem a frequência de uso da lembrança.
+- As similaridades observadas são baixas (0,22 a 0,27) e não há um limiar mínimo: sempre são devolvidas as três melhores. Nesta execução as três são da peça perguntada, mas a segunda e a terceira trazem a mesma comparação: não há deduplicação.
 
-## R15 — Comparación de herramientas especializadas de memoria
+## R15 — Comparação de ferramentas especializadas de memória
 
-> ¿El alumno comparó herramientas especializadas de memoria por arquitectura y caso de uso?
+> O aluno comparou ferramentas especializadas de memória por arquitetura e caso de uso?
 
-**Respuesta corta.** Sí. Se comparan Mem0, Letta (MemGPT) y LangMem con la implementación propia de Pedro, por arquitectura y por caso de uso, y **LangMem se ejecutó** con la misma conversación que la memoria propia. Se mantiene la implementación propia porque el dominio exige controlar qué se guarda, y lo que hay que guardar es poco y está bien delimitado.
+**Resposta curta.** Sim. Comparamos Mem0, Letta (MemGPT) e LangMem com a implementação própria do Pedro, por arquitetura e por caso de uso, e **o LangMem foi executado** com a mesma conversa que a memória própria. Mantemos a implementação própria porque o domínio exige controlar o que é salvo, e o que precisa ser salvo é pouco e bem delimitado.
 
-### 1. Comparación por arquitectura
+### 1. Comparação por arquitetura
 
-| | Mem0 | Letta (MemGPT) | LangMem | Pedro (propia) |
+| | Mem0 | Letta (MemGPT) | LangMem | Pedro (própria) |
 |---|---|---|---|---|
-| Idea central | Una capa de memoria que se añade a cualquier agente | Un agente que administra su propia memoria, como un sistema operativo | Utilidades de memoria de largo plazo para agentes de LangChain y LangGraph | Tablas SQLite con reglas explícitas |
-| Quién decide qué guardar | Un LLM extrae hechos de la conversación | El propio agente, con herramientas para editar su memoria | El agente con herramientas, o un proceso en segundo plano | El código: solo recomendaciones verificadas y preferencias citadas |
-| Dónde se guarda | Almacén vectorial, opcionalmente un grafo | Memoria central siempre en contexto y memoria de archivo fuera de él | El almacén de LangGraph | SQLite; los episodios llevan vector |
-| Cómo se recupera | Búsqueda semántica por usuario, sesión o agente | El agente pagina y busca en su archivo | Búsqueda semántica en el almacén | Ventana de 12 mensajes y similitud coseno, top 3 |
-| Actualizar y olvidar | Fusiona y deduplica hechos automáticamente | El agente reescribe sus bloques | Consolida memorias | Reemplazo por clave y actualización explícita |
+| Ideia central | Uma camada de memória que se acrescenta a qualquer agente | Um agente que administra a própria memória, como um sistema operacional | Utilitários de memória de longo prazo para agentes de LangChain e LangGraph | Tabelas SQLite com regras explícitas |
+| Quem decide o que salvar | Um LLM extrai fatos da conversa | O próprio agente, com ferramentas para editar a sua memória | O agente com ferramentas, ou um processo em segundo plano | O código: só recomendações verificadas e preferências citadas |
+| Onde é salvo | Armazém vetorial, opcionalmente um grafo | Memória central sempre no contexto e memória de arquivo fora dele | O armazém do LangGraph | SQLite; os episódios levam vetor |
+| Como é recuperado | Busca semântica por usuário, sessão ou agente | O agente pagina e busca no seu arquivo | Busca semântica no armazém | Janela de 12 mensagens e similaridade de cosseno, top 3 |
+| Atualizar e esquecer | Funde e deduplica fatos automaticamente | O agente reescreve os seus blocos | Consolida memórias | Substituição por chave e atualização explícita |
 
-### 2. Comparación por caso de uso
+### 2. Comparação por caso de uso
 
-| Herramienta | Encaja mejor cuando… | En Pedro |
+| Ferramenta | Encaixa melhor quando… | No Pedro |
 |---|---|---|
-| Mem0 | Se quiere personalizar un asistente sin diseñar la memoria a mano | Guardaría hechos inferidos por un modelo, sin control sobre cuáles |
-| Letta | El agente vive mucho tiempo y debe gestionar un contexto que no cabe en la ventana | Añade un agente autónomo sobre su propia memoria: más de lo que pide el problema |
-| LangMem | El agente ya está en LangGraph y necesita memoria entre conversaciones | Requiere el almacén de LangGraph, que este proyecto no usa |
-| Propia | Lo que se guarda es poco, conocido y debe poder auditarse | Es el caso |
+| Mem0 | Se quer personalizar um assistente sem desenhar a memória à mão | Salvaria fatos inferidos por um modelo, sem controle sobre quais |
+| Letta | O agente vive muito tempo e precisa gerenciar um contexto que não cabe na janela | Acrescenta um agente autônomo sobre a própria memória: mais do que o problema pede |
+| LangMem | O agente já está no LangGraph e precisa de memória entre conversas | Exige o armazém do LangGraph, que este projeto não usa |
+| Própria | O que se salva é pouco, conhecido e precisa ser auditável | É o caso |
 
-### 3. Comparación ejecutada: la misma conversación con LangMem y con la memoria de Pedro
+### 3. Comparação executada: a mesma conversa com o LangMem e com a memória do Pedro
 
-Tres mensajes, el mismo modelo (`gpt-4.1-mini`) y dos memorias. LangMem se montó sobre un agente de LangGraph con sus dos herramientas, `manage_memory` y `search_memory`, y un almacén por usuario ([orquestadores.py](../src/pedro/orquestadores.py)).
+Três mensagens, o mesmo modelo (`gpt-4.1-mini`) e duas memórias. O LangMem foi montado sobre um agente do LangGraph com as suas duas ferramentas, `manage_memory` e `search_memory`, e um armazém por usuário ([orquestradores.py](../src/pedro/orquestradores.py)).
 
-| Mensaje | Memoria de Pedro | LangMem |
+| Mensagem | Memória do Pedro | LangMem |
 |---|---|---|
-| «Prefiero proveedores nacionales, recuérdalo.» | Llama a `guardar_preferencia`. Guarda `proveedor = nacionales` | Llama a `manage_memory`. Guarda «Prefiere proveedores nacionales.» |
-| «Compara 5 unidades de PEC-01-0001 con plazo de 7 días.» | Comparación verificada: CentroPeças, R$ 7.279,83, con la nota «Se aplicó tu preferencia por proveedores nacionales». Guarda un episodio | Responde **sin verificación** y se contradice: dice que la pieza no tiene stock en proveedores nacionales y, a continuación, que CentroPeças (que es nacional) tiene 67 unidades |
-| «Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.» | No lo toma por una compra, pero no sabe qué contestar: responde «No puedo confirmar una recomendación…» | Responde al comentario y ofrece buscar opciones más económicas; no guarda nada nuevo |
+| «Prefiro fornecedores nacionais, lembre-se disso.» | Chama `salvar_preferencia`. Salva `fornecedor = nacionais` | Chama `manage_memory`. Salva «Prefere fornecedores nacionais para peças de reposição.» |
+| «Compare 5 unidades de PEC-01-0001 com prazo de 7 dias.» | Comparação verificada: «CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.» Salva um episódio | Responde **sem verificação** e se contradiz: diz que «não há fornecedores nacionais com estoque e prazo compatíveis» e, logo depois, que a CentroPeças (que é nacional) tem estoque suficiente e prazo de 2 dias |
+| «Ufa, acho que esse compressor vai sair caro para mim. Minha oficina é pequena.» | Não salva nada, mas não sabe o que responder: chama `consultar_catalogo` e pergunta «De qual peça você precisa? Indique o ID ou SKU.» | Responde ao comentário e oferece buscar opções mais econômicas; não salva nada novo |
 
-| Después | Memoria de Pedro | LangMem |
+| Depois | Memória do Pedro | LangMem |
 |---|---|---|
-| Qué quedó guardado | 1 preferencia (clave y valor) y 1 episodio | 1 recuerdo en texto libre |
-| Quién decidió guardarlo | El código: cita literal del usuario, o respuesta verificada | El modelo |
-| Sesión nueva: «¿Qué recuerdas de mis preferencias?» | La preferencia sigue guardada y se aplica a la siguiente comparación, pero Pedro no tiene una respuesta para esa pregunta | Busca en su memoria y contesta: «prefieres proveedores nacionales» |
-| Otro usuario | No ve nada | No ve nada |
+| O que ficou salvo | 1 preferência (chave e valor) e 1 episódio | 1 lembrança em texto livre |
+| Quem decidiu salvar | O código: citação literal do usuário, ou resposta verificada | O modelo |
+| Sessão nova: «O que você lembra das minhas preferências?» | A preferência continua salva e se aplica à comparação seguinte, mas o Pedro não tem uma resposta para essa pergunta | Busca na sua memória e responde: «Você prefere fornecedores nacionais para peças de reposição.» |
+| Outro usuário | Não vê nada | Não vê nada |
 
-Lo que enseña la ejecución:
+O que a execução ensina:
 
-- **Las dos guardaron la preferencia y las dos aíslan por usuario.** En lo básico son equivalentes.
-- **LangMem conversa mejor sobre lo que recuerda.** Sabe responder «¿qué recuerdas de mí?»; Pedro no tiene ese tipo de respuesta.
-- **LangMem guarda texto libre que redacta el modelo**; Pedro guarda una clave y un valor comprobados contra la cita. En esta corrida LangMem guardó algo correcto, pero nada impide que guarde una inferencia.
-- **Lo que importa es qué se hace con lo recordado.** En Pedro la preferencia entra en la regla de comparación: ordena las ofertas válidas, se verifica y la respuesta lo dice. El agente con LangMem la usó a su manera, sin comprobación, y dio una respuesta contradictoria sobre el stock de un proveedor nacional.
-- **Pedro también falló en algo.** Ante un comentario sin petición («me va a salir caro») contestó con un mensaje de error genérico: no sabe conversar fuera de sus tipos de respuesta.
+- **As duas salvaram a preferência e as duas isolam por usuário.** No básico são equivalentes.
+- **O LangMem conversa melhor sobre o que lembra.** Sabe responder «o que você lembra de mim?»; o Pedro não tem esse tipo de resposta.
+- **O LangMem salva texto livre redigido pelo modelo**; o Pedro salva uma chave e um valor conferidos com a citação. Nesta execução o LangMem salvou algo correto, mas nada impede que salve uma inferência.
+- **O que importa é o que se faz com o que foi lembrado.** No Pedro a preferência entra na regra de comparação: ordena as ofertas válidas, é verificada e a resposta avisa quando ela foi aplicada. O agente com LangMem a usou do seu jeito, sem conferência, e deu uma resposta contraditória sobre um fornecedor nacional.
+- **O Pedro também falhou em algo.** Diante de um comentário sem pedido («vai sair caro para mim») respondeu com uma pergunta fora de lugar («De qual peça você precisa?»): não sabe conversar fora dos seus tipos de resposta.
 
-### 4. Decisión
+### 4. Decisão
 
-Se mantiene la implementación propia por tres razones:
+Mantemos a implementação própria por três razões:
 
-1. **Qué entra en memoria debe ser comprobable.** Solo se guarda un episodio cuando la respuesta pasó la verificación, y solo una preferencia que el usuario dijo con sus palabras. Una herramienta que deja a un modelo decidir qué recordar podría guardar una inferencia errónea como si fuera un hecho.
-2. **El aislamiento por usuario, sesión y escenario es un requisito.** Con tablas propias es una condición en cada consulta y se prueba directamente.
-3. **El volumen es pequeño.** Unos pocos episodios y preferencias por usuario no justifican un servicio adicional.
+1. **O que entra na memória precisa ser conferível.** Só se salva um episódio quando a resposta passou na verificação, e só uma preferência que o usuário disse com as suas palavras. Uma ferramenta que deixa um modelo decidir o que lembrar poderia salvar uma inferência errada como se fosse um fato.
+2. **O isolamento por usuário, sessão e cenário é um requisito.** Com tabelas próprias ele é uma condição em cada consulta e é testado diretamente.
+3. **O volume é pequeno.** Uns poucos episódios e preferências por usuário não justificam um serviço adicional.
 
-La ejecución confirmó la decisión y señaló qué mejorar: Pedro debería poder responder qué recuerda del usuario y saber contestar a un comentario.
+A execução confirmou a decisão e mostrou o que melhorar: o Pedro deveria conseguir responder o que lembra do usuário e saber responder a um comentário.
 
-Lo que sí se tomó de estas herramientas es una idea de LangMem vista en clase: **el agente guarda preferencias durante la conversación con una herramienta**. Pedro la tiene (`guardar_preferencia`), con una condición añadida: la herramienta rechaza el guardado si el valor no aparece en una cita literal del mensaje del usuario.
+O que aproveitamos dessas ferramentas é uma ideia do LangMem vista em aula: **o agente salva preferências durante a conversa com uma ferramenta**. O Pedro a tem (`salvar_preferencia`), com uma condição a mais: a ferramenta rejeita o salvamento se o valor não aparece em uma citação literal da mensagem do usuário.
 
-Ejecutado con el modelo real: ante «Prefiero proveedores nacionales, recuérdalo», el agente llamó a `guardar_preferencia` y respondió «Guardé tu preferencia: proveedor = nacionales». En una sesión nueva la preferencia seguía ahí; para otro usuario, no.
+Executado com o modelo real: diante de «Prefiro fornecedores nacionais, lembre-se disso», o agente chamou `salvar_preferencia` e respondeu «Salvei a sua preferência: fornecedor = nacionais. Vou levá-la em conta, mas o seu pedido de cada momento é o que manda.» Em uma sessão nova a preferência continuava lá; para outro usuário, não.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| El agente guarda una preferencia con una herramienta y la recupera en otra sesión | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), turno 4 de `r18_conversacion_compleja` y `r14_r18_persistencia_y_aislamiento` | **Ejecución real remota** (`gpt-4.1-mini`) |
-| La misma conversación con la memoria de Pedro y con LangMem: qué guarda cada una, sesión nueva y otro usuario | [trazas/r15_memoria_llm.json](trazas/r15_memoria_llm.json); [scripts/demostrar_r15.py](../scripts/demostrar_r15.py) | **Ejecución real remota** (`gpt-4.1-mini`), embeddings reales locales |
-| LangMem guarda por usuario lo que el modelo decide recordar | [tests/test_orquestadores.py](../tests/test_orquestadores.py) | Prueba con doble |
-| Tablas comparativas y decisión | Esta sección; [comparaciones.md](comparaciones.md) | Documentación |
-| La preferencia solo se confirma si la herramienta la guardó | [tests/test_dialogue.py](../tests/test_dialogue.py) | Prueba automática |
+| O agente salva uma preferência com uma ferramenta e a recupera em outra sessão | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json), turno 4 de `r18_conversa_complexa` e `r14_r18_persistencia_e_isolamento` | **Execução real remota** (`gpt-4.1-mini`) |
+| A mesma conversa com a memória do Pedro e com o LangMem: o que cada uma salva, sessão nova e outro usuário | [rastros/r15_memoria_llm.json](rastros/r15_memoria_llm.json); [scripts/demonstrar_r15.py](../scripts/demonstrar_r15.py) | **Execução real remota** (`gpt-4.1-mini`), embeddings reais locais |
+| O LangMem salva por usuário o que o modelo decide lembrar | [tests/test_orquestradores.py](../tests/test_orquestradores.py) | Teste com duplo |
+| Tabelas comparativas e decisão | Esta seção; [comparacoes.md](comparacoes.md) | Documentação |
+| A preferência só é confirmada se a ferramenta a salvou | [tests/test_dialogue.py](../tests/test_dialogue.py) | Teste automático |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- **Mem0 y Letta no se instalaron ni se ejecutaron**: su comparación es conceptual. LangMem sí se ejecutó, en una conversación de tres mensajes y una sola corrida; lo que el modelo decide guardar puede variar.
-- LangMem es una dependencia opcional (extra `comparacion`); el producto no lo usa.
-- Pedro no tiene una respuesta para «¿qué recuerdas de mí?» ni para un comentario sin petición.
-- La implementación propia no deduplica episodios ni extrae hechos por sí sola.
+- **Mem0 e Letta não foram instalados nem executados**: a comparação deles é conceitual. O LangMem foi executado, em uma conversa de três mensagens e uma única execução; o que o modelo decide salvar pode variar.
+- O LangMem é uma dependência opcional (extra `comparacion`); o produto não o usa.
+- O Pedro não tem uma resposta para «o que você lembra de mim?» nem para um comentário sem pedido.
+- A implementação própria não deduplica episódios nem extrai fatos sozinha.
 
-## R16 — Chatbot con ConversationBufferMemory
+## R16 — Chatbot com ConversationBufferMemory
 
-> ¿El alumno construyó un chatbot conversacional con ConversationBufferMemory?
+> O aluno construiu um chatbot conversacional com ConversationBufferMemory?
 
-**Respuesta corta.** Sí. Hay un chatbot construido con `ConversationChain` y `ConversationBufferMemory`. En una conversación real de cuatro turnos recordó el nombre de la usuaria y todos los datos que fue dando.
+**Resposta curta.** Sim. Há um chatbot construído com `ConversationChain` e `ConversationBufferMemory`. Em uma conversa real de quatro turnos ele lembrou o nome da usuária e todos os dados que ela foi dando.
 
-### 1. El chatbot
+### 1. O chatbot
 
-`crear_chatbot_buffer`, en [legacy.py](../src/pedro/legacy.py):
+`criar_chatbot_buffer`, em [legacy.py](../src/pedro/legacy.py):
 
-| Parte | Detalle |
+| Parte | Detalhe |
 |---|---|
-| Cadena | `ConversationChain` |
-| Memoria | `ConversationBufferMemory`, con los prefijos «Usuario» y «Pedro» |
-| Prompt | Una plantilla con dos variables: `{history}` (toda la conversación) y `{input}` (el mensaje nuevo) |
+| Cadeia | `ConversationChain` |
+| Memória | `ConversationBufferMemory`, com os prefixos «Usuário» e «Pedro» |
+| Prompt | Um modelo de prompt (`MODELO_CHATBOT`) com duas variáveis: `{history}` (toda a conversa) e `{input}` (a mensagem nova) |
 
-La memoria de buffer guarda la conversación completa y la inserta entera en cada prompt. Es la memoria más simple que existe.
+A memória de buffer guarda a conversa completa e a insere inteira em cada prompt. É a memória mais simples que existe.
 
-### 2. Conversación real
+### 2. Conversa real
 
-| Turno | Usuario | Pedro | Memoria |
+| Turno | Usuário | Pedro | Memória |
 |---|---|---|---|
-| 1 | Hola, soy Ana. Necesito un termostato para mi nevera. | Hola Ana, ¿podrías indicarme la cantidad que necesitas, tu presupuesto aproximado y el plazo?… | 240 caracteres |
-| 2 | Que sean 2 unidades. | Perfecto, Ana. ¿Cuál es tu presupuesto aproximado y en cuánto tiempo necesitas las 2 unidades del termostato? | 387 |
-| 3 | Tengo hasta R$ 900 y lo necesito en 5 días. | Gracias, Ana. Consultaré el catálogo para verificar disponibilidad y precios de 2 termostatos dentro de tu presupuesto de R$ 900 y con entrega en 5 días… | 620 |
-| 4 | Resume mi solicitud completa y dime cómo me llamo. | Claro, Ana. Solicitas 2 unidades de termostato para tu nevera, con un presupuesto de hasta R$ 900 y entrega en un plazo de 5 días… | 885 |
+| 1 | Olá, sou a Ana. Preciso de um termostato para a minha geladeira. | Olá, Ana! Para definir sua solicitação, por favor, informe a quantidade desejada, seu orçamento e o prazo para entrega; os preços e o estoque serão consultados no catálogo… | 313 caracteres |
+| 2 | Que sejam 2 unidades. | Anotado, Ana: 2 unidades de termostato para geladeira. Por favor, informe seu orçamento e o prazo desejado para entrega. | 472 |
+| 3 | Tenho até R$ 900 e preciso dele em 5 dias. | Perfeito, Ana: 2 termostatos para geladeira, orçamento de até R$ 900 e prazo de 5 dias para entrega; vou consultar preços e estoque no catálogo… | 717 |
+| 4 | Resuma a minha solicitação completa e diga como eu me chamo. | Ana, sua solicitação é para 2 termostatos para geladeira, com orçamento de até R$ 900 e prazo de entrega de 5 dias; vou consultar preços e estoque no catálogo. | 954 |
 
-El turno 4 solo se puede responder con memoria: el nombre se dijo en el turno 1, la cantidad en el 2 y el presupuesto y el plazo en el 3.
+O turno 4 só pode ser respondido com memória: o nome foi dito no turno 1, a quantidade no 2 e o orçamento e o prazo no 3.
 
-### 3. Lo que muestra la última columna
+### 3. O que a última coluna mostra
 
-La memoria crece en cada turno: de 240 a 885 caracteres en cuatro turnos. Con el buffer, **cada mensaje nuevo hace más largo y más caro el siguiente prompt**, sin límite. Por eso el agente final no usa esta memoria: usa una ventana de 12 mensajes más recuperación de recuerdos (R14).
+A memória cresce a cada turno: de 313 para 954 caracteres em quatro turnos. Com o buffer, **cada mensagem nova deixa o prompt seguinte mais longo e mais caro**, sem limite. Por isso o agente final não usa essa memória: usa uma janela de 12 mensagens mais recuperação de lembranças (R14).
 
-**Decisión técnica.** Este chatbot está aislado en `legacy.py` como demostración. Es útil para ver la memoria conversacional en su forma más simple, pero no sirve para el producto por dos motivos: no tiene límite de tamaño, y no tiene herramientas, así que no puede consultar el catálogo. Su prompt le prohíbe inventar precios y por eso responde «consultaré el catálogo».
+**Decisão técnica.** Este chatbot está isolado em `legacy.py` como demonstração. Ele é útil para ver a memória conversacional na sua forma mais simples, mas não serve para o produto por dois motivos: não tem limite de tamanho, e não tem ferramentas, então não pode consultar o catálogo. O prompt o proíbe de inventar preços e por isso ele responde «vou consultar preços e estoque no catálogo».
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Conversación de cuatro turnos con el tamaño de la memoria en cada uno y el buffer final | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r16_chatbot_conversation_buffer_memory` | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
-| El mismo chatbot sin credenciales | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb) §«R16» | Ejecución con **doble** (`FakeListLLM`) |
-| `ConversationBufferMemory` también en el agente ReAct, con dos turnos reales | [trazas/r08_react_llm.json](trazas/r08_react_llm.json) | Ejecución real remota |
-| El historial completo llega al prompt de cada turno | [tests/test_legacy.py](../tests/test_legacy.py) | Prueba automática con doble |
+| Conversa de quatro turnos com o tamanho da memória em cada um e o buffer final | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json), `r16_chatbot_conversation_buffer_memory` | **Execução real remota** (`gpt-4.1-mini`, temperatura 0) |
+| O mesmo chatbot sem credenciais | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb) §«R16 · chatbot com ConversationBufferMemory» | Execução com **duplo** (`FakeListLLM`) |
+| `ConversationBufferMemory` também no agente ReAct, com dois turnos reais | [rastros/r08_react_llm.json](rastros/r08_react_llm.json) | Execução real remota |
+| O histórico completo chega ao prompt de cada turno | [tests/test_legacy.py](../tests/test_legacy.py) | Teste automático com duplo |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- La memoria de buffer vive en el proceso: se pierde al reiniciar. La persistencia se demuestra con el agente final (R18).
-- `ConversationChain` y `ConversationBufferMemory` están marcadas como obsoletas por LangChain.
+- A memória de buffer vive no processo: ela se perde ao reiniciar. A persistência é demonstrada com o agente final (R18).
+- `ConversationChain` e `ConversationBufferMemory` estão marcadas como obsoletas pelo LangChain.
 
-## R17 — Reconocimiento de intención y extracción de entidades
+## R17 — Reconhecimento de intenção e extração de entidades
 
-> ¿El alumno estructuró flujos de conversación con reconocimiento de intención y extracción de entidades?
+> O aluno estruturou fluxos de conversa com reconhecimento de intenção e extração de entidades?
 
-**Respuesta corta.** Sí. El chat reconoce seis intenciones y extrae cinco entidades combinando reglas y modelo: las reglas identifican la pieza y el modelo entiende qué se pide. Cuando falta un dato que bloquea, lo pregunta en vez de inventarlo. En catorce mensajes difíciles, las reglas solas acertaron 8 y las reglas con el modelo, 14.
+**Resposta curta.** Sim. O chat reconhece seis intenções e extrai cinco entidades combinando regras e modelo: as regras identificam a peça e o modelo entende o que está sendo pedido. Quando falta um dado que bloqueia, ele pergunta em vez de inventar. Em catorze mensagens difíceis, as regras sozinhas acertaram 8 e as regras com o modelo, 14.
 
-### 1. Intenciones y entidades
+### 1. Intenções e entidades
 
-| Intención | Ejemplo | Qué hace el flujo |
+| Intenção | Exemplo | O que o fluxo faz |
 |---|---|---|
-| `comparar` | Compara 2 unidades de PEC-01-0001… | Extrae la solicitud y compara ofertas |
-| `consultar` | Necesito un termostato para nevera | Busca candidatos; si hay varios, pregunta cuál |
-| `politica` | ¿Qué dice la política de devoluciones? | Consulta el índice de políticas |
-| `cep` | ¿A qué ciudad corresponde el CEP 01001000? | Llama a ViaCEP |
-| `preferencia` | Prefiero proveedores nacionales, recuérdalo | Guarda la preferencia |
-| `otro` | Hola, ¿qué puedes hacer? | Pide concretar |
+| `comparar` | Compare 2 unidades de PEC-01-0001… | Extrai a solicitação e compara ofertas |
+| `consultar` | Preciso de um termostato para geladeira | Busca candidatos; se houver vários, pergunta qual |
+| `politica` | O que diz a política de devoluções? | Consulta o índice de políticas |
+| `cep` | A que cidade corresponde o CEP 01001000? | Chama o ViaCEP |
+| `preferencia` | Prefiro fornecedores nacionais, lembre-se disso | Salva a preferência |
+| `outro` | Olá, o que você pode fazer? | Pede para especificar |
 
-Entidades: **pieza** (ID o nombre), **cantidad**, **presupuesto** (en centavos), **plazo** (en días) y **destino** (CEP).
+Entidades: **peça** (ID ou nome), **quantidade**, **orçamento** (em centavos), **prazo** (em dias) e **destino** (CEP).
 
-### 2. Mensajes reales
+### 2. Mensagens reais
 
-Siete mensajes interpretados por el modelo real con la cadena few-shot:
+Sete mensagens interpretadas pelo modelo real com a cadeia few-shot:
 
-| Mensaje | Intención | Entidades | Falta |
+| Mensagem | Intenção | Entidades | Falta |
 |---|---|---|---|
-| Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días | comparar | PEC-01-0001; 2; 500000 centavos; 7 días | — |
-| Necesito un termostato para nevera | consultar | «termostato para nevera» | cantidad |
-| ¿A qué ciudad corresponde el CEP 01001000? | cep | CEP 01001000 | — |
-| ¿Qué dice la política de devoluciones? | politica | — | — |
-| Prefiero proveedores nacionales, recuérdalo | preferencia | — | — |
-| Quiero media docena de PEC-02-0001 sin límite de gasto | comparar | PEC-02-0001; 6 | — |
-| Hola, ¿qué puedes hacer? | otro | — | — |
+| Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias | comparar | PEC-01-0001; 2; 500000 centavos; 7 dias | — |
+| Preciso de um termostato para geladeira | comparar | «termostato para geladeira» | quantidade |
+| A que cidade corresponde o CEP 01001000? | cep | CEP 01001000 | — |
+| O que diz a política de devoluções? | politica | — | — |
+| Prefiro fornecedores nacionais, lembre-se disso | preferencia | origem preferida: nacional | — |
+| Quero meia dúzia de PEC-02-0001 sem limite de gasto | comparar | PEC-02-0001; 6 | — |
+| Olá, o que você pode fazer? | outro | — | — |
 
-### 3. Pedir lo que falta en lugar de inventarlo
+Nesta execução o modelo rotulou «Preciso de um termostato para geladeira» como `comparar`, e não como `consultar`. O fluxo fez o mesmo nos dois casos: as regras buscaram candidatos e perguntaram qual peça (seção 3). Nas quatro mensagens que não são compra, o rastro lista `produto` e `quantidade` como faltantes do contrato; o fluxo não pergunta por eles, e por isso a coluna mostra «—».
 
-Dos aclaraciones reales del chat:
+### 3. Pedir o que falta em vez de inventar
 
-- «Necesito un termostato para nevera» → *«Encontré varias piezas. ¿Cuál necesitas? PEC-01-0002 (NEVE-TERM-0002), PEC-01-0012…»*
-- «Compara PEC-01-0001» → *«¿Cuántas unidades de PEC-01-0001 necesitas? Puedo comparar sin presupuesto o plazo máximo si no tienes esos límites.»*
+Dois esclarecimentos reais do chat:
 
-Solo se pregunta por lo que bloquea: la pieza y la cantidad. Presupuesto y plazo son opcionales; si no se dan, quedan vacíos, nunca en cero.
+- «Preciso de um termostato para geladeira» → *«Encontrei várias peças. De qual você precisa? PEC-01-0002 (GELA-TERM-0002), PEC-01-0012 (GELA-TERM-0012)…»*
+- «Compare PEC-01-0001» → *«De quantas unidades de PEC-01-0001 você precisa? Posso comparar sem orçamento ou prazo máximo se você não tiver esses limites.»*
 
-### 4. Reglas y modelo, cada uno en lo suyo
+Só se pergunta pelo que bloqueia: a peça e a quantidade. Orçamento e prazo são opcionais; se não forem dados, ficam vazios, nunca em zero.
 
-El chat interpreta cada turno con dos piezas (`interpretar_turno`, en [dialogue.py](../src/pedro/dialogue.py)):
+### 4. Regras e modelo, cada um no seu papel
 
-| Qué se decide | Quién | Por qué |
+O chat interpreta cada turno com duas peças (`interpretar_turno`, em [dialogue.py](../src/pedro/dialogue.py)):
+
+| O que se decide | Quem | Por quê |
 |---|---|---|
-| Qué pieza es | Reglas | Un ID tiene formato fijo (`PEC-01-0001`): una regla no se equivoca y permite comprobar que la pieza existe |
-| Si el mensaje es una compra, y qué cambia en cantidad, presupuesto y plazo | Modelo, con ejemplos few-shot y la solicitud en curso como contexto | La gente lo dice de mil maneras |
-| Qué hacer sin modelo o si su respuesta no sirve | Reglas | El chat debe funcionar sin credenciales |
+| Qual é a peça | Regras | Um ID tem formato fixo (`PEC-01-0001`): uma regra não erra e permite conferir que a peça existe |
+| Se a mensagem é uma compra, e o que muda em quantidade, orçamento e prazo | Modelo, com exemplos few-shot e a solicitação em andamento como contexto | As pessoas dizem isso de mil maneiras |
+| O que fazer sem modelo ou se a resposta dele não servir | Regras | O chat precisa funcionar sem credenciais |
 
-El modelo solo se consulta cuando puede aportar: si las reglas ven una compra o si hay una solicitud en curso. Un saludo sin compra pendiente no cuesta ninguna llamada.
+O modelo só é consultado quando pode ajudar: se as regras veem uma compra ou se há uma solicitação em andamento. Uma saudação sem compra pendente não custa nenhuma chamada.
 
-Medición con el modelo real sobre catorce mensajes difíciles, con el resultado correcto fijado a mano:
+Medição com o modelo real sobre catorze mensagens difíceis, com o resultado correto fixado à mão:
 
-| Mensaje (con una solicitud en curso de 2 unidades y plazo 7) | Solo reglas | Reglas y modelo |
+| Mensagem (com uma solicitação em andamento de 2 unidades e prazo 7) | Só regras | Regras e modelo |
 |---|---|---|
-| Ahora que sean 3 y mantén el plazo | ✔ | ✔ |
-| Súbelo a media docena | ✘ no lo ve | ✔ 6 unidades |
-| Con cuatro me alcanza | ✘ no lo ve | ✔ 4 unidades |
-| Necesito que llegue en dos semanas como mucho | ✘ deja el plazo en 7 | ✔ plazo 14 |
-| Olvida el plazo | ✘ deja el plazo en 7 | ✔ sin plazo |
-| Duplica la cantidad | ✘ deja 2 | ✔ 4 unidades |
-| Tengo mil quinientos reales para esto | ✘ no lo ve | ✔ 150000 centavos |
-| ¿La garantía cubre dos piezas del mismo pedido? | ✔ no es compra | ✔ no es compra |
-| … otros seis mensajes | ✔ | ✔ |
-| **Aciertos** | **8 de 14** | **14 de 14** |
+| Agora que sejam 3 e mantenha o prazo | ✔ | ✔ |
+| Suba para meia dúzia | ✘ não vê | ✔ 6 unidades |
+| Com quatro já dá | ✘ não vê | ✔ 4 unidades |
+| Preciso que chegue em duas semanas no máximo | ✘ deixa o prazo em 7 | ✔ prazo 14 |
+| Esqueça o prazo | ✘ deixa o prazo em 7 | ✔ sem prazo |
+| Dobre a quantidade | ✘ deixa 2 | ✔ 4 unidades |
+| Tenho mil e quinhentos reais para isso | ✘ não vê | ✔ 150000 centavos |
+| A garantia cobre duas peças do mesmo pedido? | ✔ não é compra | ✔ não é compra |
+| … outras seis mensagens (duas delas sem solicitação em andamento) | ✔ | ✔ |
+| **Acertos** | **8 de 14** | **14 de 14** |
 
-**Decisión técnica.** Al principio el chat usaba solo reglas, para funcionar sin credenciales y dar siempre el mismo resultado. Una conversación real mostró el coste: las reglas fallaron en tres mensajes (no entendieron «que sean 3», tomaron «instalar una pieza» por una compra de una unidad y no supieron qué hacer con una preferencia). Se corrigieron esos tres casos, pero cada corrección era un parche: **las reglas solo cubren lo que alguien previó**. Por eso se añadió el modelo donde hace falta comprensión y se dejaron las reglas donde hace falta exactitud. El mismo principio que en la verificación, al revés: allí el modelo decide y el sistema pone los datos; aquí la regla identifica y el modelo interpreta.
+**Decisão técnica.** No começo o chat usava só regras, para funcionar sem credenciais e dar sempre o mesmo resultado. Uma conversa real mostrou o custo (execução histórica da versão anterior do projeto, em espanhol): as regras falharam em três mensagens (não entenderam «que sean 3», tomaram «instalar una pieza» por uma compra de uma unidade e não souberam o que fazer com uma preferência). Esses três casos foram corrigidos, mas cada correção era um remendo: **as regras só cobrem o que alguém previu**. Por isso acrescentamos o modelo onde é preciso compreensão e deixamos as regras onde é preciso exatidão. É o mesmo princípio da verificação, ao contrário: lá o modelo decide e o sistema põe os dados; aqui a regra identifica e o modelo interpreta.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Siete mensajes con intención, entidades, faltantes y lo que hacen las reglas del chat | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r17_intencion_y_entidades` | **Ejecución real remota** (`gpt-4.1-mini`) para el modelo; reglas locales |
-| Catorce mensajes difíciles: solo reglas frente a reglas y modelo, con la lectura del modelo en cada caso | [trazas/r17_interprete_llm.json](trazas/r17_interprete_llm.json); [scripts/demostrar_r17.py](../scripts/demostrar_r17.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
-| La conversación en la que fallaron las reglas, antes de la corrección | [trazas/fase3_memoria_llm_antes.json](trazas/fase3_memoria_llm_antes.json) | Ejecución real remota |
-| Reglas: cantidad dicha de pasada, preguntas que no son compra, aclaraciones | [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
+| Sete mensagens com intenção, entidades, faltantes e o que as regras do chat fazem | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json), `r17_intencao_e_entidades` | **Execução real remota** (`gpt-4.1-mini`) para o modelo; regras locais |
+| Catorze mensagens difíceis: só regras frente a regras e modelo, com a leitura do modelo em cada caso | [rastros/r17_interprete_llm.json](rastros/r17_interprete_llm.json); [scripts/demonstrar_r17.py](../scripts/demonstrar_r17.py) | **Execução real remota** (`gpt-4.1-mini`, temperatura 0) |
+| A conversa em que as regras falharam, antes da correção | [rastros/fase3_memoria_llm_antes.json](rastros/fase3_memoria_llm_antes.json) | Execução real remota histórica (versão anterior, em espanhol) |
+| Regras: quantidade dita de passagem, perguntas que não são compra, esclarecimentos | [tests/test_dialogue.py](../tests/test_dialogue.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- El intérprete decide si un mensaje es una compra; las demás intenciones (política, CEP, preferencia) las decide el agente al elegir herramienta, no un clasificador aparte.
-- El destino se extrae como CEP; no se interpreta una dirección escrita.
-- Sin credenciales solo actúan las reglas, que siguen siendo frágiles ante formas de hablar no previstas.
-- El intérprete añade una llamada al modelo en los turnos de compra.
-- Catorce mensajes elegidos por difíciles no miden el uso normal; una sola corrida.
+- O intérprete decide se uma mensagem é uma compra; as demais intenções (política, CEP, preferência) são decididas pelo agente ao escolher a ferramenta, não por um classificador à parte.
+- O destino é extraído como CEP; um endereço escrito não é interpretado.
+- Sem credenciais só as regras atuam, e elas continuam frágeis diante de formas de falar não previstas.
+- O intérprete acrescenta uma chamada ao modelo nos turnos de compra.
+- Catorze mensagens escolhidas por serem difíceis não medem o uso normal; uma única execução.
 
-## R18 — Contexto y descomposición en una conversación real multi-turno
+## R18 — Contexto e decomposição em uma conversa real multi-turno
 
-> ¿El alumno validó, con evidencia de una conversación real, que el agente mantiene contexto y descompone consultas complejas en diálogos multi-turno?
+> O aluno validou, com evidência de uma conversa real, que o agente mantém contexto e decompõe consultas complexas em diálogos multi-turno?
 
-**Respuesta corta.** Sí. En una conversación real de ocho turnos el agente descartó una compra por pedido mínimo, la recalculó al cambiar la cantidad conservando el plazo, cambió los límites, guardó una preferencia, respondió un CEP y una política sin perder la compra en curso, volvió a comparar con el estado correcto y aplicó la preferencia guardada a una pieza nueva.
+**Resposta curta.** Sim. Em uma conversa real de oito turnos o agente descartou uma compra por pedido mínimo, recalculou-a quando a quantidade mudou conservando o prazo, trocou os limites, salvou uma preferência, respondeu um CEP e uma política sem perder a compra em andamento, voltou a comparar com o estado correto e aplicou a preferência salva a uma peça nova.
 
-### 1. La conversación
+### 1. A conversa
 
-Agente final, `gpt-4.1-mini`, ViaCEP real, índice de políticas cargado de disco. La columna «Estado» es el borrador de compra después de cada turno.
+Agente final, `gpt-4.1-mini`, ViaCEP real, índice de políticas carregado do disco. A coluna «Estado» é o rascunho de compra depois de cada turno.
 
-| # | Usuario | Herramientas | Estado | Respuesta |
+| # | Usuário | Ferramentas | Estado | Resposta |
 |---|---|---|---|---|
-| 1 | Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días | `comparar_ofertas` | PEC-01-0001 · 2 uds · plazo 7 | Ninguna oferta cumple: CentroPeças exige un pedido mínimo de 5 unidades y Atlantic tarda 35 días |
-| 2 | Ahora que sean 5 y mantén el plazo | `comparar_ofertas` | **5 uds** · plazo 7 | CentroPeças: R$ 7.279,83 |
-| 3 | Mejor sin límite de plazo, pero con presupuesto de R$ 10.000 | `comparar_ofertas` | 5 uds · **sin plazo** · **R$ 10.000** | CentroPeças: R$ 7.279,83; Atlantic también cumple ahora |
-| 4 | Prefiero proveedores nacionales, recuérdalo | `guardar_preferencia` | sin cambios | Guardé tu preferencia: proveedor = nacionales |
-| 5 | ¿A qué ciudad corresponde el CEP 01001000? | `consultar_cep` | sin cambios | CEP 01001000: São Paulo/SP |
-| 6 | ¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza? | `consultar_politicas` | sin cambios | Resumen de la política, con su fuente |
-| 7 | Vuelve a comparar con lo último que te pedí | `comparar_ofertas` | 5 uds · R$ 10.000 | CentroPeças: R$ 7.279,83. «Se aplicó tu preferencia por proveedores nacionales» |
-| 8 | Compara 2 unidades de PEC-11-0001 | `comparar_ofertas` | **PEC-11-0001** · 2 uds | Casa Técnica Brasil: R$ 1.970,38. «Sin ella, la más barata sería Atlantic Repair Parts por R$ 619,38». Incluye un consejo de precio verificado: el precio de Casa Técnica Brasil es el más bajo del periodo |
+| 1 | Preciso de 2 unidades de PEC-01-0001 com prazo máximo de 7 dias | `comparar_ofertas` | PEC-01-0001 · 2 un. · prazo 7 | Nenhuma oferta atende: a CentroPeças exige um pedido mínimo de 5 unidades, a Atlantic é descartada por prazo e a Litoral Parts por estoque, pedido mínimo e prazo |
+| 2 | Agora que sejam 5 e mantenha o prazo | `comparar_ofertas` | **5 un.** · prazo 7 | CentroPeças: R$ 7.279,83 |
+| 3 | Melhor sem limite de prazo, mas com orçamento de R$ 10.000 | `comparar_ofertas` | 5 un. · **sem prazo** · **R$ 10.000** | CentroPeças: R$ 7.279,83; a Atlantic também atende agora |
+| 4 | Prefiro fornecedores nacionais, lembre-se disso | `salvar_preferencia` | sem mudanças | Salvei a sua preferência: fornecedor = nacionais |
+| 5 | A que cidade corresponde o CEP 01001000? | `consultar_cep` | sem mudanças | CEP 01001000: São Paulo/SP |
+| 6 | Como se verifica a compatibilidade elétrica antes de instalar uma peça? | `consultar_politicas` | sem mudanças | Resumo da política, com a sua fonte (`FIC-DEV-01-S06-C01`) |
+| 7 | Volte a comparar com o último que eu pedi | `comparar_ofertas` | 5 un. · R$ 10.000 | CentroPeças: R$ 7.279,83. «Foi aplicada a sua preferência por fornecedores nacionais.» |
+| 8 | Compare 2 unidades de PEC-11-0001 | `comparar_ofertas` | **PEC-11-0001** · 2 un. | Casa Técnica Brasil: R$ 1.970,38. «Sem ela, a mais barata seria Atlantic Repair Parts por R$ 619,38.» Inclui um conselho de preço verificado: o preço da Casa Técnica Brasil é o mais baixo do período |
 
-Las ocho propuestas del modelo pasaron la verificación a la primera.
+As oito propostas do modelo passaram na verificação na primeira tentativa.
 
-### 2. Qué demuestra
+### 2. O que isso demonstra
 
-- **Mantiene el contexto.** En el turno 2 el usuario no repite la pieza ni el plazo. En el turno 7 no repite nada, y el agente compara con 5 unidades y R$ 10.000, después de tres turnos sobre otros temas.
-- **Actualiza solo lo que cambia.** El turno 3 quita un límite y añade otro; la cantidad se conserva. El turno 8 nombra otra pieza y la solicitud empieza de nuevo.
-- **No mezcla los temas.** Los turnos 4, 5 y 6 no tocan el borrador de compra.
-- **Descompone la consulta compleja.** Comprar, fijar una preferencia, confirmar el destino y consultar una política se resuelven turno a turno, cada uno con sus herramientas.
-- **Compara proveedores como lo haría un comprador.** El turno 1 no recomienda una oferta que el proveedor no aceptaría. El turno 8 respeta la preferencia guardada cuatro turnos antes y dice cuánto cuesta: el proveedor nacional sale R$ 1.351,00 más caro que el internacional.
+- **Mantém o contexto.** No turno 2 o usuário não repete a peça nem o prazo. No turno 7 não repete nada, e o agente compara com 5 unidades e R$ 10.000, depois de três turnos sobre outros assuntos.
+- **Atualiza só o que muda.** O turno 3 tira um limite e acrescenta outro; a quantidade é conservada. O turno 8 cita outra peça e a solicitação começa de novo.
+- **Não mistura os assuntos.** Os turnos 4, 5 e 6 não tocam o rascunho de compra.
+- **Decompõe a consulta complexa.** Comprar, fixar uma preferência, confirmar o destino e consultar uma política são resolvidos turno a turno, cada um com as suas ferramentas.
+- **Compara fornecedores como um comprador faria.** O turno 1 não recomenda uma oferta que o fornecedor não aceitaria. O turno 8 respeita a preferência salva quatro turnos antes e diz quanto ela custa: o fornecedor nacional sai R$ 1.351,00 mais caro que o internacional.
 
-### 3. Aislamiento y persistencia
+### 3. Isolamento e persistência
 
-| Comprobación | Resultado |
+| Conferência | Resultado |
 |---|---|
-| Se crea un flujo nuevo sobre la misma base, como tras reiniciar | 16 mensajes recuperados; el agente ve los últimos 12 |
-| Sesión nueva del mismo usuario | Sin borrador; conserva la preferencia; recupera tres episodios |
-| Otro usuario | Sin borrador, sin preferencias, sin episodios |
+| Cria-se um fluxo novo sobre a mesma base, como depois de reiniciar | 16 mensagens recuperadas; o agente vê as últimas 12 |
+| Sessão nova do mesmo usuário | Sem rascunho; conserva a preferência; recupera três episódios |
+| Outro usuário | Sem rascunho, sem preferências, sem episódios |
 
-### 4. La primera ejecución falló, y eso también es evidencia
+### 4. A primeira execução falhou, e isso também é evidência
 
-La primera vez que se ejecutó una conversación como esta (entonces con 2 y 3 unidades, antes de la regla del pedido mínimo), tres turnos salieron mal:
+Na primeira vez em que uma conversa como esta foi executada (na versão anterior do projeto, em espanhol; na época com 2 e 3 unidades, antes da regra do pedido mínimo), três turnos saíram errados:
 
-| Turno | Qué pasó | Causa | Corrección |
+| Turno | O que aconteceu | Causa | Correção |
 |---|---|---|---|
-| 2 | No se publicó respuesta | La regla de cantidad no entendía «que sean 3»; el borrador siguió en 2 y la propuesta del modelo (3) no coincidía | Nuevos patrones de cantidad |
-| 4 | Comparó ofertas en vez de guardar la preferencia | No existía una respuesta de tipo «preferencia» | Nuevo estado `preferencia`, confirmado con lo que guardó la herramienta |
-| 6 | No se publicó, y el borrador pasó a 1 unidad | «Instalar **una pieza**» se leyó como una compra de 1 unidad | Las preguntas sobre garantía, compatibilidad o instalación ya no se tratan como compra |
+| 2 | Nenhuma resposta foi publicada | A regra de quantidade não entendia «que sean 3» (em espanhol); o rascunho continuou em 2 e a proposta do modelo (3) não coincidia | Novos padrões de quantidade |
+| 4 | Comparou ofertas em vez de salvar a preferência | Não existia uma resposta do tipo «preferência» | Novo estado `preferencia`, confirmado com o que a ferramenta salvou |
+| 6 | Não foi publicada, e o rascunho passou para 1 unidade | «Instalar **una pieza**» (em espanhol) foi lido como uma compra de 1 unidade | As perguntas sobre garantia, compatibilidade ou instalação já não são tratadas como compra |
 
-Las dos trazas se conservan. Las pruebas automáticas ya pasaban antes: el fallo solo apareció con una conversación real y variada.
+Os dois rastros foram conservados. Os testes automáticos já passavam antes: a falha só apareceu com uma conversa real e variada.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Conversación de ocho turnos con herramientas, verificaciones, estado y respuesta de cada turno | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r18_conversacion_compleja` | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
-| La misma conversación antes de las correcciones | [trazas/fase3_memoria_llm_antes.json](trazas/fase3_memoria_llm_antes.json) | Ejecución real remota |
-| Persistencia tras reinicio y aislamiento | Mismo archivo, `r14_r18_persistencia_y_aislamiento` | Ejecución real local |
-| Los tres casos corregidos | [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
+| Conversa de oito turnos com ferramentas, verificações, estado e resposta de cada turno | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json), `r18_conversa_complexa` | **Execução real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
+| A mesma conversa antes das correções | [rastros/fase3_memoria_llm_antes.json](rastros/fase3_memoria_llm_antes.json) | Execução real remota histórica (versão anterior, em espanhol) |
+| Persistência depois de reiniciar e isolamento | Mesmo arquivo da primeira linha, `r14_r18_persistencia_e_isolamento` | Execução real local |
+| Os três casos corrigidos | [tests/test_dialogue.py](../tests/test_dialogue.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- Es una conversación, con una pieza y en un solo idioma.
-- La conversación reparte las intenciones entre turnos. Un mensaje que las mezcla lo divide el planificador de turno (R02), que solo actúa con el modelo disponible.
-- En el turno 7 el agente interpretó «lo último que te pedí» gracias al borrador; sin borrador habría pedido la pieza.
-- La traza anterior a las correcciones usa cantidades distintas (2 y 3 unidades) y es previa a la regla del pedido mínimo: sirve para ver los fallos de diálogo, no para comparar importes.
+- É uma conversa só, com duas peças e em um único idioma.
+- A conversa reparte as intenções entre turnos. Uma mensagem que as mistura é dividida pelo planejador de turno (R02), que só atua com o modelo disponível.
+- No turno 7 o agente interpretou «o último que eu pedi» graças ao rascunho; sem rascunho teria pedido a peça.
+- O rastro anterior às correções usa quantidades diferentes (2 e 3 unidades), é anterior à regra do pedido mínimo e está em espanhol: serve para ver as falhas de diálogo, não para comparar valores.
 
 ---
 
-# Fase 4 — SQL, APIs y RAG existente
+# Fase 4 — SQL, APIs e RAG existente
 
-## R19 — Herramientas hardcoded y semánticas
+## R19 — Ferramentas hardcoded e semânticas
 
-> ¿El alumno estructuró herramientas del agente diferenciando funciones hardcoded de funciones semánticas?
+> O aluno estruturou ferramentas do agente diferenciando funções hardcoded de funções semânticas?
 
-**Respuesta corta.** Sí. El agente tiene seis herramientas: cuatro de lógica fija (*hardcoded*), una semántica y una mixta. La regla de reparto es clara: **todo lo que es un número o una regla lo hace código fijo; lo semántico se reserva para buscar por significado en las políticas.**
+**Resposta curta.** Sim. O agente tem seis ferramentas: quatro de lógica fixa (*hardcoded*), uma semântica e uma mista. A regra de divisão é clara: **tudo o que é número ou regra fica com código fixo; o semântico fica reservado para buscar por significado nas políticas.**
 
-### 1. El criterio
+### 1. O critério
 
-| Tipo | Qué la define | Cuándo usarla |
+| Tipo | O que a define | Quando usar |
 |---|---|---|
-| **Hardcoded** | La misma entrada da siempre la misma salida; la lógica es código | Cálculos, reglas, datos exactos |
-| **Semántica** | El resultado depende del significado del texto y lo decide un modelo (aquí, de embeddings) | Buscar en texto libre lo que el usuario dice con otras palabras |
+| **Hardcoded** | A mesma entrada dá sempre a mesma saída; a lógica é código | Cálculos, regras, dados exatos |
+| **Semântica** | O resultado depende do significado do texto e quem decide é um modelo (aqui, de embeddings) | Buscar em texto livre o que o usuário diz com outras palavras |
 
-### 2. Catálogo de herramientas
+### 2. Catálogo de ferramentas
 
-| Herramienta | Tipo | Lógica | Entradas | Salida | Errores que devuelve |
+| Ferramenta | Tipo | Lógica | Entradas | Saída | Erros que devolve |
 |---|---|---|---|---|---|
-| `buscar_productos` | Hardcoded | SQL de lectura | `texto` | Candidatos (ID, SKU, nombre, categoría) | Lista vacía si no hay coincidencias |
-| `consultar_catalogo` | Hardcoded con un ID; **semántica** en preguntas abiertas | Con ID: plan validado → `SELECT` con parámetros. Sin ID: el modelo escribe el `SELECT` y el motor lo autoriza | `pregunta` | Modo, SQL y filas | Consulta rechazada o sin filas |
-| `comparar_ofertas` | Hardcoded | Stock, pedido mínimo, plazo y presupuesto; total en centavos enteros; preferencia de origen del usuario; desempate fijo; historial de precios de cada oferta válida | `producto_id`, `cantidad`, `presupuesto_centavos`, `plazo_max_dias` | Todas las ofertas, con «cumple» o el motivo de descarte | Rechaza una cantidad no positiva |
-| `consultar_politicas` | **Semántica** | Búsqueda por similitud en FAISS, con reformulación de la consulta | `pregunta` | Fragmentos con fuente y distancia; estado | `sin_evidencia` o `indisponible` |
-| `consultar_cep` | Hardcoded | Llamada a una API externa | `cep` | Ciudad, UF y modo | `no_encontrado`, `invalido`, `indisponible` |
-| `guardar_preferencia` | Hardcoded | Escritura condicionada a una cita literal | `clave`, `valor`, `cita_usuario` | Confirmación | `invalido` si el usuario no lo dijo |
+| `buscar_produtos` | Hardcoded | SQL de leitura | `texto` | Candidatos (ID, SKU, nome, categoria) | Lista vazia se não há coincidências |
+| `consultar_catalogo` | Hardcoded com um ID; **semântica** em perguntas abertas | Com ID: plano validado → `SELECT` com parâmetros. Sem ID: o modelo escreve o `SELECT` e o motor o autoriza | `pergunta` | Modo, SQL e linhas | Consulta rejeitada ou sem linhas |
+| `comparar_ofertas` | Hardcoded | Estoque, pedido mínimo, prazo e orçamento; total em centavos inteiros; preferência de origem do usuário; desempate fixo; histórico de preços de cada oferta válida | `produto_id`, `quantidade`, `orcamento_centavos`, `prazo_max_dias` | Todas as ofertas, com «atende» ou o motivo de descarte | Rejeita uma quantidade não positiva |
+| `consultar_politicas` | **Semântica** | Busca por similaridade no FAISS, com reformulação da consulta | `pergunta` | Fragmentos com fonte e distância; estado | `sem_evidencia` ou `indisponivel` |
+| `consultar_cep` | Hardcoded | Chamada a uma API externa | `cep` | Cidade, UF e modo | `nao_encontrado`, `invalido`, `indisponivel` |
+| `salvar_preferencia` | Hardcoded | Escrita condicionada a uma citação literal | `chave`, `valor`, `citacao_usuario` | Confirmação | `invalido` se o usuário não disse aquilo |
 
-El catálogo se genera del código: nombre, descripción y entradas salen de las propias herramientas, y el tipo, de una tabla (`PAPELES`) que una prueba mantiene sincronizada.
+O catálogo é gerado do código: nome, descrição e entradas saem das próprias ferramentas, e o tipo sai de uma tabela (`PAPEIS`) que um teste mantém sincronizada.
 
-### 3. Por qué este reparto
+### 3. Por que essa divisão
 
-- **`comparar_ofertas` es hardcoded a propósito.** Es el corazón del asistente (ver «El núcleo del asistente: comparar proveedores»). Sumar precio y flete, comprobar stock y pedido mínimo y elegir al ganador son operaciones exactas. Un modelo podría equivocarse en una suma; el código no. La evaluación lo confirmó: cuando un modelo propuso un ganador distinto del calculado, la verificación lo rechazó (R29).
-- **`consultar_politicas` es semántica porque no hay otra forma.** El usuario pregunta «¿se puede mandar en varias cajas?» y la política dice «entrega parcial». Solo una búsqueda por significado las une.
-- **Lo semántico nunca decide un número.** La herramienta semántica devuelve fragmentos de texto con su fuente; los importes vienen siempre de herramientas hardcoded.
-- **El LLM es el que elige.** Las herramientas no se llaman entre sí; el agente decide cuál usar leyendo su descripción.
+- **`comparar_ofertas` é hardcoded de propósito.** É o coração do assistente (ver «O núcleo do assistente: comparar fornecedores»). Somar preço e frete, conferir estoque e pedido mínimo e escolher o vencedor são operações exatas. Um modelo poderia errar uma soma; o código não. A avaliação confirmou: quando um modelo propôs um vencedor diferente do calculado, a verificação o rejeitou (R29).
+- **`consultar_politicas` é semântica porque não há outro jeito.** O usuário pergunta «Posso receber em várias caixas?» e a política diz «entrega parcial». Só uma busca por significado une as duas.
+- **O semântico nunca decide um número.** A ferramenta semântica devolve fragmentos de texto com a fonte; os valores vêm sempre de ferramentas hardcoded.
+- **Quem escolhe é o LLM.** As ferramentas não se chamam entre si; o agente decide qual usar lendo a descrição de cada uma.
 
-El aviso de precio muestra el reparto completo en pequeño: tres funciones hardcoded deciden si hay algo que avisar y con qué datos, y una función semántica (el modelo) solo redacta, bajo verificación (ver «El aviso de precio»).
+O aviso de preço mostra a divisão completa em miniatura: três funções hardcoded decidem se há algo a avisar e com quais dados, e uma função semântica (o modelo) só redige, sob verificação (ver «O aviso de preço»).
 
-Hay una función semántica de otro tipo dentro de `consultar_catalogo`: en preguntas abiertas, el generador de text-to-SQL (R21) usa un LLM dentro de la propia herramienta. Ilustra el otro sentido de «semántica»: una función cuyo interior es un modelo. Aun así no decide ningún número: las cifras salen de la base y la tabla la arma el sistema.
+Há uma função semântica de outro tipo dentro de `consultar_catalogo`: em perguntas abertas, o gerador de text-to-SQL (R21) usa um LLM dentro da própria ferramenta. Ilustra o outro sentido de «semântica»: uma função cujo interior é um modelo. Mesmo assim, ela não decide nenhum número: os números saem da base e a tabela é montada pelo sistema.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Catálogo generado del código: nombre, tipo, lógica, descripción y entradas | [trazas/fase4_sql_llm.json](trazas/fase4_sql_llm.json), `r19_catalogo_de_herramientas`; [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomía» | Ejecución real local |
-| Las seis herramientas usadas por el modelo real | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json); [trazas/r22_indice_existente.json](trazas/r22_indice_existente.json) | Ejecución real remota |
-| Seis herramientas con tipo; el catálogo coincide con el agente | [tests/test_anatomia.py](../tests/test_anatomia.py); [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Pruebas automáticas |
+| Catálogo gerado do código: nome, papel, lógica, descrição e entradas | [rastros/fase4_sql_llm.json](rastros/fase4_sql_llm.json), `r19_catalogo_de_ferramentas`; [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomia do agente» | Execução real local |
+| Cinco das seis ferramentas chamadas pelo modelo real: `comparar_ofertas`, `salvar_preferencia`, `consultar_cep` e `consultar_politicas` em um rastro; `consultar_catalogo` em outro. `buscar_produtos` não foi chamada nestes rastros | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json); [rastros/fase4_sql_llm.json](rastros/fase4_sql_llm.json), `r21_text_to_sql_no_chat`; [rastros/r22_indice_existente.json](rastros/r22_indice_existente.json) | Execução real remota |
+| Seis ferramentas com tipo; o catálogo coincide com o agente | [tests/test_anatomia.py](../tests/test_anatomia.py); [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- No hay herramientas asíncronas: todas se ejecutan una tras otra.
-- Solo `consultar_politicas` es semántica por completo.
-- `consultar_catalogo` tiene dos modos: plan con plantillas si la pregunta trae un ID y text-to-SQL validado si no lo trae (R21). El segundo usa un modelo dentro de la herramienta.
+- Não há ferramentas assíncronas: todas rodam uma depois da outra.
+- Só `consultar_politicas` é semântica por completo.
+- `consultar_catalogo` tem dois modos: plano com modelos fixos de SQL se a pergunta traz um ID e text-to-SQL validado se não traz (R21). O segundo usa um modelo dentro da ferramenta.
 
-## R20 — Integración con APIs internas o externas
+## R20 — Integração com APIs internas ou externas
 
-> ¿El alumno integró el agente a APIs internas o externas de acuerdo con el tipo de uso de cada una?
+> O aluno integrou o agente a APIs internas ou externas de acordo com o tipo de uso de cada uma?
 
-**Respuesta corta.** Sí. El agente usa tres APIs externas y cuatro internas. Cada una existe para un tipo de uso distinto, y ese uso fija cómo se integra: qué puede hacer, qué permisos tiene y qué ocurre si falla.
+**Resposta curta.** Sim. O agente usa três APIs externas e quatro internas. Cada uma existe para um tipo de uso diferente, e esse uso define como ela é integrada: o que pode fazer, que permissões tem e o que acontece se falhar.
 
 ### 1. APIs externas
 
-| API | Tipo de uso | Por qué existe | Cómo se integra | Si falla |
+| API | Tipo de uso | Por que existe | Como é integrada | Se falhar |
 |---|---|---|---|---|
-| **ViaCEP** | Consulta de un dato público | Una compra necesita un destino; confirma ciudad y UF | Herramienta `consultar_cep`, llamada por *function calling*, con límite de 5 s | Devuelve `indisponible`; el agente no publica ciudad |
-| **OpenAI** | Razonamiento | Es el motor del agente: entiende la solicitud y elige herramientas | `ChatOpenAI` dentro del ejecutor | La app sigue en modo degradado: listado y comparación en el chat, sin modelo |
-| **LangSmith** | Evaluación y trazas | Medir calidad y trayectoria (R29) | Solo desde el script de evaluación | No afecta al chat |
+| **ViaCEP** | Consulta de um dado público | Uma compra precisa de um destino; confirma cidade e UF | Ferramenta `consultar_cep`, chamada por *function calling*, com limite de 5 s | Devolve `indisponivel`; o agente não publica cidade |
+| **OpenAI** | Raciocínio | É o motor do agente: entende a solicitação e escolhe ferramentas | `ChatOpenAI` dentro do executor | O app continua em modo local, sem modelo: listagem e comparação no chat |
+| **LangSmith** | Avaliação e rastros | Medir qualidade e trajetória (R29) | Só a partir do script de avaliação | Não afeta o chat |
 
 ### 2. APIs internas
 
-| API | Tipo de uso | Por qué existe | Cómo se integra |
+| API | Tipo de uso | Por que existe | Como é integrada |
 |---|---|---|---|
-| **Catálogo** ([catalog.py](../src/pedro/catalog.py)) | Lectura de datos exactos | Precios, stock y plazos vigentes | SQLite abierto en solo lectura; funciones con parámetros, sin SQL libre |
-| **Políticas** ([rag.py](../src/pedro/rag.py)) | Búsqueda semántica | Reglas escritas en texto | Índice FAISS cargado tras comprobar manifiesto y huellas |
-| **Memoria** ([memory.py](../src/pedro/memory.py)) | Lectura y escritura acotada | Continuidad entre turnos y sesiones | Toda consulta lleva usuario y sesión; la única escritura del agente es una preferencia citada |
-| **Verificación y NLI** ([verification.py](../src/pedro/verification.py), [nli.py](../src/pedro/nli.py)) | Control | Que nada falso se publique | No es una herramienta: el flujo la aplica siempre, el agente no puede saltársela |
+| **Catálogo** ([catalog.py](../src/pedro/catalog.py)) | Leitura de dados exatos | Preços, estoque e prazos vigentes | SQLite aberto em somente leitura; funções com parâmetros, sem SQL livre |
+| **Políticas** ([rag.py](../src/pedro/rag.py)) | Busca semântica | Regras escritas em texto | Índice FAISS carregado depois de conferir manifesto e impressões digitais |
+| **Memória** ([memory.py](../src/pedro/memory.py)) | Leitura e escrita limitada | Continuidade entre turnos e sessões | Toda consulta leva usuário e sessão; a única escrita do agente é uma preferência citada |
+| **Verificação e NLI** ([verification.py](../src/pedro/verification.py), [nli.py](../src/pedro/nli.py)) | Controle | Que nada falso seja publicado | Não é uma ferramenta: o fluxo aplica sempre, o agente não consegue pular |
 
-### 3. El tipo de uso decide la integración
+### 3. O tipo de uso decide a integração
 
-| Si el uso es… | Entonces… | Ejemplo |
+| Se o uso é… | Então… | Exemplo |
 |---|---|---|
-| Leer un dato exacto | Solo lectura y resultado determinista | Catálogo |
-| Buscar por significado | El resultado lleva su fuente y pasa por verificación | Políticas |
-| Llamar a un tercero | Límite de tiempo, estados de error explícitos y modo simulado para pruebas | ViaCEP |
-| Escribir | Mínimo imprescindible y con una condición comprobable | Preferencias |
-| Controlar | Fuera del alcance del modelo | Verificación |
+| Ler um dado exato | Somente leitura e resultado determinístico | Catálogo |
+| Buscar por significado | O resultado leva a fonte e passa por verificação | Políticas |
+| Chamar um terceiro | Limite de tempo, estados de erro explícitos e modo simulado para testes | ViaCEP |
+| Escrever | O mínimo indispensável e com uma condição verificável | Preferências |
+| Controlar | Fora do alcance do modelo | Verificação |
 
-**Decisión técnica.** El agente no tiene ninguna API que compre, pague o modifique el catálogo. Es una decisión de alcance: un asistente que recomienda puede equivocarse sin consecuencias irreversibles, y uno que ejecuta compras no. La única escritura permitida es una preferencia, y exige la cita literal del usuario.
+**Decisão técnica.** O agente não tem nenhuma API que compre, pague ou modifique o catálogo. É uma decisão de escopo: um assistente que recomenda pode errar sem consequências irreversíveis; um que executa compras, não. A única escrita permitida é uma preferência, e ela exige a citação literal do usuário.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| ViaCEP llamado por el agente: esquema, argumentos, respuesta y uso del resultado | [trazas/r10_viacep_llm.json](trazas/r10_viacep_llm.json) | **Ejecución real remota** |
-| Catálogo, políticas, memoria y verificación usados en una misma conversación | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | Ejecución real remota |
-| Experimentos registrados en LangSmith | [trazas/](trazas/): `r29_langsmith_*.json` | Ejecución real remota |
-| Solo lectura del catálogo, aislamiento de memoria y ViaCEP real y simulado | [tests/test_core.py](../tests/test_core.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_rag_integrations.py](../tests/test_rag_integrations.py) | Pruebas automáticas |
+| ViaCEP chamado pelo agente: esquema, argumentos, resposta e uso do resultado | [rastros/r10_viacep_llm.json](rastros/r10_viacep_llm.json) | **Execução real remota** |
+| Catálogo, políticas, memória e verificação usados em uma mesma conversa | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json) | Execução real remota |
+| Experimentos registrados no LangSmith | [rastros/](rastros/): `r29_langsmith_*.json` | Execução real remota |
+| Somente leitura do catálogo, isolamento de memória e ViaCEP real e simulado | [tests/test_core.py](../tests/test_core.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_rag_integrations.py](../tests/test_rag_integrations.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- ViaCEP no se usa para calcular flete ni plazo según el destino: solo confirma la ubicación.
-- No hay reintentos ni caché para las APIs externas.
-- Las «APIs internas» son módulos de Python del mismo proceso, no servicios separados.
+- O ViaCEP não é usado para calcular frete nem prazo conforme o destino: só confirma a localização.
+- Não há novas tentativas nem cache para as APIs externas.
+- As «APIs internas» são módulos Python do mesmo processo, não serviços separados.
 
-## R21 — Patrón text-to-query
+## R21 — Padrão text-to-query
 
-> ¿El alumno implementó el patrón text-to-query para consultar datos estructurados?
+> O aluno implementou o padrão text-to-query para consultar dados estruturados?
 
-**Respuesta corta.** Sí, en dos versiones, las dos dentro de la herramienta `consultar_catalogo` del agente. Con un ID de pieza usa un plan con plantillas fijas. Para preguntas abiertas hay un **text-to-SQL completo**: el modelo escribe el `SELECT`, el motor de SQLite decide si lo deja ejecutar y el chat publica la tabla de resultados. Con el modelo real respondió bien 5 de 5 preguntas (3 de 5 antes de mejorar el prompt) y las 7 consultas hostiles fueron rechazadas.
+**Resposta curta.** Sim, em duas versões, as duas dentro da ferramenta `consultar_catalogo` do agente. Com um ID de peça, usa um plano com modelos fixos de SQL. Para perguntas abertas há um **text-to-SQL completo**: o modelo escreve o `SELECT`, o motor do SQLite decide se deixa executar e o chat publica a tabela de resultados. Com o modelo real, respondeu bem 5 de 5 perguntas (3 de 5 antes de melhorar o prompt, em uma execução da versão anterior do projeto, em espanhol) e as 7 consultas hostis foram rejeitadas.
 
-### 1. Las dos versiones
+### 1. As duas versões
 
-| | Plan con plantillas | Text-to-SQL con modelo |
+| | Plano com modelos fixos | Text-to-SQL com modelo |
 |---|---|---|
-| Quién escribe el SQL | El código: dos plantillas fijas | El LLM |
-| Qué preguntas admite | Ficha u ofertas de **una** pieza con su ID | Cualquier pregunta de lectura sobre el esquema permitido |
-| Riesgo | Ninguno: no hay SQL libre | El SQL es libre, así que se valida |
-| Dónde se usa | `consultar_catalogo`, cuando la pregunta trae un ID | `consultar_catalogo`, cuando no lo trae; también como módulo en [query.py](../src/pedro/query.py) |
+| Quem escreve o SQL | O código: dois modelos fixos | O LLM |
+| Que perguntas aceita | Ficha ou ofertas de **uma** peça com seu ID | Qualquer pergunta de leitura sobre o esquema permitido |
+| Risco | Nenhum: não há SQL livre | O SQL é livre, então é validado |
+| Onde é usado | `consultar_catalogo`, quando a pergunta traz um ID | `consultar_catalogo`, quando não traz; também como módulo em [query.py](../src/pedro/query.py) |
 
-### 2. El recorrido completo
+### 2. O percurso completo
 
-Pregunta: «¿Qué proveedor nacional ofrece PEC-01-0001 más barato teniendo stock? Dame proveedor y precio.»
+Pergunta: «Qual fornecedor nacional oferece PEC-01-0001 mais barato tendo estoque? Dê o fornecedor e o preço.»
 
-1. **Consulta generada** por `gpt-4.1-mini`:
+1. **Consulta gerada** por `gpt-4.1-mini`:
    ```sql
-   SELECT suppliers.name AS proveedor, offers.estimated_brl_cents AS precio_cents
+   SELECT suppliers.name AS fornecedor, MIN(offers.estimated_brl_cents) AS preco_mais_barato_cents
    FROM offers JOIN suppliers ON offers.supplier_id = suppliers.id
    WHERE offers.part_id = 'PEC-01-0001' AND suppliers.domestic = 1 AND offers.stock_qty > 0
-   ORDER BY offers.estimated_brl_cents ASC LIMIT 1
+   LIMIT 50
    ```
-2. **Validación**: una sola sentencia, empieza por `SELECT`, sin comentarios.
-3. **Ejecución** con el autorizador activo, en solo lectura.
-4. **Filas**: `CentroPeças, 143892`. Coincide con el catálogo: R$ 1.438,92 por unidad. El otro proveedor nacional, Litoral Parts, no tiene stock.
+2. **Validação**: uma única instrução, começa com `SELECT`, sem comentários.
+3. **Execução** com o autorizador ativo, em somente leitura.
+4. **Linhas**: `CentroPeças, 143892`. Coincide com o catálogo: R$ 1.438,92 por unidade. O outro fornecedor nacional, Litoral Parts, não tem estoque.
 
-### 3. Tres barreras
+### 3. Três barreiras
 
-El SQL lo escribe un modelo, así que no se confía en él. Se confía en el motor:
+O SQL é escrito por um modelo, então não se confia nele. Confia-se no motor:
 
-| Barrera | Qué impide | Cómo |
+| Barreira | O que impede | Como |
 |---|---|---|
-| **Forma** | Varias sentencias, comentarios, todo lo que no sea `SELECT` | Comprobación del texto antes de tocar la base |
-| **Autorizador de SQLite** | Leer tablas o columnas fuera de la lista, funciones no previstas y cualquier escritura | El propio motor consulta una función por cada acceso y deniega lo no permitido |
-| **Límites** | Consultas enormes o interminables | Base en solo lectura, 50 filas como máximo y tope de pasos de ejecución |
+| **Forma** | Várias instruções, comentários, tudo o que não for `SELECT` | Verificação do texto antes de tocar na base |
+| **Autorizador do SQLite** | Ler tabelas ou colunas fora da lista, funções não previstas e qualquer escrita | O próprio motor consulta uma função a cada acesso e nega o que não é permitido |
+| **Limites** | Consultas enormes ou intermináveis | Base em somente leitura, 50 linhas no máximo e teto de passos de execução |
 
-La segunda barrera es la importante. No se intenta adivinar con expresiones regulares si un SQL es peligroso: **se le pregunta al motor qué va a leer**, y si no está en la lista, no se ejecuta.
+A segunda barreira é a importante. Não se tenta adivinhar com expressões regulares se um SQL é perigoso: **pergunta-se ao motor o que ele vai ler**, e, se não está na lista, não executa.
 
-Siete consultas hostiles escritas a mano, todas rechazadas:
+Sete consultas hostis escritas à mão, todas rejeitadas:
 
-| Consulta | Motivo del rechazo |
+| Consulta | Motivo da rejeição |
 |---|---|
-| `DROP TABLE offers` | Solo se admiten consultas `SELECT` |
-| `SELECT 1; DELETE FROM offers` | Solo se admite una sentencia |
-| `SELECT name FROM sqlite_master` | Tabla fuera de la lista |
-| `SELECT id, website FROM suppliers` | Columna fuera de la lista |
-| `PRAGMA table_info(parts)` | Solo se admiten consultas `SELECT` |
-| `SELECT load_extension('x')` | Función no permitida |
-| Producto cartesiano de tres tablas | Interrumpida por el tope de pasos |
+| `DROP TABLE offers` | Só são admitidas consultas `SELECT` |
+| `SELECT 1; DELETE FROM offers` | Só é admitida uma instrução |
+| `SELECT name FROM sqlite_master` | Tabela fora da lista |
+| `SELECT id, website FROM suppliers` | Coluna fora da lista |
+| `PRAGMA table_info(parts)` | Só são admitidas consultas `SELECT` |
+| `SELECT load_extension('x')` | Função não permitida |
+| Produto cartesiano de três tabelas | Interrompida pelo teto de passos |
 
-### 4. Válida no es lo mismo que correcta
+### 4. Válida não é o mesmo que correta
 
-La primera ejecución con el modelo real dejó una lección. Las cinco consultas eran **válidas**, pero dos daban una respuesta **equivocada**:
+A primeira execução com o modelo real deixou uma lição. Essa execução é da versão anterior do projeto, em espanhol, e não foi refeita. As cinco consultas eram **válidas**, mas duas davam uma resposta **errada**:
 
-| Pregunta | Qué hizo el modelo | Resultado |
+| Pergunta | O que o modelo fez | Resultado |
 |---|---|---|
-| Proveedor nacional más barato de PEC-01-0001 | Buscó el ID en la columna `sku` | Cero filas |
-| Tres proveedores con menor plazo medio | Añadió por su cuenta el filtro «con stock» | Otro orden de proveedores |
+| Fornecedor nacional mais barato de PEC-01-0001 | Procurou o ID na coluna `sku` | Zero linhas |
+| Três fornecedores com menor prazo médio | Acrescentou por conta própria o filtro «com estoque» | Outra ordem de fornecedores |
 
-Ninguna barrera de seguridad detecta esto: la consulta es legal, pero no responde a la pregunta. Se corrigió por tres vías:
+Nenhuma barreira de segurança detecta isso: a consulta é legal, mas não responde à pergunta. A correção veio por três caminhos:
 
-- **Dar al modelo el formato de los valores**: cómo es un ID de pieza, un SKU y un ID de proveedor.
-- **Pedirle que no añada filtros** que la pregunta no menciona, y que nombre las columnas en vez de usar `*`.
-- **Señalar los resultados vacíos**: una consulta válida sin filas devuelve el estado `sin_filas`, no `ok`.
+- **Dar ao modelo o formato dos valores**: como é um ID de peça, um SKU e um ID de fornecedor.
+- **Pedir que não acrescente filtros** que a pergunta não menciona, e que nomeie as colunas em vez de usar `*`.
+- **Sinalizar os resultados vazios**: uma consulta válida sem linhas devolve o estado `sem_linhas`, não `ok`.
 
-| | Antes | Después |
+| | Antes (versão em espanhol) | Depois (execução em português) |
 |---|---|---|
-| Preguntas respondidas correctamente | 3 de 5 | **5 de 5** |
-| Consultas que necesitaron una corrección | 2 | 0 |
-| Consultas hostiles rechazadas | 7 de 7 | 7 de 7 |
+| Perguntas respondidas corretamente | 3 de 5 | **5 de 5** |
+| Consultas que precisaram de uma correção, nas cinco perguntas | 2 | 0 |
+| Consultas hostis rejeitadas | 7 de 7 | 7 de 7 |
 
-Cuando el motor rechaza una consulta, el error vuelve al modelo para **un** intento de corrección. En la primera ejecución eso arregló dos consultas: una que usaba `SELECT *` y otra con un nombre de columna ambiguo.
+Quando o motor rejeita uma consulta, o erro volta ao modelo para **uma** tentativa de correção. Na primeira execução (em espanhol), isso consertou duas consultas: uma que usava `SELECT *` e outra com um nome de coluna ambíguo.
 
-Dos casos límite, tras la mejora: ante «Borra todas las ofertas del proveedor BR-06» el modelo escribió un `SELECT` que muestra esas ofertas, y no se borró nada; ante «Muéstrame la página web de cada proveedor» devolvió los nombres con la web vacía, porque esa columna no es legible.
+Dois casos-limite, depois da melhoria:
 
-### 5. En el chat
+- «Apague todas as ofertas do fornecedor BR-06»: o modelo escreveu um `SELECT *` sobre essas ofertas. O motor rejeitou, porque `offers.currency` não é legível. Na tentativa de correção, o modelo nomeou as colunas e a consulta mostrou as ofertas (50 linhas, o teto). Nada foi apagado.
+- «Mostre-me a página web de cada fornecedor»: devolveu o ID e o nome dos 12 fornecedores, sem nenhuma coluna de site, porque essa coluna não é legível. A explicação do modelo não avisa que o site ficou de fora.
 
-El text-to-SQL está conectado al agente. Ante una pregunta abierta, el modelo llama a `consultar_catalogo` y responde con un tipo de respuesta propio, `catalogo`. La respuesta que ve el usuario **no la redacta el modelo**: el sistema arma la tabla con las filas que devolvió la consulta, y añade la consulta ejecutada y un aviso.
+### 5. No chat
 
-Ejemplo real, «¿Cuáles son las 5 piezas de mayor potencia y cuántos vatios tienen?»:
+O text-to-SQL está ligado ao agente. Diante de uma pergunta aberta, o modelo chama `consultar_catalogo` e responde com um tipo de resposta próprio, `catalogo`. A resposta que o usuário vê **não é redigida pelo modelo**: o sistema monta a tabela com as linhas que a consulta devolveu e acrescenta a consulta executada e um aviso.
+
+Exemplo real, «Quais são as 5 peças de maior potência e quantos watts elas têm?»:
 
 ```text
-La consulta lista las 5 piezas con mayor potencia en vatios del catálogo.
+A consulta retorna as 5 peças com maior potência em watts disponíveis no catálogo.
 
-| name                                         | power_w |
-| Compresor para Congeladores CONG-COMP-0051   | 2580    |
-| Placa para Máquinas de lavar LAVA-PLAC-0148  | 2580    |
-| …                                            | …       |
+| name | power_w |
+|---|---|
+| Compressor para Congeladores CONG-COMP-0051 | 2580 |
+| Placa para Máquinas de lavar LAVA-PLAC-0148 | 2580 |
+| Compressor para Geladeiras GELA-COMP-0101 | 2560 |
+| Ventilador para Geladeiras GELA-VENT-0109 | 2560 |
+| Placa para Secadoras de roupa SECA-PLAC-0069 | 2560 |
 
-Consulta ejecutada (solo lectura): SELECT name, power_w FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5
-La consulta la escribió un modelo y solo se comprobó que es segura, no que responda exactamente a la pregunta.
+Consulta executada (somente leitura): `SELECT name, power_w FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5`
+Os valores estão em centavos de real. A consulta foi escrita por um modelo e só se verificou que é segura, não que responde exatamente à pergunta.
 ```
 
-Una prueba comprueba que, si el modelo intenta escribir una cifra propia en su mensaje, esa cifra no llega al usuario.
+A frase sobre centavos é texto fixo do sistema. Ela aparece mesmo quando a tabela não tem valores em dinheiro, como aqui.
 
-**Decisión técnica.** Las compras siguen yendo por la versión de plantillas y por `comparar_ofertas`, porque una recomendación debe poder verificarse contra una oferta concreta. El text-to-SQL responde lo que antes el agente no podía responder —preguntas abiertas—, pero su resultado no se puede comprobar del mismo modo: como se vio, una consulta puede ser válida y estar mal planteada. Por eso la respuesta muestra siempre la consulta ejecutada y lo dice.
+Na mesma execução, o pedido «Apague todas as ofertas do fornecedor BR-06» feito no chat não chamou nenhuma ferramenta. A saída do modelo falhou no parser duas vezes e o chat publicou «Não posso confirmar uma recomendação com as evidências disponíveis.». Nada foi apagado.
 
-### Evidencia
+Um teste confere que, se o modelo tentar escrever um número próprio na mensagem, esse número não chega ao usuário.
 
-| Evidencia | Ubicación | Tipo |
+**Decisão técnica.** As compras continuam indo pela versão de modelos fixos e por `comparar_ofertas`, porque uma recomendação precisa poder ser verificada contra uma oferta concreta. O text-to-SQL responde o que antes o agente não conseguia responder —perguntas abertas—, mas o resultado dele não pode ser conferido do mesmo jeito: como se viu, uma consulta pode ser válida e estar mal formulada. Por isso a resposta mostra sempre a consulta executada e diz isso.
+
+### Evidência
+
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Siete preguntas con el SQL generado, los intentos, las filas y las consultas hostiles | [trazas/fase4_sql_llm.json](trazas/fase4_sql_llm.json); [scripts/demostrar_fase4.py](../scripts/demostrar_fase4.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0); ejecución local en solo lectura |
-| La misma ejecución antes de mejorar el prompt | [trazas/fase4_sql_llm_antes.json](trazas/fase4_sql_llm_antes.json) | Ejecución real remota |
-| El agente respondiendo dos preguntas abiertas en el chat con la tabla de la consulta | [trazas/fase4_sql_llm.json](trazas/fase4_sql_llm.json), `r21_text_to_sql_en_el_chat` | **Ejecución real remota** |
-| Plan con plantillas y text-to-SQL con corrección, sin credenciales | [notebooks/04_rag_text_to_query.ipynb](../notebooks/04_rag_text_to_query.ipynb), primera celda y §«R21» | Ejecución local; el generador es un **doble** |
-| Once consultas rechazadas, límite de filas, corrección con el error, dos rechazos sin datos y aviso de cero filas | [tests/test_text_to_sql.py](../tests/test_text_to_sql.py); [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Pruebas automáticas |
+| Sete perguntas com o SQL gerado, as tentativas, as linhas e as consultas hostis | [rastros/fase4_sql_llm.json](rastros/fase4_sql_llm.json); [scripts/demonstrar_fase4.py](../scripts/demonstrar_fase4.py) | **Execução real remota** (`gpt-4.1-mini`, temperatura 0); execução local em somente leitura |
+| A mesma execução antes de melhorar o prompt (versão anterior do projeto, em espanhol) | [rastros/fase4_sql_llm_antes.json](rastros/fase4_sql_llm_antes.json) | Execução real remota, histórica |
+| O agente respondendo duas perguntas abertas no chat com a tabela da consulta | [rastros/fase4_sql_llm.json](rastros/fase4_sql_llm.json), `r21_text_to_sql_no_chat` | **Execução real remota** |
+| Plano com modelos fixos e text-to-SQL com correção, sem credenciais | [notebooks/04_rag_text_to_query.ipynb](../notebooks/04_rag_text_to_query.ipynb), primeira célula e §«R21» | Execução local; o gerador é um **duplo de teste** |
+| Onze consultas rejeitadas, limite de linhas, correção com o erro, duas rejeições sem dados e aviso de zero linhas | [tests/test_text_to_sql.py](../tests/test_text_to_sql.py); [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- En el chat, una pregunta abierta que contiene un ID de pieza o palabras como «ofertas» se trata como una compra y no llega al text-to-SQL.
-- Cinco preguntas son pocas: 5 de 5 no garantiza que el modelo acierte siempre. La corrección de una consulta válida pero equivocada sigue dependiendo de que alguien revise el resultado.
-- Las respuestas correctas se comprobaron a mano contra la base.
-- No se admiten consultas con `WITH`.
+- No chat, uma pergunta aberta que contém um ID de peça ou palavras como «ofertas» é tratada como compra e não chega ao text-to-SQL.
+- Cinco perguntas são poucas: 5 de 5 não garante que o modelo acerte sempre. A correção de uma consulta válida mas errada continua dependendo de alguém revisar o resultado.
+- As respostas corretas foram conferidas à mão contra a base.
+- Não são admitidas consultas com `WITH`.
 
-## R22 — Agente de recuperación sobre un índice FAISS existente
+## R22 — Agente de recuperação sobre um índice FAISS existente
 
-> ¿El alumno construyó un agente de recuperación usando un índice FAISS existente?
+> O aluno construiu um agente de recuperação usando um índice FAISS existente?
 
-**Respuesta corta.** Sí. El índice está guardado en `knowledge/politicas/` y el agente solo lo **carga**; no lo reconstruye. Antes de abrirlo comprueba su manifiesto y sus huellas. Con el índice cargado, el modelo real respondió dos preguntas de política citando sus fuentes.
+**Resposta curta.** Sim. O índice está salvo em `knowledge/politicas/` e o agente só o **carrega**; não o reconstrói. Antes de abrir, confere o manifesto e as impressões digitais. Com o índice carregado, o modelo real respondeu duas perguntas de política citando as fontes.
 
-### 1. Indexar y recuperar son dos pasos separados
+### 1. Indexar e recuperar são dois passos separados
 
-| Paso | Cuándo ocurre | Quién lo hace |
+| Passo | Quando ocorre | Quem faz |
 |---|---|---|
-| **Indexar** | Una vez, fuera del agente | [construir_indice_politicas.py](../scripts/construir_indice_politicas.py): trocea el corpus, calcula embeddings, guarda `index.faiss`, `index.pkl` y `manifest.json` |
-| **Recuperar** | En cada pregunta | `cargar_indice` en [rag.py](../src/pedro/rag.py) abre lo guardado; la herramienta `consultar_politicas` busca en él |
+| **Indexar** | Uma vez, fora do agente | [construir_indice_politicas.py](../scripts/construir_indice_politicas.py): divide o corpus em fragmentos, calcula embeddings, salva `index.faiss`, `index.pkl` e `manifest.json` |
+| **Recuperar** | A cada pergunta | `carregar_indice` em [rag.py](../src/pedro/rag.py) abre o que está salvo; a ferramenta `consultar_politicas` busca nele |
 
-El índice tiene 75 fragmentos, 384 dimensiones y métrica L2, con el modelo de embeddings `paraphrase-multilingual-MiniLM-L12-v2`. Cargarlo tardó 0,03 s, porque no se calcula ningún embedding.
+O índice tem 75 fragmentos, 384 dimensões e métrica L2, com o modelo de embeddings `paraphrase-multilingual-MiniLM-L12-v2`. Carregar levou 0,03 s, porque nenhum embedding é calculado.
 
-### 2. La puerta antes de cargar
+### 2. A porta antes de carregar
 
-El docstore de FAISS es un archivo pickle, y abrir un pickle ajeno puede ejecutar código. Por eso la carga exige tres cosas:
+O docstore do FAISS é um arquivo pickle, e abrir um pickle de terceiros pode executar código. Por isso a carga exige três coisas:
 
-| Comprobación | Qué pasa si falla |
+| Verificação | O que acontece se falhar |
 |---|---|
-| Manifiesto completo: origen, modelo, dimensión, métrica y documentos | `ValueError: manifiesto incompleto` |
-| Huella SHA-256 de `index.faiss` e `index.pkl` igual a la del manifiesto | `ValueError: huella incorrecta: index.pkl` |
-| Confianza explícita del operador | `PermissionError: se requiere confianza explícita…` |
+| Manifesto completo: origem, modelo, dimensão, métrica e documentos | `ValueError: manifesto incompleto` |
+| Impressão digital SHA-256 de `index.faiss` e `index.pkl` igual à do manifesto | `ValueError: impressão digital incorreta: index.pkl` |
+| Confiança explícita do operador | `PermissionError: é necessária confiança explícita…` |
 
-Tras cargar, se vuelve a comparar dimensión, recuento, métrica, identificadores y metadatos con el manifiesto. Una prueba adicional avisa si el corpus cambió después de indexar.
+Depois de carregar, comparam-se de novo dimensão, contagem, métrica, identificadores e metadados com o manifesto. Um teste adicional avisa se o corpus mudou depois da indexação.
 
-### 3. El agente recuperando
+### 3. O agente recuperando
 
-| Pregunta | Qué hizo | Respuesta publicada |
+| Pergunta | O que fez | Resposta publicada |
 |---|---|---|
-| «¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?» | El LLM llamó a `consultar_politicas`; cita literal de `FIC-GAR-01-S03-C01`; pasó verificación y NLI | Resumen de la regla con su fuente |
-| «¿Se puede mandar en varias cajas?» | Ruta de entrega: reformula la consulta y recupera `FIC-ENT-01-S05-C01` | Regla de entrega parcial con su fuente |
+| «Como se verifica a compatibilidade elétrica antes de instalar uma peça?» | O LLM chamou `consultar_politicas` duas vezes; a citação de `FIC-DEV-01-S06-C01` ficou ancorada como literal (cobertura 1,0) e uma citação de `FIC-DEV-01-S02-C01` foi rejeitada (cobertura 0,474). O resumo do modelo não foi verificado | Citação literal da fonte `FIC-DEV-01-S06-C01`, no lugar do resumo: conferir marca, modelo, voltagem e dimensões com a ficha técnica |
+| «Posso receber em várias caixas?» | Rota de entrega: reformula a consulta e recupera `FIC-ENT-01-S05-C01` | Regra de entrega parcial com a fonte |
 
-**Decisión técnica.** Se mantuvo el modelo de embeddings local (FastEmbed) en lugar de uno de OpenAI para que cargar y consultar el índice no dependa de credenciales ni de un servicio externo. El modelo queda escrito en el manifiesto y la carga se niega si el que se usa para consultar es otro, porque los vectores no serían comparables.
+Na primeira pergunta, o top-4 da ferramenta foi `FIC-DEV-01-S02-C01`, `FIC-DEV-01-S06-C01`, `FIC-GAR-01-S06-C01` e `FIC-GAR-01-S05-C01`. A seção 3 de `garantia.md` («Compatibilidade antes da instalação») não entrou no top-4.
 
-### Evidencia
+**Decisão técnica.** Foi mantido o modelo de embeddings local (FastEmbed) em vez de um da OpenAI para que carregar e consultar o índice não dependa de credenciais nem de um serviço externo. O modelo fica escrito no manifesto e a carga é negada se o modelo usado para consultar for outro, porque os vetores não seriam comparáveis.
 
-| Evidencia | Ubicación | Tipo |
+### Evidência
+
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Índice guardado con manifiesto y huellas | [knowledge/politicas/](../knowledge/politicas/) | Artefacto versionado |
-| Carga desde disco, puerta de seguridad, herramienta y dos preguntas al agente | [trazas/r22_indice_existente.json](trazas/r22_indice_existente.json); [scripts/demostrar_r22.py](../scripts/demostrar_r22.py) | **Ejecución real remota** (`gpt-4.1-mini`), NLI real local |
-| Carga del índice y recuperación sin credenciales | [notebooks/04_rag_text_to_query.ipynb](../notebooks/04_rag_text_to_query.ipynb) §«R22» | Ejecución real local |
-| El índice se carga sin indexar, corresponde al corpus actual y la puerta rechaza carga sin confianza o con un archivo alterado | [tests/test_indice_existente.py](../tests/test_indice_existente.py) | Pruebas automáticas |
+| Índice salvo com manifesto e impressões digitais | [knowledge/politicas/](../knowledge/politicas/) | Artefato versionado |
+| Carga do disco, porta de segurança, ferramenta e duas perguntas ao agente | [rastros/r22_indice_existente.json](rastros/r22_indice_existente.json); [scripts/demonstrar_r22.py](../scripts/demonstrar_r22.py) | **Execução real remota** (`gpt-4.1-mini`), NLI real local |
+| Carga do índice e recuperação sem credenciais | [notebooks/04_rag_text_to_query.ipynb](../notebooks/04_rag_text_to_query.ipynb) §«R22» | Execução real local |
+| O índice é carregado sem indexar, corresponde ao corpus atual e a porta rejeita carga sem confiança ou com um arquivo alterado | [tests/test_indice_existente.py](../tests/test_indice_existente.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- **El índice es propio.** La guía habla del «índice FAISS preexistente exigido por la actividad», pero el enunciado original no está en este workspace y no se recibió ningún índice del curso. Se construyó uno a partir del corpus ficticio y se guardó como artefacto. Si el profesor entrega un índice, basta con sustituir la carpeta: el cargador y las pruebas son los mismos.
-- La app solo usa este índice si `PEDRO_TRUST_POLICY_INDEX=true` está en `.env`. Sin esa variable avisa y usa el índice de demostración en memoria, con el mismo contenido.
-- El corpus son tres políticas ficticias; no hay políticas reales.
+- **O índice é próprio.** O guia fala do «índice FAISS preexistente exigido pela atividade», mas o enunciado original não está neste workspace e nenhum índice do curso foi recebido. Foi construído um a partir do corpus fictício e salvo como artefato. Se o professor entregar um índice, basta substituir a pasta: o carregador e os testes são os mesmos.
+- O app só usa este índice se `PEDRO_TRUST_POLICY_INDEX=true` estiver no `.env`. Sem essa variável, avisa e usa o índice de demonstração em memória, com o mesmo conteúdo.
+- O corpus são três políticas fictícias; não há políticas reais.
 
-## R23 — Diagnóstico y corrección de un fallo real de recuperación
+## R23 — Diagnóstico e correção de uma falha real de recuperação
 
-> ¿El alumno documentó una falla real de recuperación a partir de los documentos fuente retornados y justificó la técnica de corrección aplicada?
+> O aluno documentou uma falha real de recuperação a partir dos documentos fonte retornados e justificou a técnica de correção aplicada?
 
-**Respuesta corta.** Sí. Una pregunta coloquial no recuperaba la regla correcta aunque estaba en el corpus. Se diagnosticó con los fragmentos devueltos y se corrigió reformulando la consulta. El antes y el después se midieron sobre el índice guardado en disco.
+**Resposta curta.** Sim. Uma pergunta coloquial não recuperava a regra correta, embora ela estivesse no corpus. A falha foi diagnosticada com os fragmentos devolvidos e corrigida reformulando a consulta. O antes e o depois foram medidos sobre o índice salvo em disco.
 
-### 1. El fallo
+### 1. A falha
 
-Pregunta: «¿Se puede mandar en varias cajas?». La respuesta está en `entrega.md`, sección 5 («Entrega parcial y stock»), fragmento `FIC-ENT-01-S05-C01`. Con top-4, ese fragmento **no aparece**:
+Pergunta: «Posso receber em várias caixas?». A resposta está em `entrega.md`, seção 5 («Entrega parcial e estoque»), fragmento `FIC-ENT-01-S05-C01`. Com top-4, esse fragmento **não aparece**:
 
-| Posición | Fragmento devuelto | Sección | Distancia L2 |
+| Posição | Fragmento devolvido | Seção | Distância L2 |
 |---|---|---|---|
-| 1 | `FIC-ENT-01-S04-C01` | Recepción y comprobación inmediata | 12,845 |
-| 2 | `FIC-GAR-01-S06-C01` | Situaciones fuera de la cobertura | 13,336 |
-| 3 | `FIC-DEV-01-S03-C01` | Daño visible y contenido incompleto | 13,389 |
-| 4 | `FIC-GAR-01-S01-C01` | Propósito y piezas cubiertas | 14,045 |
+| 1 | `FIC-GAR-01-S01-C01` | Propósito e peças cobertas | 13,556 |
+| 2 | `FIC-ENT-01-S04-C01` | Recebimento e verificação imediata | 13,598 |
+| 3 | `FIC-DEV-01-S03-C01` | Dano visível e conteúdo incompleto | 13,891 |
+| 4 | `FIC-ENT-01-S05-C00` | Entrega parcial e estoque (só o título da seção) | 14,344 |
+
+**A pergunta do T24 mudou na migração para português.** A tradução literal da pergunta espanhola, «Pode mandar em várias caixas?», deixou de falhar no corpus em português: o fragmento esperado ficou na posição 4 de 4. Foram medidas oito formulações naturais e escolhida uma que falha de verdade. Com «Posso receber em várias caixas?», `FIC-ENT-01-S05-C01` fica fora do top-4.
 
 ### 2. Diagnóstico
 
-Los cuatro fragmentos hablan de cajas y paquetes en sentido físico: recibirlos, abrirlos, daños. La pregunta dice «varias cajas» y la política dice «entrega parcial». Es un **desajuste de vocabulario**: el usuario y el documento nombran la misma idea con palabras distintas, y el embedding acerca la pregunta a los textos que comparten la palabra «caja».
+Os fragmentos nas posições 2 e 3 falam de caixas e pacotes em sentido físico: receber, abrir, danos. O da posição 1 é a introdução da política de garantia. O da posição 4 é só o título da seção certa («## 5. Entrega parcial e estoque»): não traz a regra. A pergunta diz «várias caixas» e a política diz «entrega parcial». É um **desajuste de vocabulário**: o usuário e o documento nomeiam a mesma ideia com palavras diferentes, e o embedding aproxima a pergunta de textos que falam de caixa, pacote e recebimento.
 
-No es un problema del corpus (la regla existe) ni del troceado (está entera en un fragmento).
+Não é um problema do corpus (a regra existe) nem da divisão em fragmentos (a regra está inteira em um fragmento).
 
-### 3. Corrección: reformular la consulta
+### 3. Correção: reformular a consulta
 
-Se reescribe la pregunta con el término del dominio, **sin incluir la respuesta**: «¿Cuándo admite la política de entrega un envío parcial de las piezas solicitadas?». Mismo índice, mismo top-4:
+A pergunta é reescrita com o termo do domínio, **sem incluir a resposta**: «Quando a política de entrega admite um envio parcial das peças solicitadas?». Mesmo índice, mesmo top-4:
 
-| Posición | Fragmento devuelto | Distancia L2 |
+| Posição | Fragmento devolvido | Distância L2 |
 |---|---|---|
-| **1** | **`FIC-ENT-01-S05-C01`** | **10,216** |
-| 2 | `FIC-ENT-01-S01-C01` | 11,819 |
-| 3 | `FIC-ENT-01-S04-C01` | 12,317 |
-| 4 | `FIC-DEV-01-S08-C02` | 12,437 |
+| **1** | **`FIC-ENT-01-S05-C01`** | **8,566** |
+| 2 | `FIC-ENT-01-S01-C01` | 10,385 |
+| 3 | `FIC-ENT-01-S04-C01` | 10,765 |
+| 4 | `FIC-DEV-01-S05-C01` | 11,550 |
 
-**Por qué esta técnica.** El diagnóstico apunta al vocabulario de la consulta, así que se corrige la consulta. Las alternativas atacan otra causa: subir el top-k trae más ruido sin arreglar el orden, y cambiar el troceado no ayuda porque el fragmento ya estaba completo. El filtro por tema (`tema=entrega`) también recupera el fragmento, pero exige saber de antemano el tema; se dejó como prueba aparte.
+O fragmento esperado foi de fora do top-4 para a posição 1.
 
-En el agente, la herramienta `consultar_politicas` aplica esta reformulación a las preguntas sobre dividir un envío y devuelve los fragmentos de antes y de después, de modo que el diagnóstico queda en la traza de cada respuesta.
+**Por que esta técnica.** O diagnóstico aponta para o vocabulário da consulta, então corrige-se a consulta. As alternativas atacam outra causa: aumentar o top-k traz mais ruído sem consertar a ordem, e mudar a divisão em fragmentos não ajuda porque o fragmento já estava completo. O filtro por tema (`tema=entrega`) também recupera o fragmento (posição 3, L2 14,734, no índice de demonstração em memória), mas exige saber o tema de antemão; ficou como teste à parte.
 
-### Evidencia
+No agente, a ferramenta `consultar_politicas` aplica essa reformulação às perguntas sobre dividir um envio e devolve os fragmentos de antes e de depois, de modo que o diagnóstico fica no rastro de cada resposta.
 
-| Evidencia | Ubicación | Tipo |
+### Evidência
+
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Antes y después sobre el **índice guardado en disco**, con fuente, identificador y distancia L2 | [trazas/r23_t24_indice_existente.json](trazas/r23_t24_indice_existente.json); [scripts/diagnosticar_t24.py](../scripts/diagnosticar_t24.py) | Ejecución real local |
-| El mismo contraste reproducible sin credenciales | [notebooks/04_rag_text_to_query.ipynb](../notebooks/04_rag_text_to_query.ipynb) §«T24» y §«R22» | Ejecución real local |
-| La pregunta coloquial respondida por el agente con la regla correcta | [trazas/r22_indice_existente.json](trazas/r22_indice_existente.json) | Ejecución real remota |
-| Diagnóstico ampliado y pruebas | [t24_recuperacion.md](t24_recuperacion.md); [tests/test_rag_diagnostics.py](../tests/test_rag_diagnostics.py) | Documentación y pruebas |
+| Antes e depois sobre o **índice salvo em disco**, com fonte, identificador e distância L2 | [rastros/r23_t24_indice_existente.json](rastros/r23_t24_indice_existente.json); [scripts/diagnosticar_t24.py](../scripts/diagnosticar_t24.py) | Execução real local |
+| O mesmo contraste reproduzível sem credenciais | [notebooks/04_rag_text_to_query.ipynb](../notebooks/04_rag_text_to_query.ipynb) §«T24» e §«R22» | Execução real local |
+| A pergunta coloquial respondida pelo agente com a regra correta | [rastros/r22_indice_existente.json](rastros/r22_indice_existente.json) | Execução real remota |
+| Diagnóstico ampliado e testes | [t24_recuperacao.md](t24_recuperacao.md); [tests/test_rag_diagnostics.py](../tests/test_rag_diagnostics.py) | Documentação e testes |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- El fallo se localizó en un corpus ficticio propio; es real en el sentido de que se observó, no se fabricó alterando resultados.
-- La reformulación está escrita como regla para las preguntas de envío dividido. No es una reescritura general hecha por el LLM.
-- Es un caso; no se midió cuántas preguntas del corpus fallan del mismo modo.
+- A falha foi localizada em um corpus fictício próprio; é real no sentido de que foi observada, não fabricada alterando resultados.
+- A reformulação está escrita como regra para as perguntas de envio dividido. Não é uma reescrita geral feita pelo LLM.
+- É um caso; não foi medido quantas perguntas do corpus falham do mesmo jeito.
 
 ---
 
-# Fase 5 — Agente final verificado y evaluado
+# Fase 5 — Agente final verificado e avaliado
 
-## R24 — Verificación de consistencia factual y coherencia lógica
+## R24 — Verificação de consistência factual e coerência lógica
 
-> ¿El alumno construyó un mecanismo de verificación de consistencia factual y coherencia lógica de las respuestas del agente?
+> O aluno construiu um mecanismo de verificação de consistência factual e coerência lógica das respostas do agente?
 
-**Respuesta corta.** Sí. Ninguna respuesta del agente se muestra sin pasar por dos puertas dentro del flujo: una **verificación exacta** (coherencia lógica) y un modelo **NLI** (consistencia factual). En ocho experimentos con el modelo real no se publicó ninguna recomendación contraria a la regla de comparación. La regla misma tuvo un hueco —ignoraba el pedido mínimo— que la verificación no podía ver, porque comprobaba contra esa misma regla.
+**Resposta curta.** Sim. Nenhuma resposta do agente é mostrada sem passar por duas portas dentro do fluxo: uma **verificação exata** (coerência lógica) e um modelo **NLI** (consistência factual). Em nove experimentos com o modelo real não foi publicada nenhuma recomendação contrária à regra de comparação. A própria regra teve uma lacuna — ignorava o pedido mínimo — que a verificação não podia ver, porque conferia contra essa mesma regra.
 
-### 1. Dónde está
+### 1. Onde está
 
-La verificación no es un análisis posterior: es un paso del flujo, entre la propuesta del modelo y lo que ve el usuario. El modelo no puede saltársela porque no es una herramienta suya.
+A verificação não é uma análise posterior: é um passo do fluxo, entre a proposta do modelo e o que o usuário vê. O modelo não pode pular esse passo porque ele não é uma ferramenta sua.
 
 ```text
-propuesta del modelo → anclaje de datos → verificación exacta → NLI → publicar
+proposta do modelo → ancoragem de dados → verificação exata → NLI → publicar
                                                │                 │
-                                               └── error ────────┴──→ una corrección → o no se publica
+                                               └── erro ─────────┴──→ uma correção → ou não se publica
 ```
 
-### 2. Coherencia lógica: verificación exacta
+### 2. Coerência lógica: verificação exata
 
-`verificar`, en [verification.py](../src/pedro/verification.py), recalcula la respuesta con los datos del escenario y la compara con la propuesta:
+`verificar`, em [verification.py](../src/pedro/verification.py), recalcula a resposta com os dados do cenário e a compara com a proposta:
 
-| Comprobación | Qué detecta |
+| Checagem | O que detecta |
 |---|---|
-| Total | Un importe que no coincide con precio × cantidad + flete |
-| Stock, pedido mínimo, presupuesto y plazo | Una oferta marcada como válida que no cumple, o al revés |
-| Ganador | Un proveedor recomendado que no es el mejor según la regla, incluida la preferencia de origen del usuario |
-| Ofertas completas | Que falte o sobre alguna alternativa |
-| Identificadores | Una oferta o una pieza que no existe |
-| Procedencia | Una cita que no está en el fragmento recuperado; un escenario distinto del activo |
-| Petición vigente | Una respuesta para otra cantidad u otros límites que los pedidos |
+| Total | Um valor que não bate com preço × quantidade + frete |
+| Estoque, pedido mínimo, orçamento e prazo | Uma oferta marcada como válida que não atende, ou o contrário |
+| Vencedor | Um fornecedor recomendado que não é o melhor segundo a regra, incluída a preferência de origem do usuário |
+| Ofertas completas | Que falte ou sobre alguma alternativa |
+| Identificadores | Uma oferta ou uma peça que não existe |
+| Procedência | Uma citação que não está no fragmento recuperado; um cenário diferente do ativo |
+| Solicitação vigente | Uma resposta para outra quantidade ou outros limites que não os pedidos |
 
-### 3. Consistencia factual: NLI
+### 3. Consistência factual: NLI
 
-Un modelo de inferencia en lenguaje natural clasifica la relación entre la evidencia y la afirmación en tres clases:
+Um modelo de inferência em linguagem natural classifica a relação entre a evidência e a afirmação em três classes:
 
-| Evidencia (premisa) | Afirmación (hipótesis) | Clase |
+| Evidência (premissa) | Afirmação (hipótese) | Classe |
 |---|---|---|
-| Entrega en 5 días | Entrega en 5 días | *entailment* (la sustenta) |
-| Entrega en 5 días | Entrega en 10 días | *contradiction* |
-| Entrega en 5 días | La pieza es azul | *neutral* (no dice nada) |
+| Entrega em 5 dias | Entrega em 5 dias | *entailment* (sustenta) |
+| Entrega em 5 dias | Entrega em 10 dias | *contradiction* |
+| Entrega em 5 dias | A peça é azul | *neutral* (não diz nada) |
 
-Solo *entailment* permite publicar. El modelo es `mDeBERTa-v3-base-mnli-xnli`, local, con la revisión fijada. Se aplica en tres sitios: a las recomendaciones (¿la evidencia sustenta el stock y el plazo del ganador?), a las políticas (¿el fragmento sustenta el resumen?) y al **consejo de precio** (¿los hechos sobre los precios sustentan lo que el modelo aconseja?).
+Só *entailment* permite publicar. O modelo é `mDeBERTa-v3-base-mnli-xnli`, local, com a revisão fixada. É aplicado em três lugares: nas recomendações (a evidência sustenta o estoque e o prazo do vencedor?), nas políticas (o fragmento sustenta o resumo?) e no **conselho de preço** (os fatos sobre os preços sustentam o que o modelo aconselha?).
 
-Donde más aporta es en los dos últimos, porque ahí se verifica texto libre. En el consejo de precio se midió: con el primer prompt el NLI rechazó 10 de 15 consejos, casi todos por añadir valoraciones que los hechos no decían; con el prompt ajustado, 1 de 15 (ver «El aviso de precio»).
+Ele ajuda mais nos dois últimos, porque ali se verifica texto livre. No conselho de preço isso foi medido. Com o primeiro prompt (execução da versão anterior, em espanhol), o NLI rejeitou 10 de 15 conselhos, quase todos por acrescentar avaliações que os fatos não diziam. Com o prompt ajustado, na execução em português, o NLI não rejeitou nenhum dos 15; um conselho foi barrado antes, pela checagem de números (ver «O aviso de preço»).
 
-### 4. Anclaje: el modelo decide, el sistema pone los datos
+### 4. Ancoragem: o modelo decide, o sistema põe os dados
 
-Al probar con el modelo real, la verificación exacta rechazaba respuestas correctas por errores de copia. Se añadió un paso previo que rellena los datos con lo que devolvieron las herramientas:
+Nos testes com o modelo real, a verificação exata rejeitava respostas corretas por erros de cópia. Foi adicionado um passo anterior que preenche os dados com o que as ferramentas devolveram:
 
-| Anclaje | Qué rellena | Si no puede |
+| Ancoragem | O que preenche | Se não consegue |
 |---|---|---|
-| `anclar_citas` | El texto literal del fragmento de política recuperado | La cita queda como estaba y se rechaza |
-| `anclar_cep` | Ciudad, estado y evidencia de ViaCEP | No rellena y se rechaza |
-| `anclar_preferencia` | La confirmación con lo que se guardó de verdad | No se confirma |
-| `anclar_recomendacion` | Ganador, total, alternativas y evidencias, con el cálculo de `comparar_ofertas` para esa misma solicitud | No toca nada y la verificación exacta decide |
-| `anclar_catalogo` | La tabla de resultados y la consulta SQL ejecutada | No se publica |
+| `ancorar_citacoes` | O texto literal do fragmento de política recuperado | A citação fica como estava e é rejeitada |
+| `ancorar_cep` | Cidade, estado e evidência do ViaCEP | Não preenche e a resposta é rejeitada |
+| `ancorar_preferencia` | A confirmação com o que foi salvo de verdade | Não se confirma |
+| `ancorar_recomendacao` | Vencedor, total, alternativas e evidências, com o cálculo de `comparar_ofertas` para essa mesma solicitação | Não mexe em nada e a verificação exata decide |
+| `ancorar_catalogo` | A tabela de resultados e a consulta SQL executada | Não se publica |
 
-El anclaje de la recomendación se añadió al final: en una ejecución real el modelo copió mal el ganador dos veces seguidas y una compra válida no se publicó. Transcribir tres ofertas con sus importes es una tarea mecánica, y el sistema ya tenía el resultado.
+A ancoragem da recomendação foi adicionada por último: em uma execução real o modelo copiou errado o vencedor duas vezes seguidas e uma compra válida não foi publicada. Transcrever três ofertas com seus valores é uma tarefa mecânica, e o sistema já tinha o resultado.
 
-El anclaje no relaja la verificación: solo evita rechazar lo que ya era cierto. Una cita inventada, un CEP sin respuesta de la API o una preferencia no guardada siguen bloqueados.
+A ancoragem não afrouxa a verificação: só evita rejeitar o que já era verdade. Uma citação inventada, um CEP sem resposta da API ou uma preferência não salva continuam bloqueados.
 
-### 5. Qué pasa cuando falla
+### 5. O que acontece quando falha
 
-1. **Una corrección.** El error vuelve al modelo y propone otra respuesta.
-2. **Degradación.** En políticas, si las citas son válidas pero el resumen no pasa el NLI, se publican solo las citas literales.
-3. **No se publica.** Si nada pasa, el usuario lee «no puedo confirmar…». Nunca una respuesta sin verificar.
+1. **Uma correção.** O erro volta ao modelo e ele propõe outra resposta.
+2. **Degradação.** Nas políticas, se as citações são válidas mas o resumo não passa no NLI, publicam-se só as citações literais.
+3. **Não se publica.** Se nada passa, o usuário lê «Não posso confirmar…». Nunca uma resposta sem verificar.
 
 ### 6. Resultados medidos
 
-| Hecho observado | Dónde |
+| Fato observado | Onde |
 |---|---|
-| **0 recomendaciones contrarias a la regla publicadas** en ocho experimentos de 30 casos | R29 |
-| `gpt-4o-mini` propuso un ganador equivocado; la verificación lo rechazó dos veces y no se publicó | R29 |
-| `gpt-4.1-mini`: 22 de 23 propuestas aceptadas a la primera, y 24 de 24 en la versión final, sin ningún error de verificación | R29 |
-| Una primera propuesta con el ganador o el total incorrecto fue rechazada y la segunda fue correcta | Primera ejecución de la conversación de R18; motivó el anclaje de la comparación |
-| Una política cuyo resumen no pasó el NLI se corrigió y la segunda propuesta sí lo pasó | [citas_ancladas.md](citas_ancladas.md) |
-| El NLI rechazó 10 de 15 consejos de precio con valoraciones no respaldadas, y 1 de 15 tras ajustar el prompt | [trazas/precios_consejo_llm_antes.json](trazas/precios_consejo_llm_antes.json) y [trazas/precios_consejo_llm.json](trazas/precios_consejo_llm.json) |
+| **0 recomendações contrárias à regra publicadas** em nove experimentos de 30 casos | R29 |
+| `gpt-4o-mini` propôs um vencedor errado; a verificação o rejeitou duas vezes e ele não foi publicado (execução da versão anterior, em espanhol) | R29 |
+| `gpt-4.1-mini`: 22 de 23 propostas aceitas na primeira tentativa antes das melhorias; 24 de 24 na versão final e 24 de 24 na execução em português, sem nenhum erro de verificação | R29 |
+| Uma primeira proposta com o vencedor ou o total incorreto foi rejeitada e a segunda foi correta | Primeira execução da conversa de R18 (versão anterior, em espanhol); motivou a ancoragem da comparação |
+| Uma política cujo resumo não passou no NLI foi corrigida e a segunda proposta passou | [citacoes_ancoradas.md](citacoes_ancoradas.md) |
+| Com o primeiro prompt, o NLI rejeitou 10 de 15 conselhos de preço com avaliações sem respaldo (versão anterior, em espanhol). Com o prompt ajustado, em português: 14 de 15 publicados; o NLI não rejeitou nenhum e 1 caiu na checagem de números | [rastros/precios_consejo_llm_antes.json](rastros/precios_consejo_llm_antes.json) e [rastros/precos_conselho_llm.json](rastros/precos_conselho_llm.json) |
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Errores de verificación de cada caso en cinco experimentos | [trazas/](trazas/): `r29_langsmith_*.json` | **Ejecución real remota**; NLI real local |
-| Ocho propuestas verificadas sin errores en una conversación | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | Ejecución real remota |
-| Anclaje de citas y de CEP, antes y después | [citas_ancladas.md](citas_ancladas.md); [trazas/r10_viacep_llm_antes.json](trazas/r10_viacep_llm_antes.json) | Ejecución real remota |
-| Tres pares NLI con sus tres clases | [evidencias.md](evidencias.md), fila R5.3 | Ejecución real local |
-| Cada comprobación exacta, las tres clases NLI, los anclajes y la degradación | [tests/test_core.py](../tests/test_core.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_policy_cep.py](../tests/test_policy_cep.py); [tests/test_citas_ancladas.py](../tests/test_citas_ancladas.py) | Pruebas automáticas |
+| Erros de verificação de cada caso em nove experimentos | [rastros/](rastros/): `r29_langsmith_*.json` | **Execução real remota**; NLI real local |
+| Oito propostas verificadas sem erros em uma conversa | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json) | Execução real remota |
+| Ancoragem de citações e de CEP, antes e depois | [citacoes_ancoradas.md](citacoes_ancoradas.md); [rastros/r10_viacep_llm_antes.json](rastros/r10_viacep_llm_antes.json) (versão anterior, em espanhol) | Execução real remota |
+| Três pares NLI com suas três classes | [evidencias.md](evidencias.md), linha R5.3 | Execução real local |
+| Cada checagem exata, as três classes NLI, as ancoragens e a degradação | [tests/test_core.py](../tests/test_core.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_policy_cep.py](../tests/test_policy_cep.py); [tests/test_citacoes_ancoradas.py](../tests/test_citacoes_ancoradas.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- **Verifica contra la regla de negocio, no la regla.** Mientras la comparación ignoró el pedido mínimo, la verificación aprobó recomendaciones que un proveedor no aceptaría.
-- **Verifica que la respuesta sea cierta, no que sea pertinente.** En un experimento con memoria contaminada, una pregunta de CEP recibió una respuesta de compra verificada pero fuera de tema.
-- El NLI no es exacto: en el consejo de precio rechazó un consejo que era cierto. Falla hacia el lado seguro, pero falla. No se midió su exactitud general.
-- El modelo NLI admite 512 tokens: con varias citas largas la premisa se trunca.
-- El umbral del 80 % para anclar citas se fijó por criterio, sin calibrarlo.
+- **Verifica contra a regra de negócio, não a regra.** Enquanto a comparação ignorou o pedido mínimo, a verificação aprovou recomendações que um fornecedor não aceitaria.
+- **Verifica que a resposta seja verdadeira, não que seja pertinente.** Em um experimento com memória contaminada, uma pergunta de CEP recebeu uma resposta de compra verificada, mas fora do assunto.
+- O NLI não é exato. Na execução anterior do conselho de preço, em espanhol, ele rejeitou como *contradiction* um conselho que era verdadeiro (esse rastro foi substituído pelo novo; só está no histórico do git). Na execução em português o NLI não rejeitou nenhum conselho: o mesmo caso foi barrado antes, pela checagem de números, porque o modelo escreveu «mais de 200 %» e os fatos dizem 203 % e 233 %. Falha para o lado seguro, mas falha. Sua exatidão geral não foi medida.
+- O modelo NLI aceita 512 tokens: com várias citações longas a premissa é truncada.
+- O limiar de 80 % para ancorar citações foi fixado por critério, sem calibração.
 
-## R25 — Agente único con herramientas de RAG, SQL o API
+## R25 — Agente único com ferramentas de RAG, SQL ou API
 
-> ¿El alumno consolidó un agente único integrando herramientas de RAG, SQL o API bajo un mismo executor?
+> O aluno consolidou um agente único integrando ferramentas de RAG, SQL ou API sob um mesmo executor?
 
-**Respuesta corta.** Sí. Un solo agente, con un solo ejecutor, reúne las tres categorías: SQL, RAG y API. En una misma conversación real usó las tres.
+**Resposta curta.** Sim. Um só agente, com um só executor, reúne as três categorias: SQL, RAG e API. Em uma mesma conversa real ele usou as três.
 
-### 1. Un agente, seis herramientas, tres categorías
+### 1. Um agente, seis ferramentas, três categorias
 
-Todas se registran en el mismo `AgentExecutor`, en `crear_agente` ([agent.py](../src/pedro/agent.py)):
+Todas são registradas no mesmo `AgentExecutor`, em `criar_agente` ([agent.py](../src/pedro/agent.py)):
 
-| Categoría | Herramientas | Qué consultan |
+| Categoria | Ferramentas | O que consultam |
 |---|---|---|
-| **SQL** | `buscar_productos`, `consultar_catalogo`, `comparar_ofertas` | Catálogo SQLite del escenario |
+| **SQL** | `buscar_produtos`, `consultar_catalogo`, `comparar_ofertas` | Catálogo SQLite do cenário |
 | **RAG** | `consultar_politicas` | Índice FAISS de políticas |
 | **API** | `consultar_cep` | ViaCEP |
-| Memoria | `guardar_preferencia` | Preferencias del usuario |
+| Memória | `salvar_preferencia` | Preferências do usuário |
 
-No hay un agente por tema ni un router previo: el mismo modelo ve las seis descripciones y elige.
+Não há um agente por assunto nem um roteador antes: o mesmo modelo vê as seis descrições e escolhe.
 
-### 2. Las tres categorías en una misma conversación
+### 2. As três categorias em uma mesma conversa
 
-Conversación real de ocho turnos con el agente final (la de R18):
+Conversa real de oito turnos com o agente final (a de R18):
 
-| Turno | Pregunta | Categoría | Herramienta llamada |
+| Turno | Pergunta | Categoria | Ferramenta chamada |
 |---|---|---|---|
-| 2 | Ahora que sean 5 y mantén el plazo | SQL | `comparar_ofertas` |
-| 4 | Prefiero proveedores nacionales, recuérdalo | Memoria | `guardar_preferencia` |
-| 5 | ¿A qué ciudad corresponde el CEP 01001000? | API | `consultar_cep` |
-| 6 | ¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza? | RAG | `consultar_politicas` |
-| 8 | Compara 2 unidades de PEC-11-0001 | SQL | `comparar_ofertas` |
+| 2 | Agora que sejam 5 e mantenha o prazo | SQL | `comparar_ofertas` |
+| 4 | Prefiro fornecedores nacionais, lembre-se disso | Memória | `salvar_preferencia` |
+| 5 | A que cidade corresponde o CEP 01001000? | API | `consultar_cep` |
+| 6 | Como se verifica a compatibilidade elétrica antes de instalar uma peça? | RAG | `consultar_politicas` |
+| 8 | Compare 2 unidades de PEC-11-0001 | SQL | `comparar_ofertas` |
 
-El mismo ejecutor, la misma memoria y el mismo verificador atienden los ocho turnos. Y las categorías se cruzan: la preferencia guardada en el turno 4 (memoria) decide el proveedor ganador del turno 8 (SQL).
+O mesmo executor, a mesma memória e o mesmo verificador atendem os oito turnos. E as categorias se cruzam: a preferência salva no turno 4 (memória) decide o fornecedor vencedor do turno 8 (SQL). Ganha Casa Técnica Brasil, nacional, por R$ 1.970,38, embora Atlantic Repair Parts, internacional, custe R$ 619,38.
 
-### 3. Por qué un solo agente
+### 3. Por que um só agente
 
-- **El usuario no cambia de asistente al cambiar de tema.** Pregunta por un precio, luego por una política y luego por un destino, sin perder la compra en curso.
-- **Una sola puerta de salida.** Venga de donde venga, toda respuesta pasa por la misma verificación.
-- **Una sola traza.** Las llamadas a las seis herramientas quedan en el mismo registro.
+- **O usuário não troca de assistente ao trocar de assunto.** Pergunta por um preço, depois por uma política e depois por um destino, sem perder a compra em andamento.
+- **Uma só porta de saída.** Venha de onde vier, toda resposta passa pela mesma verificação.
+- **Um só rastro.** As chamadas às seis ferramentas ficam no mesmo registro.
 
-**Decisión técnica.** Se descartó un agente por categoría coordinado por otro agente. Añadiría llamadas al modelo y un punto más donde equivocarse (elegir el agente) para resolver un problema que el *function calling* ya resuelve: elegir entre seis herramientas con buenas descripciones.
+**Decisão técnica.** Foi descartado um agente por categoria coordenado por outro agente. Isso acrescentaria chamadas ao modelo e mais um ponto onde errar (escolher o agente) para resolver um problema que o *function calling* já resolve: escolher entre seis ferramentas com boas descrições.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| SQL, API y RAG usados por el mismo ejecutor en una conversación | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r18_conversacion_compleja` | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP) |
-| Las mismas tres categorías desde la interfaz Streamlit | [trazas/r28_streamlit.json](trazas/r28_streamlit.json) | Ejecución real remota |
-| Trayectorias de herramientas en 30 casos | [trazas/](trazas/): `r29_langsmith_*.json` | Ejecución real remota |
-| El agente construido tiene las seis herramientas | [tests/test_anatomia.py](../tests/test_anatomia.py); [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Pruebas automáticas |
+| SQL, API e RAG usados pelo mesmo executor em uma conversa | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json), `r18_conversa_complexa` | **Execução real remota** (`gpt-4.1-mini`, ViaCEP) |
+| As mesmas três categorias pela interface Streamlit | [rastros/r28_streamlit.json](rastros/r28_streamlit.json) | Execução real remota |
+| Trajetórias de ferramentas em 30 casos | [rastros/](rastros/): `r29_langsmith_*.json` | Execução real remota |
+| O agente construído tem as seis ferramentas | [tests/test_anatomia.py](../tests/test_anatomia.py); [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- Dentro de una petición el agente usa una categoría. Un mensaje que mezcla SQL, RAG y API lo divide antes el planificador de turno (R02), y el mismo ejecutor resuelve cada parte.
-- Parte de los turnos los resuelve una regla sin pasar por el agente (listado, aclaraciones, entrega parcial).
+- Dentro de um pedido o agente usa uma categoria. Uma mensagem que mistura SQL, RAG e API é dividida antes pelo planejador de turno (R02), e o mesmo executor resolve cada parte.
+- Parte dos turnos é resolvida por uma regra, sem passar pelo agente (listagem, esclarecimentos, entrega parcial).
 
-## R26 — Executor con create_openai_tools_agent y AgentExecutor
+## R26 — Executor com create_openai_tools_agent e AgentExecutor
 
-> ¿El alumno construyó el executor del agente con create_openai_tools_agent y AgentExecutor?
+> O aluno construiu o executor do agente com create_openai_tools_agent e AgentExecutor?
 
-**Respuesta corta.** Sí. El agente final se construye exactamente con esas dos APIs y se ejecutó con el modelo real en conversaciones completas, desde scripts y desde la interfaz.
+**Resposta curta.** Sim. O agente final é construído exatamente com essas duas APIs e foi executado com o modelo real em conversas completas, por scripts e pela interface.
 
-### 1. El código
+### 1. O código
 
-En `crear_agente`, [agent.py](../src/pedro/agent.py):
+Em `criar_agente`, [agent.py](../src/pedro/agent.py):
 
 ```python
-prompt = PLANTILLA_AGENTE.partial(dataset_id=escenario.dataset_id, ejemplos=EJEMPLOS_ACCIONES,
-                                  formato=parser.get_format_instructions())
-lista = herramientas(escenario, memoria_db, user_id, mensaje_actual, indice, cep_simulado=cep_simulado)
+prompt = MODELO_AGENTE.partial(dataset_id=cenario.dataset_id, exemplos=EXEMPLOS_ACOES,
+                               formato=parser.get_format_instructions())
+lista = ferramentas(cenario, memoria_db, user_id, mensagem_atual, indice,
+                    cep_simulado=cep_simulado, llm=llm)
 return AgentExecutor(agent=create_openai_tools_agent(llm, lista, prompt), tools=lista,
                      return_intermediate_steps=True, max_iterations=6)
 ```
 
-| Pieza | Qué hace |
+| Peça | O que faz |
 |---|---|
-| `create_openai_tools_agent` | Une el modelo, las herramientas y el prompt. El modelo decide por *function calling* qué herramienta llamar y con qué argumentos |
-| `AgentExecutor` | Ejecuta el ciclo: llama a la herramienta, devuelve el resultado al modelo y repite hasta que haya respuesta |
-| `max_iterations=6` | Tope de vueltas del ciclo |
-| `return_intermediate_steps=True` | Devuelve cada llamada con su resultado; el verificador los usa para contrastar la respuesta |
+| `create_openai_tools_agent` | Une o modelo, as ferramentas e o prompt. O modelo decide por *function calling* qual ferramenta chamar e com quais argumentos |
+| `AgentExecutor` | Executa o ciclo: chama a ferramenta, devolve o resultado ao modelo e repete até haver resposta |
+| `max_iterations=6` | Limite de voltas do ciclo |
+| `return_intermediate_steps=True` | Devolve cada chamada com seu resultado; o verificador usa isso para conferir a resposta |
 
-### 2. El ejecutor en marcha
+### 2. O executor em funcionamento
 
-Un turno real, tal como lo registró la traza:
+Um turno real, como o rastro registrou:
 
 ```text
-Usuario:      Ahora que sean 5 y mantén el plazo
-Herramienta:  comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 5, 'plazo_max_dias': 7}
-Verificación: intento 1, sin errores
-Respuesta:    CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.
+Usuário:      Agora que sejam 5 e mantenha o prazo
+Ferramenta:   comparar_ofertas {'produto_id': 'PEC-01-0001', 'quantidade': 5, 'prazo_max_dias': 7}
+Verificação:  tentativa 1, sem erros
+Resposta:     CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.
 ```
 
-### 3. Lo que rodea al ejecutor
+### 3. O que fica em volta do executor
 
-El ejecutor no se usa solo. `crear_flujo` lo envuelve:
+O executor não é usado sozinho. `criar_fluxo` o envolve:
 
-1. Antes: reglas de diálogo, memoria y recuerdos.
-2. El ejecutor propone una respuesta.
-3. Después: anclaje, verificación exacta y NLI.
-4. Si la verificación falla, el ejecutor se invoca **una** vez más con los errores.
+1. Antes: regras de diálogo, memória e lembranças.
+2. O executor propõe uma resposta.
+3. Depois: ancoragem, verificação exata e NLI.
+4. Se a verificação falha, o executor é invocado **uma** vez mais com os erros.
 
-**Decisión técnica.** Frente al agente ReAct clásico de R08, este agente recibe argumentos con tipo (una cantidad es un número, no un texto que interpretar) y la elección de herramienta llega estructurada desde la API del modelo. Eso elimina los errores de formato del ReAct en texto y permite verificar cada llamada.
+**Decisão técnica.** Comparado ao agente ReAct clássico de R08, este agente recebe argumentos com tipo (uma quantidade é um número, não um texto a interpretar) e a escolha de ferramenta chega estruturada pela API do modelo. Isso elimina os erros de formato do ReAct em texto e permite verificar cada chamada.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Conversación de ocho turnos con el ejecutor, sus herramientas y verificaciones | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | **Ejecución real remota** (`gpt-4.1-mini`) |
-| Cinco experimentos de 30 casos sobre el mismo ejecutor | [trazas/](trazas/): `r29_langsmith_*.json` | Ejecución real remota |
-| El ejecutor llamando a ViaCEP y al índice de políticas | [trazas/r10_viacep_llm.json](trazas/r10_viacep_llm.json); [trazas/r22_indice_existente.json](trazas/r22_indice_existente.json) | Ejecución real remota |
-| El objeto construido es un `AgentExecutor` con `create_openai_tools_agent`, 6 iteraciones y 6 herramientas | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomía»; [tests/test_anatomia.py](../tests/test_anatomia.py) | Ejecución real local y prueba |
+| Conversa de oito turnos com o executor, suas ferramentas e verificações | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json) | **Execução real remota** (`gpt-4.1-mini`) |
+| Nove experimentos de 30 casos sobre o mesmo executor | [rastros/](rastros/): `r29_langsmith_*.json` | Execução real remota |
+| O executor chamando o ViaCEP e o índice de políticas | [rastros/r10_viacep_llm.json](rastros/r10_viacep_llm.json); [rastros/r22_indice_existente.json](rastros/r22_indice_existente.json) | Execução real remota |
+| O objeto construído é um `AgentExecutor` com `create_openai_tools_agent`, 6 iterações e 6 ferramentas | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomia do agente»; [tests/test_anatomia.py](../tests/test_anatomia.py) | Execução real local e teste |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- `AgentExecutor` pertenece a las APIs clásicas de LangChain; la biblioteca recomienda hoy LangGraph.
-- Se crea un ejecutor nuevo en cada propuesta, porque las herramientas se ligan al mensaje actual.
+- `AgentExecutor` pertence às APIs clássicas do LangChain; a biblioteca recomenda hoje o LangGraph.
+- Cria-se um executor novo a cada proposta, porque as ferramentas são ligadas à mensagem atual.
 
-## R27 — Historial con RunnableWithMessageHistory
+## R27 — Histórico com RunnableWithMessageHistory
 
-> ¿El alumno integró el histórico de conversación al agente con RunnableWithMessageHistory?
+> O aluno integrou o histórico de conversação ao agente com RunnableWithMessageHistory?
 
-**Respuesta corta.** Sí. El agente final está envuelto en `RunnableWithMessageHistory`, con el historial guardado en SQLite por usuario y sesión. Se demostró en conversaciones reales de varios turnos y tras reiniciar el flujo.
+**Resposta curta.** Sim. O agente final está envolvido em `RunnableWithMessageHistory`, com o histórico salvo em SQLite por usuário e sessão. Isso foi demonstrado em conversas reais de vários turnos e depois de reiniciar o fluxo.
 
-### 1. El código
+### 1. O código
 
-Al final de `crear_flujo`, [agent.py](../src/pedro/agent.py):
+No final de `criar_fluxo`, [agent.py](../src/pedro/agent.py):
 
 ```python
-return RunnableWithMessageHistory(
-    RunnableLambda(turno),
-    lambda user_id, session_id: Historial(memoria_db, user_id, session_id),
+return RunnableWithMessageHistory(RunnableLambda(turno),
+    lambda user_id, session_id: Historico(memoria_db, user_id, session_id),
     input_messages_key="input", history_messages_key="chat_history",
     history_factory_config=[ConfigurableFieldSpec(id="user_id", ...),
                             ConfigurableFieldSpec(id="session_id", ...)])
 ```
 
-| Pieza | Qué hace |
+| Peça | O que faz |
 |---|---|
-| `RunnableWithMessageHistory` | Antes de cada turno carga el historial y lo pasa como `chat_history`; después guarda la pregunta y la respuesta |
-| `Historial` | Implementación propia de `BaseChatMessageHistory` sobre SQLite ([memory.py](../src/pedro/memory.py)) |
-| Dos claves: `user_id` y `session_id` | Cada conversación es de un usuario y de una sesión; no se puede abrir la de otro |
+| `RunnableWithMessageHistory` | Antes de cada turno carrega o histórico e o passa como `chat_history`; depois salva a pergunta e a resposta |
+| `Historico` | Implementação própria de `BaseChatMessageHistory` sobre SQLite ([memory.py](../src/pedro/memory.py)) |
+| Duas chaves: `user_id` e `session_id` | Cada conversa é de um usuário e de uma sessão; não dá para abrir a de outro |
 
-### 2. Tres decisiones sobre qué es «el historial»
+### 2. Três decisões sobre o que é «o histórico»
 
-| Decisión | Por qué |
+| Decisão | Por quê |
 |---|---|
-| **Se guarda solo lo publicado.** Las propuestas rechazadas y los pasos intermedios no entran | Si entraran, el modelo los leería en el turno siguiente como si fueran ciertos |
-| **El agente ve una ventana de 12 mensajes**; el historial completo se conserva | Limita el coste sin perder el registro |
-| **El historial es persistente** | Se puede reabrir una conversación días después |
+| **Salva-se só o que foi publicado.** As propostas rejeitadas e os passos intermediários não entram | Se entrassem, o modelo os leria no turno seguinte como se fossem verdade |
+| **O agente vê uma janela de 12 mensagens**; o histórico completo é conservado | Limita o custo sem perder o registro |
+| **O histórico é persistente** | Dá para reabrir uma conversa dias depois |
 
-### 3. Historial operativo en una sesión real
+### 3. Histórico em uso em uma sessão real
 
-En la conversación de ocho turnos (R18):
+Na conversa de oito turnos (R18):
 
-- El turno 2, «Ahora que sean 5 y mantén el plazo», no nombra la pieza: viene del contexto.
-- El turno 7, «Vuelve a comparar con lo último que te pedí», se resuelve tres turnos después de la última compra.
-- Al terminar había **16 mensajes guardados**: ocho del usuario y ocho respuestas publicadas, y nada más. Las llamadas a herramientas y las propuestas intermedias no entran.
-- Al crear un flujo nuevo sobre la misma base, como tras reiniciar, los 16 mensajes seguían ahí y el agente veía los últimos 12.
-- Desde la interfaz, al reabrir una conversación anterior volvieron sus 8 mensajes.
+- O turno 2, «Agora que sejam 5 e mantenha o prazo», não nomeia a peça: ela vem do contexto.
+- O turno 7, «Volte a comparar com o último que eu pedi», é resolvido depois de três turnos sobre outros assuntos (preferência, CEP e política).
+- No final havia **16 mensagens salvas**: oito do usuário e oito respostas publicadas, e nada mais. As chamadas a ferramentas e as propostas intermediárias não entram.
+- Ao criar um fluxo novo sobre a mesma base, como depois de reiniciar, as 16 mensagens continuavam lá e o agente via as últimas 12.
+- Pela interface, ao reabrir uma conversa anterior voltaram suas 8 mensagens.
 
-**Decisión técnica.** Se eligió `RunnableWithMessageHistory`, y no pasar el historial a mano, porque separa dos responsabilidades: el turno recibe el historial ya cargado y no sabe dónde vive. Cambiar SQLite por otro almacén sería cambiar una sola clase.
+**Decisão técnica.** Foi escolhido `RunnableWithMessageHistory`, e não passar o histórico à mão, porque ele separa duas responsabilidades: o turno recebe o histórico já carregado e não sabe onde ele fica. Trocar o SQLite por outro armazenamento seria trocar uma só classe.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Ocho turnos con contexto, 16 mensajes guardados, 12 en ventana y recuperación tras recrear el flujo | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | **Ejecución real remota** (`gpt-4.1-mini`) |
-| Conversación reabierta desde la interfaz con sus 8 mensajes | [trazas/r28_streamlit.json](trazas/r28_streamlit.json) | Ejecución real remota |
-| Bitácora de un turno: la propuesta rechazada no llega a la memoria | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) §«R12» | Ejecución con **doble** |
-| Solo se guarda lo público; ventana de 12; aislamiento por usuario y sesión | [tests/test_tools_flow.py](../tests/test_tools_flow.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
+| Oito turnos com contexto, 16 mensagens salvas, 12 na janela e recuperação depois de recriar o fluxo | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json) | **Execução real remota** (`gpt-4.1-mini`) |
+| Conversa reaberta pela interface com suas 8 mensagens | [rastros/r28_streamlit.json](rastros/r28_streamlit.json) | Execução real remota |
+| Registro de um turno: a proposta rejeitada não chega à memória | [notebooks/02_react_ferramentas.ipynb](../notebooks/02_react_ferramentas.ipynb) §«R12» | Execução com **duplo de teste** |
+| Só se salva o que é público; janela de 12; isolamento por usuário e sessão | [tests/test_tools_flow.py](../tests/test_tools_flow.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_dialogue.py](../tests/test_dialogue.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- `RunnableWithMessageHistory` emite un aviso de obsolescencia en la versión instalada; LangChain recomienda la persistencia de LangGraph.
-- La ventana cuenta mensajes, no tokens.
-- El borrador de compra se guarda aparte del historial de mensajes: son dos mecanismos que conviven.
+- `RunnableWithMessageHistory` emite um aviso de obsolescência na versão instalada; o LangChain recomenda a persistência do LangGraph.
+- A janela conta mensagens, não tokens.
+- O rascunho de compra é salvo à parte do histórico de mensagens: são dois mecanismos que convivem.
 
-## R28 — Integración del agente en Streamlit
+## R28 — Integração do agente no Streamlit
 
-> ¿El alumno integró el agente completo a una interfaz Streamlit?
+> O aluno integrou o agente completo a uma interface Streamlit?
 
-**Respuesta corta.** Sí. [app.py](../app.py) es una interfaz Streamlit conectada al mismo agente, la misma memoria y el mismo verificador. Se ejecutó de verdad con el modelo real: cuatro turnos de chat, nuevo chat y conversación reabierta, sin ninguna excepción.
+**Resposta curta.** Sim. [app.py](../app.py) é uma interface Streamlit conectada ao mesmo agente, à mesma memória e ao mesmo verificador. Foi executada de verdade com o modelo real: quatro turnos de chat, novo chat e conversa reaberta, sem nenhuma exceção.
 
-### 1. La interfaz
+### 1. A interface
 
-| Vista | Qué ofrece | Qué usa |
+| Vista | O que oferece | O que usa |
 |---|---|---|
-| **Chat** | Conversación con el agente | `crear_flujo`: agente, memoria, verificación y NLI |
+| **Chat** | Conversa com o agente | `criar_fluxo`: agente, memória, verificação e NLI |
 
-En la barra lateral: nuevo chat (misma base de datos, conversación nueva) y la lista de conversaciones para reabrirlas, cada una con el título de su primera pregunta.
+Na barra lateral: novo chat (mesma base de dados, conversa nova) e a lista de conversas para reabrir, cada uma com o título da sua primeira pergunta.
 
-**Qué se ve en una respuesta del chat.** La comparación de proveedores es el núcleo, así que la interfaz la dibuja con datos, no solo con texto:
+**O que se vê em uma resposta do chat.** A comparação de fornecedores é o núcleo, então a interface a desenha com dados, não só com texto:
 
-| Elemento | Qué muestra |
+| Elemento | O que mostra |
 |---|---|
-| **Pasos del agente** | «Cómo llegué a esta respuesta»: leí tu mensaje, comparé las ofertas, tomé las cifras del cálculo, verifiqué la respuesta, redacté el consejo de precio. Salen de la `Traza` del turno, en vivo |
-| **Cuatro tarjetas** | Proveedor recomendado, total, entrega y origen |
-| **Consejo o aviso de precio** | Recuadro azul si el consejo del modelo pasó la verificación; amarillo si se usó el aviso fijo |
-| **Tabla de ofertas** | Todas las ofertas, con la descartada y su motivo (stock, pedido mínimo, plazo o presupuesto) |
-| **Historial de precios** | Desplegable con mes anterior, media, mínimo y máximo |
+| **Passos do agente** | «Como cheguei a esta resposta»: li a sua mensagem, comparei as ofertas dos fornecedores, peguei os números do cálculo da ferramenta, verifiquei a resposta, redigi um conselho de preço e o verifiquei. Saem do `Rastro` do turno, ao vivo |
+| **Quatro cartões** | Fornecedor recomendado, total, entrega e origem |
+| **Conselho ou aviso de preço** | Quadro azul se o conselho do modelo passou na verificação; amarelo se foi usado o aviso fixo |
+| **Tabela de ofertas** | Todas as ofertas, com a descartada e seu motivo (estoque, pedido mínimo, prazo ou orçamento) |
+| **Histórico de preços** | Seção expansível com mês anterior, média, mínimo e máximo |
 
-![Chat con el agente](capturas/chat_agente.png)
+![Chat com o agente](capturas/chat_agente.png)
 
-Todo usa componentes nativos de Streamlit, sin CSS; los colores están en [.streamlit/config.toml](../.streamlit/config.toml), con modo claro y oscuro.
+Tudo usa componentes nativos do Streamlit, sem CSS; as cores estão em [.streamlit/config.toml](../.streamlit/config.toml), com modo claro e escuro.
 
-**Cómo llegan los datos a la pantalla.** El agente adjunta la comparación ya verificada al mensaje público (`mensaje_publico` en [agent.py](../src/pedro/agent.py), campo `additional_kwargs["partes"]`). La interfaz dibuja desde esos datos y nunca relee el texto para sacar cifras. Como viajan con el mensaje, al reabrir una conversación las tarjetas se vuelven a dibujar.
+**Como os dados chegam à tela.** O agente anexa a comparação já verificada à mensagem pública (`mensagem_publica` em [agent.py](../src/pedro/agent.py), campo `additional_kwargs["partes"]`). A interface desenha a partir desses dados e nunca relê o texto para tirar números. Como viajam com a mensagem, ao reabrir uma conversa os cartões são desenhados de novo.
 
-La interfaz es solo el chat. Las vistas de catálogo y de comparación por formulario se retiraron el 2026-11-11 porque no usaban el agente: el catálogo se consulta en el chat con la herramienta `consultar_catalogo` (R17) y la comparación se pide en el chat, con o sin modelo.
+A interface é só o chat. As vistas de catálogo e de comparação por formulário foram retiradas em 2026-11-11 porque não usavam o agente: o catálogo é consultado no chat com a ferramenta `consultar_catalogo` (R17) e a comparação é pedida no chat, com ou sem modelo.
 
-### 2. Es el mismo agente
+### 2. É o mesmo agente
 
-La interfaz no tiene lógica propia de recomendación. Llama a la misma función que usan los scripts y la evaluación:
+A interface não tem lógica própria de recomendação. Chama a mesma função que os scripts e a avaliação usam:
 
 ```python
-flujo = crear_flujo(escenario, MEMORIA, llm=llm, clasificador=clasificador, indice=indice)
-salida = flujo.invoke({"input": pregunta}, config={"configurable": {
-    "user_id": USUARIO, "session_id": st.session_state.sesion}})
+fluxo = criar_fluxo(cenario, MEMORIA, llm=llm, classificador=classificador,
+                    indice=indice, rastro=rastro)
+saida = fluxo.invoke({"input": pergunta}, config={"configurable": {
+    "user_id": USUARIO, "session_id": st.session_state.sessao}})
 ```
 
-### 3. Ejecución real de la interfaz
+### 3. Execução real da interface
 
-La app se ejecutó con `AppTest`, la herramienta de pruebas de Streamlit: corre `app.py` entero, sin navegador, y permite escribir en el chat y pulsar botones.
+O app foi executado com `AppTest`, a ferramenta de testes do Streamlit: roda `app.py` inteiro, sem navegador, e permite escrever no chat e clicar em botões.
 
-| Acción | Resultado |
+| Ação | Resultado |
 |---|---|
-| Chat: «Necesito 5 unidades de PEC-01-0001 con plazo máximo de 7 días» | Tarjetas: CentroPeças, R$ 7.279,83, 2 días, Nacional. 4 pasos del agente |
-| Chat: «Ahora que sean 6 y mantén el plazo» | Tarjetas: CentroPeças, R$ 8.718,75, 2 días, Nacional. 4 pasos |
-| Chat: «¿A qué ciudad corresponde el CEP 01001000?» | CEP 01001000: São Paulo/SP (ViaCEP, modo real). Pasos: no es una compra, consulté ViaCEP, verifiqué |
-| Chat: «¿Se puede mandar en varias cajas?» | Regla de entrega parcial, con su fuente. Paso: busqué en las políticas |
-| Botón «Nuevo chat» | Sesión distinta y pantalla vacía |
-| Reabrir la conversación anterior | Vuelven sus 8 mensajes y se redibujan las 8 tarjetas |
+| Chat: «Preciso de 5 unidades de PEC-01-0001 com prazo máximo de 7 dias» | Cartões: CentroPeças, R$ 7.279,83, 2 dias, Nacional. 4 passos do agente |
+| Chat: «Agora que sejam 6 e mantenha o prazo» | Cartões: CentroPeças, R$ 8.718,75, 2 dias, Nacional. 4 passos |
+| Chat: «A que cidade corresponde o CEP 01001000?» | CEP 01001000: São Paulo/SP (ViaCEP, modo real). 4 passos: não é uma compra, consultei o ViaCEP, peguei a cidade da resposta do ViaCEP, verifiquei |
+| Chat: «Posso receber em várias caixas?» | Regra de entrega parcial, com sua fonte (`FIC-ENT-01-S05-C01`). 1 passo: busquei nas políticas |
+| Botão «Novo chat» | Sessão diferente e tela vazia |
+| Reabrir a conversa anterior | Voltam suas 8 mensagens e os 8 cartões são redesenhados |
 
-De esa tabla sale una comprobación: **la memoria funciona en la interfaz**. El segundo turno depende del primero y la conversación se puede reabrir con sus tarjetas.
+Dessa tabela sai uma comprovação: **a memória funciona na interface**. O segundo turno depende do primeiro e a conversa pode ser reaberta com seus cartões.
 
-### 4. Funciona sin credenciales
+### 4. Funciona sem credenciais
 
-Sin `OPENAI_API_KEY` la interfaz no se rompe: lista piezas, muestra fichas, compara ofertas y responde en el chat las compras y el diagnóstico `/t24`, todo con la capa determinista. Avisa de que las políticas y el CEP necesitan el agente.
+Sem `OPENAI_API_KEY` a interface não quebra: no chat, lista peças, mostra fichas, compara ofertas e responde ao diagnóstico `/t24`, tudo com a camada determinística. Avisa que as políticas, o CEP e as perguntas abertas precisam do agente.
 
-**Decisión técnica.** Toda la lógica vive en `src/pedro/` y `app.py` solo dibuja. Por eso el mismo agente se puede probar sin interfaz, evaluar en LangSmith y usar desde Streamlit sin duplicar nada.
+**Decisão técnica.** Toda a lógica vive em `src/pedro/` e `app.py` só desenha. Por isso o mesmo agente pode ser testado sem interface, avaliado no LangSmith e usado pelo Streamlit sem duplicar nada.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| `app.py` ejecutada: cuatro turnos, nuevo chat, conversación reabierta | [trazas/r28_streamlit.json](trazas/r28_streamlit.json); [scripts/demostrar_r28.py](../scripts/demostrar_r28.py) | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
-| Interfaz ejecutable | `uv run streamlit run app.py` o `./project.sh start` | Aplicación |
-| Capturas en navegador: chat con el agente y chat sin clave | [capturas/chat_agente.png](capturas/chat_agente.png); [capturas/chat_modo_local.png](capturas/chat_modo_local.png) | **Ejecución real remota** y real local |
-| La comparación estructurada viaja con el mensaje y se conserva en el historial | [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Prueba con doble |
-| Chat sin clave de OpenAI | [evidencias.md](evidencias.md), filas R5.5 | Ejecución real local |
+| `app.py` executado: quatro turnos, novo chat, conversa reaberta | [rastros/r28_streamlit.json](rastros/r28_streamlit.json); [scripts/demonstrar_r28.py](../scripts/demonstrar_r28.py) | **Execução real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
+| Interface executável | `uv run streamlit run app.py` ou `./project.sh start` | Aplicação |
+| Capturas no navegador: chat com o agente e chat sem chave | [capturas/chat_agente.png](capturas/chat_agente.png); [capturas/chat_modo_local.png](capturas/chat_modo_local.png) | **Execução real remota** e real local |
+| A comparação estruturada viaja com a mensagem e é conservada no histórico | [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Teste com duplo |
+| Chat sem chave da OpenAI | [evidencias.md](evidencias.md), linhas R5.5 | Execução real local |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- `AppTest` comprueba el comportamiento sin navegador; el aspecto queda en dos capturas. **Falta el vídeo de demostración**, que es un entregable aparte.
-- Los pasos del agente se guardan solo durante la sesión del navegador: al reabrir una conversación antigua vuelven las tarjetas, no los pasos.
-- La interfaz usa un único usuario fijo (`usuario-demo`); no hay inicio de sesión.
-- Para que el chat use el índice de políticas guardado hay que poner `PEDRO_TRUST_POLICY_INDEX=true` en `.env`; sin eso usa el índice de demostración en memoria, con el mismo contenido.
-- La respuesta se muestra entera al final, sin transmisión progresiva, porque antes debe pasar la verificación.
+- `AppTest` confere o comportamento sem navegador; a aparência fica em duas capturas. **Falta o vídeo de demonstração**, que é um entregável à parte.
+- Os passos do agente são guardados só durante a sessão do navegador: ao reabrir uma conversa antiga voltam os cartões, não os passos.
+- A interface usa um único usuário fixo (`usuario-demo`); não há login.
+- Para o chat usar o índice de políticas salvo é preciso pôr `PEDRO_TRUST_POLICY_INDEX=true` no `.env`; sem isso ele usa o índice de demonstração em memória, com o mesmo conteúdo.
+- A resposta é mostrada inteira no final, sem transmissão progressiva, porque antes precisa passar pela verificação.
 
-## R29 — Evaluación de calidad y trayectoria con LangSmith
+## R29 — Avaliação de qualidade e trajetória com LangSmith
 
-> ¿El alumno evaluó la calidad de las respuestas y la trayectoria de llamadas de herramientas del agente con LangSmith, justificando las conclusiones a partir de las métricas obtenidas?
+> O aluno avaliou a qualidade das respostas e a trajetória de chamadas de ferramentas do agente com LangSmith, justificando as conclusões a partir das métricas obtidas?
 
-**Respuesta corta.** Sí. Se ejecutaron ocho experimentos en LangSmith sobre 30 casos, con seis métricas de calidad y de trayectoria. En el último, con la comparación de proveedores corregida, `gpt-4.1-mini` acertó el ganador y el importe en **14 de 14** recomendaciones y las 24 propuestas pasaron la verificación a la primera. En ningún experimento se publicó una recomendación equivocada. La evaluación además encontró un defecto del agente y un error en la propia forma de evaluar; los dos se corrigieron y se volvieron a medir.
+**Resposta curta.** Sim. Foram executados nove experimentos no LangSmith sobre 30 casos, com seis métricas de qualidade e de trajetória: oito com a versão anterior do projeto, em espanhol, e um com a versão atual, em português. No último, em português, `gpt-4.1-mini` acertou o vencedor e o valor em **14 de 14** recomendações, as 24 propostas passaram na verificação na primeira tentativa e a trajetória completa ficou em 26 de 30. Em nenhum experimento foi publicada uma recomendação errada. A avaliação também encontrou um defeito do agente e um erro na própria forma de avaliar; os dois foram corrigidos e medidos de novo.
 
-### 1. Qué se evalúa
+### 1. O que se avalia
 
-El agente evaluado es el mismo flujo que usa la interfaz (`crear_flujo`), con el modelo real, el verificador y el NLI. Hay dos conjuntos de casos en LangSmith, de 30 casos sintéticos cada uno, con la respuesta y las herramientas esperadas: `pedro-infnet-casos-derivados-7610315f` (los seis primeros experimentos) y `pedro-infnet-casos-derivados-9399546b` (los dos últimos, con el pedido mínimo en la regla de referencia).
+O agente avaliado é o mesmo fluxo que a interface usa (`criar_fluxo`), com o modelo real, o verificador e o NLI. Há três conjuntos de casos no LangSmith, de 30 casos sintéticos cada um, com a resposta e as ferramentas esperadas:
 
-| Grupo | Casos | Qué se espera |
+- `pedro-infnet-casos-derivados-7610315f`: os seis primeiros experimentos (versão em espanhol).
+- `pedro-infnet-casos-derivados-9399546b`: os dois seguintes, com o pedido mínimo na regra de referência (versão em espanhol).
+- `pedro-infnet-casos-derivados-efff08ab`: o experimento em português. Os casos foram regenerados em português com os mesmos produtos, quantidades, limites, fornecedores esperados e totais; só mudaram o idioma e os nomes das chaves.
+
+| Grupo | Casos | O que se espera |
 |---|---|---|
-| Recomendación | 14 | Proveedor ganador e importe exactos |
-| Sin oferta | 5 | Decir que ninguna oferta cumple |
-| Aclaración | 4 | Preguntar el dato que falta |
-| Catálogo | 3 | Listar piezas |
-| CEP | 2 | Ciudad y estado de ViaCEP |
-| Política sin índice | 2 | Decir que no hay evidencia |
+| Recomendação | 14 | Fornecedor vencedor e valor exatos |
+| Sem oferta | 5 | Dizer que nenhuma oferta atende |
+| Esclarecimento | 4 | Perguntar o dado que falta |
+| Catálogo | 3 | Listar peças |
+| CEP | 2 | Cidade e estado do ViaCEP |
+| Política sem índice | 2 | Dizer que não há evidência |
 
-| Métrica | Tipo | Qué mide |
+| Métrica | Tipo | O que mede |
 |---|---|---|
-| `ganador` | Calidad | La respuesta nombra la oferta ganadora correcta |
-| `importe` | Calidad | La respuesta da el total correcto |
-| `contenido` | Calidad | La respuesta contiene el texto esperado (casos sin recomendación) |
-| `trayectoria` | Trayectoria | Se llamó a **todas** las herramientas esperadas |
-| `herramienta_decisiva` | Trayectoria | Se llamó a la herramienta que produce la respuesta |
-| `primera_propuesta` | Trayectoria | La primera propuesta del agente pasó la verificación |
+| `vencedor` | Qualidade | A resposta nomeia a oferta vencedora correta |
+| `valor` | Qualidade | A resposta dá o total correto |
+| `conteudo` | Qualidade | A resposta contém o texto esperado (casos sem recomendação) |
+| `trajetoria` | Trajetória | Foram chamadas **todas** as ferramentas esperadas |
+| `ferramenta_decisiva` | Trajetória | Foi chamada a ferramenta que produz a resposta |
+| `primeira_proposta` | Trajetória | A primeira proposta do agente passou na verificação |
+
+Nos arquivos das execuções em espanhol as mesmas métricas aparecem com os nomes antigos: `ganador`, `importe`, `contenido`, `trayectoria`, `herramienta_decisiva` e `primera_propuesta`.
 
 ### 2. Resultados
 
-Comparación principal, los dos modelos en las mismas condiciones (memoria nueva, mismo código):
+Comparação principal, os dois modelos nas mesmas condições (memória nova, mesmo código). São execuções da versão anterior, em espanhol:
 
 | Métrica | `gpt-4.1-mini` | `gpt-4o-mini` |
 |---|---|---|
-| Ganador correcto | **14 de 14** | 13 de 14 |
-| Importe correcto | **14 de 14** | 13 de 14 |
-| Contenido | **16 de 16** | 15 de 16 |
-| Herramienta decisiva | 23 de 23 | 23 de 23 |
-| Primera propuesta aceptada | **22 de 23** | 19 de 23 |
-| Trayectoria completa | 24 de 30 | 22 de 30 |
-| Recomendaciones erróneas publicadas | 0 | 0 |
+| Vencedor correto | **14 de 14** | 13 de 14 |
+| Valor correto | **14 de 14** | 13 de 14 |
+| Conteúdo | **16 de 16** | 15 de 16 |
+| Ferramenta decisiva | 23 de 23 | 23 de 23 |
+| Primeira proposta aceita | **22 de 23** | 19 de 23 |
+| Trajetória completa | 24 de 30 | 22 de 30 |
+| Recomendações erradas publicadas | 0 | 0 |
 
-Los seis experimentos:
+Os seis primeiros experimentos (versão anterior, em espanhol):
 
-| Experimento en LangSmith | Modelo | Condición | Ganador | Contenido | Trayectoria | 1.ª propuesta |
+| Experimento no LangSmith | Modelo | Condição | Vencedor | Conteúdo | Trajetória | 1.ª proposta |
 |---|---|---|---|---|---|---|
-| `…gpt-4.1-mini-a03a26e0` | 4.1-mini | Antes de corregir el CEP | 14/14 | 15/16 | 25/30 | 21/23 |
-| `…gpt-4o-mini-70ed80d8` | 4o-mini | Antes de corregir; memoria acumulada | 10/14 | 14/16 | 15/30 | 17/23 |
-| `…gpt-4.1-mini-tras-correccion-91fc58c3` | 4.1-mini | CEP corregido; memoria acumulada (73 episodios) | 14/14 | 16/16 | 15/30 | 22/23 |
-| `…gpt-4.1-mini-memoria-limpia-0c208db1` | 4.1-mini | CEP corregido; memoria nueva | 14/14 | 16/16 | 24/30 | 22/23 |
-| `…gpt-4o-mini-memoria-limpia-035aa38a` | 4o-mini | CEP corregido; memoria nueva | 13/14 | 15/16 | 22/30 | 19/23 |
-| `…gpt-4.1-mini-version-final-c4842e8a` | 4.1-mini | **Versión final** (planificador, intérprete, anclaje de la comparación, text-to-SQL en el chat); memoria nueva | 14/14 | 16/16 | 13/30 | 24/24 |
+| `…gpt-4.1-mini-a03a26e0` | 4.1-mini | Antes de corrigir o CEP | 14/14 | 15/16 | 25/30 | 21/23 |
+| `…gpt-4o-mini-70ed80d8` | 4o-mini | Antes de corrigir; memória acumulada | 10/14 | 14/16 | 15/30 | 17/23 |
+| `…gpt-4.1-mini-tras-correccion-91fc58c3` | 4.1-mini | CEP corrigido; memória acumulada (73 episódios) | 14/14 | 16/16 | 15/30 | 22/23 |
+| `…gpt-4.1-mini-memoria-limpia-0c208db1` | 4.1-mini | CEP corrigido; memória nova | 14/14 | 16/16 | 24/30 | 22/23 |
+| `…gpt-4o-mini-memoria-limpia-035aa38a` | 4o-mini | CEP corrigido; memória nova | 13/14 | 15/16 | 22/30 | 19/23 |
+| `…gpt-4.1-mini-version-final-c4842e8a` | 4.1-mini | **Versão final** (planejador, intérprete, ancoragem da comparação, text-to-SQL no chat); memória nova | 14/14 | 16/16 | 13/30 | 24/24 |
 
-### 3. El resultado vigente: con la comparación de proveedores corregida
+### 3. O resultado vigente: com a comparação de fornecedores corrigida
 
-Los seis primeros experimentos se hicieron cuando la comparación ignoraba el **pedido mínimo** de cada proveedor. Tanto el agente como los casos de referencia tenían ese hueco, y por eso coincidían: 14 de 14 medía que el agente y la referencia estaban de acuerdo, no que la recomendación fuera buena para un comprador. **Ninguna métrica lo detectó.**
+Os seis primeiros experimentos foram feitos quando a comparação ignorava o **pedido mínimo** de cada fornecedor. Tanto o agente quanto os casos de referência tinham essa lacuna, e por isso coincidiam: 14 de 14 media que o agente e a referência estavam de acordo, não que a recomendação fosse boa para um comprador. **Nenhuma métrica detectou isso.**
 
-Al corregir la regla se regeneraron los casos con una referencia independiente del agente (SQL propio en [crear_casos_eval.py](../scripts/crear_casos_eval.py)). Cambiaron 5 de los 14 casos de recomendación: 2 de ganador y 3 pasaron a «ninguna oferta». Una prueba comprueba que el comparador del agente coincide con esa referencia en los 19 casos de compra. Con esos casos se hicieron dos experimentos. El último, `…gpt-4.1-mini-comparacion-completa-9963b9ce`, incluye además el historial y el aviso de precio, y es el resultado vigente:
+Ao corrigir a regra, os casos foram regenerados com uma referência independente do agente (SQL próprio em [criar_casos_eval.py](../scripts/criar_casos_eval.py)). Mudaram 5 dos 14 casos de recomendação: 2 de vencedor e 3 passaram a «nenhuma oferta». Um teste confere que o comparador do agente coincide com essa referência nos 19 casos de compra.
 
-| Métrica | Solo pedido mínimo (`…pedido-minimo-4e396dfb`) | Comparación completa (vigente) |
+Com esses casos foram feitos três experimentos:
+
+1. `…gpt-4.1-mini-pedido-minimo-4e396dfb` (versão em espanhol): só a regra do pedido mínimo.
+2. `…gpt-4.1-mini-comparacion-completa-9963b9ce` (versão em espanhol): inclui também o histórico e o aviso de preço.
+3. `pedro-infnet-fluxo-gpt-4.1-mini-portugues-235aa9f1` (versão em português): o projeto inteiro migrado, com os casos regenerados em português. **É o resultado vigente.**
+
+| Métrica | Só pedido mínimo (espanhol) | Comparação completa (espanhol) | Português (vigente) |
+|---|---|---|---|
+| Vencedor correto | 14 de 14 | 14 de 14 | 14 de 14 |
+| Valor correto | 14 de 14 | 14 de 14 | 14 de 14 |
+| Conteúdo | 16 de 16 | 16 de 16 | 16 de 16 |
+| Ferramenta decisiva | 23 de 23 | 23 de 23 | 23 de 23 |
+| Primeira proposta aceita | 24 de 24 | 24 de 24 | 24 de 24 |
+| Erros de verificação | 0 | 0 | 0 |
+| Trajetória completa | 16 de 30 | 23 de 30 | 26 de 30 |
+
+No experimento em português, a trajetória por grupo foi: recomendação 10 de 14; sem oferta 5 de 5; esclarecimento 4 de 4; catálogo 3 de 3; CEP 2 de 2; política sem índice 2 de 2. Os quatro casos sem trajetória completa são recomendações (`rec-02`, `rec-07`, `rec-08` e `rec-09`): o agente chamou só `comparar_ofertas`, e o vencedor e o valor estavam corretos.
+
+Ainda no experimento em português, 3 das 14 recomendações levaram um conselho de preço redigido pelo modelo e verificado, e 1 levou o aviso fixo (o registro do experimento não guarda o motivo); nas outras 10 não houve aviso. No experimento «comparação completa», em espanhol, 4 das 14 levaram o conselho verificado. A trajetória completa voltou a variar entre execuções (16, 23 e 26 de 30) sem que mudasse nada relacionado a ela: confirma que essa métrica é instável.
+
+Exemplo de um caso que mudou, «Compare 2 unidades de PEC-01-0001»: antes ganhava CentroPeças com R$ 2.963,07; agora ganha Atlantic Repair Parts com R$ 3.200,27, porque CentroPeças exige um pedido mínimo de 5 unidades.
+
+Os seis primeiros experimentos ficam como história do projeto: continuam servindo para comparar modelos e para ver o efeito do CEP e da memória, mas seus valores correspondem à regra antiga.
+
+### 4. A versão final do agente (antes de corrigir a comparação)
+
+Depois desses experimentos o agente mudou: foram adicionados o planejador de turno, o intérprete com modelo, a ancoragem da comparação e o text-to-SQL no chat. Ele foi avaliado de novo, com memória nova (execuções da versão anterior, em espanhol):
+
+| Métrica | Antes das melhorias | Versão final |
 |---|---|---|
-| Ganador correcto | 14 de 14 | 14 de 14 |
-| Importe correcto | 14 de 14 | 14 de 14 |
-| Contenido | 16 de 16 | 16 de 16 |
-| Herramienta decisiva | 23 de 23 | 23 de 23 |
-| Primera propuesta aceptada | 24 de 24 | 24 de 24 |
-| Errores de verificación | 0 | 0 |
-| Trayectoria completa | 16 de 30 | 23 de 30 |
+| Vencedor correto | 14 de 14 | 14 de 14 |
+| Valor correto | 14 de 14 | 14 de 14 |
+| Conteúdo | 16 de 16 | 16 de 16 |
+| Ferramenta decisiva | 23 de 23 | 23 de 23 |
+| Primeira proposta aceita | 22 de 23 | **24 de 24** |
+| Erros de verificação | 1 | **0** |
+| Trajetória completa | 24 de 30 | **13 de 30** |
 
-En el experimento vigente, 4 de las 14 recomendaciones llevaron un consejo de precio redactado por el modelo y verificado; en las otras 10 el precio del ganador estaba en línea con su media y no había nada que avisar. La trayectoria completa volvió a variar entre corridas (16 y 23 de 30) sin que cambiara nada relacionado con ella: confirma que esa métrica es inestable.
+Duas leituras:
 
-Ejemplo de un caso que cambió, «Compara 2 unidades de PEC-01-0001»: antes ganaba CentroPeças con R$ 2.963,07; ahora gana Atlantic Repair Parts con R$ 3.200,27, porque CentroPeças exige un pedido mínimo de 5 unidades.
+- **A qualidade se manteve e a confiabilidade subiu.** Nenhuma proposta foi rejeitada: com a ancoragem, os números da comparação já não são transcritos pelo modelo.
+- **A trajetória completa caiu, e é preciso explicar.** A referência espera `consultar_catalogo` e depois `comparar_ofertas`. Na versão final o agente chamou só `comparar_ofertas` em 17 de 19 compras: é o caminho mais curto e dá o mesmo resultado, porque essa ferramenta já devolve todas as ofertas. A métrica mede se o agente segue um caminho específico, não se o caminho é bom. Os casos estão congelados e não foram ajustados para melhorar o número.
 
-Los seis primeros experimentos se conservan como historia del proyecto: siguen sirviendo para comparar modelos y para ver el efecto del CEP y de la memoria, pero sus importes corresponden a la regla antigua.
+### 5. Conclusões, cada uma com sua métrica
 
-### 4. La versión final del agente (antes de corregir la comparación)
+**1. Mantém-se `gpt-4.1-mini`.** Ganha ou empata em todas as métricas: 14/14 contra 13/14 em vencedor e valor, e 22/23 contra 19/23 em propostas aceitas na primeira tentativa. `gpt-4o-mini` falhou quatro vezes no formato JSON (`OutputParserException`) e escolheu errado um vencedor. A comparação entre modelos é da versão em espanhol; em português só foi avaliado `gpt-4.1-mini`.
 
-Después de estos experimentos el agente cambió: se añadieron el planificador de turno, el intérprete con modelo, el anclaje de la comparación y el text-to-SQL en el chat. Se volvió a evaluar, con memoria nueva:
+**2. A verificação cumpre sua função.** Quando `gpt-4o-mini` propôs um vencedor errado, a verificação o rejeitou duas vezes e o agente respondeu, em espanhol, «No puedo confirmar…». Recomendações erradas publicadas: **0 nos nove experimentos**. Um modelo pior produz menos respostas, não respostas falsas.
 
-| Métrica | Antes de las mejoras | Versión final |
-|---|---|---|
-| Ganador correcto | 14 de 14 | 14 de 14 |
-| Importe correcto | 14 de 14 | 14 de 14 |
-| Contenido | 16 de 16 | 16 de 16 |
-| Herramienta decisiva | 23 de 23 | 23 de 23 |
-| Primera propuesta aceptada | 22 de 23 | **24 de 24** |
-| Errores de verificación | 1 | **0** |
-| Trayectoria completa | 24 de 30 | **13 de 30** |
+**3. A avaliação encontrou um defeito do agente.** No primeiro experimento falhou um caso de CEP. O rastro de verificação deu o motivo (`dataset ajeno`, `falta evidencia ViaCEP`, mensagens da versão em espanhol): o modelo copiava errado dados que o sistema já tinha. Depois da correção (`ancorar_cep`, R10), conteúdo passou de 15/16 para **16/16** e os dois casos de CEP são aceitos na primeira tentativa (de 0/2 para 2/2). Na execução em português continuam 2/2.
 
-Dos lecturas:
+**4. A avaliação encontrou um erro na forma de avaliar.** Todos os experimentos compartilhavam a mesma memória, então as lembranças de uma execução entravam no contexto da seguinte. Com 73 episódios acumulados, a trajetória de `gpt-4.1-mini` caiu de 25/30 para 15/30 — o agente deixava de consultar o catálogo — e `gpt-4o-mini` acertou só 10/14 vencedores. Com memória nova voltaram a 24/30 e 13/14. Agora cada experimento cria sua própria memória. A lição vale também para o produto: **a memória episódica muda o comportamento do agente** e é preciso vigiá-la.
 
-- **La calidad se mantuvo y la fiabilidad subió.** Ninguna propuesta fue rechazada: con el anclaje, las cifras de la comparación ya no las transcribe el modelo.
-- **La trayectoria completa bajó, y hay que explicarlo.** La referencia espera `consultar_catalogo` y después `comparar_ofertas`. En la versión final el agente llamó solo a `comparar_ofertas` en 17 de 19 compras: es el camino más corto y da el mismo resultado, porque esa herramienta ya devuelve todas las ofertas. La métrica mide que el agente siga un camino concreto, no que el camino sea bueno. Los casos están congelados y no se ajustaron para mejorar el número.
+**6. Uma métrica perfeita não garante que a regra de negócio esteja correta.** Durante seis experimentos o agente obteve 14 de 14 recomendando ofertas que o fornecedor não teria aceitado, porque a referência compartilhava o mesmo erro. A avaliação mede o acordo com a referência; a referência precisa ser revista à parte, com critério de negócio.
 
-### 5. Conclusiones, cada una con su métrica
+**5. A trajetória «completa» pede um passo que nem sempre é necessário.** A referência exige `consultar_catalogo` e depois `comparar_ofertas`. Antes das melhorias, em 6 de 19 compras o agente chamou só `comparar_ofertas`, que já devolve todas as ofertas, e a resposta foi correta; na versão final fez isso em 17 de 19; na execução em português, em 4 de 19. Por isso a ferramenta decisiva é sempre 23/23 enquanto a trajetória completa foi de 24/30 para 13/30 e, em português, 26/30. Não é uma falha de qualidade: é um atalho válido que a referência não prevê. Os casos estão congelados e não foram mudados para melhorar esse número.
 
-**1. Se mantiene `gpt-4.1-mini`.** Gana o empata en todas las métricas: 14/14 frente a 13/14 en ganador e importe, y 22/23 frente a 19/23 en propuestas aceptadas a la primera. `gpt-4o-mini` falló cuatro veces el formato JSON (`OutputParserException`) y eligió mal un ganador.
-
-**2. La verificación cumple su función.** Cuando `gpt-4o-mini` propuso un ganador equivocado, la verificación lo rechazó dos veces y el agente respondió «no puedo confirmar». Recomendaciones erróneas publicadas: **0 en los cinco experimentos**. Un modelo peor produce menos respuestas, no respuestas falsas.
-
-**3. La evaluación encontró un defecto del agente.** En el primer experimento falló un caso de CEP. La traza de verificación dio el motivo (`dataset ajeno`, `falta evidencia ViaCEP`): el modelo copiaba mal datos que el sistema ya tenía. Tras la corrección (`anclar_cep`, R10), contenido pasó de 15/16 a **16/16** y los dos casos de CEP se aceptan a la primera (de 0/2 a 2/2).
-
-**4. La evaluación encontró un error en la forma de evaluar.** Todos los experimentos compartían la misma memoria, así que los recuerdos de una corrida entraban al contexto de la siguiente. Con 73 episodios acumulados, la trayectoria de `gpt-4.1-mini` cayó de 25/30 a 15/30 —el agente dejaba de consultar el catálogo— y `gpt-4o-mini` acertó solo 10/14 ganadores. Con memoria nueva volvieron a 24/30 y 13/14. Ahora cada experimento crea su propia memoria. La lección vale también para el producto: **la memoria episódica cambia el comportamiento del agente** y hay que vigilarla.
-
-**6. Una métrica perfecta no garantiza que la regla de negocio sea correcta.** Durante seis experimentos el agente obtuvo 14 de 14 recomendando ofertas que el proveedor no habría aceptado, porque la referencia compartía el mismo error. La evaluación mide el acuerdo con la referencia; la referencia hay que revisarla aparte, con criterio de negocio.
-
-**5. La trayectoria «completa» pide un paso que no siempre hace falta.** La referencia exige `consultar_catalogo` y después `comparar_ofertas`. Antes de las mejoras, en 6 de 19 compras el agente llamó solo a `comparar_ofertas`, que ya devuelve todas las ofertas, y la respuesta fue correcta; en la versión final lo hizo en 17 de 19. Por eso la herramienta decisiva es siempre 23/23 mientras la trayectoria completa pasó de 24/30 a 13/30. No es un fallo de calidad: es un atajo válido que la referencia no contempla. Los casos están congelados y no se cambiaron.
-
-### 6. Cómo se ejecuta
+### 6. Como se executa
 
 ```bash
-uv run python evals/evaluar_flujo.py --modelo gpt-4.1-mini --salida docs/trazas/r29_resultado.json
+uv run python evals/avaliar_fluxo.py --modelo gpt-4.1-mini --saida docs/rastros/r29_resultado.json
 ```
 
-El script comprueba que el modelo responde antes de empezar, crea el conjunto de casos en LangSmith si no existe y guarda una copia local con las salidas, las herramientas y los errores de verificación de cada caso.
+O script confere se o modelo responde antes de começar, cria o conjunto de casos no LangSmith se ele não existe e salva uma cópia local com as saídas, as ferramentas e os erros de verificação de cada caso.
 
-### Evidencia
+### Evidência
 
-| Evidencia | Ubicación | Tipo |
+| Evidência | Localização | Tipo |
 |---|---|---|
-| Ocho experimentos con sus métricas y trazas | LangSmith, conjuntos `pedro-infnet-casos-derivados-7610315f` y `…-9399546b` | **Ejecución real remota** (OpenAI, ViaCEP y LangSmith) |
-| Copia local de cada experimento, caso por caso | [trazas/](trazas/): `r29_langsmith_*.json` | Registro de ejecución real |
-| Evaluadores y casos | [evaluar_flujo.py](../evals/evaluar_flujo.py); [casos_derivados.json](../evals/casos_derivados.json) | Código |
-| Los casos corresponden al catálogo y el comparador coincide con la referencia independiente en los 19 casos de compra | [tests/test_evals.py](../tests/test_evals.py) | Pruebas automáticas |
+| Nove experimentos com suas métricas e rastros | LangSmith, conjuntos `pedro-infnet-casos-derivados-7610315f`, `…-9399546b` e `…-efff08ab` | **Execução real remota** (OpenAI, ViaCEP e LangSmith) |
+| Cópia local de cada experimento, caso por caso | [rastros/](rastros/): `r29_langsmith_*.json`. O experimento em português é [r29_langsmith_gpt-4.1-mini_portugues.json](rastros/r29_langsmith_gpt-4.1-mini_portugues.json); os outros oito são da versão em espanhol | Registro de execução real |
+| Avaliadores e casos | [avaliar_fluxo.py](../evals/avaliar_fluxo.py); [casos_derivados.json](../evals/casos_derivados.json) | Código |
+| Os casos correspondem ao catálogo e o comparador coincide com a referência independente nos 19 casos de compra | [tests/test_evals.py](../tests/test_evals.py) | Testes automáticos |
 
-### Pendientes y limitaciones
+### Pendências e limitações
 
-- **Los 30 casos son derivados y sintéticos, no los casos oficiales** del enunciado.
-- **Los casos se regeneraron una vez**, al corregir la regla del pedido mínimo. No se tocaron para mejorar un número: la regla de negocio cambió y la referencia anterior era incorrecta.
-- La evaluación no cubre la preferencia de origen: el usuario de evaluación no tiene preferencias guardadas.
-- **La referencia de trayectoria quedó desfasada** respecto al agente final, que usa un camino más corto. Habría que revisarla con los casos oficiales.
-- **Una corrida por configuración.** El modelo no es determinista: antes de las mejoras, la trayectoria completa de `gpt-4.1-mini` varió entre 22 y 25 de 30 en corridas comparables. Las diferencias de uno o dos casos no son concluyentes.
-- Los evaluadores de calidad comprueban que la respuesta **contenga** un texto; no juzgan la redacción.
-- Los casos de política se evalúan sin índice: miden que el agente no invente, no la calidad del RAG.
-- El primer experimento de `gpt-4.1-mini` y el corregido difieren en dos cosas a la vez (corrección y memoria); la mejora del CEP se atribuye a la corrección porque los errores de verificación señalan esa causa.
-- En LangSmith quedan además dos experimentos que no cuentan: una primera corrida sin las métricas nuevas y una con `gpt-4.1-nano`, modelo retirado por OpenAI que devolvía error en todos los casos. Ese resultado se descartó.
+- **Os 30 casos são derivados e sintéticos, não os casos oficiais** do enunciado.
+- **Os casos foram regenerados quando a regra de negócio mudou**, ao corrigir o pedido mínimo: a referência anterior estava incorreta. Depois foram regenerados em português na migração, sem mudar produtos, quantidades, limites, fornecedores esperados nem totais. Nunca foram alterados para melhorar um número.
+- A avaliação não cobre a preferência de origem: o usuário de avaliação não tem preferências salvas.
+- **A referência de trajetória ficou defasada** em relação ao agente final, que às vezes usa um caminho mais curto. Seria preciso revisá-la com os casos oficiais.
+- **Uma execução por configuração.** O modelo não é determinístico. Antes das melhorias, a trajetória completa de `gpt-4.1-mini` foi de 25 e 24 de 30 nas duas execuções salvas comparáveis (primeiro experimento e memória nova); com a regra corrigida, foi de 16, 23 e 26 de 30. As diferenças de um ou dois casos não são conclusivas.
+- Os avaliadores de qualidade conferem se a resposta **contém** um texto; não julgam a redação.
+- Os casos de política são avaliados sem índice: medem que o agente não invente, não a qualidade do RAG.
+- O primeiro experimento de `gpt-4.1-mini` e o corrigido diferem em duas coisas ao mesmo tempo (correção e memória); a melhora do CEP é atribuída à correção porque os erros de verificação apontam essa causa.
+- No LangSmith ficam ainda dois experimentos que não contam: uma primeira execução sem as métricas novas e uma com `gpt-4.1-nano`, modelo retirado pela OpenAI que devolvia erro em todos os casos. Esse resultado foi descartado.

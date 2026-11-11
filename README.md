@@ -1,19 +1,19 @@
-# Pedro Infnet reconstruido
+# Pedro Infnet reconstruído
 
-Proyecto independiente en Python 3.13 para consultar piezas ficticias, comparar ofertas y ensayar un agente con publicación verificada. El catálogo, los proveedores, las compatibilidades, el stock y los precios son sintéticos. El generador y la base sintética se tomaron del repositorio de referencia; el paquete de aplicación se construyó en este workspace.
+Projeto independente em Python 3.13 para consultar peças fictícias, comparar ofertas e testar um agente com publicação verificada. O catálogo, os fornecedores, as compatibilidades, o estoque e os preços são sintéticos. O gerador e a base sintética vieram do repositório de referência; o pacote da aplicação foi construído neste workspace. Código, interface e documentos estão em português do Brasil; os nomes seguem o [glossário da migração](docs/glossario_migracao.md).
 
-## Reproducir
+## Reproduzir
 
 ```bash
 uv sync --python 3.13 --all-extras --locked
 uv run pytest -q
-uv run python scripts/generar_catalogo_piezas.py
-uv run python scripts/crear_notebooks.py
-uv run python scripts/ejecutar_notebooks.py
+uv run python scripts/gerar_catalogo_pecas.py
+uv run python scripts/criar_notebooks.py
+uv run python scripts/executar_notebooks.py
 uv run streamlit run app.py
 ```
 
-Para administrar la app en segundo plano:
+Para administrar o app em segundo plano:
 
 ```bash
 ./project.sh start
@@ -22,33 +22,33 @@ Para administrar la app en segundo plano:
 ./project.sh stop
 ```
 
-El puerto predeterminado es 8501; use `PEDRO_PORT=8765 ./project.sh start` para iniciarlo en otro puerto, o `PEDRO_PORT=8765 ./project.sh restart` si ya está activo. El PID y el registro se guardan en `storage/run/`.
+A porta padrão é 8501; use `PEDRO_PORT=8765 ./project.sh start` para iniciar em outra porta, ou `PEDRO_PORT=8765 ./project.sh restart` se ele já estiver ativo. O PID e o log ficam em `storage/run/`.
 
-La app inicia en http://localhost:8501. Copie .env.example a .env para el agente OpenAI y LangSmith. Sin clave funcionan el listado de piezas y la comparación de proveedores en el chat. Con OpenAI, el chat también puede consultar las políticas ficticias de demostración mediante el agente; la respuesta se etiqueta como ficticia y pasa por verificación de fuente y NLI local. En el chat basta indicar pieza y cantidad; presupuesto y plazo son filtros opcionales. Si falta la cantidad, Pedro la pregunta una vez y conserva la respuesta en la sesión. Puede decir «ahora 3 unidades» para recalcular con los límites indicados antes, o «sin presupuesto y sin plazo» para quitarlos. Las recomendaciones del agente pasan por verificación exacta y NLI local antes de mostrarse.
+O app inicia em http://localhost:8501. A interface é só o chat. Copie .env.example para .env para usar o agente OpenAI e o LangSmith. Sem chave funcionam, no chat, a listagem de peças, a comparação de fornecedores e o comando `/t24`. Com a OpenAI, o chat também consulta as políticas fictícias de demonstração por meio do agente; a resposta é rotulada como fictícia e passa por verificação de fonte e NLI local. No chat basta informar a peça e a quantidade; orçamento e prazo são filtros opcionais. Se falta a quantidade, o Pedro pergunta uma vez e guarda a resposta na sessão. Você pode dizer «agora 3 unidades» para recalcular com os limites informados antes, ou «sem orçamento e sem prazo» para tirá-los. As recomendações do agente passam por verificação exata e NLI local antes de aparecer.
 
-El primer acceso crea un escenario con dataset_id UUID, una copia de datasets/piezas_electrodomesticos.sqlite3 y un manifiesto con huella SHA-256, fecha, semilla y recuentos. Nuevo chat conserva el escenario. Reabrir una conversación restaura su dataset o avisa si falta. Los archivos de ejecución van en storage/ y no se versionan.
+O primeiro acesso cria um cenário com dataset_id UUID, uma cópia de datasets/pecas_eletrodomesticos.sqlite3 e um manifesto com impressão digital SHA-256, data, semente e contagens. «Novo chat» mantém o cenário. Reabrir uma conversa restaura o dataset dela ou avisa se ele falta. Os arquivos de execução vão para storage/ e não são versionados.
 
 ## Componentes
 
-- src/pedro/catalog.py: escenario y consultas SQLite de solo lectura.
-- src/pedro/contracts.py y business.py: contratos y comparación de proveedores en centavos. Una oferta se descarta por stock, pedido mínimo del proveedor, plazo o presupuesto; las válidas se ordenan por la preferencia de origen guardada del usuario (nacional o internacional), total, plazo y proveedor. Cada respuesta muestra todas las ofertas con su origen y el motivo de descarte. Para las ofertas válidas se añade su historial de precios (mes anterior y media de cinco meses), que informa y no cambia el orden. Si el precio de hoy se aparta de su media se añade un aviso de precio: una plantilla fija o, con el agente, un consejo redactado por el modelo y verificado con NLI (src/pedro/precios.py). Las respuestas a las 29 rúbricas están en docs/respuestas_rubricas.md.
-- src/pedro/query.py: plan Pydantic a SELECT parametrizado con traza.
-- src/pedro/memory.py: mensajes completos, ventana de 12, borradores de compra por sesión, preferencias y episodios FastEmbed por usuario.
-- src/pedro/dialogue.py: extracción de restricciones por turno y preguntas solo para datos bloqueantes.
-- src/pedro/prompts.py: PTCF y ejemplos con acciones observables.
-- src/pedro/agent.py: seis herramientas, un create_openai_tools_agent, una corrección interna y RunnableWithMessageHistory que guarda solo la respuesta pública.
-- src/pedro/verification.py y nli.py: comprobación exacta y puerta NLI triclase.
-- src/pedro/rag.py: recuperación FAISS con filtro de metadatos e inspección de manifiesto antes de permitir deserialización.
-- src/pedro/policy_demo.py y knowledge/politicas_demo/: corpus ficticio extenso e índice FAISS local construido en memoria para T15.
-- scripts/diagnosticar_t24.py: comparación reproducible de un fallo de recuperación y su reformulación.
-- notebooks/01–05: prácticas ejecutables. Los dobles se identifican explícitamente. Las comparaciones didácticas están en docs/comparaciones.md.
+- src/pedro/catalog.py: cenário e consultas SQLite de somente leitura.
+- src/pedro/contracts.py e business.py: contratos e comparação de fornecedores em centavos. Uma oferta é descartada por estoque, pedido mínimo do fornecedor, prazo ou orçamento; as válidas são ordenadas pela preferência de origem salva do usuário (nacional ou internacional), total, prazo e fornecedor. Cada resposta mostra todas as ofertas com a origem e o motivo do descarte. Para as ofertas válidas entra o histórico de preços (mês anterior e média de cinco meses), que informa e não muda a ordem. Se o preço de hoje se afasta da média, entra um aviso de preço: um texto fixo ou, com o agente, um conselho redigido pelo modelo e verificado com NLI (src/pedro/precos.py). As respostas às 29 rubricas estão em docs/respostas_rubricas.md.
+- src/pedro/query.py: plano Pydantic para SELECT parametrizado com rastro; text-to-SQL validado para perguntas abertas.
+- src/pedro/memory.py: mensagens completas, janela de 12, rascunhos de compra por sessão, preferências e episódios FastEmbed por usuário.
+- src/pedro/dialogue.py: extração de restrições por turno e perguntas só para dados bloqueantes.
+- src/pedro/prompts.py: PTCF e exemplos com ações observáveis.
+- src/pedro/agent.py: seis ferramentas, um create_openai_tools_agent, uma correção interna e RunnableWithMessageHistory que salva só a resposta pública.
+- src/pedro/verification.py e nli.py: verificação exata e porta NLI triclasse.
+- src/pedro/rag.py: recuperação FAISS com filtro de metadados e inspeção do manifesto antes de permitir a desserialização.
+- src/pedro/policy_demo.py e knowledge/politicas_demo/: corpus fictício extenso e índice FAISS local construído em memória para o T15.
+- scripts/diagnosticar_t24.py: comparação reproduzível de uma falha de recuperação e da sua reformulação.
+- notebooks/01–05: práticas executáveis. Os duplos de teste são identificados explicitamente. As comparações didáticas estão em docs/comparacoes.md.
 
-El notebook 04 demuestra T15 sin credenciales: divide tres políticas ficticias en fragmentos, crea embeddings FastEmbed, indexa con FAISS y compara búsquedas con y sin filtro por tema. Las políticas incluyen ejemplos cotejados con la SQLite sintética (SKU, compatibilidad, garantía por pieza y ofertas), fechados según la semilla `20261107`; pedidos y entregas siguen siendo hipotéticos. El chat usa este índice de demostración cuando no dispone de uno autorizado. Para el índice preexistente exigido por R22/T24 se requieren knowledge/politicas/index.faiss, index.pkl y manifest.json con origen, embedding_model, dimension, metrica, documentos y sha256 por archivo. Revise su procedencia antes de establecer PEDRO_TRUST_POLICY_INDEX=true. El docstore pickle exige confianza explícita; el índice ficticio se construye en memoria y no usa ese indicador.
+O notebook 04 demonstra o T15 sem credenciais: divide três políticas fictícias em fragmentos, cria embeddings FastEmbed, indexa com FAISS e compara buscas com e sem filtro por tema. As políticas incluem exemplos tirados da SQLite sintética (SKU, compatibilidade, garantia por peça e ofertas), datados pela semente `20261107`; pedidos e entregas continuam hipotéticos. O chat usa esse índice de demonstração quando não tem um autorizado. O índice salvo de R22/T24 fica em knowledge/politicas/ (index.faiss, index.pkl e manifest.json com origem, embedding_model, dimension, metrica, documentos e sha256 por arquivo); é um índice próprio, feito do corpus fictício com `uv run python scripts/construir_indice_politicas.py`. Revise a procedência dele antes de definir PEDRO_TRUST_POLICY_INDEX=true. O docstore pickle exige confiança explícita; o índice fictício em memória não usa essa variável.
 
-T24 tiene un fallo y una corrección observados en ese corpus ficticio. **Para probar el flujo normal en Chat**, pregunte «¿Se puede mandar en varias cajas?»; también puede repetirla en la misma conversación. La ruta de entrega del flujo llama `consultar_politicas`, reformula esa pregunta como «envío parcial», verifica el fragmento y publica una regla citada solo si NLI la respalda. La respuesta muestra `FIC-ENT-01-S05-C01` y el contraste top-4. La ruta funciona con el índice ficticio cargado en la app y evita depender de que el LLM decida usar una herramienta en cada repetición; la interfaz actual carga ese índice cuando hay `OPENAI_API_KEY`. `/t24` muestra el diagnóstico controlado sin OpenAI. Para repetir la prueba por consola y guardar el JSON: `uv run python scripts/diagnosticar_t24.py --salida storage/evidencias/t24_demo.json`. El [diagnóstico](docs/t24_recuperacion.md) documenta los resultados. Cuando exista un índice preexistente autorizado, use `--indice knowledge/politicas --confiar-indice --original '...' --reescrita '...' --fuente-esperada '...'` después de revisar su procedencia. El cargador y la app aceptan el modelo FastEmbed local conocido o un modelo OpenAI declarado en el manifiesto; para otro modelo, seleccione el embedder compatible en el script. La ejecución con el corpus ficticio no acredita R22/R23 sobre el índice exigido.
+O T24 tem uma falha e uma correção observadas nesse corpus fictício. **Para testar o fluxo normal no Chat**, pergunte «Posso receber em várias caixas?»; você pode repetir a pergunta na mesma conversa. A rota de entrega do fluxo chama `consultar_politicas`, reformula a pergunta como «envio parcial», verifica o fragmento e publica uma regra citada só se o NLI a sustenta. A resposta mostra `FIC-ENT-01-S05-C01` e o contraste do top-4. A rota funciona com o índice fictício carregado no app (o salvo, se PEDRO_TRUST_POLICY_INDEX=true, ou o de demonstração em memória) e não depende de o LLM decidir usar uma ferramenta a cada repetição; a interface carrega o índice quando há `OPENAI_API_KEY`. `/t24` mostra o diagnóstico controlado sem OpenAI. Para repetir o teste no console e salvar o JSON: `uv run python scripts/diagnosticar_t24.py --saida storage/evidencias/t24_demo.json`. O [diagnóstico](docs/t24_recuperacao.md) documenta os resultados. Para rodar sobre um índice salvo, use `--indice knowledge/politicas --confiar-indice --original '...' --reescrita '...' --fonte-esperada '...'` depois de revisar a procedência. O carregador e o app aceitam o modelo FastEmbed local conhecido ou um modelo OpenAI declarado no manifesto; para outro modelo, escolha o embedder compatível no script. R22 e R23 foram demonstradas sobre o índice próprio salvo; a atividade não entregou um índice oficial.
 
-## Evaluación y entregables
+## Avaliação e entregáveis
 
-La matriz de evidencias, cotejada con las 29 rúbricas de la guía integrada en guide/ (etiquetas R01–R29), está en docs/matriz.md y su mapa visual en [Mermaid](docs/rubricas_proyecto.mmd) y [SVG](docs/rubricas_proyecto.svg). El registro de comprobaciones está en docs/evidencias.md y el informe editable y PDF en docs/informe.md y docs/informe.pdf. Hay 30 casos derivados y congelados en evals/casos_derivados.json; no equivalen a los casos oficiales. Para evaluar el mismo flujo final con LangSmith: uv run python evals/evaluar_flujo.py. El script exige OPENAI_API_KEY y LANGSMITH_API_KEY; no publica métricas simuladas.
+A matriz de evidências, conferida com as 29 rubricas do guia integrado em guide/ (rótulos R01–R29), está em docs/matriz.md e o seu mapa visual em [Mermaid](docs/rubricas_projeto.mmd) e [SVG](docs/rubricas_projeto.svg). O registro de verificações está em docs/evidencias.md e o relatório editável e em PDF em docs/relatorio.md e docs/relatorio.pdf. Há 30 casos derivados e congelados em evals/casos_derivados.json; não equivalem aos casos oficiais. Para avaliar o mesmo fluxo final com o LangSmith: uv run python evals/avaliar_fluxo.py. O script exige OPENAI_API_KEY e LANGSMITH_API_KEY; não publica métricas simuladas.
 
-La guía integrada de fases, temas y rúbricas está en guide/Fases_Temas_Tareas_Rubricas_ComprasLab_Leyendas.pdf; el enunciado original en portugués aún no está en el workspace para el cotejo de cierre. Faltan además el índice FAISS autorizado y una ejecución documentada del chat y LangSmith remotos. La grabación con webcam, subida a Drive institucional y verificación del enlace requieren el acceso del alumno.
+O guia integrado de fases, temas e rubricas está em guide/Fases_Temas_Tareas_Rubricas_ComprasLab_Leyendas.pdf; o enunciado original em português ainda não está no workspace para a conferência de fechamento. O chat com o agente e a avaliação no LangSmith já foram executados com o modelo real e estão registrados em docs/evidencias.md, com os rastros em docs/rastros/. Falta confirmar com o professor se a atividade entrega um índice FAISS e casos oficiais. A gravação com webcam, o envio ao Drive institucional e a verificação do link exigem o acesso do aluno.

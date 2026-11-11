@@ -1,308 +1,314 @@
-# Informe técnico — Pedro, asistente de compras
+# Relatório técnico — Pedro, assistente de compras
 
-**Curso:** Agentes Cognitivos com LangChain (Infnet). **Actualizado:** 2026-11-11. **Modelo:** gpt-4.1-mini. **Pruebas automáticas:** 143, todas en verde.
+**Curso:** Agentes Cognitivos com LangChain (Infnet). **Atualizado:** 2026-11-11. **Modelo:** gpt-4.1-mini. **Testes automáticos:** 143, todos passando.
 
-Este informe explica cómo el proyecto responde a las 29 rúbricas de la guía integrada (R01–R29). Cada rúbrica tiene aquí un resumen; la respuesta completa, con sus tablas y sus límites, está en docs/respuestas_rubricas.md. Las ejecuciones con el modelo real están guardadas en docs/trazas/ y el registro de lo ejecutado, en docs/evidencias.md.
+Este relatório explica como o projeto responde às 29 rubricas do guia integrado (R01–R29). Cada rubrica tem aqui um resumo; a resposta completa, com suas tabelas e seus limites, está em docs/respostas_rubricas.md. As execuções com o modelo real estão salvas em docs/rastros/ e o registro do que foi executado, em docs/evidencias.md.
 
-## 1. Resumen
+## 1. Resumo
 
-Pedro es un asistente que ayuda a comprar repuestos de electrodomésticos: compara las ofertas de varios proveedores para una pieza y una cantidad, y recomienda una. Todos los datos son sintéticos.
+Pedro é um assistente que ajuda a comprar peças de reposição de eletrodomésticos: compara as ofertas de vários fornecedores para uma peça e uma quantidade, e recomenda uma. Todos os dados são sintéticos.
 
-- **Qué hace bien.** Compara proveedores con reglas exactas, mantiene una conversación de varios turnos, responde preguntas sobre políticas con su fuente, confirma un código postal con una API real y no publica nada sin verificarlo.
-- **Resultado medido.** En la evaluación vigente en LangSmith acierta el ganador y el importe en 14 de 14 recomendaciones y las 24 propuestas del modelo pasan la verificación a la primera.
-- **Cómo se trabajó.** Cada rúbrica tiene una ejecución guardada. Varias ejecuciones con el modelo real destaparon fallos que las pruebas no veían; se diagnosticaron, se corrigieron y se volvieron a medir, y el antes y el después se conservan.
-- **Qué queda abierto.** El vídeo de demostración, y tres supuestos que debe confirmar el profesor: el índice FAISS, los casos de evaluación y la escala de madurez.
+- **O que faz bem.** Compara fornecedores com regras exatas, mantém uma conversa de vários turnos, responde perguntas sobre políticas com a fonte, confirma um CEP com uma API real e não publica nada sem verificar.
+- **Resultado medido.** Na avaliação vigente no LangSmith, feita em português, acerta o vencedor e o valor em 14 de 14 recomendações, e as 24 propostas do modelo passam na verificação na primeira tentativa.
+- **Como se trabalhou.** Cada rubrica tem uma execução salva. Várias execuções com o modelo real revelaram falhas que os testes não viam; elas foram diagnosticadas, corrigidas e medidas de novo, e o antes e o depois estão guardados.
+- **Migração para português.** Em 2026-11-11 o projeto inteiro foi migrado do espanhol para o português (o glossário de nomes está em docs/glossario_migracao.md). As regras de negócio e os preços do catálogo não mudaram. Todas as demonstrações e a avaliação no LangSmith foram reexecutadas em português, com os mesmos números de qualidade. Só a pergunta do diagnóstico de recuperação T24 precisou ser medida de novo (ver R23).
+- **O que fica em aberto.** O vídeo de demonstração e três suposições que o professor deve confirmar: o índice FAISS, os casos de avaliação e a escala de maturidade.
 
-## 2. Problema y dominio
+## 2. Problema e domínio
 
-Un comprador necesita una pieza, en cierta cantidad, a veces con un presupuesto y un plazo. Varios proveedores la ofrecen con distinto precio, flete, stock, plazo y pedido mínimo. El asistente debe decir cuál conviene y por qué las demás no.
+Um comprador precisa de uma peça, em certa quantidade, às vezes com um orçamento e um prazo. Vários fornecedores a oferecem com preço, frete, estoque, prazo e pedido mínimo diferentes. O assistente deve dizer qual convém e por que as outras não.
 
-El catálogo es una base SQLite sintética y reproducible (semilla 20261107): 2.640 piezas, 7.920 ofertas, 7.920 compatibilidades y 47.520 precios históricos. Cada conversación trabaja sobre un escenario aislado: una copia de la base con un identificador propio y un manifiesto con su huella. El asistente solo lee: no compra ni paga.
+O catálogo é uma base SQLite sintética e reproduzível (semente 20261107): 2.640 peças, 7.920 ofertas, 7.920 compatibilidades e 47.520 preços históricos. Cada conversa trabalha sobre um cenário isolado: uma cópia da base com um identificador próprio e um manifesto com a sua impressão digital. O assistente só lê: não compra nem paga.
 
-## 3. El núcleo: comparar proveedores
+## 3. O núcleo: comparar fornecedores
 
-Todo lo demás existe para que esta comparación sea correcta y se pueda confiar en ella.
+Todo o resto existe para que esta comparação seja correta e confiável.
 
-### Reglas
+### Regras
 
-| Regla | La oferta se descarta si… |
+| Regra | A oferta é descartada se… |
 |---|---|
-| Stock | No hay unidades suficientes |
-| Pedido mínimo | El proveedor exige comprar más unidades de las pedidas |
-| Plazo | Tarda más que el plazo máximo del usuario, si lo dio |
-| Presupuesto | El total supera el presupuesto del usuario, si lo dio |
+| Estoque | Não há unidades suficientes |
+| Pedido mínimo | O fornecedor exige comprar mais unidades do que as pedidas |
+| Prazo | Demora mais que o prazo máximo do usuário, se ele informou |
+| Orçamento | O total passa do orçamento do usuário, se ele informou |
 
-El total es cantidad por precio unitario más flete, siempre en centavos enteros. Las ofertas se ordenan así: primero las que cumplen; entre ellas, las del origen que prefiere el usuario (nacional o internacional), si guardó esa preferencia; después por total, plazo y proveedor. La preferencia nunca hace ganar a una oferta que no cumple, y si respetarla cuesta más, la respuesta lo dice. Cada respuesta muestra todas las ofertas, con su origen y el motivo de descarte.
+O total é quantidade vezes preço unitário mais frete, sempre em centavos inteiros. As ofertas são ordenadas assim: primeiro as que atendem; entre elas, as da origem que o usuário prefere (nacional ou internacional), se ele salvou essa preferência; depois por total, prazo e fornecedor. A preferência nunca faz ganhar uma oferta que não atende, e se respeitá-la custa mais, a resposta diz isso. Cada resposta mostra todas as ofertas, com a origem e o motivo do descarte.
 
-### El hallazgo que cambió la comparación
+### A descoberta que mudou a comparação
 
-Durante casi todo el proyecto la comparación ignoró el pedido mínimo, aunque el dato estaba en el catálogo. El ejemplo de todas las demostraciones, 2 unidades de PEC-01-0001, recomendaba a CentroPeças por R$ 2.963,07, y ese proveedor exige 5 unidades. Hay 1.151 ofertas con stock y pedido mínimo mayor que 2. Ninguna prueba ni métrica lo detectó: la referencia de evaluación tenía el mismo hueco, así que el agente y la referencia coincidían. Se encontró al revisar qué datos del proveedor usaba la comparación. Al corregirlo cambiaron 5 de los 14 casos de recomendación de la evaluación.
+Durante quase todo o projeto a comparação ignorou o pedido mínimo, embora o dado estivesse no catálogo. O exemplo de todas as demonstrações, 2 unidades de PEC-01-0001, recomendava a CentroPeças por R$ 2.963,07, e esse fornecedor exige 5 unidades. Há 1.151 ofertas com estoque e pedido mínimo maior que 2. Nenhum teste nem métrica detectou o problema: a referência da avaliação tinha a mesma lacuna, então o agente e a referência concordavam. Ele foi encontrado ao revisar quais dados do fornecedor a comparação usava. Com a correção, mudaram 5 dos 14 casos de recomendação da avaliação. Hoje as demonstrações usam 5 unidades de PEC-01-0001: CentroPeças, R$ 7.279,83.
 
-### Historial y aviso de precio
+### Histórico e aviso de preço
 
-El catálogo guarda seis precios mensuales por oferta. Para cada oferta válida la respuesta sitúa el precio de hoy: el del mes anterior, la media de los cinco meses previos y si está en su punto más bajo o más alto. El historial informa y no decide: gana el menor total de hoy.
+O catálogo guarda seis preços mensais por oferta. Para cada oferta válida a resposta situa o preço de hoje: o do mês anterior, a média dos cinco meses anteriores e se está no ponto mais baixo ou mais alto. O histórico informa e não decide: ganha o menor total de hoje.
 
-Cuando el precio de hoy se aparta al menos un 10 % de su media, se añade un aviso. Ese aviso reúne las técnicas del curso sobre el problema central:
+Quando o preço de hoje se afasta pelo menos 10 % da sua média, é acrescentado um aviso. Esse aviso reúne as técnicas do curso sobre o problema central:
 
-| Paso | Técnica | Rúbrica |
+| Passo | Técnica | Rubrica |
 |---|---|---|
-| Señal del precio, hechos y aviso de plantilla | Funciones hardcoded | R19 |
-| Consejo redactado por el modelo | Prompt PTCF con few-shot | R11 |
-| El consejo llega como objeto validado | Output parser Pydantic | R04 |
-| Aviso y consejo se calculan en dos ramas, con plan B | RunnableParallel y with_fallbacks | R06, R09, R12 |
-| El consejo solo se publica si sus cifras salen de los hechos y el NLI lo respalda | Verificación exacta y NLI | R24 |
+| Sinal do preço, fatos e aviso fixo | Funções hardcoded | R19 |
+| Conselho redigido pelo modelo | Prompt PTCF com few-shot | R11 |
+| O conselho chega como objeto validado | Output parser Pydantic | R04 |
+| Aviso e conselho são calculados em dois ramos, com plano B | RunnableParallel e with_fallbacks | R06, R09, R12 |
+| O conselho só é publicado se os seus números saem dos fatos e o NLI o sustenta | Verificação exata e NLI | R24 |
 
-Con el modelo y el NLI reales, sobre quince piezas, pasaron la verificación 5 consejos con el primer prompt y 14 con el prompt ajustado. El modelo añadía valoraciones («una buena oportunidad») imitando un ejemplo few-shot, y el NLI las rechazaba. Es aquí, verificando texto libre, donde el modelo NLI hace un trabajo que el cálculo exacto no puede hacer.
+Com o modelo e o NLI reais, sobre quinze peças: na versão anterior em espanhol, passaram na verificação 5 conselhos com o primeiro prompt (docs/rastros/precios_consejo_llm_antes.json) e 14 com o prompt ajustado. Na reexecução em português passaram de novo 14 de 15 (docs/rastros/precos_conselho_llm.json); o que ficou de fora citava um número que não estava nos fatos. Com o primeiro prompt, o modelo acrescentava avaliações («una buena oportunidad», citação da execução em espanhol) imitando um exemplo few-shot, e o NLI as rejeitava. É aqui, ao verificar texto livre, que o modelo NLI faz um trabalho que o cálculo exato não consegue fazer.
 
-## 4. Arquitectura
+## 4. Arquitetura
 
-Un turno sigue siempre el mismo recorrido: interpretar el mensaje, decidir el camino, consultar, verificar y responder.
+Um turno segue sempre o mesmo percurso: interpretar a mensagem, decidir o caminho, consultar, verificar e responder.
 
-- **Interpretar.** Las reglas identifican la pieza, que tiene formato fijo; un intérprete con modelo decide si el mensaje es una compra y qué cambia. Si el mensaje trae varias intenciones, un planificador lo divide en peticiones.
-- **Decidir.** Lo que se reconoce sin ambigüedad va por una ruta fija (listado, ficha, aclaración). El resto va al agente.
-- **Consultar.** El agente, construido con create_openai_tools_agent y AgentExecutor, elige entre seis herramientas: tres de SQL, una de RAG, una de API y una de memoria.
-- **Verificar.** Toda propuesta pasa una verificación exacta y un modelo NLI. Antes, un paso de anclaje rellena con datos de las herramientas lo que el modelo copiaría mal.
-- **Responder.** Solo se guarda en memoria la pregunta y la respuesta publicada.
+- **Interpretar.** As regras identificam a peça, que tem formato fixo; um intérprete com modelo decide se a mensagem é uma compra e o que ela muda. Se a mensagem traz várias intenções, um planejador a divide em pedidos.
+- **Decidir.** O que é reconhecido sem ambiguidade vai por uma rota fixa (listagem, ficha, esclarecimento). O resto vai para o agente.
+- **Consultar.** O agente, construído com create_openai_tools_agent e AgentExecutor, escolhe entre seis ferramentas: três de SQL, uma de RAG, uma de API e uma de memória.
+- **Verificar.** Toda proposta passa por uma verificação exata e por um modelo NLI. Antes, um passo de ancoragem preenche com dados das ferramentas o que o modelo copiaria errado.
+- **Responder.** Só a pergunta e a resposta publicada são salvas na memória.
 
-Un principio recorre el diseño: **el modelo decide qué responder; los datos los pone el sistema.** Importes, ganador, citas, ciudad de un CEP y tablas de resultados salen siempre de las herramientas, nunca de lo que escribe el modelo.
+Um princípio atravessa o projeto: **o modelo decide o que responder; os dados quem põe é o sistema.** Valores, vencedor, citações, cidade de um CEP e tabelas de resultados saem sempre das ferramentas, nunca do que o modelo escreve.
 
-La interfaz es Streamlit (app.py) y toda la lógica vive en src/pedro/. Sin clave de OpenAI la aplicación funciona en modo degradado con las rutas fijas.
+A interface é Streamlit (app.py) e tem só o chat; toda a lógica fica em src/pedro/. Sem chave da OpenAI o chat funciona em modo degradado, com as rotas fixas e a comparação por regras.
 
-## 5. Fase 1 — Chain ejecutable y arquitectura (R01–R06)
+## 5. Fase 1 — Chain executável e arquitetura (R01–R06)
 
-| Rúbrica | Qué se hizo | Resultado principal |
+| Rubrica | O que foi feito | Resultado principal |
 |---|---|---|
-| R01 | Anatomía, tipo y madurez del agente | Agente híbrido; madurez nivel 4 demostrada |
-| R02 | Planificación y memoria aumentada | Cinco pasos observables y planificador de turno |
-| R03 | Plantillas de prompt reutilizables | Nueve ChatPromptTemplate con nombre propio |
-| R04 | Salida estructurada en JSON | Laboratorio de ocho salidas rotas |
-| R05 | invoke, batch, stream y @chain | Los tres medidos con el modelo real |
-| R06 | LCEL y justificación | Los dos estilos comparados por lo que deja ver la traza |
+| R01 | Anatomia, tipo e maturidade do agente | Agente híbrido; maturidade nível 4 demonstrada |
+| R02 | Planejamento e memória aumentada | Cinco passos observáveis e planejador de turno |
+| R03 | Modelos de prompt reutilizáveis | Nove ChatPromptTemplate com nome próprio |
+| R04 | Saída estruturada em JSON | Laboratório de oito saídas quebradas |
+| R05 | invoke, batch, stream e @chain | Os três medidos com o modelo real |
+| R06 | LCEL e justificativa | Os dois estilos comparados pelo que o rastro deixa ver |
 
-### R01 — Anatomía, tipo y madurez
+### R01 — Anatomia, tipo e maturidade
 
-La anatomía se lee de los objetos reales del agente, no se escribe a mano: modelo, ejecutor, prompt PTCF, seis herramientas, memoria, base de conocimiento y puerta de publicación. Pedro es un agente **híbrido**: una capa reactiva de reglas resuelve lo que no debe quedar a criterio del modelo, y una capa deliberativa elige herramientas, mantiene estado y revisa su propuesta. La madurez se sitúa en el nivel 4 de una escala genérica de cinco (agente con memoria y autoverificación) y está demostrada con mediciones. No se busca el nivel 5: el problema no requiere varios agentes ni ejecutar compras. La escala es un supuesto declarado, porque la de la primera clase no está disponible.
+A anatomia é lida dos objetos reais do agente, não é escrita à mão: modelo, executor, prompt PTCF, seis ferramentas, memória, base de conhecimento e porta de publicação. Pedro é um agente **híbrido**: uma camada reativa de regras resolve o que não deve ficar a critério do modelo, e uma camada deliberativa escolhe ferramentas, mantém estado e revisa a sua proposta. A maturidade fica no nível 4 de uma escala genérica de cinco (agente com memória e autoverificação) e está demonstrada com medições. Não se busca o nível 5: o problema não exige vários agentes nem executar compras. A escala é uma suposição declarada, porque a da primeira aula não está disponível.
 
-### R02 — Planificación y memoria aumentada
+### R02 — Planejamento e memória aumentada
 
-Una solicitud se divide en cinco pasos con salida observable: extraer, consultar, comparar, verificar y publicar. Un mensaje con varias intenciones pasa antes por un planificador de turno: el modelo escribe un plan con una petición por intención, el plan se valida (no puede añadir datos que el usuario no escribió) y cada petición se resuelve y verifica por separado. Con el modelo real, un mensaje que mezclaba compra, política y CEP produjo tres peticiones, las tres publicadas; antes del planificador no se publicaba nada. La memoria se reparte en dos niveles: la sesión guarda lo que solo sirve para la compra en curso y el usuario guarda lo que debe sobrevivir. Precios y stock no son memoria: siempre se releen.
+Uma solicitação é dividida em cinco passos com saída observável: extrair, consultar, comparar, verificar e publicar. Uma mensagem com várias intenções passa antes por um planejador de turno: o modelo escreve um plano com um pedido por intenção, o plano é validado (não pode acrescentar dados que o usuário não escreveu) e cada pedido é resolvido e verificado separadamente. Com o modelo real, uma mensagem que misturava compra, política e CEP gerou três pedidos, os três publicados (docs/rastros/r02_planejamento_llm.json). Antes do planejador, na versão anterior em espanhol, nada era publicado (docs/rastros/r02_planificacion_llm_sin_plan.json). A memória é dividida em dois níveis: a sessão guarda o que só serve para a compra em andamento e o usuário guarda o que deve sobreviver. Preços e estoque não são memória: são sempre relidos.
 
-### R03 — Plantillas de prompt reutilizables
+### R03 — Modelos de prompt reutilizáveis
 
-Las plantillas están reunidas en src/pedro/prompts.py, todas ChatPromptTemplate: extracción (en tres variantes), reparación, text-to-SQL, planificador, intérprete, consejo de precio y agente. La de extracción se reutiliza en la cadena declarativa y en la imperativa, y se ejecutó con el modelo real sobre tres solicitudes del dominio. Se eligió ChatPromptTemplate porque separa las reglas (mensaje de sistema) de lo que escribe el usuario (mensaje humano).
+Os modelos de prompt estão reunidos em src/pedro/prompts.py, todos ChatPromptTemplate: extração (em três variantes), reparo, text-to-SQL, planejador, intérprete, conselho de preço e agente. O de extração é reutilizado na cadeia declarativa e na imperativa, e foi executado com o modelo real sobre três solicitações do domínio. Escolheu-se ChatPromptTemplate porque separa as regras (mensagem de sistema) do que o usuário escreve (mensagem humana).
 
-### R04 — Salida estructurada en JSON
+### R04 — Saída estruturada em JSON
 
-La cadena convierte una solicitud en un objeto validado con Pydantic. Para probar su robustez se construyó un laboratorio con ocho salidas típicas de un modelo; cada defecto lo resuelve una capa distinta: el parser (cercas de markdown), una segunda cadena que repara (JSON cortado, tipos incorrectos, texto libre) o una regla de dominio (los faltantes los calcula el código). Con el modelo real como reparador, las cinco reparaciones devolvieron los datos correctos. El laboratorio reveló que el parser acepta JSON truncado y pierde un dato sin avisar; la cadena robusta lo comprueba. También se ejecutó with_structured_output, con resultado idéntico; se mantiene el parser porque deja ver y reparar la salida cruda.
+A cadeia converte uma solicitação em um objeto validado com Pydantic. Para testar a robustez foi construído um laboratório com oito saídas típicas de um modelo; cada defeito é resolvido por uma camada diferente: o parser (cercas de markdown), uma segunda cadeia que repara (JSON truncado, tipos incorretos, texto livre) ou uma regra de domínio (os faltantes são calculados pelo código). Com o modelo real como reparador, os cinco reparos devolveram os dados corretos. O laboratório revelou que o parser aceita JSON truncado e perde um dado sem avisar; a cadeia robusta confere isso. Também foi executado with_structured_output: deu o mesmo resultado que o parser em 2 das 3 solicitações; na terceira, sem ID de peça, classificou a intenção e os faltantes de outro jeito. Mantém-se o parser porque deixa ver e reparar a saída bruta.
 
-### R05 — Runnable y composición imperativa
+### R05 — Runnable e composição imperativa
 
-Con el modelo real: invoke produce un objeto validado; batch procesó tres solicitudes en 1,43 s frente a 4,55 s de tres invoke en serie; stream entregó 19 estados parciales, el primero a los 0,45 s. Lo aprendido: stream solo transmite si todos los pasos saben transmitir, y con el parser Pydantic llega un único fragmento. La composición imperativa usa @chain en dos cadenas; una repite con try/except la reparación de R04 y da el mismo resultado en el laboratorio. Son mediciones únicas, no un benchmark.
+Com o modelo real: invoke produz um objeto validado; batch processou três solicitações em 1,47 s, contra 4,83 s de três invoke em série; stream entregou 20 estados parciais, o primeiro aos 0,59 s. O que se aprendeu: stream só transmite se todos os passos sabem transmitir, e com o parser Pydantic chega um único fragmento. A composição imperativa usa @chain em duas cadeias; uma repete com try/except o reparo de R04 e dá o mesmo resultado no laboratório. São medições únicas, não um benchmark.
 
-### R06 — Composición declarativa y elección
+### R06 — Composição declarativa e escolha
 
-Hay cuatro cadenas LCEL (secuencia, fallback, stream parcial y paralelo). La cadena con reparación existe en los dos estilos y da el mismo resultado; lo que cambia es lo observable: en la versión declarativa la traza registra 16 pasos cuando hay reparación, incluido el error, y en la imperativa 9, sin el error. Decisión: LCEL para lo que es una tubería, e imperativo para decidir el camino de cada turno, que tiene ramas y salidas anticipadas.
+Há quatro cadeias LCEL (sequência, fallback, stream parcial e paralelo). A cadeia com reparo existe nos dois estilos e dá o mesmo resultado; o que muda é o que se observa: na versão declarativa o rastro registra 16 passos quando há reparo, incluído o erro, e na imperativa 9, sem o erro. Decisão: LCEL para o que é um encadeamento, e imperativo para decidir o caminho de cada turno, que tem ramos e saídas antecipadas.
 
-## 6. Fase 2 — Agente con herramientas y ReAct (R07–R12)
+## 6. Fase 2 — Agente com ferramentas e ReAct (R07–R12)
 
-| Rúbrica | Qué se hizo | Resultado principal |
+| Rubrica | O que foi feito | Resultado principal |
 |---|---|---|
-| R07 | Comparación de orquestadores | Seis comparados; LangChain y LangGraph ejecutados |
-| R08 | ReAct con initialize_agent | Responde bien con memoria y falla sin ella |
-| R09 | Chains y RouterChain | Router por reglas 2 de 7; router LLM 6 de 7 |
-| R10 | API externa por function calling | ViaCEP real en tres casos |
-| R11 | PTCF, few-shot y chain-of-thought | Zero-shot 6 de 10; few-shot 10 de 10 |
-| R12 | Componentes de confiabilidad | Los cuatro, con caso normal y de error |
+| R07 | Comparação de orquestradores | Seis comparados; LangChain e LangGraph executados |
+| R08 | ReAct com initialize_agent | Responde bem com memória e falha sem ela |
+| R09 | Chains e RouterChain | Router por regras 2 de 7; router LLM 6 de 7 |
+| R10 | API externa por function calling | ViaCEP real em três casos |
+| R11 | PTCF, few-shot e chain-of-thought | Zero-shot 6 de 10; few-shot 10 de 10 |
+| R12 | Componentes de confiabilidade | Os quatro, com caso normal e de erro |
 
-### R07 — Orquestadores
+### R07 — Orquestradores
 
-Se comparan LangChain, LangGraph, LlamaIndex, AutoGen, Semantic Kernel y Langflow por autonomía, abstracción y modularidad. El mismo agente pequeño se ejecutó en LangChain y en LangGraph: dieron las mismas respuestas, pero LangGraph guardó en su estado el resultado de una herramienta y no la volvió a llamar. Para Pedro, donde precios y stock deben releerse, esa diferencia importa. LangChain se mantiene porque el proyecto usa 13 tipos de componentes suyos y porque la rúbrica nombra sus APIs. Tres de ellas están marcadas como obsoletas; la migración natural sería a LangGraph. Los otros cuatro orquestadores se comparan de forma conceptual.
+São comparados LangChain, LangGraph, LlamaIndex, AutoGen, Semantic Kernel e Langflow por autonomia, abstração e modularidade. O mesmo agente pequeno foi executado no LangChain e no LangGraph: deram as mesmas respostas, mas o LangGraph guardou no seu estado o resultado de uma ferramenta e não a chamou de novo. Para o Pedro, em que preços e estoque devem ser relidos, essa diferença importa. O LangChain é mantido porque o projeto usa 13 tipos de componentes dele e porque a rubrica cita as suas APIs. Três delas estão marcadas como obsoletas; a migração natural seria para o LangGraph. Os outros quatro orquestradores são comparados de forma conceitual.
 
 ### R08 — ReAct
 
-Un agente con initialize_agent y ZERO_SHOT_REACT_DESCRIPTION, dos herramientas y ConversationBufferMemory se ejecutó con el modelo real y dejó escrito su ciclo de pensamiento, acción y observación. Lo aprendido: el prompt zero-shot original no lee la memoria. Con el historial dentro del prompt resolvió una pregunta de seguimiento (CentroPeças, 2 días); sin él, pidió de nuevo la pieza.
+Um agente com initialize_agent e ZERO_SHOT_REACT_DESCRIPTION, duas ferramentas e ConversationBufferMemory foi executado com o modelo real e deixou escrito o seu ciclo de pensamento, ação e observação. O que se aprendeu: o prompt zero-shot original não lê a memória. Com o histórico dentro do prompt resolveu uma pergunta de continuação (CentroPeças, 2 dias); sem ele, pediu de novo a peça.
 
-### R09 — Chains y routing
+### R09 — Chains e routing
 
-Hay cadenas secuenciales y una paralela, y dos routers sobre RouterChain. En siete preguntas, el router por reglas acertó 2 rutas y el decidido por el modelo, 6. Las preguntas se eligieron para poner a prueba las reglas. El chat no usa ninguno como puerta de entrada: el agente ya enruta al elegir herramienta.
+Há cadeias sequenciais e uma paralela, e dois routers sobre RouterChain. Em sete perguntas, o router por regras acertou 2 rotas e o decidido pelo modelo, 6. As perguntas foram escolhidas para pôr as regras à prova. O chat não usa nenhum deles como porta de entrada: o agente já roteia ao escolher a ferramenta.
 
 ### R10 — API externa
 
-El agente llama a ViaCEP, una API pública real, por function calling. Están guardados el esquema que recibe el modelo, los argumentos que envía, la respuesta de la API y lo publicado, en tres casos: válido (São Paulo/SP), inexistente e inválido. La primera ejecución no publicó la ciudad porque el modelo copiaba mal un identificador; ahora la respuesta se rellena con lo que devolvió la herramienta.
+O agente chama o ViaCEP, uma API pública real, por function calling. Estão salvos o esquema que o modelo recebe, os argumentos que ele envia, a resposta da API e o que foi publicado, em três casos: válido (São Paulo/SP), inexistente e inválido. A primeira execução, na versão anterior em espanhol, não publicou a cidade porque o modelo copiava errado um identificador (docs/rastros/r10_viacep_llm_antes.json); agora a resposta é preenchida com o que a ferramenta devolveu.
 
 ### R11 — Prompts
 
-El prompt del agente sigue PTCF (Persona, Tarea, Contexto, Formato) y lleva ejemplos few-shot. Se midieron tres técnicas en diez solicitudes difíciles: sin ejemplos 6 aciertos, con few-shot 10 y con few-shot y chain-of-thought 10. El razonamiento se escribe en un campo antes que los datos, de modo que es observable. En el agente, el pensamiento paso a paso son sus llamadas a herramientas, que quedan registradas. El aviso de precio añadió otra lección: el modelo imita el estilo del ejemplo, no solo su formato.
+O prompt do agente segue PTCF (Persona, Tarefa, Contexto, Formato) e leva exemplos few-shot. Foram medidas três técnicas em dez solicitações difíceis: sem exemplos 6 acertos, com few-shot 10 e com few-shot e chain-of-thought 10. O raciocínio é escrito em um campo antes dos dados, de modo que é observável. No agente, o pensamento passo a passo são as suas chamadas de ferramentas, que ficam registradas. O aviso de preço trouxe outra lição: o modelo imita o estilo do exemplo, não só o formato.
 
-### R12 — Confiabilidad
+### R12 — Confiabilidade
 
-Los cuatro componentes tienen un caso normal y uno de error: parser con reparación, memoria que guarda solo lo publicado, búsqueda FAISS con filtro y un callback que registra cada herramienta y cada verificación. Ese registro es lo que permitió encontrar los fallos del agente con el modelo real.
+Os quatro componentes têm um caso normal e um de erro: parser com reparo, memória que guarda só o que foi publicado, busca FAISS com filtro e um callback que registra cada ferramenta e cada verificação. Esse registro é o que permitiu encontrar as falhas do agente com o modelo real.
 
-## 7. Fase 3 — Chatbot con memoria (R13–R18)
+## 7. Fase 3 — Chatbot com memória (R13–R18)
 
-| Rúbrica | Qué se hizo | Resultado principal |
+| Rubrica | O que foi feito | Resultado principal |
 |---|---|---|
-| R13 | Memorias según CoALA | Las cuatro, con su contenido tras una conversación real |
-| R14 | Ventana y búsqueda vectorial | Ventana de 12 sobre 16 mensajes; tres recuerdos recuperados |
-| R15 | Herramientas de memoria | LangMem ejecutado frente a la memoria propia |
-| R16 | ConversationBufferMemory | Chatbot de cuatro turnos que recuerda todo |
-| R17 | Intención y entidades | Reglas solas 8 de 14; reglas y modelo 14 de 14 |
-| R18 | Conversación real multi-turno | Ocho turnos con el estado correcto |
+| R13 | Memórias segundo CoALA | As quatro, com o seu conteúdo após uma conversa real |
+| R14 | Janela e busca vetorial | Janela de 12 sobre 16 mensagens; três lembranças recuperadas |
+| R15 | Ferramentas de memória | LangMem executado frente à memória própria |
+| R16 | ConversationBufferMemory | Chatbot de quatro turnos que lembra tudo |
+| R17 | Intenção e entidades | Regras sozinhas 8 de 14; regras e modelo 14 de 14 |
+| R18 | Conversa real multi-turno | Oito turnos com o estado correto |
 
-### R13 — Memorias
+### R13 — Memórias
 
-Pedro tiene las cuatro memorias de CoALA: de trabajo (mensaje, borrador de compra y ventana, por sesión), episódica (comparaciones pasadas con vector, por usuario), semántica (preferencias, catálogo y políticas) y procedimental (prompt y reglas). Una preferencia es un hecho y se aplica: ordena las ofertas de cada comparación. Un episodio es un suceso y solo se recuerda, porque sus datos pueden haber caducado.
+Pedro tem as quatro memórias de CoALA: de trabalho (mensagem, rascunho de compra e janela, por sessão), episódica (comparações passadas com vetor, por usuário), semântica (preferências, catálogo e políticas) e procedimental (prompt e regras). Uma preferência é um fato e é aplicada: ordena as ofertas de cada comparação. Um episódio é um acontecimento e só é lembrado, porque os seus dados podem ter vencido.
 
-### R14 — Ventana de contexto
+### R14 — Janela de contexto
 
-El agente recibe una ventana deslizante de los últimos 12 mensajes más los tres episodios más parecidos a la pregunta. Tras una conversación real había 16 mensajes guardados y 12 en la ventana; en una sesión nueva se recuperaron tres episodios (similitud entre 0,21 y 0,35) y ninguno para otro usuario. Se eligió ventana y no resumen porque la ventana no puede alterar una cifra.
+O agente recebe uma janela deslizante das últimas 12 mensagens mais os três episódios mais parecidos com a pergunta. Depois de uma conversa real havia 16 mensagens salvas e 12 na janela; em uma sessão nova foram recuperados três episódios (similaridade entre 0,22 e 0,27) e nenhum para outro usuário. Escolheu-se janela e não resumo porque a janela não pode alterar um número.
 
-### R15 — Herramientas de memoria
+### R15 — Ferramentas de memória
 
-Se comparan Mem0, Letta/MemGPT y LangMem con la memoria propia. LangMem se ejecutó con la misma conversación: las dos guardaron la preferencia y aislaron por usuario. LangMem deja que el modelo decida qué recordar y supo responder qué recordaba; su agente, sin verificación, dio una respuesta contradictoria sobre el stock. Se mantiene la memoria propia porque lo que entra debe ser comprobable. Mem0 y Letta se comparan de forma conceptual.
+São comparados Mem0, Letta/MemGPT e LangMem com a memória própria. O LangMem foi executado com a mesma conversa: as duas salvaram a preferência e isolaram por usuário. O LangMem deixa o modelo decidir o que lembrar e soube responder o que lembrava; o agente dele, sem verificação, deu uma resposta contraditória sobre estoque e prazo. Mantém-se a memória própria porque o que entra deve poder ser conferido. Mem0 e Letta são comparados de forma conceitual.
 
-### R16 — Chatbot con buffer
+### R16 — Chatbot com buffer
 
-Un chatbot con ConversationChain y ConversationBufferMemory recordó en cuatro turnos el nombre, la cantidad, el presupuesto y el plazo. La memoria creció de 240 a 885 caracteres: el buffer no tiene límite, y por eso el agente final usa la ventana.
+Um chatbot com ConversationChain e ConversationBufferMemory lembrou em quatro turnos o nome, a quantidade, o orçamento e o prazo. A memória cresceu de 313 para 954 caracteres: o buffer não tem limite, e por isso o agente final usa a janela.
 
-### R17 — Intención y entidades
+### R17 — Intenção e entidades
 
-El chat reconoce seis intenciones y cinco entidades. Las reglas identifican la pieza y un intérprete few-shot decide si el mensaje es una compra y qué cambia. En catorce mensajes difíciles, las reglas solas acertaron 8 y con el modelo 14: entiende «súbelo a media docena», «olvida el plazo» o «duplica la cantidad». Cuando falta la pieza o la cantidad, pregunta en vez de inventar.
+O chat reconhece seis intenções e cinco entidades. As regras identificam a peça e um intérprete few-shot decide se a mensagem é uma compra e o que ela muda. Em catorze mensagens difíceis, as regras sozinhas acertaram 8 e com o modelo 14: ele entende «Suba para meia dúzia», «Esqueça o prazo» ou «Dobre a quantidade». Quando falta a peça ou a quantidade, pergunta em vez de inventar.
 
-### R18 — Conversación real
+### R18 — Conversa real
 
-En ocho turnos con el modelo real el agente descartó una compra de 2 unidades por pedido mínimo, la recalculó con 5 conservando el plazo, cambió el plazo por un presupuesto, guardó una preferencia, respondió un CEP y una política sin tocar la compra, volvió a comparar con el estado correcto y aplicó la preferencia a otra pieza, donde el proveedor nacional ganó costando más. La primera versión de esta conversación falló en tres turnos; las dos trazas se conservan.
+Em oito turnos com o modelo real o agente descartou uma compra de 2 unidades por pedido mínimo, recalculou com 5 mantendo o prazo, trocou o prazo por um orçamento, salvou uma preferência, respondeu um CEP e uma política sem mexer na compra, voltou a comparar com o estado correto e aplicou a preferência a outra peça, em que o fornecedor nacional ganhou custando mais. A primeira versão desta conversa, na versão anterior em espanhol, falhou em três turnos (docs/rastros/fase3_memoria_llm_antes.json); os dois rastros estão guardados.
 
-## 8. Fase 4 — SQL, APIs y RAG (R19–R23)
+## 8. Fase 4 — SQL, APIs e RAG (R19–R23)
 
-| Rúbrica | Qué se hizo | Resultado principal |
+| Rubrica | O que foi feito | Resultado principal |
 |---|---|---|
-| R19 | Herramientas hardcoded y semánticas | Seis herramientas catalogadas |
-| R20 | APIs por tipo de uso | Tres externas y cuatro internas |
-| R21 | Text-to-query | 5 de 5 preguntas; 7 de 7 consultas hostiles rechazadas |
-| R22 | Índice FAISS existente | El agente lo carga, no lo construye |
-| R23 | Fallo de recuperación | Diagnosticado y corregido, con antes y después |
+| R19 | Ferramentas hardcoded e semânticas | Seis ferramentas catalogadas |
+| R20 | APIs por tipo de uso | Três externas e quatro internas |
+| R21 | Text-to-query | 5 de 5 perguntas; 7 de 7 consultas hostis rejeitadas |
+| R22 | Índice FAISS existente | O agente o carrega, não o constrói |
+| R23 | Falha de recuperação | Diagnosticada e corrigida, com antes e depois |
 
-### R19 — Herramientas
+### R19 — Ferramentas
 
-Seis herramientas: cuatro de lógica fija, una semántica (políticas) y una mixta (catálogo). La regla de reparto: todo lo que es un número o una regla lo hace código fijo; lo semántico busca por significado y nunca decide un importe.
+Seis ferramentas: quatro de lógica fixa, uma semântica (políticas) e uma mista (catálogo). A regra de divisão: tudo o que é um número ou uma regra é feito por código fixo; o semântico busca por significado e nunca decide um valor.
 
 ### R20 — APIs
 
-Tres externas (ViaCEP para confirmar el destino, OpenAI como motor y LangSmith para evaluar) y cuatro internas (catálogo en solo lectura, políticas en FAISS, memoria aislada y verificación). El tipo de uso fija la integración: lo que lee es de solo lectura, lo que llama a un tercero tiene límite de tiempo y estados de error, y la verificación queda fuera del alcance del modelo. Ninguna API compra ni modifica el catálogo.
+Três externas (ViaCEP para confirmar o destino, OpenAI como motor e LangSmith para avaliar) e quatro internas (catálogo em somente leitura, políticas em FAISS, memória isolada e verificação). O tipo de uso define a integração: o que lê é somente leitura, o que chama um terceiro tem limite de tempo e estados de erro, e a verificação fica fora do alcance do modelo. Nenhuma API compra nem modifica o catálogo.
 
 ### R21 — Text-to-query
 
-La herramienta de catálogo tiene dos modos. Con un ID de pieza usa plantillas fijas. Para preguntas abiertas hay un text-to-SQL completo: el modelo escribe un SELECT y el motor decide si lo ejecuta. Tres barreras: la forma (una sola sentencia SELECT), el autorizador de SQLite (solo las tablas y columnas de una lista) y los límites (solo lectura, 50 filas). Con el modelo real respondió bien 5 de 5 preguntas, y 3 de 5 antes de mejorar el prompt: dos consultas eran válidas pero estaban mal planteadas. Válida no significa correcta, y por eso el chat muestra siempre la consulta ejecutada. La tabla de resultados la arma el sistema.
+A ferramenta de catálogo tem dois modos. Com um ID de peça usa modelos fixos de consulta. Para perguntas abertas há um text-to-SQL completo: o modelo escreve um SELECT e o motor decide se o executa. Três barreiras: a forma (uma única instrução SELECT), o autorizador do SQLite (só as tabelas e colunas de uma lista) e os limites (somente leitura, 50 linhas). Com o modelo real respondeu bem 5 de 5 perguntas. Na versão anterior em espanhol, antes de melhorar o prompt, eram 3 de 5 (docs/rastros/fase4_sql_llm_antes.json): duas consultas eram válidas, mas estavam mal formuladas. Válida não significa correta, e por isso o chat mostra sempre a consulta executada. A tabela de resultados é montada pelo sistema.
 
 ### R22 — Índice FAISS existente
 
-El índice se construye una vez, fuera del agente, y se guarda con un manifiesto. El agente solo lo carga, en 0,03 s. Como su almacén es un archivo pickle, la carga exige un manifiesto completo, huellas que coincidan y confianza explícita; se probó que rechaza un archivo alterado. El índice es propio: la actividad no entregó ninguno.
+O índice é construído uma vez, fora do agente, e salvo com um manifesto. O agente só o carrega, em 0,03 s. Como o seu armazenamento é um arquivo pickle, a carga exige um manifesto completo, impressões digitais que coincidam e confiança explícita; foi testado que ele rejeita um arquivo alterado. O índice é próprio: a atividade não entregou nenhum.
 
-### R23 — Fallo de recuperación
+### R23 — Falha de recuperação
 
-La pregunta «¿Se puede mandar en varias cajas?» no recuperaba la regla correcta, que está en el corpus. Diagnóstico: desajuste de vocabulario; el usuario dice «varias cajas» y la política dice «entrega parcial». Corrección: reformular la consulta con el término del dominio. Con el mismo índice y los mismos cuatro resultados, el fragmento pasó de no aparecer a la primera posición.
+A pergunta «Posso receber em várias caixas?» não recuperava a regra correta, que está no corpus. Diagnóstico: desajuste de vocabulário; o usuário diz «várias caixas» e a política diz «entrega parcial». Correção: reformular a consulta com o termo do domínio. Com o mesmo índice e os mesmos quatro resultados, o fragmento FIC-ENT-01-S05-C01 passou de não aparecer para a primeira posição (docs/rastros/r23_t24_indice_existente.json).
 
-## 9. Fase 5 — Agente final verificado y evaluado (R24–R29)
+Esta pergunta foi medida de novo na migração. A tradução literal da pergunta espanhola, «Pode mandar em várias caixas?», deixou de falhar no corpus em português: o fragmento esperado ficou na posição 4 de 4. Foram medidas oito formulações naturais e escolhida uma que falha de verdade.
 
-| Rúbrica | Qué se hizo | Resultado principal |
+## 9. Fase 5 — Agente final verificado e avaliado (R24–R29)
+
+| Rubrica | O que foi feito | Resultado principal |
 |---|---|---|
-| R24 | Verificación factual y lógica | Ninguna recomendación contraria a la regla publicada |
-| R25 | Agente único | SQL, RAG y API bajo el mismo ejecutor |
-| R26 | create_openai_tools_agent y AgentExecutor | Ejecutado en conversación, evaluación e interfaz |
-| R27 | RunnableWithMessageHistory | Solo se guarda lo publicado |
-| R28 | Streamlit | La app ejecutada con el agente real |
-| R29 | LangSmith | Ocho experimentos con seis métricas |
+| R24 | Verificação factual e lógica | Nenhuma recomendação contrária à regra publicada |
+| R25 | Agente único | SQL, RAG e API sob o mesmo executor |
+| R26 | create_openai_tools_agent e AgentExecutor | Executado em conversa, avaliação e interface |
+| R27 | RunnableWithMessageHistory | Só se salva o que foi publicado |
+| R28 | Streamlit | O app executado com o agente real |
+| R29 | LangSmith | Nove experimentos com seis métricas |
 
-### R24 — Verificación
+### R24 — Verificação
 
-Ninguna respuesta se muestra sin pasar dos puertas dentro del flujo. La verificación exacta recalcula la respuesta con los datos del escenario: total, stock, pedido mínimo, presupuesto, plazo, ganador, identificadores y procedencia. El modelo NLI clasifica la relación entre evidencia y afirmación en tres clases, y solo entailment permite publicar. Un paso previo de anclaje rellena con datos de las herramientas las citas, el CEP, las preferencias, las cifras de la comparación y las tablas del catálogo. Si la verificación falla hay una corrección; si vuelve a fallar, no se publica. Límite importante: la verificación comprueba contra la regla de negocio, no la regla; mientras la comparación ignoró el pedido mínimo, aprobó recomendaciones que un proveedor no aceptaría.
+Nenhuma resposta é mostrada sem passar por duas portas dentro do fluxo. A verificação exata recalcula a resposta com os dados do cenário: total, estoque, pedido mínimo, orçamento, prazo, vencedor, identificadores e procedência. O modelo NLI classifica a relação entre evidência e afirmação em três classes, e só entailment permite publicar. Um passo anterior de ancoragem preenche com dados das ferramentas as citações, o CEP, as preferências, os números da comparação e as tabelas do catálogo. Se a verificação falha há uma correção; se falha de novo, não se publica. Limite importante: a verificação confere contra a regra de negócio, não confere a regra; enquanto a comparação ignorou o pedido mínimo, aprovou recomendações que um fornecedor não aceitaria.
 
-### R25 y R26 — Agente único y ejecutor
+### R25 e R26 — Agente único e executor
 
-Un solo agente, construido con create_openai_tools_agent y AgentExecutor (seis iteraciones como máximo), reúne herramientas de SQL, RAG y API. En la conversación de ocho turnos usó las tres categorías con el mismo ejecutor, la misma memoria y el mismo verificador.
+Um único agente, construído com create_openai_tools_agent e AgentExecutor (seis iterações no máximo), reúne ferramentas de SQL, RAG e API. Na conversa de oito turnos usou as três categorias com o mesmo executor, a mesma memória e o mesmo verificador.
 
-### R27 — Historial
+### R27 — Histórico
 
-El agente está envuelto en RunnableWithMessageHistory, con el historial en SQLite por usuario y sesión. Solo se guarda lo publicado: tras ocho turnos había 16 mensajes, ocho del usuario y ocho respuestas. El historial sobrevive a recrear el flujo.
+O agente está envolvido em RunnableWithMessageHistory, com o histórico em SQLite por usuário e sessão. Só se salva o que foi publicado: depois de oito turnos havia 16 mensagens, oito do usuário e oito respostas. O histórico sobrevive à recriação do fluxo.
 
-### R28 — Interfaz
+### R28 — Interface
 
-app.py conecta Streamlit al mismo flujo. Ejecutada con la herramienta de pruebas de Streamlit y el modelo real, respondió cuatro turnos de chat, abrió un chat nuevo, reabrió la conversación anterior con sus 8 mensajes sin errores. La interfaz es solo el chat: el catálogo y la comparación se piden ahí, con las herramientas del agente. Cada respuesta de compra se dibuja con datos: los pasos que siguió el agente, cuatro tarjetas (proveedor, total, entrega y origen), el consejo o aviso de precio destacado y la tabla de ofertas con la descartada y su motivo. Esos datos viajan con el mensaje ya verificado, así que la interfaz no relee el texto y al reabrir una conversación las tarjetas se redibujan. Todo usa componentes nativos de Streamlit, sin CSS; hay dos capturas en docs/capturas/. El chat y el formulario dieron el mismo importe para la misma compra (R$ 8.718,75 por 6 unidades).
+app.py conecta o Streamlit ao mesmo fluxo. Executado com a ferramenta de testes do Streamlit e o modelo real, respondeu quatro turnos de chat, abriu um chat novo e reabriu a conversa anterior com as suas 8 mensagens, sem erros. A interface é só o chat: o catálogo e a comparação são pedidos ali, com as ferramentas do agente. Cada resposta de compra é desenhada com dados: os passos que o agente seguiu, quatro cartões (fornecedor, total, entrega e origem), o conselho ou aviso de preço em destaque e a tabela de ofertas com a descartada e o motivo. Esses dados viajam com a mensagem já verificada, então a interface não relê o texto e, ao reabrir uma conversa, os cartões são redesenhados. Tudo usa componentes nativos do Streamlit, sem CSS; há duas capturas em docs/capturas/. No chat, a compra de 6 unidades de PEC-01-0001 deu R$ 8.718,75, o mesmo valor da demonstração de R02.
 
-### R29 — Evaluación con LangSmith
+### R29 — Avaliação com LangSmith
 
-El flujo final se evaluó sobre 30 casos derivados con seis métricas. Resultado vigente:
+O fluxo final foi avaliado sobre 30 casos derivados com seis métricas. Resultado vigente, da execução em português (experimento pedro-infnet-fluxo-gpt-4.1-mini-portugues-235aa9f1, dataset pedro-infnet-casos-derivados-efff08ab, registro em docs/rastros/r29_langsmith_gpt-4.1-mini_portugues.json):
 
 | Métrica | Resultado |
 |---|---|
-| Ganador correcto | 14 de 14 |
-| Importe correcto | 14 de 14 |
-| Contenido correcto | 16 de 16 |
-| Herramienta decisiva | 23 de 23 |
-| Primera propuesta aceptada | 24 de 24 |
-| Errores de verificación | 0 |
-| Trayectoria completa | 23 de 30 |
+| Vencedor correto | 14 de 14 |
+| Valor correto | 14 de 14 |
+| Conteúdo correto | 16 de 16 |
+| Ferramenta decisiva | 23 de 23 |
+| Primeira proposta aceita | 24 de 24 |
+| Erros de verificação | 0 |
+| Trajetória completa | 26 de 30 |
 
-Conclusiones, cada una con su dato:
+Conclusões, cada uma com o seu dado. Os oito experimentos anteriores são da versão em espanhol do projeto e mantêm os seus números:
 
-- **Se mantiene gpt-4.1-mini.** En igualdad de condiciones, gpt-4o-mini acertó 13 de 14 ganadores y 19 de 23 propuestas a la primera.
-- **La verificación cumple.** Cuando un modelo propuso un ganador equivocado, se rechazó y no se publicó.
-- **La evaluación encontró un defecto del agente** (el CEP no se publicaba) y **un error de método**: los experimentos compartían memoria, y con 73 recuerdos acumulados la trayectoria cayó de 25 a 15 de 30.
-- **La trayectoria completa es una métrica inestable.** Varió entre 13 y 25 de 30 entre corridas, porque la referencia exige un paso que el agente a veces se salta con el mismo resultado.
-- **Una métrica perfecta no garantiza una regla correcta.** Durante seis experimentos el agente obtuvo 14 de 14 recomendando ofertas que incumplían el pedido mínimo, porque la referencia compartía el error.
+- **Mantém-se gpt-4.1-mini.** Em igualdade de condições, na versão em espanhol, gpt-4o-mini acertou 13 de 14 vencedores e 19 de 23 propostas na primeira tentativa.
+- **A verificação cumpre o papel.** Quando um modelo propôs um vencedor errado, a proposta foi rejeitada e não foi publicada.
+- **A avaliação encontrou um defeito do agente** (o CEP não era publicado) e **um erro de método**: os experimentos compartilhavam memória, e com 73 lembranças acumuladas a trajetória caiu de 25 para 15 de 30 (versão em espanhol).
+- **A trajetória completa é uma métrica instável.** Variou entre 13 e 25 de 30 nas execuções da versão em espanhol e ficou em 26 de 30 na execução em português, porque a referência exige um passo que o agente às vezes pula com o mesmo resultado.
+- **Uma métrica perfeita não garante uma regra correta.** Durante seis experimentos, na versão em espanhol, o agente obteve 14 de 14 recomendando ofertas que descumpriam o pedido mínimo, porque a referência compartilhava o erro.
 
-## 10. Lo que enseñaron las ejecuciones reales
+## 10. O que as execuções reais ensinaram
 
-Estos fallos solo aparecieron al ejecutar con el modelo real. Las pruebas automáticas ya pasaban.
+Estas falhas só apareceram ao executar com o modelo real. Os testes automáticos já passavam. Elas foram observadas na versão anterior do projeto, em espanhol; na reexecução em português de 2026-11-11 as correções continuaram funcionando.
 
-| Fallo observado | Causa | Corrección |
+| Falha observada | Causa | Correção |
 |---|---|---|
-| Las preguntas de política no se publicaban | El modelo citaba el fragmento casi literal | El sistema ancla la cita al texto de la fuente |
-| La ciudad de un CEP no se publicaba | El modelo copiaba mal un identificador | La respuesta se rellena con la observación de la API |
-| Una compra válida no se publicaba | El modelo transcribía mal el ganador | Las cifras las pone la herramienta |
-| Un mensaje con varias intenciones no se publicaba | La respuesta admite un solo tipo | Planificador de turno |
-| No entendía «que sean 3» ni «olvida el plazo» | Reglas de diálogo demasiado estrechas | Intérprete con modelo |
-| El parser perdía un dato con JSON cortado | Tolerancia del parser | Comprobación estricta |
-| Dos consultas SQL válidas daban mal el resultado | El modelo confundía ID y SKU | Formato de los valores en el prompt |
-| La trayectoria cambiaba entre experimentos | Memoria compartida | Memoria nueva en cada experimento |
-| Recomendaba ofertas que el proveedor no aceptaría | La comparación ignoraba el pedido mínimo | Regla nueva y casos regenerados |
-| Los consejos de precio se rechazaban | Un ejemplo few-shot invitaba a valorar | Ejemplos que solo enuncian hechos |
+| As perguntas de política não eram publicadas | O modelo citava o fragmento quase literal | O sistema ancora a citação no texto da fonte |
+| A cidade de um CEP não era publicada | O modelo copiava errado um identificador | A resposta é preenchida com a observação da API |
+| Uma compra válida não era publicada | O modelo transcrevia errado o vencedor | Os números quem põe é a ferramenta |
+| Uma mensagem com várias intenções não era publicada | A resposta admite um só tipo | Planejador de turno |
+| Não entendia «Suba para meia dúzia» nem «Esqueça o prazo» | Regras de diálogo estreitas demais | Intérprete com modelo |
+| O parser perdia um dado com JSON truncado | Tolerância do parser | Conferência estrita |
+| Duas consultas SQL válidas davam o resultado errado | O modelo confundia ID e SKU | Formato dos valores no prompt |
+| A trajetória mudava entre experimentos | Memória compartilhada | Memória nova em cada experimento |
+| Recomendava ofertas que o fornecedor não aceitaria | A comparação ignorava o pedido mínimo | Regra nova e casos regenerados |
+| Os conselhos de preço eram rejeitados | Um exemplo few-shot convidava a avaliar | Exemplos que só enunciam fatos |
 
-## 11. Limitaciones
+## 11. Limitações
 
-- **Supuestos sin confirmar.** El índice FAISS es propio, los 30 casos de evaluación son derivados y no los oficiales, y la escala de madurez es genérica. El enunciado original en portugués no está disponible para un cotejo final.
-- **Mediciones de una sola corrida.** El modelo no es determinista; las diferencias de uno o dos casos no son concluyentes.
-- **Pedro no conversa.** No responde «¿qué recuerdas de mí?» ni sabe contestar a un comentario sin petición.
-- **La verificación comprueba que la respuesta sea cierta, no que venga al caso**, y comprueba contra la regla de negocio, no la regla.
-- **El aviso de precio salta mucho** (en cuatro de cada diez recomendaciones); sus umbrales no están calibrados.
-- **El modelo NLI no es exacto.** Rechazó un consejo que era cierto; falla hacia el lado seguro. Admite 512 tokens.
-- **Comparaciones conceptuales.** LlamaIndex, AutoGen, Semantic Kernel, Langflow, Mem0 y Letta no se ejecutaron.
-- **Sin credenciales** el chat interpreta solo con reglas, que son frágiles ante formas de hablar no previstas.
-- **La comparación no reparte un pedido entre proveedores** ni calcula el flete según el destino.
+- **Suposições sem confirmar.** O índice FAISS é próprio, os 30 casos de avaliação são derivados e não os oficiais, e a escala de maturidade é genérica. O enunciado original em português não está disponível para uma conferência final.
+- **Medições de uma única execução.** O modelo não é determinístico; as diferenças de um ou dois casos não são conclusivas.
+- **Pedro não conversa.** Não responde «o que você lembra de mim?» nem sabe responder a um comentário sem pedido.
+- **A verificação confere se a resposta é verdadeira, não se ela vem ao caso**, e confere contra a regra de negócio, não confere a regra.
+- **O aviso de preço dispara muito** (em quatro de cada dez recomendações); os seus limiares não estão calibrados.
+- **O modelo NLI não é exato.** Na versão em espanhol rejeitou um conselho que era verdadeiro; falha para o lado seguro. Na execução em português o mesmo caso foi barrado antes, pela verificação exata dos números. O NLI admite 512 tokens.
+- **Comparações conceituais.** LlamaIndex, AutoGen, Semantic Kernel, Langflow, Mem0 e Letta não foram executados.
+- **Sem credenciais** o chat interpreta só com regras, que são frágeis diante de formas de falar não previstas.
+- **A comparação não divide um pedido entre fornecedores** nem calcula o frete conforme o destino.
 
-## 12. Mejoras futuras
+## 12. Melhorias futuras
 
-- Añadir un tipo de respuesta conversacional, para saludos, comentarios y «¿qué recuerdas de mí?».
-- Migrar la orquestación del turno a LangGraph y conservar los componentes de LangChain.
-- Calibrar los umbrales del aviso de precio y del anclaje de citas con datos.
-- Revisar la referencia de trayectoria con los casos oficiales.
-- Usar el CEP para estimar flete y plazo según el destino.
-- Resumir el historial que sale de la ventana de 12 mensajes.
+- Acrescentar um tipo de resposta conversacional, para saudações, comentários e «o que você lembra de mim?».
+- Migrar a orquestração do turno para o LangGraph e manter os componentes do LangChain.
+- Calibrar com dados os limiares do aviso de preço e da ancoragem de citações.
+- Revisar a referência de trajetória com os casos oficiais.
+- Usar o CEP para estimar frete e prazo conforme o destino.
+- Resumir o histórico que sai da janela de 12 mensagens.
 
-## 13. Cómo reproducir las evidencias
+## 13. Como reproduzir as evidências
 
 - Instalar: uv sync --python 3.13 --all-extras --locked
-- Pruebas: uv run pytest -q
-- Notebooks, sin credenciales: uv run python scripts/crear_notebooks.py y uv run python scripts/ejecutar_notebooks.py
-- Ejecuciones con el modelo real (requieren OPENAI_API_KEY): los scripts scripts/demostrar_*.py, que escriben en docs/trazas/
-- Evaluación (requiere además LANGSMITH_API_KEY): uv run python evals/evaluar_flujo.py
-- Interfaz: uv run streamlit run app.py
+- Testes: uv run pytest -q
+- Catálogo sintético: uv run python scripts/gerar_catalogo_pecas.py
+- Índice de políticas: uv run python scripts/construir_indice_politicas.py
+- Notebooks, sem credenciais: uv run python scripts/criar_notebooks.py e uv run python scripts/executar_notebooks.py
+- Execuções com o modelo real (exigem OPENAI_API_KEY): os scripts scripts/demonstrar_*.py, que escrevem em docs/rastros/
+- Avaliação (exige também LANGSMITH_API_KEY): uv run python evals/avaliar_fluxo.py --saida docs/rastros/r29_langsmith_gpt-4.1-mini_portugues.json --rotulo portugues
+- Interface: uv run streamlit run app.py
+- Este relatório em PDF: uv run python scripts/gerar_relatorio_pdf.py
 
-Los notebooks usan dobles de prueba y lo dicen en cada celda. Las trazas de docs/trazas/ con sufijo «antes» o «sin plan» y los primeros seis experimentos de LangSmith corresponden a versiones anteriores del agente y se conservan como registro.
+Os cinco notebooks foram executados; eles usam duplos de teste e dizem isso em cada célula. Os rastros de docs/rastros/ com sufixo «antes» ou «sin_plan» e os oito experimentos do LangSmith anteriores ao de português são execuções da versão anterior do projeto, em espanhol. Não foram refeitos e ficam guardados como registro.
 
-## 14. Pendientes de entrega
+## 14. Pendências de entrega
 
-- Grabar el vídeo de demostración y verificar el enlace de Drive.
-- Cotejar las rúbricas con el enunciado original en portugués.
-- Confirmar con el profesor el índice FAISS, los casos de evaluación y la escala de madurez.
+- Gravar o vídeo de demonstração e verificar o link do Drive.
+- Conferir as rubricas com o enunciado original em português.
+- Confirmar com o professor o índice FAISS, os casos de avaliação e a escala de maturidade.
