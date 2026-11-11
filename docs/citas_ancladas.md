@@ -66,4 +66,4 @@ Misma pregunta, mismo índice, mismo modelo.
 - La degradación extractiva está probada con dobles; no se observó en la ejecución real.
 - El umbral del 80 % se fijó por criterio, sin calibrarlo con datos.
 - El modelo NLI admite 512 tokens: con varias citas largas la premisa se trunca (se observó un aviso de 652 tokens).
-- Una solicitud mixta en un solo turno sigue sin publicarse: la respuesta admite un único estado.
+- Cuando se escribió este diagnóstico, una solicitud mixta en un solo turno no se publicaba; se resolvió después con el planificador de turno (R02).

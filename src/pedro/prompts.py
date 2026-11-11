@@ -113,6 +113,22 @@ PLANTILLA_SQL = ChatPromptTemplate.from_messages([
     ("human", "Pregunta: {pregunta}\n{error}"),
 ])
 
+# Planificador de turno: separa un mensaje con varias intenciones. Variables: mensaje y formato.
+PLANTILLA_PLAN = ChatPromptTemplate.from_messages([
+    ("system", "Persona: planificador de Pedro. Tarea: dividir el mensaje del usuario en peticiones "
+     "independientes, una por intención. Tipos: compra (comparar o cotizar una pieza), politica "
+     "(garantía, devoluciones, entrega, compatibilidad), cep (ciudad de un código postal) y "
+     "preferencia (algo que el usuario pide recordar). "
+     "Contexto: cada petición se responderá por separado, así que debe entenderse sola: copia en "
+     "ella los identificadores, cantidades, límites y códigos que le correspondan, con las mismas "
+     "palabras del usuario. No añadas datos, no respondas y no inventes peticiones. Si el mensaje "
+     "tiene una sola intención, devuelve una sola petición. Conserva el orden del mensaje. "
+     "Ejemplo: «Compara 2 unidades de PEC-10-0123 en 5 días y dime si la garantía cubre la "
+     "instalación» → compra: «Compara 2 unidades de PEC-10-0123 en 5 días»; politica: «¿La "
+     "garantía cubre la instalación?». Formato: {formato}"),
+    ("human", "{mensaje}"),
+])
+
 # System message del agente final. Variables: dataset_id, ejemplos, formato, input,
 # chat_history (opcional) y agent_scratchpad.
 PLANTILLA_AGENTE = ChatPromptTemplate.from_messages([

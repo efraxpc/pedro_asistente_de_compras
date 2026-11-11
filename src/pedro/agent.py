@@ -23,6 +23,7 @@ from .nli import Clasificador, verificar_nli
 from .policy_demo import (FRAGMENTO_T24_ESPERADO, ORIGEN as ORIGEN_DEMO,
                           PREGUNTA_T24_ORIGINAL, PREGUNTA_T24_REESCRITA,
                           reescribir_consulta_entrega)
+from .planner import planificar_turno
 from .prompts import EJEMPLOS_ACCIONES, PLANTILLA_AGENTE
 from .query import ejecutar, planear
 from .rag import consultar, diagnosticar_reescritura
@@ -359,6 +360,22 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
     parser = PydanticOutputParser(pydantic_object=RespuestaCompra)
 
     def turno(dato: dict, config: RunnableConfig) -> AIMessage:
+        """Un turno del chat: si el mensaje trae varias intenciones, se planifica y se responde
+        cada petición por separado, con su propia verificación."""
+        mensaje = dato["input"]
+        peticiones = planificar_turno(mensaje, llm)
+        if peticiones is None:
+            return resolver(dato, config, mensaje)
+        if traza:
+            traza.eventos.append({"evento": "plan", "peticiones": [p.model_dump() for p in peticiones]})
+        partes = [f"Tu mensaje tenía {len(peticiones)} peticiones; respondo cada una por separado."]
+        for numero, peticion in enumerate(peticiones, 1):
+            respuesta = resolver({**dato, "input": peticion.peticion}, config, mensaje)
+            partes.append(f"**{numero}. {peticion.peticion}**\n{respuesta.content}")
+        return AIMessage(content="\n\n".join(partes))
+
+    def resolver(dato: dict, config: RunnableConfig, mensaje_usuario: str) -> AIMessage:
+        """Resuelve una petición de una sola intención."""
         usuario = config["configurable"]["user_id"]
         sesion = config["configurable"]["session_id"]
         if dataset_sesion(memoria_db, usuario, sesion) != escenario.dataset_id:
@@ -414,7 +431,8 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                 entrada += "\nPreferencias subordinadas a la petición actual: " + json.dumps(pref)
             if errores:
                 entrada += "\nCorrige estos errores observables: " + "; ".join(errores)
-            executor = crear_agente(escenario, memoria_db, usuario, pregunta, llm, indice,
+            # Las preferencias se validan contra lo que escribió el usuario, no contra el plan.
+            executor = crear_agente(escenario, memoria_db, usuario, mensaje_usuario, llm, indice,
                                     cep_simulado=cep_simulado)
             try:
                 salida = executor.invoke({"input": entrada, "chat_history": dato["chat_history"]},

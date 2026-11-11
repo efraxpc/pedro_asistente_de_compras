@@ -100,7 +100,7 @@ Pedro no es **reactivo puro** porque conserva estado entre turnos y elige herram
 | Nada se publica sin respaldo | Recomendaciones erróneas publicadas | 0 en cinco experimentos | R24 |
 | Hay continuidad entre turnos con el modelo real | Conversación real multi-turno | Siete turnos con estado correcto | R18, R26, R27 |
 
-**Madurez actual: nivel 4 demostrado**, con tres reservas que impiden darlo por consolidado: una solicitud que mezcla varias intenciones en un mismo mensaje no se publica, las reglas de diálogo son frágiles ante formas de hablar no previstas, y las mediciones son corridas únicas sobre casos derivados, no sobre los oficiales.
+**Madurez actual: nivel 4 demostrado**, con dos reservas que impiden darlo por consolidado: las reglas de diálogo son frágiles ante formas de hablar no previstas, y las mediciones son corridas únicas sobre casos derivados, no sobre los oficiales.
 
 No se persigue el nivel 5 porque el problema — recomendar una oferta verificada para una pieza — no requiere varios agentes ni ejecutar compras, y más autonomía reduciría la trazabilidad que la puerta de verificación garantiza.
 
@@ -137,10 +137,18 @@ No se persigue el nivel 5 porque el problema — recomendar una oferta verificad
 | 4 | Verificar la propuesta | Verificación exacta y NLI | Lista de errores (vacía si pasa) |
 | 5 | Publicar o corregir | Flujo | Respuesta pública, o una única corrección |
 
-Hay dos planificadores, según el tipo de solicitud:
+Hay tres niveles de planificación, según el tipo de solicitud:
 
 - **Plan fijo (capa reactiva).** Una compra con ID y cantidad sigue siempre los pasos 1 a 5 en ese orden, sin modelo.
 - **Plan decidido por el LLM (capa deliberativa).** Cuando interviene el modelo — por ejemplo para confirmar un CEP o recalcular tras «ahora 3 unidades» —, el agente elige qué herramientas llamar y en qué orden dentro del `AgentExecutor`, con un máximo de 6 iteraciones. El prompt le da un «plan visible»: `buscar_productos` para resolver el ID, `consultar_catalogo` para las ofertas y `comparar_ofertas` para todos los importes.
+
+- **Plan de turno (planificador explícito).** Si el mensaje trae varias intenciones, el modelo escribe primero un plan con una petición por intención. Ejemplo real: «Compara 2 unidades de PEC-01-0001 con plazo de 7 días y dime qué dice la política de devoluciones sobre piezas dañadas, y confirma el CEP 01001000» produjo este plan, y cada petición se respondió y verificó por separado:
+
+  | # | Tipo | Petición |
+  |---|---|---|
+  | 1 | compra | Compara 2 unidades de PEC-01-0001 con plazo de 7 días |
+  | 2 | politica | ¿Qué dice la política de devoluciones sobre piezas dañadas? |
+  | 3 | cep | Confirma el CEP 01001000 |
 
 Reglas de planificación:
 
@@ -148,7 +156,7 @@ Reglas de planificación:
 - La petición actual prevalece sobre el historial: un cambio de cantidad conserva los demás límites.
 - El plan nunca termina en una acción con efecto real: no hay compra ni pago.
 
-**Decisión técnica.** No se añadió un planificador explícito (un paso que escriba el plan antes de actuar). Para un dominio con cinco subtareas conocidas, el plan fijo es más predecible y verificable, y el bucle de herramientas cubre los casos mixtos. Se descartó además guardar el razonamiento privado del modelo: lo que se conserva son las llamadas a herramientas, que son observables.
+**Decisión técnica.** El planificador explícito se añadió después, cuando una ejecución real mostró que hacía falta. Al principio no existía: una solicitud que mezclaba compra, política y CEP hacía que el modelo llamara a las herramientas correctas, pero la respuesta no se publicaba, porque el formato admite un solo tipo. En lugar de complicar el formato, se añadió un paso previo ([planner.py](../src/pedro/planner.py)): si el mensaje muestra señales de dos o más intenciones, el modelo escribe un **plan** con una petición por intención, y cada petición se resuelve con el flujo normal y su propia verificación. El plan se valida antes de usarse: no puede repetir un tipo ni contener un identificador o una cifra que el usuario no escribiera. Para un mensaje de una sola intención no se llama al planificador. Lo que no se guarda es el razonamiento privado del modelo: se conservan el plan y las llamadas a herramientas, que son observables.
 
 ### 2. Memoria aumentada: qué va a cada nivel
 
@@ -173,15 +181,17 @@ Reglas de planificación:
 | Largo plazo: la preferencia aparece en una sesión nueva del mismo usuario y no en otro usuario; la sesión nueva empieza sin borrador | Mismo notebook | Ejecución real local |
 | Plan decidido por el LLM real, por turnos: compra → `consultar_catalogo` y `comparar_ofertas`; CEP → `consultar_cep` (São Paulo/SP); «ahora 3 unidades» → `comparar_ofertas` con cantidad 3 y el plazo de 7 días conservado (R$ 4.401,99) | [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json); [scripts/demostrar_r02.py](../scripts/demostrar_r02.py) | **Ejecución real remota** (OpenAI `gpt-4.1-mini`, ViaCEP real, NLI real local) |
 | Pregunta de política por turnos: antes no se publicaba; tras anclar las citas se publica con dos fuentes | [trazas/r02_planificacion_llm_antes.json](trazas/r02_planificacion_llm_antes.json) y [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json); [citas_ancladas.md](citas_ancladas.md) | Ejecución real remota, antes y después |
-| Solicitud mixta en un solo turno: el LLM la dividió en las cinco herramientas necesarias (catálogo, comparación, políticas, CEP, búsqueda), pero la respuesta **no se publicó** | Mismo archivo | Ejecución real remota; resultado negativo conservado |
+| Solicitud mixta en un solo turno, **con planificador**: plan de tres peticiones (compra, política, CEP), cada una verificada sin errores y publicada | [trazas/r02_planificacion_llm.json](trazas/r02_planificacion_llm.json), `solicitud_mixta_en_un_turno` | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP) |
+| La misma solicitud **antes del planificador**: el LLM llamó a las herramientas correctas, pero la respuesta no se publicó | [trazas/r02_planificacion_llm_sin_plan.json](trazas/r02_planificacion_llm_sin_plan.json) | Ejecución real remota; resultado negativo conservado |
+| El plan se descarta si inventa datos, repite un tipo o no encaja; cada petición pasa por su verificación | [tests/test_planner.py](../tests/test_planner.py) | Pruebas automáticas con doble |
 | Episodios vectoriales guardados, actualizados y recuperados | [notebooks/03_memoria_chatbot.ipynb](../notebooks/03_memoria_chatbot.ipynb) | Ejecución real local (FastEmbed) |
 | Reglas del borrador y aislamiento | [tests/test_dialogue.py](../tests/test_dialogue.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py) | Pruebas automáticas |
 
 ### Pendientes y limitaciones
 
-- **Una solicitud mixta en un solo turno no se publica.** El LLM planifica bien las herramientas, pero `RespuestaCompra` admite un solo estado (recomendación, política o CEP) y la verificación rechaza la mezcla. El diseño vigente es una intención por turno; la solicitud compleja se resuelve repartida en turnos, como muestra la evidencia.
+- **La solicitud mixta en un solo turno se resolvió con un planificador.** Antes no se publicaba. Límite actual: el planificador reconoce cuatro tipos de petición y como mucho uno de cada tipo; dos compras en el mismo mensaje se tratan como una sola petición.
 - **La pregunta general de política falló con el modelo real y se corrigió.** El modelo citaba el fragmento casi literal y la verificación exigía texto idéntico. Ahora el sistema ancla la cita al texto de la fuente; diagnóstico y antes/después en [citas_ancladas.md](citas_ancladas.md).
-- No hay planificador explícito: el plan mixto lo decide el LLM en el bucle de herramientas y no queda escrito antes de ejecutarse.
+- El planificador solo actúa con el modelo disponible; sin credenciales un mensaje mixto se trata como una sola petición.
 - No hay resumen del historial: lo que sale de la ventana de 12 mensajes solo vuelve si quedó como episodio o preferencia.
 - La trayectoria del LLM puede variar entre ejecuciones; la traza guardada es una observación, no una métrica.
 
@@ -1178,7 +1188,7 @@ Las dos trazas se conservan. Las pruebas automáticas ya pasaban antes: el fallo
 ### Pendientes y limitaciones
 
 - Es una conversación, con una pieza y en un solo idioma.
-- **Una solicitud que mezcla varias intenciones en un mismo mensaje no se publica**: la respuesta admite un solo tipo. La descomposición ocurre entre turnos, no dentro de uno.
+- La conversación reparte las intenciones entre turnos. Un mensaje que las mezcla lo divide el planificador de turno (R02), que solo actúa con el modelo disponible.
 - En el turno 7 el agente interpretó «lo último que te pedí» gracias al borrador; sin borrador habría pedido la pieza.
 
 ---
@@ -1629,7 +1639,7 @@ El mismo ejecutor, la misma memoria y el mismo verificador atienden los siete tu
 
 ### Pendientes y limitaciones
 
-- **Cada turno usa una categoría.** Una pregunta que mezcla SQL, RAG y API en un solo mensaje hace que el agente llame a las herramientas correctas, pero la respuesta no se publica: el formato de respuesta admite un solo tipo (R02).
+- Dentro de una petición el agente usa una categoría. Un mensaje que mezcla SQL, RAG y API lo divide antes el planificador de turno (R02), y el mismo ejecutor resuelve cada parte.
 - Parte de los turnos los resuelve una regla sin pasar por el agente (listado, aclaraciones, entrega parcial).
 
 ## R26 — Executor con create_openai_tools_agent y AgentExecutor

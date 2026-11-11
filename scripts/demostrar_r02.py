@@ -54,9 +54,11 @@ def main() -> None:
             eventos = traza.eventos[inicio:]
             registro.append({
                 "pregunta": pregunta,
+                "plan": next((e["peticiones"] for e in eventos if e["evento"] == "plan"), None),
                 "herramientas": [{"nombre": e["herramienta"], "argumentos": e["entrada"]}
                                  for e in eventos if e["evento"] == "tool_start"],
                 "errores_de_ejecucion": [e["tipo"] for e in eventos if "error" in e["evento"]],
+                "verificaciones": [e["errores"] for e in eventos if e["evento"] == "verificacion"],
                 "citas_ancladas": [c for e in eventos if e["evento"] == "citas_ancladas"
                                    for c in e["citas"]],
                 "respuesta_publicada": respuesta,
@@ -81,7 +83,8 @@ def main() -> None:
         print(bloque)
         for turno in turnos:
             print(" ", turno["pregunta"][:60], "->", [h["nombre"] for h in turno["herramientas"]])
-            print("    ", turno["respuesta_publicada"].splitlines()[0][:110])
+            for linea in turno["respuesta_publicada"].splitlines()[:14]:
+                print("    ", linea[:120])
     print("guardado en", salida)
 
 
