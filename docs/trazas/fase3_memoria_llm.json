@@ -9,32 +9,32 @@
     "R18"
   ],
   "modo": "real remoto (OpenAI y ViaCEP); NLI y embeddings reales locales; datos sintéticos",
-  "fecha_utc": "2026-11-11T00:51:03+00:00",
+  "fecha_utc": "2026-11-11T12:17:12+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "r16_chatbot_conversation_buffer_memory": {
     "turnos": [
       {
         "usuario": "Hola, soy Ana. Necesito un termostato para mi nevera.",
-        "pedro": "Hola Ana, ¿podrías indicarme la cantidad que necesitas, tu presupuesto aproximado y el plazo en que requieres el termostato? Consultaré el catálogo para confirmarte disponibilidad y precios.",
-        "caracteres_en_memoria": 260
+        "pedro": "Hola Ana, ¿podrías indicarme la cantidad que necesitas, tu presupuesto aproximado y el plazo en que requieres el termostato? Así consulto en el catálogo.",
+        "caracteres_en_memoria": 223
       },
       {
         "usuario": "Que sean 2 unidades.",
-        "pedro": "Perfecto, Ana, entonces necesito saber tu presupuesto aproximado y el plazo en que requieres las 2 unidades del termostato para la nevera.",
-        "caracteres_en_memoria": 436
+        "pedro": "Perfecto, Ana. ¿Cuál es tu presupuesto aproximado y en cuánto tiempo necesitas las 2 unidades del termostato? Así consulto en el catálogo.",
+        "caracteres_en_memoria": 399
       },
       {
         "usuario": "Tengo hasta R$ 900 y lo necesito en 5 días.",
-        "pedro": "Gracias, Ana. Consultaré el catálogo para verificar precios y disponibilidad de las 2 unidades del termostato dentro de tu presupuesto de R$ 900 y plazo de 5 días. Te aviso en breve.",
-        "caracteres_en_memoria": 679
+        "pedro": "Gracias, Ana. Consultaré en el catálogo la disponibilidad y precios para 2 termostatos dentro de tu presupuesto de R$ 900 y con entrega en 5 días. Te aviso en breve.",
+        "caracteres_en_memoria": 625
       },
       {
         "usuario": "Resume mi solicitud completa y dime cómo me llamo.",
-        "pedro": "Claro, Ana. Solicitas 2 unidades de termostato para nevera, con un presupuesto de R$ 900 y un plazo de entrega de 5 días. ¿Quieres que te confirme cuando tenga la información del catálogo?",
-        "caracteres_en_memoria": 935
+        "pedro": "Claro, Ana. Solicitas 2 termostatos para tu nevera, con un presupuesto de hasta R$ 900 y entrega en un plazo de 5 días. ¿Es correcto?",
+        "caracteres_en_memoria": 826
       }
     ],
-    "memoria_final": "Usuario: Hola, soy Ana. Necesito un termostato para mi nevera.\nPedro: Hola Ana, ¿podrías indicarme la cantidad que necesitas, tu presupuesto aproximado y el plazo en que requieres el termostato? Consultaré el catálogo para confirmarte disponibilidad y precios.\nUsuario: Que sean 2 unidades.\nPedro: Perfecto, Ana, entonces necesito saber tu presupuesto aproximado y el plazo en que requieres las 2 unidades del termostato para la nevera.\nUsuario: Tengo hasta R$ 900 y lo necesito en 5 días.\nPedro: Gracias, Ana. Consultaré el catálogo para verificar precios y disponibilidad de las 2 unidades del termostato dentro de tu presupuesto de R$ 900 y plazo de 5 días. Te aviso en breve.\nUsuario: Resume mi solicitud completa y dime cómo me llamo.\nPedro: Claro, Ana. Solicitas 2 unidades de termostato para nevera, con un presupuesto de R$ 900 y un plazo de entrega de 5 días. ¿Quieres que te confirme cuando tenga la información del catálogo?"
+    "memoria_final": "Usuario: Hola, soy Ana. Necesito un termostato para mi nevera.\nPedro: Hola Ana, ¿podrías indicarme la cantidad que necesitas, tu presupuesto aproximado y el plazo en que requieres el termostato? Así consulto en el catálogo.\nUsuario: Que sean 2 unidades.\nPedro: Perfecto, Ana. ¿Cuál es tu presupuesto aproximado y en cuánto tiempo necesitas las 2 unidades del termostato? Así consulto en el catálogo.\nUsuario: Tengo hasta R$ 900 y lo necesito en 5 días.\nPedro: Gracias, Ana. Consultaré en el catálogo la disponibilidad y precios para 2 termostatos dentro de tu presupuesto de R$ 900 y con entrega en 5 días. Te aviso en breve.\nUsuario: Resume mi solicitud completa y dime cómo me llamo.\nPedro: Claro, Ana. Solicitas 2 termostatos para tu nevera, con un presupuesto de hasta R$ 900 y entrega en un plazo de 5 días. ¿Es correcto?"
   },
   "r17_intencion_y_entidades": [
     {
@@ -134,7 +134,6 @@
     {
       "usuario": "Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días",
       "herramientas": [
-        "consultar_catalogo {'pregunta': \"id='PEC-01-0001'\"}",
         "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 2, 'plazo_max_dias': 7}"
       ],
       "verificaciones": [
@@ -165,13 +164,9 @@
     {
       "usuario": "Mejor sin límite de plazo, pero con presupuesto de R$ 5.000",
       "herramientas": [
-        "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 3, 'presupuesto_centavos': 500000}",
-        "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 3, 'presupuesto_centavos': 500000}"
+        "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 3, 'presupuesto_centavos': 500000, 'plazo_max_dias': None}"
       ],
       "verificaciones": [
-        [
-          "ganador o total incorrecto"
-        ],
         []
       ],
       "borrador_tras_el_turno": {
@@ -224,12 +219,11 @@
         "cantidad": 3,
         "presupuesto_centavos": 500000
       },
-      "respuesta_publicada": "Política ficticia de demostración. Para comprobar la compatibilidad eléctrica antes de instalar una pieza, se debe comparar la marca, código de modelo, intervalo de años, voltaje y otros atributos técnicos de la ficha del catálogo con el aparato de prueba. No basta con que diga \"compatible con una marca\", pues modelos con el mismo nombre pueden tener revisiones eléctricas distintas; se debe contrastar el código exacto. Si el voltaje o conector no coinciden, no se debe instalar para probar si funciona.\nFuentes: FIC-GAR-01-S03-C01"
+      "respuesta_publicada": "Política ficticia de demostración. Para comprobar la compatibilidad eléctrica antes de instalar una pieza, se deben comparar los valores de marca, código de modelo, intervalo de años, voltaje y otros atributos técnicos de la ficha del catálogo con el aparato de prueba. No se debe instalar una pieza si el voltaje o el conector no coinciden. En caso de duda, se debe pedir el código de modelo y consultar la ficha técnica; no se deben inventar equivalencias.\nFuentes: FIC-GAR-01-S03-C01"
     },
     {
       "usuario": "Vuelve a comparar con lo último que te pedí",
       "herramientas": [
-        "consultar_catalogo {'pregunta': 'ofertas para PEC-01-0001'}",
         "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 3, 'presupuesto_centavos': 500000}"
       ],
       "verificaciones": [

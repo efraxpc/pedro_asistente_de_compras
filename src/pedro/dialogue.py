@@ -155,3 +155,74 @@ def interpretar_compra(escenario: Escenario, previo: EstadoCompra | None,
             f"¿Cuántas unidades de {solicitud.producto_id} necesitas? "
             "Puedo comparar sin presupuesto o plazo máximo si no tienes esos límites.")
     return EstadoCompra(solicitud=solicitud, esperando=None), None
+
+
+# --- Interpretación con modelo: las reglas resuelven la pieza; el modelo, lo que se pide. ---
+
+class CambioSolicitud(BaseModel):
+    """Lo que un mensaje cambia en la solicitud de compra en curso."""
+    es_compra: bool = Field(description="True si el mensaje pide comparar o comprar una pieza, o "
+                                        "cambia la solicitud en curso")
+    cantidad: int | None = Field(default=None, gt=0)
+    presupuesto_centavos: int | None = Field(default=None, ge=0)
+    plazo_max_dias: int | None = Field(default=None, ge=0)
+    quitar: list[Literal["presupuesto", "plazo"]] = Field(
+        default_factory=list, description="Límites que el usuario elimina de forma explícita")
+
+
+def crear_interprete(modelo):
+    """Cadena few-shot que lee un mensaje y devuelve un `CambioSolicitud`."""
+    from langchain_core.output_parsers import PydanticOutputParser
+
+    from .prompts import PLANTILLA_CAMBIO
+
+    parser = PydanticOutputParser(pydantic_object=CambioSolicitud)
+    return PLANTILLA_CAMBIO.partial(formato=parser.get_format_instructions()) | modelo | parser
+
+
+def interpretar_turno(escenario: Escenario, previo: EstadoCompra | None, mensaje: str,
+                      interprete=None) -> tuple[tuple[EstadoCompra, str | None] | None, dict]:
+    """Interpreta un turno combinando reglas y modelo. Devuelve el resultado y un informe.
+
+    Las reglas identifican la pieza, que tiene formato fijo. Si hay modelo, este decide si el
+    mensaje es una compra y qué cambia en cantidad, presupuesto y plazo: entiende formas de
+    hablar que las reglas no prevén. Sin modelo, o si su salida no sirve, valen las reglas.
+    """
+    reglas = interpretar_compra(escenario, previo, mensaje)
+    en_curso = previo is not None and previo.solicitud.producto_id is not None
+    if interprete is None or (reglas is None and not en_curso):
+        return reglas, {"fuente": "reglas"}
+    contexto = (previo.solicitud.model_dump_json(exclude_none=True) if en_curso and previo
+                else "ninguna")
+    try:
+        cambio: CambioSolicitud = interprete.invoke({"texto": mensaje, "contexto": contexto})
+    except Exception as exc:
+        return reglas, {"fuente": "reglas", "modelo": f"sin respuesta útil ({type(exc).__name__})"}
+    informe = {"fuente": "modelo", "modelo": cambio.model_dump(exclude_none=True),
+               "reglas": None if reglas is None else reglas[0].solicitud.model_dump(exclude_none=True)}
+    if not cambio.es_compra:
+        return None, informe
+    if reglas is not None and reglas[0].esperando == "producto":
+        return reglas, informe  # falta decidir la pieza: eso lo preguntan las reglas
+    if reglas is not None:
+        estado = reglas[0]
+        misma_pieza = previo is not None and previo.solicitud.producto_id == estado.solicitud.producto_id
+        base = previo.solicitud if misma_pieza and previo else Solicitud(
+            producto_id=estado.solicitud.producto_id)
+    elif previo is not None:
+        base = previo.solicitud  # las reglas no vieron un cambio que el modelo sí entiende
+    else:
+        return reglas, informe
+    solicitud = base.model_copy(deep=True)
+    for campo in ("cantidad", "presupuesto_centavos", "plazo_max_dias"):
+        if (valor := getattr(cambio, campo)) is not None:
+            setattr(solicitud, campo, valor)
+    if "presupuesto" in cambio.quitar:
+        solicitud.presupuesto_centavos = None
+    if "plazo" in cambio.quitar:
+        solicitud.plazo_max_dias = None
+    if solicitud.cantidad is None:
+        return (EstadoCompra(solicitud=solicitud, esperando="cantidad"),
+                f"¿Cuántas unidades de {solicitud.producto_id} necesitas? "
+                "Puedo comparar sin presupuesto o plazo máximo si no tienes esos límites."), informe
+    return (EstadoCompra(solicitud=solicitud, esperando=None), None), informe

@@ -117,6 +117,48 @@ PLANTILLA_SQL = ChatPromptTemplate.from_messages([
     ("human", "Pregunta: {pregunta}\n{error}"),
 ])
 
+# Ejemplos few-shot para leer qué cambia un mensaje en la solicitud en curso.
+EJEMPLOS_CAMBIO = [
+    ("ninguna", "Compara 2 unidades de PEC-09-0009 hasta R$ 2,5 mil en 5 días",
+     {"es_compra": True, "cantidad": 2, "presupuesto_centavos": 250000, "plazo_max_dias": 5}),
+    ('{{"producto_id":"PEC-09-0009","cantidad":2,"plazo_max_dias":5}}', "Ahora que sean 4 y mantén el plazo",
+     {"es_compra": True, "cantidad": 4}),
+    ('{{"producto_id":"PEC-09-0009","cantidad":4,"plazo_max_dias":5}}',
+     "Mejor sin límite de plazo, pero no puedo pasar de mil reales",
+     {"es_compra": True, "presupuesto_centavos": 100000, "quitar": ["plazo"]}),
+    ('{{"producto_id":"PEC-09-0009","cantidad":4}}', "Súbelo a media docena",
+     {"es_compra": True, "cantidad": 6}),
+    ('{{"producto_id":"PEC-09-0009","cantidad":4}}',
+     "¿La garantía cubre el daño al instalar una pieza?", {"es_compra": False}),
+    ('{{"producto_id":"PEC-09-0009","cantidad":4}}', "¿A qué ciudad corresponde el CEP 20040020?",
+     {"es_compra": False}),
+    ("ninguna", "Compara PEC-09-0010", {"es_compra": True}),
+]
+
+
+def _ejemplos_de_cambio() -> list[tuple[str, str]]:
+    import json
+
+    mensajes: list[tuple[str, str]] = []
+    for contexto, texto, salida in EJEMPLOS_CAMBIO:
+        mensajes.append(("human", f"Solicitud en curso: {contexto}\nMensaje: {texto}"))
+        mensajes.append(("ai", json.dumps(salida, ensure_ascii=False).replace("{", "{{").replace("}", "}}")))
+    return mensajes
+
+
+# Intérprete de turno. Variables: contexto (solicitud en curso), texto y formato.
+PLANTILLA_CAMBIO = ChatPromptTemplate.from_messages([
+    ("system", "Persona: intérprete de Pedro. Tarea: decir qué cambia el mensaje del usuario en su "
+     "solicitud de compra. Contexto: es_compra es true si pide comparar o comprar una pieza o "
+     "modifica la solicitud en curso; una pregunta sobre políticas, garantía, instalación, envíos, "
+     "un CEP, una preferencia o un saludo no lo es. Extrae solo lo que dice el mensaje: un dato no "
+     "mencionado es null, nunca cero ni uno; no repitas los datos de la solicitud en curso. "
+     "Convierte las cantidades en palabras a números, el dinero a centavos de real y los plazos a "
+     "días. Usa quitar solo si el usuario elimina un límite de forma explícita. Formato: {formato}"),
+    *_ejemplos_de_cambio(),
+    ("human", "Solicitud en curso: {contexto}\nMensaje: {texto}"),
+])
+
 # Planificador de turno: separa un mensaje con varias intenciones. Variables: mensaje y formato.
 PLANTILLA_PLAN = ChatPromptTemplate.from_messages([
     ("system", "Persona: planificador de Pedro. Tarea: dividir el mensaje del usuario en peticiones "

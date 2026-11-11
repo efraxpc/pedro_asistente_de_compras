@@ -100,7 +100,7 @@ Pedro no es **reactivo puro** porque conserva estado entre turnos y elige herram
 | Nada se publica sin respaldo | Recomendaciones erróneas publicadas | 0 en cinco experimentos | R24 |
 | Hay continuidad entre turnos con el modelo real | Conversación real multi-turno | Siete turnos con estado correcto | R18, R26, R27 |
 
-**Madurez actual: nivel 4 demostrado**, con dos reservas que impiden darlo por consolidado: las reglas de diálogo son frágiles ante formas de hablar no previstas, y las mediciones son corridas únicas sobre casos derivados, no sobre los oficiales.
+**Madurez actual: nivel 4 demostrado**, con una reserva que impide darlo por consolidado: las mediciones son corridas únicas sobre casos derivados, no sobre los oficiales.
 
 No se persigue el nivel 5 porque el problema — recomendar una oferta verificada para una pieza — no requiere varios agentes ni ejecutar compras, y más autonomía reduciría la trazabilidad que la puerta de verificación garantiza.
 
@@ -1062,7 +1062,7 @@ La memoria crece en cada turno: de 260 a 935 caracteres en cuatro turnos. Con el
 
 > ¿El alumno estructuró flujos de conversación con reconocimiento de intención y extracción de entidades?
 
-**Respuesta corta.** Sí, de dos formas: con un modelo (cadena few-shot) y con reglas (las que usa el chat). El flujo reconoce seis intenciones, extrae cinco entidades y, cuando falta un dato que bloquea, lo pregunta en vez de inventarlo.
+**Respuesta corta.** Sí. El chat reconoce seis intenciones y extrae cinco entidades combinando reglas y modelo: las reglas identifican la pieza y el modelo entiende qué se pide. Cuando falta un dato que bloquea, lo pregunta en vez de inventarlo. En catorce mensajes difíciles, las reglas solas acertaron 8 y las reglas con el modelo, 14.
 
 ### 1. Intenciones y entidades
 
@@ -1100,33 +1100,51 @@ Dos aclaraciones reales del chat:
 
 Solo se pregunta por lo que bloquea: la pieza y la cantidad. Presupuesto y plazo son opcionales; si no se dan, quedan vacíos, nunca en cero.
 
-### 4. Modelo o reglas
+### 4. Reglas y modelo, cada uno en lo suyo
 
-| | Cadena con modelo (few-shot) | Reglas del chat |
+El chat interpreta cada turno con dos piezas (`interpretar_turno`, en [dialogue.py](../src/pedro/dialogue.py)):
+
+| Qué se decide | Quién | Por qué |
 |---|---|---|
-| Aciertos en diez solicitudes difíciles (R11) | 10 de 10 | No se midió en ese conjunto |
-| Entiende expresiones nuevas | Sí | Solo las previstas |
-| Coste por turno | Una llamada al modelo | Ninguno |
-| Funciona sin credenciales | No | Sí |
-| Reproducible | Casi | Sí |
+| Qué pieza es | Reglas | Un ID tiene formato fijo (`PEC-01-0001`): una regla no se equivoca y permite comprobar que la pieza existe |
+| Si el mensaje es una compra, y qué cambia en cantidad, presupuesto y plazo | Modelo, con ejemplos few-shot y la solicitud en curso como contexto | La gente lo dice de mil maneras |
+| Qué hacer sin modelo o si su respuesta no sirve | Reglas | El chat debe funcionar sin credenciales |
 
-**Decisión técnica.** El chat usa reglas para extraer la solicitud de compra porque debe funcionar sin clave de OpenAI y dar siempre el mismo resultado. Todo lo que las reglas no reconocen como compra pasa al agente, que lo interpreta con el modelo.
+El modelo solo se consulta cuando puede aportar: si las reglas ven una compra o si hay una solicitud en curso. Un saludo sin compra pendiente no cuesta ninguna llamada.
 
-Esa decisión tiene un coste, y una conversación real lo mostró. Las reglas fallaron en tres mensajes: no entendieron «que sean 3», tomaron una pregunta sobre «instalar una pieza» por una compra de una unidad, y una declaración de preferencia acabó en una comparación. Se corrigieron los tres casos y se añadieron pruebas, pero la lección queda: **las reglas solo cubren lo que alguien previó**.
+Medición con el modelo real sobre catorce mensajes difíciles, con el resultado correcto fijado a mano:
+
+| Mensaje (con una solicitud en curso de 2 unidades y plazo 7) | Solo reglas | Reglas y modelo |
+|---|---|---|
+| Ahora que sean 3 y mantén el plazo | ✔ | ✔ |
+| Súbelo a media docena | ✘ no lo ve | ✔ 6 unidades |
+| Con cuatro me alcanza | ✘ no lo ve | ✔ 4 unidades |
+| Necesito que llegue en dos semanas como mucho | ✘ deja el plazo en 7 | ✔ plazo 14 |
+| Olvida el plazo | ✘ deja el plazo en 7 | ✔ sin plazo |
+| Duplica la cantidad | ✘ deja 2 | ✔ 4 unidades |
+| Tengo mil quinientos reales para esto | ✘ no lo ve | ✔ 150000 centavos |
+| ¿La garantía cubre dos piezas del mismo pedido? | ✔ no es compra | ✔ no es compra |
+| … otros seis mensajes | ✔ | ✔ |
+| **Aciertos** | **8 de 14** | **14 de 14** |
+
+**Decisión técnica.** Al principio el chat usaba solo reglas, para funcionar sin credenciales y dar siempre el mismo resultado. Una conversación real mostró el coste: las reglas fallaron en tres mensajes (no entendieron «que sean 3», tomaron «instalar una pieza» por una compra de una unidad y no supieron qué hacer con una preferencia). Se corrigieron esos tres casos, pero cada corrección era un parche: **las reglas solo cubren lo que alguien previó**. Por eso se añadió el modelo donde hace falta comprensión y se dejaron las reglas donde hace falta exactitud. El mismo principio que en la verificación, al revés: allí el modelo decide y el sistema pone los datos; aquí la regla identifica y el modelo interpreta.
 
 ### Evidencia
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
 | Siete mensajes con intención, entidades, faltantes y lo que hacen las reglas del chat | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r17_intencion_y_entidades` | **Ejecución real remota** (`gpt-4.1-mini`) para el modelo; reglas locales |
+| Catorce mensajes difíciles: solo reglas frente a reglas y modelo, con la lectura del modelo en cada caso | [trazas/r17_interprete_llm.json](trazas/r17_interprete_llm.json); [scripts/demostrar_r17.py](../scripts/demostrar_r17.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
 | La conversación en la que fallaron las reglas, antes de la corrección | [trazas/fase3_memoria_llm_antes.json](trazas/fase3_memoria_llm_antes.json) | Ejecución real remota |
 | Reglas: cantidad dicha de pasada, preguntas que no son compra, aclaraciones | [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
 
 ### Pendientes y limitaciones
 
-- Las reglas reconocen la compra; las demás intenciones las decide el agente al elegir herramienta, no un clasificador aparte.
+- El intérprete decide si un mensaje es una compra; las demás intenciones (política, CEP, preferencia) las decide el agente al elegir herramienta, no un clasificador aparte.
 - El destino se extrae como CEP; no se interpreta una dirección escrita.
-- Las reglas siguen siendo frágiles ante formas de hablar no previstas.
+- Sin credenciales solo actúan las reglas, que siguen siendo frágiles ante formas de hablar no previstas.
+- El intérprete añade una llamada al modelo en los turnos de compra.
+- Catorce mensajes elegidos por difíciles no miden el uso normal; una sola corrida.
 
 ## R18 — Contexto y descomposición en una conversación real multi-turno
 

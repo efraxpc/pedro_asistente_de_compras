@@ -14,7 +14,7 @@ from langchain_core.tools import StructuredTool
 from .business import brl
 from .catalog import Escenario, buscar, ficha, listar, ofertas
 from .contracts import Evidencia, RespuestaCompra, Solicitud
-from .dialogue import EstadoCompra, interpretar_compra
+from .dialogue import EstadoCompra, crear_interprete, interpretar_turno
 from .integrations import consultar_cep
 from .memory import (FastEmbedder, Historial, dataset_sesion, guardar_borrador,
                      guardar_episodio, guardar_preferencia, leer_borrador,
@@ -404,7 +404,15 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
             return AIMessage(content=directa)
         borrador = leer_borrador(memoria_db, usuario, sesion)
         previo = EstadoCompra.model_validate(borrador) if borrador is not None else None
-        compra = interpretar_compra(escenario, previo, pregunta)
+        interprete = None
+        if llm is not None:
+            try:
+                interprete = crear_interprete(llm)
+            except Exception:
+                interprete = None
+        compra, lectura = interpretar_turno(escenario, previo, pregunta, interprete)
+        if traza and lectura.get("fuente") == "modelo":
+            traza.eventos.append({"evento": "interpretacion", **lectura})
         solicitud_actual = None
         if compra is not None:
             estado, aclaracion = compra

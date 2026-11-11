@@ -36,7 +36,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 | R14 | Ventana de contexto + búsqueda vectorial | R3.2, R3.4 | docs/respuestas_rubricas.md §R14; src/pedro/memory.py; NB03; docs/trazas/fase3_memoria_llm.json | Ventana deslizante de 12 (14 guardados) combinada con recuperación vectorial: tres episodios recuperados en una sesión nueva (similitud 0,31–0,36) y ninguno para otro usuario; reglas de reemplazo, actualización e ignorado de recuerdos | Real remoto puntual y local |
 | R15 | Comparación de herramientas especializadas de memoria | R3.6 | docs/respuestas_rubricas.md §R15; docs/comparaciones.md; docs/trazas/fase3_memoria_llm.json | Mem0, Letta/MemGPT y LangMem comparados con la implementación propia por arquitectura y caso de uso; decisión argumentada; guardado de preferencias por herramienta ejecutado con el modelo real; las tres herramientas no se ejecutaron (declarado) | Local y remoto puntual |
 | R16 | Chatbot con ConversationBufferMemory | R2.2 | docs/respuestas_rubricas.md §R16; src/pedro/legacy.py (crear_chatbot_buffer); NB03; tests/test_legacy.py; docs/trazas/fase3_memoria_llm.json | ConversationChain con ConversationBufferMemory en una conversación real de cuatro turnos: recuerda nombre, cantidad, presupuesto y plazo; la memoria crece de 260 a 935 caracteres | Real remoto puntual y doble |
-| R17 | Intención y extracción de entidades | R3.5 | docs/respuestas_rubricas.md §R17; src/pedro/dialogue.py; src/pedro/chains.py; tests/test_dialogue.py; docs/trazas/fase3_memoria_llm.json | Seis intenciones y cinco entidades; siete mensajes interpretados por gpt-4.1-mini con la cadena few-shot; aclaraciones reales por pieza ambigua y cantidad ausente; reglas del chat corregidas tras fallar en una conversación real | Real remoto puntual y local |
+| R17 | Intención y extracción de entidades | R3.5 | docs/respuestas_rubricas.md §R17; src/pedro/dialogue.py (interpretar_turno); scripts/demostrar_r17.py; tests/test_dialogue.py; docs/trazas/r17_interprete_llm.json | Seis intenciones y cinco entidades; el chat combina reglas (pieza) y modelo few-shot (si es compra y qué cambia); medido con gpt-4.1-mini en catorce mensajes difíciles: solo reglas 8/14, reglas y modelo 14/14; aclaraciones reales por pieza ambigua y cantidad ausente | Real remoto puntual y local |
 | R18 | Contexto y descomposición validados en conversación real | R3.1, R3.5, R5.5 | docs/respuestas_rubricas.md §R18; scripts/demostrar_fase3.py; docs/trazas/fase3_memoria_llm.json; docs/trazas/fase3_memoria_llm_antes.json | Conversación real de siete turnos con el agente final: cambia cantidad conservando plazo, cambia límites, guarda preferencia, responde CEP y política sin perder el borrador y vuelve a comparar; persistencia tras reinicio y aislamiento; tres fallos de la primera ejecución diagnosticados y corregidos | Real remoto puntual |
 
 ## Fase 4 — SQL, APIs y RAG existente (R19–R23)
@@ -75,7 +75,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Entregable | Estado |
 |---|---|
-| Código y notebooks reproducibles con dobles identificados | Local: 107/107 pruebas, 5/5 notebooks reejecutados |
+| Código y notebooks reproducibles con dobles identificados | Local: 112/112 pruebas, 5/5 notebooks reejecutados |
 | Informe técnico en PDF | Local: docs/informe.md y docs/informe.pdf; actualizar tras cerrar pendientes |
 | Registro de evaluación en LangSmith | Real: cinco experimentos sobre el conjunto pedro-infnet-casos-derivados-7610315f (ver R29) |
 | Video de demostración + enlace Drive institucional | Pendiente: requiere grabación y acceso del alumno |
@@ -94,6 +94,6 @@ Las 29 rúbricas tienen respuesta redactada y ejecución guardada. Lo que queda 
 ## Limitaciones conocidas del agente
 
 - El planificador de turno admite como mucho una petición de cada tipo y solo actúa con el modelo disponible (R02).
-- Las reglas de diálogo son frágiles ante formas de hablar no previstas (R17).
+- Sin credenciales el chat interpreta solo con reglas, que son frágiles ante formas de hablar no previstas (R17).
 - La verificación comprueba que la respuesta sea cierta, no que sea pertinente (R24).
 - El text-to-SQL del chat comprueba que la consulta sea segura, no que responda exactamente a la pregunta; por eso muestra la consulta (R21).

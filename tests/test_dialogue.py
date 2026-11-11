@@ -116,3 +116,79 @@ def test_preferencia_se_confirma_solo_si_la_herramienta_la_guardo(tmp_path):
     assert verificar(respuesta, escenario, observaciones=[guardada]) == []
     rechazada = ("guardar_preferencia", {"estado": "invalido", "error": "sin petición explícita"})
     assert verificar(respuesta, escenario, observaciones=[rechazada]) == ["preferencia no guardada"]
+
+
+def _interprete(**cambio):
+    import json
+
+    from langchain_core.runnables import RunnableLambda
+
+    from pedro.dialogue import crear_interprete
+
+    vistos = []
+
+    def modelo(prompt):
+        vistos.append(prompt.to_messages()[-1].content)
+        return json.dumps(cambio)
+
+    return crear_interprete(RunnableLambda(modelo)), vistos
+
+
+def test_el_modelo_entiende_un_cambio_que_las_reglas_no_ven(contexto):
+    from pedro.dialogue import interpretar_turno
+
+    escenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001 con plazo 7 días")
+    assert interpretar_compra(escenario, previo, "Súbelo a media docena") is None
+    interprete, vistos = _interprete(es_compra=True, cantidad=6)
+    (estado, aclaracion), informe = interpretar_turno(escenario, previo, "Súbelo a media docena", interprete)
+    assert aclaracion is None and informe["fuente"] == "modelo"
+    assert (estado.solicitud.producto_id, estado.solicitud.cantidad,
+            estado.solicitud.plazo_max_dias) == ("PEC-01-0001", 6, 7)
+    assert '"cantidad":2' in vistos[0] and "Súbelo a media docena" in vistos[0]
+
+
+def test_el_modelo_quita_un_limite_y_conserva_el_resto(contexto):
+    from pedro.dialogue import interpretar_turno
+
+    escenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001 con plazo 7 días")
+    interprete, _ = _interprete(es_compra=True, presupuesto_centavos=500000, quitar=["plazo"])
+    (estado, _), _ = interpretar_turno(escenario, previo, "Olvida el plazo; tope de 5 mil", interprete)
+    assert (estado.solicitud.cantidad, estado.solicitud.presupuesto_centavos,
+            estado.solicitud.plazo_max_dias) == (2, 500000, None)
+
+
+def test_si_el_modelo_dice_que_no_es_compra_el_borrador_no_se_toca(contexto):
+    from pedro.dialogue import interpretar_turno
+
+    escenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001")
+    interprete, _ = _interprete(es_compra=False)
+    resultado, informe = interpretar_turno(escenario, previo, "Gracias, eso es todo", interprete)
+    assert resultado is None and informe["modelo"] == {"es_compra": False, "quitar": []}
+
+
+def test_sin_modelo_o_con_salida_ilegible_valen_las_reglas(contexto):
+    from langchain_core.runnables import RunnableLambda
+
+    from pedro.dialogue import crear_interprete, interpretar_turno
+
+    escenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001")
+    reglas = interpretar_compra(escenario, previo, "Ahora 3 unidades")
+    assert interpretar_turno(escenario, previo, "Ahora 3 unidades", None) == (reglas, {"fuente": "reglas"})
+    roto = crear_interprete(RunnableLambda(lambda _: "no es JSON"))
+    resultado, informe = interpretar_turno(escenario, previo, "Ahora 3 unidades", roto)
+    assert resultado == reglas and informe["fuente"] == "reglas"
+
+
+def test_la_pieza_la_resuelven_las_reglas_aunque_haya_modelo(contexto):
+    from pedro.dialogue import interpretar_turno
+
+    escenario, _, _, _ = contexto
+    interprete, _ = _interprete(es_compra=True, cantidad=2)
+    (estado, aclaracion), _ = interpretar_turno(escenario, None, "Compara 2 unidades de PEC-99-9999", interprete)
+    assert estado.esperando == "producto" and "No encontré PEC-99-9999" in aclaracion
+    sin_pieza, informe = interpretar_turno(escenario, None, "Hola", interprete)
+    assert sin_pieza is None and informe == {"fuente": "reglas"}
