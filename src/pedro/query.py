@@ -51,6 +51,7 @@ ESQUEMA_PERMITIDO: dict[str, tuple[str, ...]] = {
     "offers": ("id", "part_id", "supplier_id", "estimated_brl_cents", "shipping_brl_cents",
                "stock_qty", "availability", "lead_days", "min_order_qty"),
     "compatibility": ("part_id", "brand", "model_code", "year_from", "year_to"),
+    "price_history": ("offer_id", "observed_on", "estimated_brl_cents"),
 }
 FUNCIONES_PERMITIDAS = {"count", "sum", "avg", "min", "max", "round", "lower", "upper", "length",
                         "substr", "coalesce", "abs", "like", "total"}

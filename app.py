@@ -8,7 +8,7 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from pedro.agent import crear_flujo, es_diagnostico_t24
-from pedro.business import brl, describir_motivos
+from pedro.business import brl, describir_motivos, variacion_porcentual
 from pedro.catalog import abrir_escenario, crear_escenario, ficha, listar, ofertas
 from pedro.contracts import Solicitud
 from pedro.memory import MODELO_RECUERDOS, Historial, nueva_sesion, sesiones
@@ -211,6 +211,12 @@ else:
                                    "Total": brl(a.total_centavos), "Cumple": a.cumple,
                                    "Origen": "nacional" if a.oferta.nacional else "internacional",
                                    "Pedido mínimo": a.oferta.pedido_minimo,
+                                   "Precio unitario": brl(a.oferta.precio_unitario_centavos),
+                                   "Media anterior": (brl(a.oferta.precio_medio_centavos)
+                                                      if a.oferta.precio_medio_centavos else "—"),
+                                   "Frente a la media": (
+                                       f"{variacion_porcentual(a.oferta.precio_unitario_centavos, a.oferta.precio_medio_centavos):+d} %"
+                                       if a.oferta.precio_medio_centavos else "—"),
                                    "Descartes": describir_motivos(a), "Fuente": a.oferta.id}
                                   for a in respuesta.alternativas], hide_index=True,
                                  alt="Todas las ofertas, totales y descartes")

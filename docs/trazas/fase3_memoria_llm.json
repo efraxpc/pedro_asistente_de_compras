@@ -9,7 +9,7 @@
     "R18"
   ],
   "modo": "real remoto (OpenAI y ViaCEP); NLI y embeddings reales locales; datos sintéticos",
-  "fecha_utc": "2026-11-11T13:54:57+00:00",
+  "fecha_utc": "2026-11-11T14:12:25+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "r16_chatbot_conversation_buffer_memory": {
     "turnos": [
@@ -20,21 +20,21 @@
       },
       {
         "usuario": "Que sean 2 unidades.",
-        "pedro": "Perfecto, Ana. ¿Podrías indicarme tu presupuesto aproximado y el plazo en que necesitas las 2 unidades del termostato? Así consulto el catálogo para darte la mejor opción.",
-        "caracteres_en_memoria": 449
+        "pedro": "Perfecto, Ana. ¿Cuál es tu presupuesto aproximado y en cuánto tiempo necesitas las 2 unidades del termostato?",
+        "caracteres_en_memoria": 387
       },
       {
         "usuario": "Tengo hasta R$ 900 y lo necesito en 5 días.",
-        "pedro": "Gracias, Ana. Consultaré el catálogo para verificar disponibilidad y precios de 2 termostatos dentro de tu presupuesto y plazo, y te informaré a la brevedad.",
-        "caracteres_en_memoria": 667
+        "pedro": "Gracias, Ana. Consultaré el catálogo para verificar disponibilidad y precios de 2 termostatos dentro de tu presupuesto de R$ 900 y con entrega en 5 días. Te aviso en breve.",
+        "caracteres_en_memoria": 620
       },
       {
         "usuario": "Resume mi solicitud completa y dime cómo me llamo.",
-        "pedro": "Claro, Ana. Solicitas 2 unidades de termostato para tu nevera, con un presupuesto de hasta R$ 900 y un plazo de entrega de 5 días. ¿Es correcto?",
-        "caracteres_en_memoria": 879
+        "pedro": "Claro, Ana. Solicitas 2 unidades de termostato para tu nevera, con un presupuesto de hasta R$ 900 y entrega en un plazo de 5 días. ¿Quieres que te confirme cuando tenga la información del catálogo?",
+        "caracteres_en_memoria": 885
       }
     ],
-    "memoria_final": "Usuario: Hola, soy Ana. Necesito un termostato para mi nevera.\nPedro: Hola Ana, ¿podrías indicarme la cantidad que necesitas, tu presupuesto aproximado y el plazo en que requieres el termostato? Así consulto el catálogo para ayudarte mejor.\nUsuario: Que sean 2 unidades.\nPedro: Perfecto, Ana. ¿Podrías indicarme tu presupuesto aproximado y el plazo en que necesitas las 2 unidades del termostato? Así consulto el catálogo para darte la mejor opción.\nUsuario: Tengo hasta R$ 900 y lo necesito en 5 días.\nPedro: Gracias, Ana. Consultaré el catálogo para verificar disponibilidad y precios de 2 termostatos dentro de tu presupuesto y plazo, y te informaré a la brevedad.\nUsuario: Resume mi solicitud completa y dime cómo me llamo.\nPedro: Claro, Ana. Solicitas 2 unidades de termostato para tu nevera, con un presupuesto de hasta R$ 900 y un plazo de entrega de 5 días. ¿Es correcto?"
+    "memoria_final": "Usuario: Hola, soy Ana. Necesito un termostato para mi nevera.\nPedro: Hola Ana, ¿podrías indicarme la cantidad que necesitas, tu presupuesto aproximado y el plazo en que requieres el termostato? Así consulto el catálogo para ayudarte mejor.\nUsuario: Que sean 2 unidades.\nPedro: Perfecto, Ana. ¿Cuál es tu presupuesto aproximado y en cuánto tiempo necesitas las 2 unidades del termostato?\nUsuario: Tengo hasta R$ 900 y lo necesito en 5 días.\nPedro: Gracias, Ana. Consultaré el catálogo para verificar disponibilidad y precios de 2 termostatos dentro de tu presupuesto de R$ 900 y con entrega en 5 días. Te aviso en breve.\nUsuario: Resume mi solicitud completa y dime cómo me llamo.\nPedro: Claro, Ana. Solicitas 2 unidades de termostato para tu nevera, con un presupuesto de hasta R$ 900 y entrega en un plazo de 5 días. ¿Quieres que te confirme cuando tenga la información del catálogo?"
   },
   "r17_intencion_y_entidades": [
     {
@@ -161,12 +161,12 @@
         "cantidad": 5,
         "plazo_max_dias": 7
       },
-      "respuesta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001-BR-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06"
+      "respuesta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001-BR-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; descartada por plazo [PEC-01-0001-INT-06]\nHistorial de precios (informativo; no cambia la recomendación):\n- CentroPeças: hoy R$ 1.438,92 por unidad; mes anterior R$ 1.189,87 (+21 %); media de 5 meses R$ 1.372,51 (+5 %).\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06"
     },
     {
       "usuario": "Mejor sin límite de plazo, pero con presupuesto de R$ 10.000",
       "herramientas": [
-        "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 5, 'presupuesto_centavos': 1000000, 'plazo_max_dias': None}"
+        "comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 5, 'presupuesto_centavos': 1000000}"
       ],
       "verificaciones": [
         []
@@ -176,7 +176,7 @@
         "cantidad": 5,
         "presupuesto_centavos": 1000000
       },
-      "respuesta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001-BR-06]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; cumple [PEC-01-0001-INT-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por stock [PEC-01-0001-BR-05]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
+      "respuesta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001-BR-06]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; cumple [PEC-01-0001-INT-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por stock [PEC-01-0001-BR-05]\nHistorial de precios (informativo; no cambia la recomendación):\n- CentroPeças: hoy R$ 1.438,92 por unidad; mes anterior R$ 1.189,87 (+21 %); media de 5 meses R$ 1.372,51 (+5 %).\n- Atlantic Repair Parts: hoy R$ 1.381,55 por unidad; mes anterior R$ 1.466,10 (-6 %); media de 5 meses R$ 1.454,84 (-5 %).\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
     },
     {
       "usuario": "Prefiero proveedores nacionales, recuérdalo",
@@ -221,7 +221,7 @@
         "cantidad": 5,
         "presupuesto_centavos": 1000000
       },
-      "respuesta_publicada": "Política ficticia de demostración. Para comprobar la compatibilidad eléctrica antes de instalar una pieza, se deben comparar marca, código de modelo, intervalo de años, voltaje y otros atributos técnicos con los del aparato de prueba. No basta con que un texto diga \"compatible con una marca\" porque puede haber revisiones eléctricas distintas entre modelos. Si el voltaje o el conector no coinciden, la pieza no debe instalarse solo para probar si funciona.\nFuentes: FIC-GAR-01-S03-C01"
+      "respuesta_publicada": "Política ficticia de demostración. Para comprobar la compatibilidad eléctrica antes de instalar una pieza, se deben comparar los valores de marca, código de modelo, voltaje y otros atributos técnicos que contiene la ficha técnica con el aparato de prueba. No se debe instalar una pieza si el voltaje o el conector no coinciden, y también es importante contrastar el código exacto, ya que un mismo nombre comercial puede tener revisiones eléctricas distintas.\nFuentes: FIC-GAR-01-S03-C01"
     },
     {
       "usuario": "Vuelve a comparar con lo último que te pedí",
@@ -236,12 +236,12 @@
         "cantidad": 5,
         "presupuesto_centavos": 1000000
       },
-      "respuesta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001-BR-06]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; cumple [PEC-01-0001-INT-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por stock [PEC-01-0001-BR-05]\nSe aplicó tu preferencia por proveedores nacionales.\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
+      "respuesta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001-BR-06]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; cumple [PEC-01-0001-INT-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por stock [PEC-01-0001-BR-05]\nHistorial de precios (informativo; no cambia la recomendación):\n- CentroPeças: hoy R$ 1.438,92 por unidad; mes anterior R$ 1.189,87 (+21 %); media de 5 meses R$ 1.372,51 (+5 %).\n- Atlantic Repair Parts: hoy R$ 1.381,55 por unidad; mes anterior R$ 1.466,10 (-6 %); media de 5 meses R$ 1.454,84 (-5 %).\nSe aplicó tu preferencia por proveedores nacionales.\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
     },
     {
       "usuario": "Compara 2 unidades de PEC-11-0001",
       "herramientas": [
-        "comparar_ofertas {'producto_id': 'PEC-11-0001', 'cantidad': 2, 'presupuesto_centavos': None, 'plazo_max_dias': None}"
+        "comparar_ofertas {'producto_id': 'PEC-11-0001', 'cantidad': 2}"
       ],
       "verificaciones": [
         []
@@ -250,7 +250,7 @@
         "producto_id": "PEC-11-0001",
         "cantidad": 2
       },
-      "respuesta_publicada": "Casa Técnica Brasil: R$ 1.970,38 para 2 unidades; plazo 9 días.\n- Casa Técnica Brasil (nacional): R$ 1.970,38; cumple [PEC-11-0001-BR-04]\n- Atlantic Repair Parts (internacional): R$ 619,38; cumple [PEC-11-0001-INT-06]\n- CentroPeças (nacional): R$ 1.179,23; descartada por stock [PEC-11-0001-BR-06]\nSe aplicó tu preferencia por proveedores nacionales. Sin ella, la más barata sería Atlantic Repair Parts por R$ 619,38.\nFuentes: PEC-11-0001-BR-04, PEC-11-0001-INT-06, PEC-11-0001-BR-06"
+      "respuesta_publicada": "Casa Técnica Brasil: R$ 1.970,38 para 2 unidades; plazo 9 días.\n- Casa Técnica Brasil (nacional): R$ 1.970,38; cumple [PEC-11-0001-BR-04]\n- Atlantic Repair Parts (internacional): R$ 619,38; cumple [PEC-11-0001-INT-06]\n- CentroPeças (nacional): R$ 1.179,23; descartada por stock [PEC-11-0001-BR-06]\nHistorial de precios (informativo; no cambia la recomendación):\n- Casa Técnica Brasil: hoy R$ 976,71 por unidad; mes anterior R$ 1.262,04 (-23 %); media de 5 meses R$ 1.110,59 (-12 %); es su precio más bajo del periodo.\n- Atlantic Repair Parts: hoy R$ 97,40 por unidad; mes anterior R$ 111,90 (-13 %); media de 5 meses R$ 103,63 (-6 %).\nConsejo sobre el precio (redactado por el modelo y verificado): El precio de Casa Técnica Brasil está 12 % por debajo de su media de 5 meses y es el más bajo del periodo. La oferta de Atlantic Repair Parts cuesta R$ 1.351,00 menos que la recomendada y entrega en 29 días.\nSe aplicó tu preferencia por proveedores nacionales. Sin ella, la más barata sería Atlantic Repair Parts por R$ 619,38.\nFuentes: PEC-11-0001-BR-04, PEC-11-0001-INT-06, PEC-11-0001-BR-06"
     }
   ],
   "r13_mapa_de_memorias": {
@@ -294,12 +294,12 @@
           "texto": "Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días | Ninguna oferta cumple las restricciones indicadas.\n- Litoral Parts (nacional): R$ 819,80; descar"
         },
         {
-          "similitud": 0.283,
+          "similitud": 0.218,
           "texto": "Compara 2 unidades de PEC-11-0001 | Casa Técnica Brasil: R$ 1.970,38 para 2 unidades; plazo 9 días.\n- Casa Técnica Brasil (nacional): R$ 1.970,38; cumple [PEC-1"
         },
         {
-          "similitud": 0.274,
-          "texto": "Vuelve a comparar con lo último que te pedí | CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001"
+          "similitud": 0.207,
+          "texto": "Mejor sin límite de plazo, pero con presupuesto de R$ 10.000 | CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cu"
         }
       ]
     },

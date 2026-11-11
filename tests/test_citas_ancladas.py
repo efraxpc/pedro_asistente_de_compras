@@ -63,8 +63,9 @@ def _chat(tmp_path, monkeypatch, cita, etiqueta_nli):
     fuente_id = next(i for i, d in indice.docstore._dict.items() if FRAGMENTO[:40] in d.page_content)
     literal = indice.docstore.search(fuente_id).page_content
     observacion = json.dumps({"fragmentos": [{"fuente_id": fuente_id, "texto": literal}]})
+    # El modelo copia mal el identificador del escenario; eso no debe impedir publicar.
     respuesta = RespuestaCompra(
-        estado="politica", dataset_id=escenario.dataset_id, solicitud=Solicitud(),
+        estado="politica", dataset_id="identificador-mal-copiado", solicitud=Solicitud(),
         mensaje="El daño visible se notifica en 7 días corridos.",
         evidencias=[Evidencia(tipo="politica", fuente_id=fuente_id, texto=cita)])
 

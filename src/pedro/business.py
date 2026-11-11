@@ -1,4 +1,5 @@
 """Reglas exactas en centavos: un flete, sin dividir pedidos y respetando el pedido mínimo."""
+from fractions import Fraction
 from typing import Literal
 
 from .contracts import Alternativa, Oferta, Solicitud
@@ -21,6 +22,32 @@ def describir_motivos(alternativa: Alternativa) -> str:
         else:
             partes.append(ETIQUETAS_MOTIVO[motivo])
     return ", ".join(partes)
+
+
+def variacion_porcentual(actual: int, referencia: int) -> int:
+    """Variación de `actual` respecto a `referencia`, en puntos porcentuales enteros."""
+    return round(Fraction(100 * (actual - referencia), referencia))
+
+
+def describir_precio(oferta: Oferta) -> str | None:
+    """Sitúa el precio unitario vigente en su historial. No cambia la recomendación."""
+    if not oferta.meses_historial or not oferta.precio_medio_centavos or not oferta.precio_anterior_centavos:
+        return None
+    actual = oferta.precio_unitario_centavos
+
+    def cambio(referencia: int) -> str:
+        puntos = variacion_porcentual(actual, referencia)
+        return "igual" if puntos == 0 else f"{puntos:+d} %"
+
+    texto = (f"{oferta.proveedor_nombre}: hoy {brl(actual)} por unidad; mes anterior "
+             f"{brl(oferta.precio_anterior_centavos)} ({cambio(oferta.precio_anterior_centavos)}); "
+             f"media de {oferta.meses_historial} meses {brl(oferta.precio_medio_centavos)} "
+             f"({cambio(oferta.precio_medio_centavos)})")
+    if actual == oferta.precio_minimo_centavos:
+        texto += "; es su precio más bajo del periodo"
+    elif actual == oferta.precio_maximo_centavos:
+        texto += "; es su precio más alto del periodo"
+    return texto + "."
 
 
 def origen_preferido(preferencias: dict[str, str]) -> Literal["nacional", "internacional"] | None:

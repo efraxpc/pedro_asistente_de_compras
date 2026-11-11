@@ -103,4 +103,26 @@ def ofertas(escenario: Escenario, producto_id: str) -> list[Oferta]:
                            "o.lead_days AS plazo_dias,o.min_order_qty AS pedido_minimo,"
                            "s.domestic AS nacional FROM offers o JOIN suppliers s ON s.id=o.supplier_id "
                            "WHERE o.part_id=? ORDER BY o.supplier_id", (producto_id,)).fetchall()
-    return [Oferta(dataset_id=escenario.dataset_id, **dict(f)) for f in filas]
+        historiales: dict[str, list[int]] = {}
+        marcas = ",".join("?" * len(filas))
+        for oferta_id, precio in db.execute(
+                f"SELECT offer_id,estimated_brl_cents FROM price_history WHERE offer_id IN ({marcas}) "
+                "ORDER BY offer_id,observed_on", [f["id"] for f in filas]):
+            historiales.setdefault(oferta_id, []).append(precio)
+    return [Oferta(dataset_id=escenario.dataset_id, **dict(f), **_resumen_historial(
+        historiales.get(f["id"], []), f["precio_unitario_centavos"])) for f in filas]
+
+
+def _resumen_historial(precios: list[int], vigente: int) -> dict:
+    """Resume el historial de una oferta en centavos enteros.
+
+    La última observación es el precio vigente; la media y el precio anterior se calculan
+    con las anteriores. La media se redondea al centavo más cercano sin usar decimales.
+    """
+    previos = precios[:-1] if precios and precios[-1] == vigente else precios
+    if not previos:
+        return {}
+    return {"meses_historial": len(previos), "precio_anterior_centavos": previos[-1],
+            "precio_medio_centavos": (2 * sum(previos) + len(previos)) // (2 * len(previos)),
+            "precio_minimo_centavos": min(*previos, vigente),
+            "precio_maximo_centavos": max(*previos, vigente)}

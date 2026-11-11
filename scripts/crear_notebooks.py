@@ -440,6 +440,32 @@ for titulo, pedido in casos:
     print('###', titulo, '| errores de verificación:', verificar(comparacion, escenario))
     print(renderizar(comparacion))
     print()"""),
+    ("md", "## Aviso de precio: función hardcoded, consejo del modelo y verificación\nEl historial de precios no cambia el ganador, pero genera un aviso cuando el precio de hoy se aparta de su media. La señal, los hechos y el aviso de plantilla son funciones *hardcoded* y se ejecutan aquí de verdad. **Doble de prueba:** el consejo lo devuelve un modelo guionado y el NLI es un clasificador guionado, para ver los tres desenlaces: consejo respaldado, consejo con una cifra inventada y consejo sin respaldo NLI. La medición con el modelo y el NLI reales está en `docs/trazas/precios_consejo_llm.json`."),
+    ("code", """import json
+from langchain_core.runnables import RunnableLambda
+from pedro.precios import aconsejar, aviso_de_precio, crear_consejero, hechos_de_precio, senal_precio
+cara = respuesta_local(escenario, Solicitud(producto_id='PEC-02-0189', cantidad=5))
+for alternativa in cara.alternativas:
+    if alternativa.cumple:
+        print('señal:', senal_precio(alternativa.oferta).model_dump())
+print('hechos:')
+for hecho in hechos_de_precio(cara):
+    print('  -', hecho)
+print('aviso de plantilla:', aviso_de_precio(cara))
+class NLIGuionado:
+    def __init__(self, etiqueta): self.etiqueta = etiqueta
+    def clasificar(self, premisa, hipotesis): return self.etiqueta
+bueno = ('El precio de CentroPeças está 11 % por encima de su media de 5 meses. Atlantic Repair Parts '
+         'cuesta 1 % más que la recomendada y está 10 % por debajo de su media.')
+casos = [('consejo respaldado', bueno, 'entailment'),
+         ('cifra inventada', bueno.replace('11 %', '40 %'), 'entailment'),
+         ('sin respaldo NLI', bueno + ' Es una gran oportunidad.', 'neutral')]
+for titulo, texto, etiqueta in casos:
+    consejero = crear_consejero(RunnableLambda(lambda _, t=texto: json.dumps({'consejo': t})))
+    resultado = aconsejar(cara, consejero, NLIGuionado(etiqueta))
+    print('###', titulo, '->', resultado['fuente'], '| errores:', resultado['errores'])
+    print('    se publica:', resultado['texto'])
+print(renderizar(cara).splitlines()[-2])"""),
     ("md", "La evaluación remota se ejecuta con evals/evaluar_flujo.py. No se reportan métricas sin esa corrida."),
 ])
 print("Cinco notebooks creados")

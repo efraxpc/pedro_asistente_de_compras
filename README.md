@@ -31,7 +31,7 @@ El primer acceso crea un escenario con dataset_id UUID, una copia de datasets/pi
 ## Componentes
 
 - src/pedro/catalog.py: escenario y consultas SQLite de solo lectura.
-- src/pedro/contracts.py y business.py: contratos y comparación de proveedores en centavos. Una oferta se descarta por stock, pedido mínimo del proveedor, plazo o presupuesto; las válidas se ordenan por la preferencia de origen guardada del usuario (nacional o internacional), total, plazo y proveedor. Cada respuesta muestra todas las ofertas con su origen y el motivo de descarte. Las respuestas a las 29 rúbricas están en docs/respuestas_rubricas.md.
+- src/pedro/contracts.py y business.py: contratos y comparación de proveedores en centavos. Una oferta se descarta por stock, pedido mínimo del proveedor, plazo o presupuesto; las válidas se ordenan por la preferencia de origen guardada del usuario (nacional o internacional), total, plazo y proveedor. Cada respuesta muestra todas las ofertas con su origen y el motivo de descarte. Para las ofertas válidas se añade su historial de precios (mes anterior y media de cinco meses), que informa y no cambia el orden. Si el precio de hoy se aparta de su media se añade un aviso de precio: una plantilla fija o, con el agente, un consejo redactado por el modelo y verificado con NLI (src/pedro/precios.py). Las respuestas a las 29 rúbricas están en docs/respuestas_rubricas.md.
 - src/pedro/query.py: plan Pydantic a SELECT parametrizado con traza.
 - src/pedro/memory.py: mensajes completos, ventana de 12, borradores de compra por sesión, preferencias y episodios FastEmbed por usuario.
 - src/pedro/dialogue.py: extracción de restricciones por turno y preguntas solo para datos bloqueantes.

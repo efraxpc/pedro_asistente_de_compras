@@ -1,0 +1,283 @@
+{
+  "tema": "aviso de precio",
+  "rubricas_que_aplica": [
+    "R04",
+    "R06",
+    "R09",
+    "R11",
+    "R12",
+    "R19",
+    "R24"
+  ],
+  "modo": "real remoto (OpenAI) para el consejo; NLI real local; catálogo sintético",
+  "fecha_utc": "2026-11-11T14:09:05+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "temperature": 0,
+  "modelo_nli": "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
+  "umbrales": {
+    "notable": 10,
+    "fuerte": 20
+  },
+  "frecuencia_del_aviso": {
+    "recomendaciones_para_5_unidades": 2563,
+    "con_aviso_de_precio": 1049
+  },
+  "consejos": {
+    "casos": 15,
+    "publicado": {
+      "aviso fijo": 10,
+      "consejo verificado": 5
+    },
+    "motivos_de_rechazo": {
+      "NLI: neutral": 8,
+      "NLI: contradiction": 2
+    }
+  },
+  "nota": "Los primeros quince casos con aviso, en orden de catálogo. Una corrida.",
+  "casos": [
+    {
+      "producto_id": "PEC-01-0002",
+      "hechos": [
+        "La oferta recomendada es la de Brava Peças, con un total de R$ 4.172,31 y entrega en 5 días.",
+        "El precio de Brava Peças está 17 % por debajo de su media de 5 meses y es el más bajo del periodo."
+      ],
+      "aviso_de_plantilla": "El precio de Brava Peças está 17 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+      "fuente_publicada": "aviso fijo",
+      "texto_publicado": "El precio de Brava Peças está 17 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+      "consejo_rechazado": "Brava Peças ofrece su precio más bajo del periodo, 17 % por debajo de su media de 5 meses, lo que indica una buena oportunidad para comprar hoy.",
+      "errores": [
+        "NLI: neutral"
+      ]
+    },
+    {
+      "producto_id": "PEC-01-0004",
+      "hechos": [
+        "La oferta recomendada es la de Norte Reposição, con un total de R$ 362,70 y entrega en 6 días.",
+        "El precio de Norte Reposição está 12 % por encima de su media de 5 meses y es el más alto del periodo.",
+        "El precio de TecnoParts Italia está 10 % por encima de su media de 5 meses y es el más alto del periodo.",
+        "La oferta de TecnoParts Italia también cumple: cuesta R$ 3.060,37 más que la recomendada (844 % más) y entrega en 42 días."
+      ],
+      "aviso_de_plantilla": "El precio de Norte Reposição está 12 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "fuente_publicada": "aviso fijo",
+      "texto_publicado": "El precio de Norte Reposição está 12 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "consejo_rechazado": "Norte Reposição está 12 % por encima de su media y es el precio más alto del periodo, mientras que TecnoParts Italia es aún más caro y tarda mucho más en entregar.",
+      "errores": [
+        "NLI: neutral"
+      ]
+    },
+    {
+      "producto_id": "PEC-01-0006",
+      "hechos": [
+        "La oferta recomendada es la de Norte Reposição, con un total de R$ 2.756,44 y entrega en 11 días.",
+        "El precio de Norte Reposição está 16 % por encima de su media de 5 meses y es el más alto del periodo.",
+        "El precio de Sul Componentes está 13 % por encima de su media de 5 meses y es el más alto del periodo.",
+        "La oferta de Sul Componentes también cumple: cuesta R$ 971,37 más que la recomendada (35 % más) y entrega en 2 días."
+      ],
+      "aviso_de_plantilla": "El precio de Norte Reposição está 16 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "fuente_publicada": "consejo verificado",
+      "texto_publicado": "Norte Reposição está 16 % por encima de su media y es el precio más alto del periodo; Sul Componentes es aún más caro y también está en su máximo, aunque entrega en 2 días.",
+      "consejo_rechazado": null,
+      "errores": []
+    },
+    {
+      "producto_id": "PEC-01-0010",
+      "hechos": [
+        "La oferta recomendada es la de EuroSpare Components, con un total de R$ 863,77 y entrega en 24 días.",
+        "El precio de EuroSpare Components está 15 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+        "El precio de Norte Reposição está en línea con su media de 5 meses.",
+        "El precio de Sul Componentes está 12 % por debajo de su media de 5 meses.",
+        "La oferta de Norte Reposição también cumple: cuesta R$ 1.553,31 más que la recomendada (180 % más) y entrega en 9 días.",
+        "La oferta de Sul Componentes también cumple: cuesta R$ 5.151,01 más que la recomendada (596 % más) y entrega en 5 días."
+      ],
+      "aviso_de_plantilla": "El precio de EuroSpare Components está 15 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+      "fuente_publicada": "aviso fijo",
+      "texto_publicado": "El precio de EuroSpare Components está 15 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+      "consejo_rechazado": "La oferta de EuroSpare Components está 15 % por debajo de su media y es la más baja del periodo, mientras que Norte Reposição y Sul Componentes son mucho más caras; la recomendada es una buena opción en precio.",
+      "errores": [
+        "NLI: neutral"
+      ]
+    },
+    {
+      "producto_id": "PEC-01-0015",
+      "hechos": [
+        "La oferta recomendada es la de Casa Técnica Brasil, con un total de R$ 3.011,15 y entrega en 8 días.",
+        "El precio de Casa Técnica Brasil está 12 % por encima de su media de 5 meses y es el más alto del periodo."
+      ],
+      "aviso_de_plantilla": "El precio de Casa Técnica Brasil está 12 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "fuente_publicada": "aviso fijo",
+      "texto_publicado": "El precio de Casa Técnica Brasil está 12 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "consejo_rechazado": "Casa Técnica Brasil ofrece el precio más alto del periodo y está 12 % por encima de su media de 5 meses, por lo que conviene evaluar si la entrega en 8 días justifica este costo.",
+      "errores": [
+        "NLI: neutral"
+      ]
+    },
+    {
+      "producto_id": "PEC-01-0017",
+      "hechos": [
+        "La oferta recomendada es la de North Parts Trading, con un total de R$ 7.534,10 y entrega en 24 días.",
+        "El precio de North Parts Trading está 11 % por encima de su media de 5 meses."
+      ],
+      "aviso_de_plantilla": "El precio de North Parts Trading está 11 % por encima de su media de 5 meses.",
+      "fuente_publicada": "aviso fijo",
+      "texto_publicado": "El precio de North Parts Trading está 11 % por encima de su media de 5 meses.",
+      "consejo_rechazado": "North Parts Trading está 11 % por encima de su media de 5 meses, por lo que el precio actual es alto respecto a su historial reciente.",
+      "errores": [
+        "NLI: neutral"
+      ]
+    },
+    {
+      "producto_id": "PEC-01-0020",
+      "hechos": [
+        "La oferta recomendada es la de Casa Técnica Brasil, con un total de R$ 1.203,66 y entrega en 2 días.",
+        "El precio de Casa Técnica Brasil está 11 % por encima de su media de 5 meses y es el más alto del periodo.",
+        "El precio de EuroSpare Components está 12 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+        "El precio de Litoral Parts está 20 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+        "La oferta de EuroSpare Components también cumple: cuesta R$ 2.439,43 más que la recomendada (203 % más) y entrega en 39 días.",
+        "La oferta de Litoral Parts también cumple: cuesta R$ 2.804,79 más que la recomendada (233 % más) y entrega en 12 días."
+      ],
+      "aviso_de_plantilla": "El precio de Casa Técnica Brasil está 11 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "fuente_publicada": "aviso fijo",
+      "texto_publicado": "El precio de Casa Técnica Brasil está 11 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "consejo_rechazado": "Casa Técnica Brasil está 11 % por encima de su media y es la más alta del periodo, pero sus competidores EuroSpare Components y Litoral Parts son mucho más caros y con entregas más lentas.",
+      "errores": [
+        "NLI: neutral"
+      ]
+    },
+    {
+      "producto_id": "PEC-01-0022",
+      "hechos": [
+        "La oferta recomendada es la de Brava Peças, con un total de R$ 1.971,07 y entrega en 11 días.",
+        "El precio de Brava Peças está 22 % por encima de su media de 5 meses y es el más alto del periodo.",
+        "El precio de Litoral Parts está en línea con su media de 5 meses.",
+        "La oferta de Litoral Parts también cumple: cuesta R$ 558,74 más que la recomendada (28 % más) y entrega en 5 días."
+      ],
+      "aviso_de_plantilla": "El precio de Brava Peças está 22 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "fuente_publicada": "aviso fijo",
+      "texto_publicado": "El precio de Brava Peças está 22 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "consejo_rechazado": "Aunque Brava Peças está 22 % por encima de su media y es el precio más alto del periodo, sigue siendo más económica que Litoral Parts, que cuesta 28 % más y entrega en menos días.",
+      "errores": [
+        "NLI: contradiction"
+      ]
+    },
+    {
+      "producto_id": "PEC-01-0026",
+      "hechos": [
+        "La oferta recomendada es la de EuroSpare Components, con un total de R$ 1.031,51 y entrega en 42 días.",
+        "El precio de EuroSpare Components está 11 % por encima de su media de 5 meses."
+      ],
+      "aviso_de_plantilla": "El precio de EuroSpare Components está 11 % por encima de su media de 5 meses.",
+      "fuente_publicada": "aviso fijo",
+      "texto_publicado": "El precio de EuroSpare Components está 11 % por encima de su media de 5 meses.",
+      "consejo_rechazado": "EuroSpare Components está 11 % por encima de su media de 5 meses, por lo que el precio actual es alto respecto a su historial reciente.",
+      "errores": [
+        "NLI: neutral"
+      ]
+    },
+    {
+      "producto_id": "PEC-01-0028",
+      "hechos": [
+        "La oferta recomendada es la de TecnoParts Italia, con un total de R$ 5.732,73 y entrega en 19 días.",
+        "El precio de TecnoParts Italia está 16 % por encima de su media de 5 meses y es el más alto del periodo."
+      ],
+      "aviso_de_plantilla": "El precio de TecnoParts Italia está 16 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "fuente_publicada": "aviso fijo",
+      "texto_publicado": "El precio de TecnoParts Italia está 16 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "consejo_rechazado": "TecnoParts Italia tiene su precio más alto en 5 meses, un 16 % por encima de su media, por lo que conviene evaluar si la entrega y condiciones justifican este costo.",
+      "errores": [
+        "NLI: neutral"
+      ]
+    },
+    {
+      "producto_id": "PEC-01-0030",
+      "hechos": [
+        "La oferta recomendada es la de Litoral Parts, con un total de R$ 367,81 y entrega en 6 días.",
+        "El precio de Litoral Parts está 11 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+        "El precio de Norte Reposição está en línea con su media de 5 meses.",
+        "El precio de TecnoParts Italia está en línea con su media de 5 meses.",
+        "La oferta de Norte Reposição también cumple: cuesta R$ 1.126,32 más que la recomendada (306 % más) y entrega en 10 días.",
+        "La oferta de TecnoParts Italia también cumple: cuesta R$ 5.250,53 más que la recomendada (1428 % más) y entrega en 45 días."
+      ],
+      "aviso_de_plantilla": "El precio de Litoral Parts está 11 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+      "fuente_publicada": "aviso fijo",
+      "texto_publicado": "El precio de Litoral Parts está 11 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+      "consejo_rechazado": "Litoral Parts ofrece su precio más bajo en 5 meses y es significativamente más barato que Norte Reposição y TecnoParts Italia, que están en línea con sus medias y mucho más caros.",
+      "errores": [
+        "NLI: contradiction"
+      ]
+    },
+    {
+      "producto_id": "PEC-01-0031",
+      "hechos": [
+        "La oferta recomendada es la de Litoral Parts, con un total de R$ 4.455,33 y entrega en 4 días.",
+        "El precio de Litoral Parts está 16 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+        "El precio de CentroPeças está en línea con su media de 5 meses.",
+        "El precio de EuroSpare Components está en línea con su media de 5 meses.",
+        "La oferta de CentroPeças también cumple: cuesta R$ 961,85 más que la recomendada (22 % más) y entrega en 2 días.",
+        "La oferta de EuroSpare Components también cumple: cuesta R$ 1.895,10 más que la recomendada (43 % más) y entrega en 21 días."
+      ],
+      "aviso_de_plantilla": "El precio de Litoral Parts está 16 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+      "fuente_publicada": "consejo verificado",
+      "texto_publicado": "Litoral Parts ofrece el precio más bajo del periodo, 16 % por debajo de su media, mientras que CentroPeças y EuroSpare Components están en línea con sus medias y son considerablemente más caros.",
+      "consejo_rechazado": null,
+      "errores": []
+    },
+    {
+      "producto_id": "PEC-01-0033",
+      "hechos": [
+        "La oferta recomendada es la de Litoral Parts, con un total de R$ 2.906,16 y entrega en 3 días.",
+        "El precio de Litoral Parts está 10 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+        "El precio de Atlantic Repair Parts está en línea con su media de 5 meses.",
+        "El precio de CentroPeças está 11 % por debajo de su media de 5 meses.",
+        "La oferta de Atlantic Repair Parts también cumple: cuesta R$ 672,06 más que la recomendada (23 % más) y entrega en 33 días.",
+        "La oferta de CentroPeças también cumple: cuesta R$ 1.597,31 más que la recomendada (55 % más) y entrega en 3 días."
+      ],
+      "aviso_de_plantilla": "El precio de Litoral Parts está 10 % por debajo de su media de 5 meses y es el más bajo del periodo.",
+      "fuente_publicada": "consejo verificado",
+      "texto_publicado": "Litoral Parts ofrece el precio más bajo del periodo y está 10 % por debajo de su media, mientras que las otras opciones son considerablemente más caras.",
+      "consejo_rechazado": null,
+      "errores": []
+    },
+    {
+      "producto_id": "PEC-01-0034",
+      "hechos": [
+        "La oferta recomendada es la de Pacific Appliance Supply, con un total de R$ 5.895,19 y entrega en 21 días.",
+        "El precio de Pacific Appliance Supply está 10 % por encima de su media de 5 meses y es el más alto del periodo.",
+        "El precio de CentroPeças está 17 % por encima de su media de 5 meses y es el más alto del periodo.",
+        "La oferta de CentroPeças también cumple: cuesta R$ 1.375,25 más que la recomendada (23 % más) y entrega en 4 días."
+      ],
+      "aviso_de_plantilla": "El precio de Pacific Appliance Supply está 10 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "fuente_publicada": "consejo verificado",
+      "texto_publicado": "Pacific Appliance Supply tiene el precio más alto del periodo y está 10 % por encima de su media, mientras que CentroPeças es aún más caro y entrega más rápido.",
+      "consejo_rechazado": null,
+      "errores": []
+    },
+    {
+      "producto_id": "PEC-01-0036",
+      "hechos": [
+        "La oferta recomendada es la de Atlantic Repair Parts, con un total de R$ 6.400,54 y entrega en 38 días.",
+        "El precio de Atlantic Repair Parts está 13 % por encima de su media de 5 meses y es el más alto del periodo."
+      ],
+      "aviso_de_plantilla": "El precio de Atlantic Repair Parts está 13 % por encima de su media de 5 meses y es el más alto del periodo.",
+      "fuente_publicada": "consejo verificado",
+      "texto_publicado": "Atlantic Repair Parts tiene su precio más alto en 5 meses, un 13 % por encima de su media, lo que indica que hoy no es un precio bajo para esta compra.",
+      "consejo_rechazado": null,
+      "errores": []
+    }
+  ],
+  "en_el_chat": {
+    "usuario": "Compara 5 unidades de PEC-02-0189",
+    "respuesta_publicada": "CentroPeças: R$ 2.182,51 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 2.182,51; cumple [PEC-02-0189-BR-06]\n- Atlantic Repair Parts (internacional): R$ 2.195,40; cumple [PEC-02-0189-INT-06]\n- Norte Reposição (nacional): R$ 3.286,45; descartada por stock [PEC-02-0189-BR-03]\nHistorial de precios (informativo; no cambia la recomendación):\n- CentroPeças: hoy R$ 425,59 por unidad; mes anterior R$ 402,59 (+6 %); media de 5 meses R$ 384,95 (+11 %).\n- Atlantic Repair Parts: hoy R$ 363,35 por unidad; mes anterior R$ 375,20 (-3 %); media de 5 meses R$ 404,40 (-10 %); es su precio más bajo del periodo.\nConsejo sobre el precio (redactado por el modelo y verificado): CentroPeças ofrece entrega en 2 días pero con un precio 11 % por encima de su media; Atlantic Repair Parts cuesta solo 1 % más y está en su precio más bajo del periodo, aunque entrega en 23 días.\nFuentes: PEC-02-0189-BR-06, PEC-02-0189-INT-06, PEC-02-0189-BR-03",
+    "consejo_precio": [
+      {
+        "evento": "consejo_precio",
+        "fuente": "consejo verificado",
+        "texto": "CentroPeças ofrece entrega en 2 días pero con un precio 11 % por encima de su media; Atlantic Repair Parts cuesta solo 1 % más y está en su precio más bajo del periodo, aunque entrega en 23 días.",
+        "consejo_rechazado": null,
+        "errores": []
+      }
+    ],
+    "herramientas": [
+      "comparar_ofertas"
+    ]
+  }
+}

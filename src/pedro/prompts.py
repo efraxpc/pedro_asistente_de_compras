@@ -107,6 +107,8 @@ PLANTILLA_SQL = ChatPromptTemplate.from_messages([
      "Contexto: solo existen estas tablas y columnas:\n{esquema}\n"
      "Los importes están en centavos de real (estimated_brl_cents, shipping_brl_cents). "
      "suppliers.domestic vale 1 si el proveedor es nacional. Hay stock si stock_qty > 0. "
+     "price_history guarda un precio por oferta y mes (observed_on, AAAA-MM-DD); offers.id es como "
+     "PEC-01-0001-BR-06. "
      "Formatos de los valores: parts.id y offers.part_id son como PEC-01-0001; parts.sku es como "
      "NEVE-COMP-0001; suppliers.id es como BR-06. "
      "Reglas: solo lectura; una sola sentencia; sin comentarios; no uses tablas ni columnas "
@@ -157,6 +159,32 @@ PLANTILLA_CAMBIO = ChatPromptTemplate.from_messages([
      "días. Usa quitar solo si el usuario elimina un límite de forma explícita. Formato: {formato}"),
     *_ejemplos_de_cambio(),
     ("human", "Solicitud en curso: {contexto}\nMensaje: {texto}"),
+])
+
+# Consejo de compra sobre el precio. Variables: hechos y formato.
+PLANTILLA_CONSEJO = ChatPromptTemplate.from_messages([
+    ("system", "Persona: asesor de compras de Pedro. Tarea: escribir un consejo de una o dos frases "
+     "para quien va a comprar, a partir de los hechos sobre los precios. Contexto: la oferta "
+     "recomendada ya está decidida y no la cambias; solo ayudas a juzgar si el precio es bueno hoy "
+     "y si hay una alternativa que valga la pena mirar. Usa únicamente los hechos: copia las "
+     "cifras tal cual, nombra a los proveedores por su nombre, no predigas precios futuros y no "
+     "inventes motivos. Limítate a enunciar y comparar los hechos: no añadas valoraciones ni "
+     "conclusiones propias («buena oportunidad», «conviene», «vale la pena», «mucho más caro»). "
+     "Formato: {formato}"),
+    ("human", "- La oferta recomendada es la de Norte Reposição, con un total de R$ 900,00 y entrega "
+              "en 4 días.\n- El precio de Norte Reposição está 18 % por encima de su media de 5 meses y "
+              "es el más alto del periodo.\n- El precio de EuroSpare Components está 7 % por debajo de "
+              "su media de 5 meses.\n- La oferta de EuroSpare Components también cumple: cuesta "
+              "R$ 27,00 más que la recomendada (3 % más) y entrega en 9 días."),
+    ("ai", '{{"consejo": "El precio de Norte Reposição está 18 % por encima de su media de 5 meses y '
+           'es el más alto del periodo. EuroSpare Components cuesta 3 % más que la recomendada y su '
+           'precio está 7 % por debajo de su media de 5 meses."}}'),
+    ("human", "- La oferta recomendada es la de Brava Peças, con un total de R$ 311,55 y entrega en "
+              "8 días.\n- El precio de Brava Peças está 12 % por debajo de su media de 5 meses y es "
+              "el más bajo del periodo."),
+    ("ai", '{{"consejo": "El precio de Brava Peças está 12 % por debajo de su media de 5 meses y es '
+           'el más bajo del periodo."}}'),
+    ("human", "{hechos}"),
 ])
 
 # Planificador de turno: separa un mensaje con varias intenciones. Variables: mensaje y formato.

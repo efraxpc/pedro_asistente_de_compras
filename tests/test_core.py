@@ -147,3 +147,51 @@ def test_la_preferencia_de_origen_ordena_las_ofertas_validas_y_se_explica(tmp_pa
     solo_dos = respuesta_local(escenario, Solicitud(producto_id="PEC-01-0001", cantidad=2,
                                                     origen_preferido="nacional"))
     assert solo_dos.proveedor_id == "INT-06"
+
+
+def test_el_historial_de_precios_se_resume_en_centavos_y_no_cambia_el_ganador(tmp_path):
+    import sqlite3
+
+    from pedro.agent import renderizar
+    from pedro.business import describir_precio, variacion_porcentual
+    from pedro.catalog import crear_escenario, ofertas
+    from pedro.contracts import Solicitud
+    from pedro.verification import respuesta_local, verificar
+
+    escenario = crear_escenario(tmp_path / "catalogos")
+    oferta = next(o for o in ofertas(escenario, "PEC-01-0001") if o.proveedor_id == "BR-06")
+    with sqlite3.connect(escenario.ruta) as db:
+        precios = [fila[0] for fila in db.execute(
+            "SELECT estimated_brl_cents FROM price_history WHERE offer_id=? ORDER BY observed_on",
+            (oferta.id,))]
+    assert precios[-1] == oferta.precio_unitario_centavos and len(precios) == 6
+    previos = precios[:-1]
+    assert oferta.meses_historial == 5 and oferta.precio_anterior_centavos == previos[-1]
+    assert oferta.precio_medio_centavos == round(sum(previos) / 5)
+    assert (oferta.precio_minimo_centavos, oferta.precio_maximo_centavos) == (min(precios), max(precios))
+    assert all(isinstance(getattr(oferta, campo), int) for campo in (
+        "precio_medio_centavos", "precio_anterior_centavos", "precio_minimo_centavos"))
+
+    assert (variacion_porcentual(110, 100), variacion_porcentual(90, 100), variacion_porcentual(100, 100)) == (10, -10, 0)
+    assert describir_precio(oferta) == (
+        "CentroPeças: hoy R$ 1.438,92 por unidad; mes anterior R$ 1.189,87 (+21 %); "
+        "media de 5 meses R$ 1.372,51 (+5 %).")
+
+    respuesta = respuesta_local(escenario, Solicitud(producto_id="PEC-01-0001", cantidad=5))
+    texto = renderizar(respuesta)
+    assert verificar(respuesta, escenario) == []
+    assert "Historial de precios (informativo; no cambia la recomendación):" in texto
+    # Solo se describe el historial de las ofertas que cumplen.
+    assert "- CentroPeças: hoy" in texto and "- Litoral Parts: hoy" not in texto
+    # El ganador es el de menor total hoy, aunque su precio haya subido y el del otro haya bajado.
+    assert respuesta.proveedor_id == "BR-06"
+
+
+def test_una_oferta_sin_historial_no_muestra_tendencia():
+    from pedro.business import describir_precio
+    from pedro.contracts import Oferta
+
+    oferta = Oferta(dataset_id="d", id="o", producto_id="PEC-01-0001", proveedor_id="BR-01",
+                    proveedor_nombre="Prueba", precio_unitario_centavos=100, flete_centavos=0,
+                    stock=1, plazo_dias=1)
+    assert describir_precio(oferta) is None

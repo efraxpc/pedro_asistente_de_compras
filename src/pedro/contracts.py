@@ -56,6 +56,12 @@ class Oferta(BaseModel):
     plazo_dias: int = Field(ge=0)
     pedido_minimo: int = Field(default=1, ge=1)
     nacional: bool = True
+    # Historial del precio unitario: observaciones mensuales anteriores a la vigente.
+    meses_historial: int = Field(default=0, ge=0)
+    precio_anterior_centavos: int | None = Field(default=None, ge=0)
+    precio_medio_centavos: int | None = Field(default=None, ge=0)
+    precio_minimo_centavos: int | None = Field(default=None, ge=0)
+    precio_maximo_centavos: int | None = Field(default=None, ge=0)
 
 
 class Alternativa(BaseModel):

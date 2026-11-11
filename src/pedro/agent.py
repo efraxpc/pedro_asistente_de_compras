@@ -11,7 +11,7 @@ from langchain_core.runnables import ConfigurableFieldSpec, RunnableLambda, Runn
 from langchain_core.runnables.config import RunnableConfig
 from langchain_core.tools import StructuredTool
 
-from .business import brl, describir_motivos, origen_preferido
+from .business import brl, describir_motivos, describir_precio, origen_preferido
 from .catalog import Escenario, buscar, ficha, listar, ofertas
 from .contracts import Evidencia, RespuestaCompra, Solicitud
 from .dialogue import EstadoCompra, crear_interprete, interpretar_turno
@@ -24,12 +24,17 @@ from .policy_demo import (FRAGMENTO_T24_ESPERADO, ORIGEN as ORIGEN_DEMO,
                           PREGUNTA_T24_ORIGINAL, PREGUNTA_T24_REESCRITA,
                           reescribir_consulta_entrega)
 from .planner import planificar_turno
+from .precios import aconsejar, aviso_de_precio, crear_consejero
 from .prompts import EJEMPLOS_ACCIONES, PLANTILLA_AGENTE
 from .query import crear_generador_sql, ejecutar, planear, responder_sql
 from .rag import consultar, diagnosticar_reescritura
 from .verification import (anclar_catalogo, anclar_cep, anclar_citas, anclar_preferencia,
                            anclar_recomendacion, mejor_sin_preferencia, respuesta_local,
                            verificar)
+
+
+# Respuestas cuyo contenido no sale del catálogo: su escenario lo fija el sistema.
+ESTADOS_SIN_DATOS_DE_CATALOGO = ("politica", "aclaracion", "sin_evidencia", "preferencia")
 
 
 class Traza(BaseCallbackHandler):
@@ -179,7 +184,7 @@ def crear_agente(escenario: Escenario, memoria_db: Path, user_id: str,
                          return_intermediate_steps=True, max_iterations=6)
 
 
-def renderizar(respuesta: RespuestaCompra, *, indice=None) -> str:
+def renderizar(respuesta: RespuestaCompra, *, indice=None, consejo: str | None = None) -> str:
     if respuesta.estado == "aclaracion":
         if not (respuesta.solicitud.producto_id or respuesta.solicitud.producto):
             return "¿Qué pieza necesitas? Indica su ID o SKU."
@@ -214,6 +219,16 @@ def renderizar(respuesta: RespuestaCompra, *, indice=None) -> str:
                       f"{brl(a.total_centavos)}; "
                       f"{'cumple' if a.cumple else 'descartada por ' + describir_motivos(a)} "
                       f"[{a.oferta.id}]")
+    historial = [texto for a in respuesta.alternativas if a.cumple
+                 if (texto := describir_precio(a.oferta))]
+    if historial:
+        lineas.append("Historial de precios (informativo; no cambia la recomendación):")
+        lineas.extend(f"- {texto}" for texto in historial)
+    # Aviso de precio: el consejo verificado del modelo si lo hay; si no, el aviso de plantilla.
+    if consejo:
+        lineas.append(f"Consejo sobre el precio (redactado por el modelo y verificado): {consejo}")
+    elif aviso := aviso_de_precio(respuesta):
+        lineas.append(f"Aviso de precio: {aviso}")
     if respuesta.solicitud.origen_preferido:
         nota = f"Se aplicó tu preferencia por proveedores {respuesta.solicitud.origen_preferido}es."
         barata = mejor_sin_preferencia(respuesta)
@@ -487,6 +502,10 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                     traza.registrar_citas(citas)
                     if cep:
                         traza.eventos.append({"evento": "cep_anclado", **cep})
+                if propuesta.estado in ESTADOS_SIN_DATOS_DE_CATALOGO:
+                    # El identificador del escenario lo conoce el sistema; no se le pide al
+                    # modelo que copie 36 caracteres en respuestas que no usan el catálogo.
+                    propuesta.dataset_id = escenario.dataset_id
                 comparacion = anclar_recomendacion(propuesta, observaciones)
                 if traza and comparacion:
                     traza.eventos.append({"evento": "comparacion_anclada", **comparacion})
@@ -514,7 +533,20 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                 if traza:
                     traza.registrar_verificacion(intento + 1, propuesta.estado, errores)
                 if not errores:
-                    texto = renderizar(propuesta, indice=indice)
+                    consejo = None
+                    if propuesta.estado == "recomendacion":
+                        try:
+                            consejero = crear_consejero(llm)
+                        except Exception:
+                            consejero = None
+                        precio = aconsejar(propuesta, consejero, clasificador)
+                        if precio["fuente"] == "consejo verificado":
+                            consejo = precio["texto"]
+                        if traza and precio["fuente"] != "nada que avisar":
+                            traza.eventos.append({"evento": "consejo_precio", **{
+                                clave: precio.get(clave) for clave in
+                                ("fuente", "texto", "consejo_rechazado", "errores")}})
+                    texto = renderizar(propuesta, indice=indice, consejo=consejo)
                     if propuesta.estado == "politica":
                         fuentes_publicadas = {e.fuente_id for e in propuesta.evidencias
                                                if e.tipo == "politica"}

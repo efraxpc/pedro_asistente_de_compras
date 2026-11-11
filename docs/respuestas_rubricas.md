@@ -33,6 +33,64 @@ El total es `cantidad × precio unitario + flete`, siempre en centavos enteros.
 
 La preferencia ordena las ofertas válidas, pero **nunca hace ganar a una oferta que no cumple**. Y si respetarla cuesta más, la respuesta lo dice.
 
+## El historial de precios
+
+El catálogo guarda seis precios mensuales por oferta. Para cada oferta válida, la respuesta sitúa el precio de hoy en ese historial: cuánto costaba el mes anterior, cuál es la media de los cinco meses previos y si está en su punto más bajo o más alto.
+
+**El historial informa, no decide.** El ganador sigue siendo el de menor total hoy. Se decidió así porque un precio pasado no se puede comprar: sirve al comprador para juzgar si es buen momento, no para cambiar qué oferta es la mejor ahora. Las medias se calculan con centavos enteros.
+
+## El aviso de precio: las técnicas de las rúbricas aplicadas al núcleo
+
+El historial no cambia qué oferta gana, pero sí genera un **aviso** cuando el precio de hoy se aparta de lo normal. Ese aviso se construyó con las técnicas que piden las rúbricas, todas juntas sobre el problema central del asistente ([precios.py](../src/pedro/precios.py)):
+
+| Paso | Qué hace | Técnica | Rúbrica |
+|---|---|---|---|
+| 1. Señal | Clasifica el precio de hoy frente a su media: muy por encima, por encima, en línea, por debajo o muy por debajo (umbrales de 10 y 20 %) | Función *hardcoded* | R19 |
+| 2. Hechos | Escribe los hechos en frases: quién gana, cómo está cada precio, cuánto más cuesta cada alternativa | Función *hardcoded* | R19 |
+| 3. Aviso de plantilla | Si el precio del ganador se aparta de su media, lo dice; y si otra oferta válida cuesta casi lo mismo y está en mejor momento, la señala | Función *hardcoded* | R19 |
+| 4. Consejo del modelo | Un prompt PTCF con dos ejemplos few-shot pide al modelo un consejo de una o dos frases a partir de los hechos | PTCF y few-shot | R11 |
+| 5. Salida estructurada | El consejo llega como un objeto Pydantic validado | Output parser | R04 |
+| 6. En paralelo, con plan B | El aviso de plantilla y el consejo del modelo se calculan en dos ramas (`RunnableParallel`); si la rama del modelo falla, devuelve vacío (`with_fallbacks`) | LCEL, paralelo, fallback | R06, R09, R12 |
+| 7. Verificación exacta | El consejo no puede traer una cifra que no esté en los hechos, debe nombrar a un proveedor comparado y no puede predecir precios | Coherencia lógica | R24 |
+| 8. NLI | Un modelo NLI comprueba que los hechos **sustentan** el consejo; solo *entailment* lo deja pasar | Consistencia factual | R24 |
+| 9. Publicación | Si el consejo pasa, se publica marcado como «redactado por el modelo y verificado»; si no, queda el aviso de plantilla | Degradación | R12 |
+| 10. Registro | La traza guarda la fuente publicada, el consejo rechazado y el motivo | Callbacks | R12 |
+
+Aquí el modelo NLI hace por fin un trabajo que el código exacto no puede hacer: en una recomendación numérica no aporta casi nada, pero un consejo es **texto libre**, y comprobar que un texto se desprende de unos hechos es justo lo que hace un NLI.
+
+Ejemplo real, «Compara 5 unidades de PEC-02-0189»:
+
+```text
+CentroPeças: R$ 2.182,51 para 5 unidades; plazo 2 días.
+- CentroPeças (nacional): R$ 2.182,51; cumple
+- Atlantic Repair Parts (internacional): R$ 2.195,40; cumple
+- Norte Reposição (nacional): R$ 3.286,45; descartada por stock
+Historial de precios (informativo; no cambia la recomendación):
+- CentroPeças: hoy R$ 425,59 por unidad; mes anterior R$ 402,59 (+6 %); media de 5 meses R$ 384,95 (+11 %).
+- Atlantic Repair Parts: hoy R$ 363,35 por unidad; mes anterior R$ 375,20 (-3 %); media de 5 meses R$ 404,40 (-10 %); es su precio más bajo del periodo.
+Consejo sobre el precio (redactado por el modelo y verificado): El precio de CentroPeças está 11 % por encima
+de su media de 5 meses. La oferta de Atlantic Repair Parts cuesta 1 % más que la recomendada, está 10 % por
+debajo de su media y es el precio más bajo del periodo.
+```
+
+Sin modelo, la última línea es el aviso de plantilla: «Aviso de precio: El precio de CentroPeças está 11 % por encima de su media de 5 meses. Atlantic Repair Parts cuesta R$ 12,89 más (1 %) y su precio está 10 % por debajo de su media.»
+
+**Medición con el modelo real** (`gpt-4.1-mini`) y el NLI real, sobre las primeras quince piezas con aviso:
+
+| | Primer prompt | Prompt ajustado |
+|---|---|---|
+| Consejos que pasaron la verificación | 5 de 15 | **14 de 15** |
+| Rechazados por NLI | 10 (8 *neutral*, 2 *contradiction*) | 1 (*contradiction*) |
+| Rechazados por cifras inventadas | 0 | 0 |
+
+- **Por qué falló el primer prompt.** El modelo añadía valoraciones: «una buena oportunidad para comprar hoy», «conviene evaluar si la entrega justifica este costo». Los hechos no dicen eso, y el NLI las marcó como *neutral*. El propio ejemplo few-shot terminaba con «es un buen momento para esta compra»: el modelo imitaba el ejemplo.
+- **Qué se cambió.** Los ejemplos se reescribieron para que solo enuncien y comparen hechos, y se añadió la instrucción de no valorar.
+- **El NLI no es perfecto.** El único rechazo del segundo intento era un consejo cierto («cuestan más del doble», y los hechos decían 203 % y 233 % más). El error fue por el lado seguro: se publicó el aviso de plantilla.
+
+El aviso salta en 1.049 de las 2.563 piezas que tienen una recomendación para 5 unidades: cuatro de cada diez.
+
+**Decisión técnica.** El consejo del modelo aporta redacción —une en una frase lo que la plantilla dice por separado— pero no aporta ningún dato. Por eso su fallo no cuesta nada: detrás siempre está el aviso de plantilla, que dice lo mismo con menos gracia. Se descartó que el modelo decidiera si avisar o no: esa decisión es un umbral, y un umbral es código.
+
 ## Qué ve el usuario
 
 Cada respuesta muestra **todas** las ofertas, no solo la ganadora: proveedor, origen, total, y si cumple o por qué se descartó.
@@ -44,6 +102,9 @@ Casa Técnica Brasil: R$ 1.970,38 para 2 unidades; plazo 9 días.
 - Casa Técnica Brasil (nacional): R$ 1.970,38; cumple [PEC-11-0001-BR-04]
 - Atlantic Repair Parts (internacional): R$ 619,38; cumple [PEC-11-0001-INT-06]
 - CentroPeças (nacional): R$ 1.179,23; descartada por stock [PEC-11-0001-BR-06]
+Historial de precios (informativo; no cambia la recomendación):
+- Casa Técnica Brasil: hoy R$ 976,71 por unidad; mes anterior R$ 1.262,04 (-23 %); media de 5 meses R$ 1.110,59 (-12 %); es su precio más bajo del periodo.
+- Atlantic Repair Parts: hoy R$ 97,40 por unidad; mes anterior R$ 111,90 (-13 %); media de 5 meses R$ 103,63 (-6 %).
 Se aplicó tu preferencia por proveedores nacionales. Sin ella, la más barata sería Atlantic Repair Parts por R$ 619,38.
 ```
 
@@ -62,10 +123,14 @@ En el catálogo hay 1.151 ofertas con stock cuyo pedido mínimo es mayor que 2. 
 - 5 de los 14 casos de recomendación de la evaluación cambiaron: 2 de ganador y 3 pasaron a «ninguna oferta». Los casos se regeneraron con una regla de referencia independiente del agente, que incluye el pedido mínimo.
 - La preferencia «proveedores nacionales», que antes solo se guardaba, ahora cambia la recomendación.
 - Cada oferta muestra si el proveedor es nacional o internacional.
+- El historial de precios, que el catálogo tenía y nadie usaba, aparece en cada comparación.
 
 ## Qué no se compara todavía
 
-- El **historial de precios** (47.520 registros en el catálogo) no se usa: Pedro no dice si un precio subió o bajó.
+- El aviso de precio informa pero no cambia el orden: el ganador sigue siendo el más barato hoy.
+- Los umbrales del aviso (10 y 20 %) se fijaron por criterio, sin calibrarlos; el aviso salta en cuatro de cada diez recomendaciones, que es mucho.
+- El consejo verificado no fue auditado frase por frase: se comprueban sus cifras, sus proveedores y el NLI, no cada comparación («más caro», «entrega más rápido»).
+- El historial son seis meses de datos sintéticos; no hay previsión de precios.
 - No se combinan proveedores para cubrir una cantidad: un pedido va entero a un proveedor.
 - La preferencia de origen es la única que cambia el orden; otras preferencias guardadas no tienen efecto.
 - El flete no depende del destino: ViaCEP solo confirma la ciudad.
@@ -159,9 +224,9 @@ Pedro no es **reactivo puro** porque conserva estado entre turnos y elige herram
 
 | Criterio | Cómo se midió | Resultado | Rúbrica |
 |---|---|---|---|
-| El LLM real elige las herramientas correctas | Trayectoria en 30 casos de LangSmith | Herramienta decisiva 23 de 23; trayectoria completa 16 de 30, porque el agente usa un camino más corto que el de la referencia | R29 |
+| El LLM real elige las herramientas correctas | Trayectoria en 30 casos de LangSmith | Herramienta decisiva 23 de 23; trayectoria completa 23 de 30 (16 en la corrida anterior): el agente a veces usa un camino más corto que el de la referencia | R29 |
 | Las respuestas son correctas | Ganador, importe y contenido en LangSmith | 14 de 14, 14 de 14 y 16 de 16 | R29 |
-| Nada se publica sin respaldo | Recomendaciones contrarias a la regla publicadas | 0 en siete experimentos | R24 |
+| Nada se publica sin respaldo | Recomendaciones contrarias a la regla publicadas | 0 en ocho experimentos | R24 |
 | Hay continuidad entre turnos con el modelo real | Conversación real multi-turno | Ocho turnos con estado correcto | R18, R26, R27 |
 
 **Madurez actual: nivel 4 demostrado**, con una reserva que impide darlo por consolidado: las mediciones son corridas únicas sobre casos derivados, no sobre los oficiales.
@@ -850,7 +915,11 @@ Qué se concluye:
 - **Few-shot fue lo que marcó la diferencia.** Corrigió los cuatro fallos.
 - **CoT no añadió aciertos en esta prueba**, porque few-shot ya llegaba al máximo. Su aporte aquí es otro: deja escrito el porqué de cada dato, y cuesta más texto generado.
 
-### 5. Por qué el agente final no usa CoT en texto libre
+### 5. Few-shot en el aviso de precio: el ejemplo manda
+
+El consejo de precio usa otro prompt PTCF con dos ejemplos. Su primera versión enseñó algo sobre few-shot que la medición anterior no mostraba: **el modelo imita el estilo del ejemplo, no solo su formato.** Un ejemplo terminaba con «es un buen momento para esta compra», y el modelo empezó a cerrar sus consejos con valoraciones parecidas, que la verificación rechazaba. Al reescribir los ejemplos para que solo enunciaran hechos, los consejos aceptados pasaron de 5 a 14 de 15.
+
+### 6. Por qué el agente final no usa CoT en texto libre
 
 En el agente, el «pensamiento paso a paso» son sus **llamadas a herramientas**: cada paso queda registrado con su nombre, sus argumentos y su resultado, y la respuesta final se contrasta con esos resultados. Un razonamiento en prosa no se podría verificar igual, y publicarlo iría contra la regla del proyecto de mostrar solo lo comprobado. El CoT en texto se demuestra donde sí aporta: en el campo `razonamiento` de la extracción y en los *Thought* del agente ReAct (R08).
 
@@ -1019,8 +1088,8 @@ En una **sesión nueva** del mismo usuario, la pregunta «¿Qué proveedor me co
 | Similitud | Recuerdo recuperado |
 |---|---|
 | 0,349 | «Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días → Ninguna oferta cumple…» |
-| 0,283 | «Compara 2 unidades de PEC-11-0001 → Casa Técnica Brasil: R$ 1.970,38…» |
-| 0,274 | «Vuelve a comparar con lo último que te pedí → CentroPeças: R$ 7.279,83…» |
+| 0,218 | «Compara 2 unidades de PEC-11-0001 → Casa Técnica Brasil: R$ 1.970,38…» |
+| 0,207 | «Mejor sin límite de plazo, pero con presupuesto de R$ 10.000 → CentroPeças: R$ 7.279,83…» |
 
 Para otro usuario, la misma pregunta no recuperó nada.
 
@@ -1050,7 +1119,7 @@ La evaluación de R29 mostró el otro lado de esta memoria: con 73 episodios acu
 
 - No hay resumen del historial ni recorte por número de tokens: la ventana cuenta mensajes.
 - La recuperación usa solo similitud; no pondera la antigüedad ni la frecuencia de uso del recuerdo.
-- Las similitudes observadas son bajas (0,27 a 0,35) y no hay un umbral mínimo: siempre se devuelven los tres mejores. El segundo recuerdo recuperado es de otra pieza.
+- Las similitudes observadas son bajas (0,21 a 0,35) y no hay un umbral mínimo: siempre se devuelven los tres mejores. El segundo recuerdo recuperado es de otra pieza.
 
 ## R15 — Comparación de herramientas especializadas de memoria
 
@@ -1084,8 +1153,8 @@ Tres mensajes, el mismo modelo (`gpt-4.1-mini`) y dos memorias. LangMem se mont�
 | Mensaje | Memoria de Pedro | LangMem |
 |---|---|---|
 | «Prefiero proveedores nacionales, recuérdalo.» | Llama a `guardar_preferencia`. Guarda `proveedor = nacionales` | Llama a `manage_memory`. Guarda «Prefiere proveedores nacionales.» |
-| «Compara 5 unidades de PEC-01-0001 con plazo de 7 días.» | Comparación verificada: CentroPeças, R$ 7.279,83, con la nota «Se aplicó tu preferencia por proveedores nacionales». Guarda un episodio | Responde **sin verificación** y se contradice: dice que no hay stock en proveedores nacionales y, a continuación, que CentroPeças (que es nacional) tiene 67 unidades |
-| «Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.» | No lo toma por una compra, pero no sabe qué contestar: pregunta «¿Cuántas unidades necesitas?» | Responde al comentario y ofrece buscar alternativas; no guarda nada nuevo |
+| «Compara 5 unidades de PEC-01-0001 con plazo de 7 días.» | Comparación verificada: CentroPeças, R$ 7.279,83, con la nota «Se aplicó tu preferencia por proveedores nacionales». Guarda un episodio | Responde **sin verificación** y se contradice: dice que la pieza no tiene stock en proveedores nacionales y, a continuación, que CentroPeças (que es nacional) tiene 67 unidades |
+| «Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.» | No lo toma por una compra, pero no sabe qué contestar: responde «No puedo confirmar una recomendación…» | Responde al comentario y ofrece buscar opciones más económicas; no guarda nada nuevo |
 
 | Después | Memoria de Pedro | LangMem |
 |---|---|---|
@@ -1100,7 +1169,7 @@ Lo que enseña la ejecución:
 - **LangMem conversa mejor sobre lo que recuerda.** Sabe responder «¿qué recuerdas de mí?»; Pedro no tiene ese tipo de respuesta.
 - **LangMem guarda texto libre que redacta el modelo**; Pedro guarda una clave y un valor comprobados contra la cita. En esta corrida LangMem guardó algo correcto, pero nada impide que guarde una inferencia.
 - **Lo que importa es qué se hace con lo recordado.** En Pedro la preferencia entra en la regla de comparación: ordena las ofertas válidas, se verifica y la respuesta lo dice. El agente con LangMem la usó a su manera, sin comprobación, y dio una respuesta contradictoria sobre el stock de un proveedor nacional.
-- **Pedro también falló en algo.** Ante un comentario sin petición («me va a salir caro») contestó con una pregunta fuera de lugar: no sabe conversar fuera de sus tipos de respuesta.
+- **Pedro también falló en algo.** Ante un comentario sin petición («me va a salir caro») contestó con un mensaje de error genérico: no sabe conversar fuera de sus tipos de respuesta.
 
 ### 4. Decisión
 
@@ -1156,15 +1225,15 @@ La memoria de buffer guarda la conversación completa y la inserta entera en cad
 | Turno | Usuario | Pedro | Memoria |
 |---|---|---|---|
 | 1 | Hola, soy Ana. Necesito un termostato para mi nevera. | Hola Ana, ¿podrías indicarme la cantidad que necesitas, tu presupuesto aproximado y el plazo?… | 240 caracteres |
-| 2 | Que sean 2 unidades. | Perfecto, Ana. ¿Podrías indicarme tu presupuesto aproximado y el plazo en que necesitas las 2 unidades del termostato?… | 449 |
-| 3 | Tengo hasta R$ 900 y lo necesito en 5 días. | Gracias, Ana. Consultaré el catálogo para verificar disponibilidad y precios de 2 termostatos dentro de tu presupuesto y plazo… | 667 |
-| 4 | Resume mi solicitud completa y dime cómo me llamo. | Claro, Ana. Solicitas 2 unidades de termostato para tu nevera, con un presupuesto de hasta R$ 900 y un plazo de entrega de 5 días. ¿Es correcto? | 879 |
+| 2 | Que sean 2 unidades. | Perfecto, Ana. ¿Cuál es tu presupuesto aproximado y en cuánto tiempo necesitas las 2 unidades del termostato? | 387 |
+| 3 | Tengo hasta R$ 900 y lo necesito en 5 días. | Gracias, Ana. Consultaré el catálogo para verificar disponibilidad y precios de 2 termostatos dentro de tu presupuesto de R$ 900 y con entrega en 5 días… | 620 |
+| 4 | Resume mi solicitud completa y dime cómo me llamo. | Claro, Ana. Solicitas 2 unidades de termostato para tu nevera, con un presupuesto de hasta R$ 900 y entrega en un plazo de 5 días… | 885 |
 
 El turno 4 solo se puede responder con memoria: el nombre se dijo en el turno 1, la cantidad en el 2 y el presupuesto y el plazo en el 3.
 
 ### 3. Lo que muestra la última columna
 
-La memoria crece en cada turno: de 240 a 879 caracteres en cuatro turnos. Con el buffer, **cada mensaje nuevo hace más largo y más caro el siguiente prompt**, sin límite. Por eso el agente final no usa esta memoria: usa una ventana de 12 mensajes más recuperación de recuerdos (R14).
+La memoria crece en cada turno: de 240 a 885 caracteres en cuatro turnos. Con el buffer, **cada mensaje nuevo hace más largo y más caro el siguiente prompt**, sin límite. Por eso el agente final no usa esta memoria: usa una ventana de 12 mensajes más recuperación de recuerdos (R14).
 
 **Decisión técnica.** Este chatbot está aislado en `legacy.py` como demostración. Es útil para ver la memoria conversacional en su forma más simple, pero no sirve para el producto por dos motivos: no tiene límite de tamaño, y no tiene herramientas, así que no puede consultar el catálogo. Su prompt le prohíbe inventar precios y por eso responde «consultaré el catálogo».
 
@@ -1289,7 +1358,7 @@ Agente final, `gpt-4.1-mini`, ViaCEP real, índice de políticas cargado de disc
 | 5 | ¿A qué ciudad corresponde el CEP 01001000? | `consultar_cep` | sin cambios | CEP 01001000: São Paulo/SP |
 | 6 | ¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza? | `consultar_politicas` | sin cambios | Resumen de la política, con su fuente |
 | 7 | Vuelve a comparar con lo último que te pedí | `comparar_ofertas` | 5 uds · R$ 10.000 | CentroPeças: R$ 7.279,83. «Se aplicó tu preferencia por proveedores nacionales» |
-| 8 | Compara 2 unidades de PEC-11-0001 | `comparar_ofertas` | **PEC-11-0001** · 2 uds | Casa Técnica Brasil: R$ 1.970,38. «Sin ella, la más barata sería Atlantic Repair Parts por R$ 619,38» |
+| 8 | Compara 2 unidades de PEC-11-0001 | `comparar_ofertas` | **PEC-11-0001** · 2 uds | Casa Técnica Brasil: R$ 1.970,38. «Sin ella, la más barata sería Atlantic Repair Parts por R$ 619,38». Incluye un consejo de precio verificado: el precio de Casa Técnica Brasil es el más bajo del periodo |
 
 Las ocho propuestas del modelo pasaron la verificación a la primera.
 
@@ -1360,7 +1429,7 @@ Las dos trazas se conservan. Las pruebas automáticas ya pasaban antes: el fallo
 |---|---|---|---|---|---|
 | `buscar_productos` | Hardcoded | SQL de lectura | `texto` | Candidatos (ID, SKU, nombre, categoría) | Lista vacía si no hay coincidencias |
 | `consultar_catalogo` | Hardcoded con un ID; **semántica** en preguntas abiertas | Con ID: plan validado → `SELECT` con parámetros. Sin ID: el modelo escribe el `SELECT` y el motor lo autoriza | `pregunta` | Modo, SQL y filas | Consulta rechazada o sin filas |
-| `comparar_ofertas` | Hardcoded | Stock, pedido mínimo, plazo y presupuesto; total en centavos enteros; preferencia de origen del usuario; desempate fijo | `producto_id`, `cantidad`, `presupuesto_centavos`, `plazo_max_dias` | Todas las ofertas, con «cumple» o el motivo de descarte | Rechaza una cantidad no positiva |
+| `comparar_ofertas` | Hardcoded | Stock, pedido mínimo, plazo y presupuesto; total en centavos enteros; preferencia de origen del usuario; desempate fijo; historial de precios de cada oferta válida | `producto_id`, `cantidad`, `presupuesto_centavos`, `plazo_max_dias` | Todas las ofertas, con «cumple» o el motivo de descarte | Rechaza una cantidad no positiva |
 | `consultar_politicas` | **Semántica** | Búsqueda por similitud en FAISS, con reformulación de la consulta | `pregunta` | Fragmentos con fuente y distancia; estado | `sin_evidencia` o `indisponible` |
 | `consultar_cep` | Hardcoded | Llamada a una API externa | `cep` | Ciudad, UF y modo | `no_encontrado`, `invalido`, `indisponible` |
 | `guardar_preferencia` | Hardcoded | Escritura condicionada a una cita literal | `clave`, `valor`, `cita_usuario` | Confirmación | `invalido` si el usuario no lo dijo |
@@ -1373,6 +1442,8 @@ El catálogo se genera del código: nombre, descripción y entradas salen de las
 - **`consultar_politicas` es semántica porque no hay otra forma.** El usuario pregunta «¿se puede mandar en varias cajas?» y la política dice «entrega parcial». Solo una búsqueda por significado las une.
 - **Lo semántico nunca decide un número.** La herramienta semántica devuelve fragmentos de texto con su fuente; los importes vienen siempre de herramientas hardcoded.
 - **El LLM es el que elige.** Las herramientas no se llaman entre sí; el agente decide cuál usar leyendo su descripción.
+
+El aviso de precio muestra el reparto completo en pequeño: tres funciones hardcoded deciden si hay algo que avisar y con qué datos, y una función semántica (el modelo) solo redacta, bajo verificación (ver «El aviso de precio»).
 
 Hay una función semántica de otro tipo dentro de `consultar_catalogo`: en preguntas abiertas, el generador de text-to-SQL (R21) usa un LLM dentro de la propia herramienta. Ilustra el otro sentido de «semántica»: una función cuyo interior es un modelo. Aun así no decide ningún número: las cifras salen de la base y la tabla la arma el sistema.
 
@@ -1461,15 +1532,14 @@ Pregunta: «¿Qué proveedor nacional ofrece PEC-01-0001 más barato teniendo st
 
 1. **Consulta generada** por `gpt-4.1-mini`:
    ```sql
-   SELECT suppliers.name AS proveedor,
-          (offers.estimated_brl_cents + offers.shipping_brl_cents) / 100.0 AS precio_real
+   SELECT suppliers.name AS proveedor, offers.estimated_brl_cents AS precio_cents
    FROM offers JOIN suppliers ON offers.supplier_id = suppliers.id
    WHERE offers.part_id = 'PEC-01-0001' AND suppliers.domestic = 1 AND offers.stock_qty > 0
-   ORDER BY (offers.estimated_brl_cents + offers.shipping_brl_cents) ASC LIMIT 1
+   ORDER BY offers.estimated_brl_cents ASC LIMIT 1
    ```
 2. **Validación**: una sola sentencia, empieza por `SELECT`, sin comentarios.
 3. **Ejecución** con el autorizador activo, en solo lectura.
-4. **Filas**: `CentroPeças, 1524.15`. Coincide con el catálogo: 1.438,92 de precio más 85,23 de flete.
+4. **Filas**: `CentroPeças, 143892`. Coincide con el catálogo: R$ 1.438,92 por unidad. El otro proveedor nacional, Litoral Parts, no tiene stock.
 
 ### 3. Tres barreras
 
@@ -1671,7 +1741,7 @@ En el agente, la herramienta `consultar_politicas` aplica esta reformulación a 
 
 > ¿El alumno construyó un mecanismo de verificación de consistencia factual y coherencia lógica de las respuestas del agente?
 
-**Respuesta corta.** Sí. Ninguna respuesta del agente se muestra sin pasar por dos puertas dentro del flujo: una **verificación exacta** (coherencia lógica) y un modelo **NLI** (consistencia factual). En siete experimentos con el modelo real no se publicó ninguna recomendación contraria a la regla de comparación. La regla misma tuvo un hueco —ignoraba el pedido mínimo— que la verificación no podía ver, porque comprobaba contra esa misma regla.
+**Respuesta corta.** Sí. Ninguna respuesta del agente se muestra sin pasar por dos puertas dentro del flujo: una **verificación exacta** (coherencia lógica) y un modelo **NLI** (consistencia factual). En ocho experimentos con el modelo real no se publicó ninguna recomendación contraria a la regla de comparación. La regla misma tuvo un hueco —ignoraba el pedido mínimo— que la verificación no podía ver, porque comprobaba contra esa misma regla.
 
 ### 1. Dónde está
 
@@ -1707,7 +1777,9 @@ Un modelo de inferencia en lenguaje natural clasifica la relación entre la evid
 | Entrega en 5 días | Entrega en 10 días | *contradiction* |
 | Entrega en 5 días | La pieza es azul | *neutral* (no dice nada) |
 
-Solo *entailment* permite publicar. El modelo es `mDeBERTa-v3-base-mnli-xnli`, local, con la revisión fijada. Se aplica a las recomendaciones (¿la evidencia sustenta el stock y el plazo del ganador?) y a las políticas (¿el fragmento sustenta el resumen?).
+Solo *entailment* permite publicar. El modelo es `mDeBERTa-v3-base-mnli-xnli`, local, con la revisión fijada. Se aplica en tres sitios: a las recomendaciones (¿la evidencia sustenta el stock y el plazo del ganador?), a las políticas (¿el fragmento sustenta el resumen?) y al **consejo de precio** (¿los hechos sobre los precios sustentan lo que el modelo aconseja?).
+
+Donde más aporta es en los dos últimos, porque ahí se verifica texto libre. En el consejo de precio se midió: con el primer prompt el NLI rechazó 10 de 15 consejos, casi todos por añadir valoraciones que los hechos no decían; con el prompt ajustado, 1 de 15 (ver «El aviso de precio»).
 
 ### 4. Anclaje: el modelo decide, el sistema pone los datos
 
@@ -1735,11 +1807,12 @@ El anclaje no relaja la verificación: solo evita rechazar lo que ya era cierto.
 
 | Hecho observado | Dónde |
 |---|---|
-| **0 recomendaciones contrarias a la regla publicadas** en siete experimentos de 30 casos | R29 |
+| **0 recomendaciones contrarias a la regla publicadas** en ocho experimentos de 30 casos | R29 |
 | `gpt-4o-mini` propuso un ganador equivocado; la verificación lo rechazó dos veces y no se publicó | R29 |
 | `gpt-4.1-mini`: 22 de 23 propuestas aceptadas a la primera, y 24 de 24 en la versión final, sin ningún error de verificación | R29 |
 | Una primera propuesta con el ganador o el total incorrecto fue rechazada y la segunda fue correcta | Primera ejecución de la conversación de R18; motivó el anclaje de la comparación |
 | Una política cuyo resumen no pasó el NLI se corrigió y la segunda propuesta sí lo pasó | [citas_ancladas.md](citas_ancladas.md) |
+| El NLI rechazó 10 de 15 consejos de precio con valoraciones no respaldadas, y 1 de 15 tras ajustar el prompt | [trazas/precios_consejo_llm_antes.json](trazas/precios_consejo_llm_antes.json) y [trazas/precios_consejo_llm.json](trazas/precios_consejo_llm.json) |
 
 ### Evidencia
 
@@ -1755,7 +1828,7 @@ El anclaje no relaja la verificación: solo evita rechazar lo que ya era cierto.
 
 - **Verifica contra la regla de negocio, no la regla.** Mientras la comparación ignoró el pedido mínimo, la verificación aprobó recomendaciones que un proveedor no aceptaría.
 - **Verifica que la respuesta sea cierta, no que sea pertinente.** En un experimento con memoria contaminada, una pregunta de CEP recibió una respuesta de compra verificada pero fuera de tema.
-- El NLI se probó con tres pares ilustrativos; no se midió su exactitud general.
+- El NLI no es exacto: en el consejo de precio rechazó un consejo que era cierto. Falla hacia el lado seguro, pero falla. No se midió su exactitud general.
 - El modelo NLI admite 512 tokens: con varias citas largas la premisa se trunca.
 - El umbral del 80 % para anclar citas se fijó por criterio, sin calibrarlo.
 
@@ -2003,11 +2076,11 @@ Sin `OPENAI_API_KEY` la interfaz no se rompe: lista piezas, muestra fichas, comp
 
 > ¿El alumno evaluó la calidad de las respuestas y la trayectoria de llamadas de herramientas del agente con LangSmith, justificando las conclusiones a partir de las métricas obtenidas?
 
-**Respuesta corta.** Sí. Se ejecutaron siete experimentos en LangSmith sobre 30 casos, con seis métricas de calidad y de trayectoria. En el último, con la comparación de proveedores corregida, `gpt-4.1-mini` acertó el ganador y el importe en **14 de 14** recomendaciones y las 24 propuestas pasaron la verificación a la primera. En ningún experimento se publicó una recomendación equivocada. La evaluación además encontró un defecto del agente y un error en la propia forma de evaluar; los dos se corrigieron y se volvieron a medir.
+**Respuesta corta.** Sí. Se ejecutaron ocho experimentos en LangSmith sobre 30 casos, con seis métricas de calidad y de trayectoria. En el último, con la comparación de proveedores corregida, `gpt-4.1-mini` acertó el ganador y el importe en **14 de 14** recomendaciones y las 24 propuestas pasaron la verificación a la primera. En ningún experimento se publicó una recomendación equivocada. La evaluación además encontró un defecto del agente y un error en la propia forma de evaluar; los dos se corrigieron y se volvieron a medir.
 
 ### 1. Qué se evalúa
 
-El agente evaluado es el mismo flujo que usa la interfaz (`crear_flujo`), con el modelo real, el verificador y el NLI. Hay dos conjuntos de casos en LangSmith, de 30 casos sintéticos cada uno, con la respuesta y las herramientas esperadas: `pedro-infnet-casos-derivados-7610315f` (los seis primeros experimentos) y `pedro-infnet-casos-derivados-9399546b` (el séptimo, con el pedido mínimo en la regla de referencia).
+El agente evaluado es el mismo flujo que usa la interfaz (`crear_flujo`), con el modelo real, el verificador y el NLI. Hay dos conjuntos de casos en LangSmith, de 30 casos sintéticos cada uno, con la respuesta y las herramientas esperadas: `pedro-infnet-casos-derivados-7610315f` (los seis primeros experimentos) y `pedro-infnet-casos-derivados-9399546b` (los dos últimos, con el pedido mínimo en la regla de referencia).
 
 | Grupo | Casos | Qué se espera |
 |---|---|---|
@@ -2056,21 +2129,23 @@ Los seis experimentos:
 
 Los seis primeros experimentos se hicieron cuando la comparación ignoraba el **pedido mínimo** de cada proveedor. Tanto el agente como los casos de referencia tenían ese hueco, y por eso coincidían: 14 de 14 medía que el agente y la referencia estaban de acuerdo, no que la recomendación fuera buena para un comprador. **Ninguna métrica lo detectó.**
 
-Al corregir la regla se regeneraron los casos con una referencia independiente del agente (SQL propio en [crear_casos_eval.py](../scripts/crear_casos_eval.py)). Cambiaron 5 de los 14 casos de recomendación: 2 de ganador y 3 pasaron a «ninguna oferta». Una prueba comprueba que el comparador del agente coincide con esa referencia en los 19 casos de compra. El séptimo experimento, `…gpt-4.1-mini-pedido-minimo-4e396dfb`, es el resultado vigente:
+Al corregir la regla se regeneraron los casos con una referencia independiente del agente (SQL propio en [crear_casos_eval.py](../scripts/crear_casos_eval.py)). Cambiaron 5 de los 14 casos de recomendación: 2 de ganador y 3 pasaron a «ninguna oferta». Una prueba comprueba que el comparador del agente coincide con esa referencia en los 19 casos de compra. Con esos casos se hicieron dos experimentos. El último, `…gpt-4.1-mini-comparacion-completa-9963b9ce`, incluye además el historial y el aviso de precio, y es el resultado vigente:
 
-| Métrica | Resultado |
-|---|---|
-| Ganador correcto | 14 de 14 |
-| Importe correcto | 14 de 14 |
-| Contenido | 16 de 16 |
-| Herramienta decisiva | 23 de 23 |
-| Primera propuesta aceptada | 24 de 24 |
-| Errores de verificación | 0 |
-| Trayectoria completa | 16 de 30 |
+| Métrica | Solo pedido mínimo (`…pedido-minimo-4e396dfb`) | Comparación completa (vigente) |
+|---|---|---|
+| Ganador correcto | 14 de 14 | 14 de 14 |
+| Importe correcto | 14 de 14 | 14 de 14 |
+| Contenido | 16 de 16 | 16 de 16 |
+| Herramienta decisiva | 23 de 23 | 23 de 23 |
+| Primera propuesta aceptada | 24 de 24 | 24 de 24 |
+| Errores de verificación | 0 | 0 |
+| Trayectoria completa | 16 de 30 | 23 de 30 |
+
+En el experimento vigente, 4 de las 14 recomendaciones llevaron un consejo de precio redactado por el modelo y verificado; en las otras 10 el precio del ganador estaba en línea con su media y no había nada que avisar. La trayectoria completa volvió a variar entre corridas (16 y 23 de 30) sin que cambiara nada relacionado con ella: confirma que esa métrica es inestable.
 
 Ejemplo de un caso que cambió, «Compara 2 unidades de PEC-01-0001»: antes ganaba CentroPeças con R$ 2.963,07; ahora gana Atlantic Repair Parts con R$ 3.200,27, porque CentroPeças exige un pedido mínimo de 5 unidades.
 
-Los seis experimentos anteriores se conservan como historia del proyecto: siguen sirviendo para comparar modelos y para ver el efecto del CEP y de la memoria, pero sus importes corresponden a la regla antigua.
+Los seis primeros experimentos se conservan como historia del proyecto: siguen sirviendo para comparar modelos y para ver el efecto del CEP y de la memoria, pero sus importes corresponden a la regla antigua.
 
 ### 4. La versión final del agente (antes de corregir la comparación)
 
@@ -2117,7 +2192,7 @@ El script comprueba que el modelo responde antes de empezar, crea el conjunto de
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| Siete experimentos con sus métricas y trazas | LangSmith, conjuntos `pedro-infnet-casos-derivados-7610315f` y `…-9399546b` | **Ejecución real remota** (OpenAI, ViaCEP y LangSmith) |
+| Ocho experimentos con sus métricas y trazas | LangSmith, conjuntos `pedro-infnet-casos-derivados-7610315f` y `…-9399546b` | **Ejecución real remota** (OpenAI, ViaCEP y LangSmith) |
 | Copia local de cada experimento, caso por caso | [trazas/](trazas/): `r29_langsmith_*.json` | Registro de ejecución real |
 | Evaluadores y casos | [evaluar_flujo.py](../evals/evaluar_flujo.py); [casos_derivados.json](../evals/casos_derivados.json) | Código |
 | Los casos corresponden al catálogo y el comparador coincide con la referencia independiente en los 19 casos de compra | [tests/test_evals.py](../tests/test_evals.py) | Pruebas automáticas |

@@ -139,3 +139,11 @@ def test_la_herramienta_usa_el_plan_con_id_y_sql_solo_en_preguntas_abiertas(tmp_
     assert con_id["modo"] == "plan" and len(con_id["filas"]) == 3
     abierta = json.loads(herramienta.invoke({"pregunta": "¿Cuántas piezas hay?"}))
     assert abierta["modo"] == "sql" and abierta["filas"] == [{"n": 2640}]
+
+
+def test_el_historial_de_precios_se_puede_consultar_por_sql(escenario):
+    resultado = consultar_sql(escenario, "SELECT observed_on, estimated_brl_cents FROM price_history "
+                                         "WHERE offer_id = 'PEC-01-0001-BR-06' ORDER BY observed_on")
+    assert len(resultado["filas"]) == 6 and resultado["filas"][-1]["estimated_brl_cents"] == 143892
+    with pytest.raises(ConsultaRechazada, match="price_history.unit_price_minor"):
+        consultar_sql(escenario, "SELECT unit_price_minor FROM price_history")
