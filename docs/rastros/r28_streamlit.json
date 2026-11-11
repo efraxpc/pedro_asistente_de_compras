@@ -1,95 +1,94 @@
 {
   "rubrica": "R28",
-  "modo": "app.py ejecutada con streamlit.testing.v1.AppTest; agente real remoto (OpenAI, ViaCEP); NLI real local; índice de políticas cargado de disco",
-  "fecha_utc": "2026-11-11T16:11:26+00:00",
+  "modo": "app.py executado com streamlit.testing.v1.AppTest; agente real remoto (OpenAI, ViaCEP); NLI real local; índice de políticas carregado do disco",
+  "data_utc": "2026-11-11T17:17:42+00:00",
   "modelo_llm": "gpt-4.1-mini",
-  "arranque": {
+  "inicializacao": {
     "titulos": [
       "Chat",
       ":material/shopping_cart: Pedro"
     ],
-    "excepciones": []
+    "excecoes": []
   },
   "vista_chat": {
     "turnos": [
       {
-        "usuario": "Necesito 5 unidades de PEC-01-0001 con plazo máximo de 7 días",
-        "pasos": [
-          "Cómo llegué a esta respuesta · 5 pasos",
-          "Leí tu mensaje",
-          "Consulté el catálogo",
-          "Comparé las ofertas de los proveedores",
-          "Tomé las cifras del cálculo de la herramienta",
-          "Verifiqué la respuesta"
+        "usuario": "Preciso de 5 unidades de PEC-01-0001 com prazo máximo de 7 dias",
+        "passos": [
+          "Como cheguei a esta resposta · 4 passos",
+          "Li a sua mensagem",
+          "Comparei as ofertas dos fornecedores",
+          "Peguei os números do cálculo da ferramenta",
+          "Verifiquei a resposta"
         ],
-        "tarjetas": {
-          "Proveedor recomendado": "CentroPeças",
+        "cartoes": {
+          "Fornecedor recomendado": "CentroPeças",
           "Total por 5 unidades": "R$ 7.279,83",
-          "Entrega": "2 días",
-          "Origen": "Nacional"
+          "Entrega": "2 dias",
+          "Origem": "Nacional"
         },
-        "consejo_o_aviso": [],
-        "tablas": 2,
-        "texto": "Cambios en la solicitud: `{\"cantidad\": 5, \"plazo_max_dias\": 7}` `consultar_catalogo` con `{'pregunta': 'PEC-01-0001'}` `comparar_ofertas` con `{'producto_id': 'PEC-01-0001', 'cantidad': 5, 'plazo_max_dias': 7}` Sin errores.",
-        "errores": []
+        "conselho_ou_aviso": [],
+        "tabelas": 2,
+        "texto": "Mudanças na solicitação: `{\"quantidade\": 5, \"prazo_max_dias\": 7}` `comparar_ofertas` com `{'produto_id': 'PEC-01-0001', 'quantidade': 5, 'prazo_max_dias': 7}` Sem erros.",
+        "erros": []
       },
       {
-        "usuario": "Ahora que sean 6 y mantén el plazo",
-        "pasos": [
-          "Cómo llegué a esta respuesta · 4 pasos",
-          "Leí tu mensaje",
-          "Comparé las ofertas de los proveedores",
-          "Tomé las cifras del cálculo de la herramienta",
-          "Verifiqué la respuesta"
+        "usuario": "Agora que sejam 6 e mantenha o prazo",
+        "passos": [
+          "Como cheguei a esta resposta · 4 passos",
+          "Li a sua mensagem",
+          "Comparei as ofertas dos fornecedores",
+          "Peguei os números do cálculo da ferramenta",
+          "Verifiquei a resposta"
         ],
-        "tarjetas": {
-          "Proveedor recomendado": "CentroPeças",
+        "cartoes": {
+          "Fornecedor recomendado": "CentroPeças",
           "Total por 6 unidades": "R$ 8.718,75",
-          "Entrega": "2 días",
-          "Origen": "Nacional"
+          "Entrega": "2 dias",
+          "Origem": "Nacional"
         },
-        "consejo_o_aviso": [],
-        "tablas": 2,
-        "texto": "Cambios en la solicitud: `{\"cantidad\": 6}` `comparar_ofertas` con `{'producto_id': 'PEC-01-0001', 'cantidad': 6, 'plazo_max_dias': 7}` Sin errores.",
-        "errores": []
+        "conselho_ou_aviso": [],
+        "tabelas": 2,
+        "texto": "Mudanças na solicitação: `{\"quantidade\": 6}` `comparar_ofertas` com `{'produto_id': 'PEC-01-0001', 'quantidade': 6, 'prazo_max_dias': 7}` Sem erros.",
+        "erros": []
       },
       {
-        "usuario": "¿A qué ciudad corresponde el CEP 01001000?",
-        "pasos": [
-          "Cómo llegué a esta respuesta · 4 pasos",
-          "Leí tu mensaje: no es una compra",
-          "Consulté el CEP en ViaCEP",
-          "Tomé la ciudad de la respuesta de ViaCEP",
-          "Verifiqué la respuesta"
+        "usuario": "A que cidade corresponde o CEP 01001000?",
+        "passos": [
+          "Como cheguei a esta resposta · 4 passos",
+          "Li a sua mensagem: não é uma compra",
+          "Consultei o CEP no ViaCEP",
+          "Peguei a cidade da resposta do ViaCEP",
+          "Verifiquei a resposta"
         ],
-        "tarjetas": {},
-        "consejo_o_aviso": [],
-        "tablas": 0,
-        "texto": "`consultar_cep` con `{'cep': '01001000'}` Sin errores. CEP 01001000: São Paulo/SP (ViaCEP, modo real).",
-        "errores": []
+        "cartoes": {},
+        "conselho_ou_aviso": [],
+        "tabelas": 0,
+        "texto": "`consultar_cep` com `{'cep': '01001000'}` Sem erros. CEP 01001000: São Paulo/SP (ViaCEP, modo real).",
+        "erros": []
       },
       {
-        "usuario": "¿Se puede mandar en varias cajas?",
-        "pasos": [
-          "Cómo llegué a esta respuesta · 1 pasos",
-          "Busqué en las políticas"
+        "usuario": "Posso receber em várias caixas?",
+        "passos": [
+          "Como cheguei a esta resposta · 1 passos",
+          "Busquei nas políticas"
         ],
-        "tarjetas": {},
-        "consejo_o_aviso": [],
-        "tablas": 0,
-        "texto": "`consultar_politicas` con `{'pregunta': '¿Se puede mandar en varias cajas?'}` Política ficticia de demostración. Una entrega parcial solo puede describirse si hay un acuerdo simulado explícito que identifica las unidades, el proveedor y los plazos de cada envío. Si no existe ese acuerdo, el asistente debe indicar que la oferta no cubre la cantidad pedida.\nFuentes: FIC-ENT-01-S05-C01\n\nRecuperación ",
-        "errores": []
+        "cartoes": {},
+        "conselho_ou_aviso": [],
+        "tabelas": 0,
+        "texto": "`consultar_politicas` com `{'pergunta': 'Posso receber em várias caixas?'}` Política fictícia de demonstração. Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio. Se não existe esse acordo, o assistente deve indicar que a oferta não cobre a quantidade pedida.\nFontes: FIC-ENT-01-S05-C01\n\nRecuperação T24: a p",
+        "erros": []
       }
     ],
-    "mensajes_en_pantalla": 8
+    "mensagens_na_tela": 8
   },
-  "nuevo_chat": {
-    "sesion_distinta": true,
-    "mensajes_en_pantalla": 0
+  "novo_chat": {
+    "sessao_diferente": true,
+    "mensagens_na_tela": 0
   },
-  "conversacion_reabierta": {
-    "mensajes_en_pantalla": 8,
-    "primer_mensaje": "Necesito 5 unidades de PEC-01-0001 con plazo máximo de 7 días",
-    "tarjetas_redibujadas": 8
+  "conversa_reaberta": {
+    "mensagens_na_tela": 8,
+    "primeira_mensagem": "Preciso de 5 unidades de PEC-01-0001 com prazo máximo de 7 dias",
+    "cartoes_redesenhados": 8
   }
 }

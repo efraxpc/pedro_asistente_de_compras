@@ -1,16 +1,16 @@
 {
-  "pregunta_original": "¿Se puede mandar en varias cajas?",
-  "pregunta_reescrita": "¿Cuándo admite la política de entrega un envío parcial de las piezas solicitadas?",
-  "fuente_esperada": "FIC-ENT-01-S05-C01",
+  "pergunta_original": "Posso receber em várias caixas?",
+  "pergunta_reescrita": "Quando a política de entrega admite um envio parcial das peças solicitadas?",
+  "fonte_esperada": "FIC-ENT-01-S05-C01",
   "evidencia_esperada": {
-    "texto": "Cuando la cantidad solicitada supera el stock de una oferta, esa oferta no cumple la comparación exacta del proyecto. Esta política no autoriza dividir automáticamente el pedido entre proveedores ni inventar unidades adicionales. Una entrega parcial solo puede describirse si hay un acuerdo simulado explícito que identifica las unidades, el proveedor y los plazos de cada envío. Si no existe ese acuerdo, el asistente debe indicar que la oferta no cubre la cantidad pedida. El flete se conserva como dato de la oferta correspondiente; no se duplica ni reparte por intuición. Para un pedido de práctica con varias piezas distintas, cada línea mantiene su propio SKU y sus evidencias",
-    "metadatos": {
+    "texto": "Quando a quantidade solicitada supera o estoque de uma oferta, essa oferta não atende à comparação exata do projeto. Esta política não autoriza dividir automaticamente o pedido entre fornecedores nem inventar unidades adicionais. Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio. Se não existe esse acordo, o assistente deve indicar que a oferta não cobre a quantidade pedida. O frete é conservado como dado da oferta correspondente; não se duplica nem se reparte por intuição. Para um pedido de prática com várias peças distintas, cada linha mantém seu próprio SKU e suas evidências",
+    "metadados": {
       "id": "FIC-ENT-01-S05-C01",
-      "origen": "ficticio_demo",
+      "origem": "ficticio_demo",
       "tema": "entrega",
-      "seccion": "5. Entrega parcial y stock",
-      "fuente": "entrega.md",
-      "version": "1.1"
+      "secao": "5. Entrega parcial e estoque",
+      "fonte": "entrega.md",
+      "versao": "1.1"
     }
   },
   "metrica": "L2",
@@ -21,130 +21,130 @@
   "total_fragmentos": 75,
   "antes": [
     {
-      "posicion": 1,
-      "fuente_id": "FIC-ENT-01-S04-C01",
-      "texto": "Al recibir un paquete de demostración, se compara la etiqueta de la oferta con el ID de la pieza y la cantidad registrada. Si el embalaje exterior presenta una rotura, humedad o una marca de golpe, se anota en la recepción y se toman fotografías antes de descartar la caja. Una diferencia entre la cantidad pedida y la recibida se comunica dentro de **24 horas** de la entrega simulada para facilitar la trazabilidad del ejercicio. Este plazo de comunicación de cantidad no es el mismo que el plazo de siete días para notificar un daño visible de la pieza en la política ficticia de devoluciones. La recepción no prueba que la pieza sea compatible ni que funcione correctamente",
-      "metadatos": {
-        "id": "FIC-ENT-01-S04-C01",
-        "origen": "ficticio_demo",
-        "tema": "entrega",
-        "seccion": "4. Recepción y comprobación inmediata",
-        "fuente": "entrega.md",
-        "version": "1.1"
-      },
-      "score": 12.844940185546875
-    },
-    {
-      "posicion": 2,
-      "fuente_id": "FIC-GAR-01-S06-C01",
-      "texto": "Un cortocircuito causado por conectar una pieza de voltaje distinto, un cable cortado durante la instalación o una carcasa modificada no se clasifican de entrada como fallos de fabricación. Tampoco basta con que una pieza deje de funcionar después de un tiempo: debe examinarse la causa. El desgaste previsto de un consumible, el daño por humedad externa y el uso en un modelo no indicado en la ficha requieren una evaluación propia y pueden quedar fuera de esta cobertura inventada. Estas categorías sirven para que el agente distinga evidencia de hipótesis; no describen derechos reales del consumidor",
-      "metadatos": {
-        "id": "FIC-GAR-01-S06-C01",
-        "origen": "ficticio_demo",
-        "tema": "garantia",
-        "seccion": "6. Situaciones fuera de esta cobertura ficticia",
-        "fuente": "garantia.md",
-        "version": "1.1"
-      },
-      "score": 13.33599853515625
-    },
-    {
-      "posicion": 3,
-      "fuente_id": "FIC-DEV-01-S03-C01",
-      "texto": "El daño visible al abrir la caja, como una carcasa rota, un conector doblado o una bolsa de tornillos faltante, debe notificarse dentro de **7 días corridos** desde la entrega simulada. La notificación debe incluir una fotografía de la caja, otra de la pieza y una descripción breve del problema. El usuario no necesita diagnosticar la causa técnica del daño; basta con describir lo observado. Cuando el paquete llegó con una marca de golpe, también se conserva la imagen de la etiqueta de transporte ficticia. La recepción de la notificación abre una revisión, pero no confirma de inmediato si corresponde reemplazo, devolución o una aclaración",
-      "metadatos": {
-        "id": "FIC-DEV-01-S03-C01",
-        "origen": "ficticio_demo",
-        "tema": "devoluciones",
-        "seccion": "3. Daño visible y contenido incompleto",
-        "fuente": "devoluciones.md",
-        "version": "1.1"
-      },
-      "score": 13.389053344726562
-    },
-    {
-      "posicion": 4,
-      "fuente_id": "FIC-GAR-01-S01-C01",
-      "texto": "Esta política inventada permite practicar preguntas sobre fallos de fabricación, comprobación de compatibilidad y trazabilidad de piezas de electrodomésticos. Solo se refiere a artículos y ofertas del catálogo sintético de ComprasLab. No crea una garantía para productos reales ni convierte una recomendación del asistente en una venta. El período ficticio de referencia es el valor de `parts.warranty_months` de la pieza concreta, contado desde una entrega simulada; no hay un plazo universal de 180 días. En la captura inicial aparecen valores de 3, 6, 12, 18 y 24 meses",
-      "metadatos": {
+      "posicao": 1,
+      "fonte_id": "FIC-GAR-01-S01-C01",
+      "texto": "Esta política inventada permite praticar perguntas sobre falhas de fabricação, verificação de compatibilidade e rastreabilidade de peças de eletrodomésticos. Refere-se apenas a artigos e ofertas do catálogo sintético de ComprasLab. Não cria uma garantia para produtos reais nem converte uma recomendação do assistente em uma venda. O período fictício de referência é o valor de `parts.warranty_months` da peça concreta, contado desde uma entrega simulada; não há um prazo universal de 180 dias. Na captura inicial aparecem valores de 3, 6, 12, 18 e 24 meses. A data de compra, a data em que foi criado um cenário de dados e a data de entrega podem ser diferentes; para este exercício conta a última",
+      "metadados": {
         "id": "FIC-GAR-01-S01-C01",
-        "origen": "ficticio_demo",
+        "origem": "ficticio_demo",
         "tema": "garantia",
-        "seccion": "1. Propósito y piezas cubiertas",
-        "fuente": "garantia.md",
-        "version": "1.1"
+        "secao": "1. Propósito e peças cobertas",
+        "fonte": "garantia.md",
+        "versao": "1.1"
       },
-      "score": 14.044898986816406
-    }
-  ],
-  "despues": [
-    {
-      "posicion": 1,
-      "fuente_id": "FIC-ENT-01-S05-C01",
-      "texto": "Cuando la cantidad solicitada supera el stock de una oferta, esa oferta no cumple la comparación exacta del proyecto. Esta política no autoriza dividir automáticamente el pedido entre proveedores ni inventar unidades adicionales. Una entrega parcial solo puede describirse si hay un acuerdo simulado explícito que identifica las unidades, el proveedor y los plazos de cada envío. Si no existe ese acuerdo, el asistente debe indicar que la oferta no cubre la cantidad pedida. El flete se conserva como dato de la oferta correspondiente; no se duplica ni reparte por intuición. Para un pedido de práctica con varias piezas distintas, cada línea mantiene su propio SKU y sus evidencias",
-      "metadatos": {
-        "id": "FIC-ENT-01-S05-C01",
-        "origen": "ficticio_demo",
-        "tema": "entrega",
-        "seccion": "5. Entrega parcial y stock",
-        "fuente": "entrega.md",
-        "version": "1.1"
-      },
-      "score": 10.215921401977539
+      "score": 13.556053161621094
     },
     {
-      "posicion": 2,
-      "fuente_id": "FIC-ENT-01-S01-C01",
-      "texto": "Esta política inventada explica cómo se interpretarían preparación, despacho, tránsito y recepción de piezas del catálogo ficticio. La columna `offers.lead_days`, expuesta en el asistente como `plazo_dias`, es una estimación de entrega expresada en días corridos para el escenario de comparación. No es una confirmación de que exista una ruta de transporte ni de que se haya contratado un servicio real. La SQLite no contiene pedidos, envíos, eventos de seguimiento ni entregas. El tiempo estimado depende de la oferta seleccionada; la posibilidad de cubrir una cantidad depende de `stock_qty`",
-      "metadatos": {
-        "id": "FIC-ENT-01-S01-C01",
-        "origen": "ficticio_demo",
-        "tema": "entrega",
-        "seccion": "1. Alcance de los plazos simulados",
-        "fuente": "entrega.md",
-        "version": "1.1"
-      },
-      "score": 11.819263458251953
-    },
-    {
-      "posicion": 3,
-      "fuente_id": "FIC-ENT-01-S04-C01",
-      "texto": "Al recibir un paquete de demostración, se compara la etiqueta de la oferta con el ID de la pieza y la cantidad registrada. Si el embalaje exterior presenta una rotura, humedad o una marca de golpe, se anota en la recepción y se toman fotografías antes de descartar la caja. Una diferencia entre la cantidad pedida y la recibida se comunica dentro de **24 horas** de la entrega simulada para facilitar la trazabilidad del ejercicio. Este plazo de comunicación de cantidad no es el mismo que el plazo de siete días para notificar un daño visible de la pieza en la política ficticia de devoluciones. La recepción no prueba que la pieza sea compatible ni que funcione correctamente",
-      "metadatos": {
+      "posicao": 2,
+      "fonte_id": "FIC-ENT-01-S04-C01",
+      "texto": "Ao receber um pacote de demonstração, compara-se a etiqueta da oferta com o ID da peça e a quantidade registrada. Se a embalagem exterior apresenta uma ruptura, umidade ou uma marca de impacto, anota-se no recebimento e tiram-se fotografias antes de descartar a caixa. Uma diferença entre a quantidade pedida e a recebida é comunicada dentro de **24 horas** da entrega simulada para facilitar a rastreabilidade do exercício. Este prazo de comunicação de quantidade não é o mesmo que o prazo de sete dias para notificar um dano visível da peça na política fictícia de devoluções. O recebimento não prova que a peça seja compatível nem que funcione corretamente",
+      "metadados": {
         "id": "FIC-ENT-01-S04-C01",
-        "origen": "ficticio_demo",
+        "origem": "ficticio_demo",
         "tema": "entrega",
-        "seccion": "4. Recepción y comprobación inmediata",
-        "fuente": "entrega.md",
-        "version": "1.1"
+        "secao": "4. Recebimento e verificação imediata",
+        "fonte": "entrega.md",
+        "versao": "1.1"
       },
-      "score": 12.317188262939453
+      "score": 13.5978422164917
     },
     {
-      "posicion": 4,
-      "fuente_id": "FIC-DEV-01-S08-C02",
-      "texto": ". La tabla `price_history` guarda precios observados de ofertas, no pagos efectuados ni reembolsos. Si se necesitara un importe hipotético de devolución, habría que aportar el pedido simulado y su total, o declararlo desconocido; no se toma automáticamente `estimated_brl_cents` actual. La compatibilidad de la pieza se consulta en `compatibility` por marca, código de modelo y años, y no reemplaza la inspección física descrita en esta política.",
-      "metadatos": {
-        "id": "FIC-DEV-01-S08-C02",
-        "origen": "ficticio_demo",
-        "tema": "devoluciones",
-        "seccion": "8. Identificación de piezas y ofertas del catálogo",
-        "fuente": "devoluciones.md",
-        "version": "1.1"
+      "posicao": 3,
+      "fonte_id": "FIC-DEV-01-S03-C01",
+      "texto": "O dano visível ao abrir a caixa, como uma carcaça quebrada, um conector dobrado ou um saco de parafusos faltante, deve ser notificado dentro de **7 dias corridos** desde a entrega simulada. A notificação deve incluir uma fotografia da caixa, outra da peça e uma descrição breve do problema. O usuário não precisa diagnosticar a causa técnica do dano; basta descrever o observado. Quando o pacote chegou com uma marca de impacto, também se conserva a imagem da etiqueta de transporte fictícia. O recebimento da notificação abre uma revisão, mas não confirma de imediato se cabe substituição, devolução ou um esclarecimento",
+      "metadados": {
+        "id": "FIC-DEV-01-S03-C01",
+        "origem": "ficticio_demo",
+        "tema": "devolucoes",
+        "secao": "3. Dano visível e conteúdo incompleto",
+        "fonte": "devolucoes.md",
+        "versao": "1.1"
       },
-      "score": 12.437063217163086
+      "score": 13.89094352722168
+    },
+    {
+      "posicao": 4,
+      "fonte_id": "FIC-ENT-01-S05-C00",
+      "texto": "## 5. Entrega parcial e estoque",
+      "metadados": {
+        "id": "FIC-ENT-01-S05-C00",
+        "origem": "ficticio_demo",
+        "tema": "entrega",
+        "secao": "5. Entrega parcial e estoque",
+        "fonte": "entrega.md",
+        "versao": "1.1"
+      },
+      "score": 14.34447193145752
     }
   ],
-  "posicion_antes": null,
-  "posicion_despues": 1,
-  "correccion_observada": true,
+  "depois": [
+    {
+      "posicao": 1,
+      "fonte_id": "FIC-ENT-01-S05-C01",
+      "texto": "Quando a quantidade solicitada supera o estoque de uma oferta, essa oferta não atende à comparação exata do projeto. Esta política não autoriza dividir automaticamente o pedido entre fornecedores nem inventar unidades adicionais. Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio. Se não existe esse acordo, o assistente deve indicar que a oferta não cobre a quantidade pedida. O frete é conservado como dado da oferta correspondente; não se duplica nem se reparte por intuição. Para um pedido de prática com várias peças distintas, cada linha mantém seu próprio SKU e suas evidências",
+      "metadados": {
+        "id": "FIC-ENT-01-S05-C01",
+        "origem": "ficticio_demo",
+        "tema": "entrega",
+        "secao": "5. Entrega parcial e estoque",
+        "fonte": "entrega.md",
+        "versao": "1.1"
+      },
+      "score": 8.565513610839844
+    },
+    {
+      "posicao": 2,
+      "fonte_id": "FIC-ENT-01-S01-C01",
+      "texto": "Esta política inventada explica como seriam interpretados preparação, despacho, trânsito e recebimento de peças do catálogo fictício. A coluna `offers.lead_days`, exposta no assistente como `prazo_dias`, é uma estimativa de entrega expressa em dias corridos para o cenário de comparação. Não é uma confirmação de que exista uma rota de transporte nem de que tenha sido contratado um serviço real. A SQLite não contém pedidos, envios, eventos de rastreamento nem entregas. O tempo estimado depende da oferta selecionada; a possibilidade de cobrir uma quantidade depende de `stock_qty`",
+      "metadados": {
+        "id": "FIC-ENT-01-S01-C01",
+        "origem": "ficticio_demo",
+        "tema": "entrega",
+        "secao": "1. Alcance dos prazos simulados",
+        "fonte": "entrega.md",
+        "versao": "1.1"
+      },
+      "score": 10.384636878967285
+    },
+    {
+      "posicao": 3,
+      "fonte_id": "FIC-ENT-01-S04-C01",
+      "texto": "Ao receber um pacote de demonstração, compara-se a etiqueta da oferta com o ID da peça e a quantidade registrada. Se a embalagem exterior apresenta uma ruptura, umidade ou uma marca de impacto, anota-se no recebimento e tiram-se fotografias antes de descartar a caixa. Uma diferença entre a quantidade pedida e a recebida é comunicada dentro de **24 horas** da entrega simulada para facilitar a rastreabilidade do exercício. Este prazo de comunicação de quantidade não é o mesmo que o prazo de sete dias para notificar um dano visível da peça na política fictícia de devoluções. O recebimento não prova que a peça seja compatível nem que funcione corretamente",
+      "metadados": {
+        "id": "FIC-ENT-01-S04-C01",
+        "origem": "ficticio_demo",
+        "tema": "entrega",
+        "secao": "4. Recebimento e verificação imediata",
+        "fonte": "entrega.md",
+        "versao": "1.1"
+      },
+      "score": 10.764692306518555
+    },
+    {
+      "posicao": 4,
+      "fonte_id": "FIC-DEV-01-S05-C01",
+      "texto": "Ao receber o pacote de teste, comparam-se a peça, a quantidade e os acessórios com o registro de autorização. A inspeção distingue entre dano declarado, uso durante a instalação e componentes faltantes. Seu resultado é registrado com uma data e uma explicação verificável. Em um caso aprovado por devolução voluntária, o valor de referência é o total pago no pedido simulado, não o preço atual de outra oferta. Em um caso de dano visível confirmado registra-se se cabe substituição ou devolução simulada. A resolução é comunicada com o mesmo código de autorização para que a pessoa possa acompanhar o trâmite",
+      "metadados": {
+        "id": "FIC-DEV-01-S05-C01",
+        "origem": "ficticio_demo",
+        "tema": "devolucoes",
+        "secao": "5. Inspeção e resolução",
+        "fonte": "devolucoes.md",
+        "versao": "1.1"
+      },
+      "score": 11.549991607666016
+    }
+  ],
+  "posicao_antes": null,
+  "posicao_depois": 1,
+  "correcao_observada": true,
   "procedencia": {
     "tipo": "indice_preexistente",
-    "origen": "ficticio_demo: corpus propio en knowledge/politicas_demo, indexado por scripts/construir_indice_politicas.py",
+    "origem": "ficticio_demo: corpus próprio em knowledge/politicas_demo, indexado por scripts/construir_indice_politicas.py",
     "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "sha256": {
-      "index.faiss": "9a0212f70353611b59a8ad4826baaafa435ee6e3d7cb421ec0b3343421deb660",
-      "index.pkl": "9da5db7c0b7e170885e4066fa6c0ab1ed7dbcdd3f580361bc73370e59b8d8bdd"
+      "index.faiss": "caf34d83bf1b5d56987f871c117d8c7d2d42aca132b0ef4beaeb4087e78e58d3",
+      "index.pkl": "6210ccc2b6fb7872afb59d96f88db9b5b4880c59b585e53369e76f9c30b2119c"
     }
   }
 }

@@ -1,51 +1,51 @@
 {
   "rubrica": "R22",
-  "modo": "índice cargado de disco; agente real remoto (OpenAI); NLI real local; corpus ficticio",
-  "fecha_utc": "2026-11-10T22:41:42+00:00",
+  "modo": "índice carregado do disco; agente real remoto (OpenAI); NLI real local; corpus fictício",
+  "data_utc": "2026-11-11T17:20:51+00:00",
   "indice": {
-    "carpeta": "knowledge/politicas",
-    "origen": "ficticio_demo: corpus propio en knowledge/politicas_demo, indexado por scripts/construir_indice_politicas.py",
-    "creado_utc": "2026-11-10T22:40:19+00:00",
+    "pasta": "knowledge/politicas",
+    "origem": "ficticio_demo: corpus próprio em knowledge/politicas_demo, indexado por scripts/construir_indice_politicas.py",
+    "criado_utc": "2026-11-11T17:10:20+00:00",
     "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "dimension": 384,
     "metrica": "L2",
     "fragmentos": 75,
     "sha256": {
-      "index.faiss": "9a0212f70353611b59a8ad4826baaafa435ee6e3d7cb421ec0b3343421deb660",
-      "index.pkl": "9da5db7c0b7e170885e4066fa6c0ab1ed7dbcdd3f580361bc73370e59b8d8bdd"
+      "index.faiss": "caf34d83bf1b5d56987f871c117d8c7d2d42aca132b0ef4beaeb4087e78e58d3",
+      "index.pkl": "6210ccc2b6fb7872afb59d96f88db9b5b4880c59b585e53369e76f9c30b2119c"
     },
     "segundos_de_carga": 0.03
   },
-  "puerta_de_seguridad": {
-    "sin_confianza_explicita": "PermissionError: se requiere confianza explícita para deserializar index.pkl",
-    "copia_con_index_pkl_alterado": "ValueError: huella incorrecta: index.pkl"
+  "porta_de_seguranca": {
+    "sem_confianca_explicita": "PermissionError: é necessária confiança explícita para desserializar index.pkl",
+    "copia_com_index_pkl_alterado": "ValueError: impressão digital incorreta: index.pkl"
   },
-  "herramienta_consultar_politicas": {
-    "pregunta": "¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?",
+  "ferramenta_consultar_politicas": {
+    "pergunta": "Como se verifica a compatibilidade elétrica antes de instalar uma peça?",
     "fragmentos": [
       {
-        "posicion": 1,
-        "fuente_id": "FIC-GAR-01-S03-C01",
-        "seccion": "3. Compatibilidad antes de la instalación",
-        "distancia_l2": 11.533
+        "posicao": 1,
+        "fonte_id": "FIC-DEV-01-S02-C01",
+        "secao": "2. Devolução de uma peça sem instalar",
+        "distancia_l2": 11.902
       },
       {
-        "posicion": 2,
-        "fuente_id": "FIC-DEV-01-S02-C01",
-        "seccion": "2. Devolución de una pieza sin instalar",
-        "distancia_l2": 12.783
+        "posicao": 2,
+        "fonte_id": "FIC-DEV-01-S06-C01",
+        "secao": "6. Compatibilidade, mudanças de opinião e exclusões",
+        "distancia_l2": 12.891
       },
       {
-        "posicion": 3,
-        "fuente_id": "FIC-DEV-01-S06-C01",
-        "seccion": "6. Compatibilidad, cambios de opinión y exclusiones",
-        "distancia_l2": 12.855
+        "posicao": 3,
+        "fonte_id": "FIC-GAR-01-S06-C01",
+        "secao": "6. Situações fora desta cobertura fictícia",
+        "distancia_l2": 13.61
       },
       {
-        "posicion": 4,
-        "fuente_id": "FIC-GAR-01-S06-C01",
-        "seccion": "6. Situaciones fuera de esta cobertura ficticia",
-        "distancia_l2": 13.875
+        "posicao": 4,
+        "fonte_id": "FIC-GAR-01-S05-C01",
+        "secao": "5. Inspeção e possíveis resultados",
+        "distancia_l2": 13.7
       }
     ]
   },
@@ -53,26 +53,37 @@
     "modelo_llm": "gpt-4.1-mini",
     "turnos": [
       {
-        "pregunta": "¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?",
-        "herramientas": [
+        "pergunta": "Como se verifica a compatibilidade elétrica antes de instalar uma peça?",
+        "ferramentas": [
+          "consultar_politicas",
           "consultar_politicas"
         ],
-        "citas_ancladas": [
+        "citacoes_ancoradas": [
           {
-            "fuente_id": "FIC-GAR-01-S03-C01",
+            "fonte_id": "FIC-DEV-01-S06-C01",
             "estado": "literal",
             "cobertura": 1.0
+          },
+          {
+            "fonte_id": "FIC-DEV-01-S06-C01",
+            "estado": "literal",
+            "cobertura": 1.0
+          },
+          {
+            "fonte_id": "FIC-DEV-01-S02-C01",
+            "estado": "rejeitada",
+            "cobertura": 0.474
           }
         ],
-        "respuesta_publicada": "Política ficticia de demostración. La compatibilidad eléctrica se comprueba comparando la ficha técnica de la pieza con el aparato de prueba, verificando marca, código de modelo, voltaje y otros atributos técnicos. No basta con que sea compatible con una marca; se debe confirmar el código exacto y que voltaje y conector coincidan. Si no coinciden, la pieza no debe instalarse para probar si funciona.\nFuentes: FIC-GAR-01-S03-C01"
+        "resposta_publicada": "Política fictícia de demonstração. Não consegui verificar um resumo próprio, então cito o texto literal da fonte:\n- «Antes de selecionar uma peça, o usuário deve conferir marca, modelo, voltagem e dimensões com a ficha técnica fictícia. Uma compra simulada de uma peça incompatível, ainda sem instalar, pode seguir o procedimento de devolução de 30 dias se conserva suas condições originais.» [FIC-DEV-01-S06-C01]"
       },
       {
-        "pregunta": "¿Se puede mandar en varias cajas?",
-        "herramientas": [
+        "pergunta": "Posso receber em várias caixas?",
+        "ferramentas": [
           "consultar_politicas"
         ],
-        "citas_ancladas": [],
-        "respuesta_publicada": "Política ficticia de demostración. Una entrega parcial solo puede describirse si hay un acuerdo simulado explícito que identifica las unidades, el proveedor y los plazos de cada envío. Si no existe ese acuerdo, el asistente debe indicar que la oferta no cubre la cantidad pedida.\nFuentes: FIC-ENT-01-S05-C01\n\nRecuperación T24: la pregunta inicial dejó `FIC-ENT-01-S05-C01` fuera del top-4; la reformulación lo situó en la posición 1 con el mismo índice y top-k."
+        "citacoes_ancoradas": [],
+        "resposta_publicada": "Política fictícia de demonstração. Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio. Se não existe esse acordo, o assistente deve indicar que a oferta não cobre a quantidade pedida.\nFontes: FIC-ENT-01-S05-C01\n\nRecuperação T24: a pergunta inicial deixou `FIC-ENT-01-S05-C01` fora do top-4; a reformulação o colocou na posição 1 com o mesmo índice e top-k."
       }
     ]
   }

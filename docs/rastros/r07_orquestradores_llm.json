@@ -1,0 +1,87 @@
+{
+  "rubrica": "R07",
+  "modo": "real remoto (OpenAI); catálogo sintético",
+  "data_utc": "2026-11-11T17:16:12+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "temperature": 0,
+  "versoes": {
+    "langchain-core": "1.7.6",
+    "langchain-classic": "1.0.8",
+    "langchain": "1.4.9",
+    "langgraph": "1.2.20"
+  },
+  "nota": "Mesmo modelo, mesmas duas ferramentas e mesmo prompt. Uma execução por orquestrador: os tempos não são um benchmark.",
+  "orquestradores": {
+    "LangChain clássico": {
+      "linhas_para_construi_lo": 25,
+      "memoria": "RunnableWithMessageHistory + histórico por session_id",
+      "nos_do_grafo": null,
+      "segundos_tres_turnos": 4.8,
+      "turnos": [
+        {
+          "usuario": "Busque o compressor com SKU GELA-COMP-0001 e diga o ID dele.",
+          "resposta": "O compressor com SKU GELA-COMP-0001 tem o ID PEC-01-0001.",
+          "ferramentas": [
+            "buscar_peca({'texto': 'GELA-COMP-0001'})"
+          ]
+        },
+        {
+          "usuario": "Qual dos fornecedores dele entrega mais rápido e em quantos dias?",
+          "resposta": "O fornecedor CentroPeças entrega o compressor mais rápido, em 2 dias.",
+          "ferramentas": [
+            "ofertas_da_peca({'produto_id': 'PEC-01-0001'})"
+          ]
+        },
+        {
+          "usuario": "E qual é o mais barato com estoque? Diga o preço em reais.",
+          "resposta": "O compressor mais barato com estoque disponível é da Atlantic Repair Parts, por R$ 1.381,55.",
+          "ferramentas": [
+            "ofertas_da_peca({'produto_id': 'PEC-01-0001'})"
+          ]
+        }
+      ],
+      "outro_fio": {
+        "usuario": "De qual peça estávamos falando?",
+        "resposta": "Não foi mencionada nenhuma peça específica até agora. Poderia informar o nome ou código da peça que deseja consultar?",
+        "ferramentas": []
+      }
+    },
+    "LangGraph": {
+      "linhas_para_construi_lo": 19,
+      "memoria": "checkpointer InMemorySaver + thread_id",
+      "nos_do_grafo": [
+        "__end__",
+        "__start__",
+        "model",
+        "tools"
+      ],
+      "segundos_tres_turnos": 3.9,
+      "turnos": [
+        {
+          "usuario": "Busque o compressor com SKU GELA-COMP-0001 e diga o ID dele.",
+          "resposta": "O compressor com SKU GELA-COMP-0001 tem o ID PEC-01-0001.",
+          "ferramentas": [
+            "buscar_peca({'texto': 'GELA-COMP-0001'})"
+          ]
+        },
+        {
+          "usuario": "Qual dos fornecedores dele entrega mais rápido e em quantos dias?",
+          "resposta": "O fornecedor CentroPeças entrega o compressor mais rápido, em 2 dias.",
+          "ferramentas": [
+            "ofertas_da_peca({'produto_id': 'PEC-01-0001'})"
+          ]
+        },
+        {
+          "usuario": "E qual é o mais barato com estoque? Diga o preço em reais.",
+          "resposta": "O fornecedor Atlantic Repair Parts tem o compressor mais barato com estoque, por R$1381,55.",
+          "ferramentas": []
+        }
+      ],
+      "outro_fio": {
+        "usuario": "De qual peça estávamos falando?",
+        "resposta": "Não foi mencionada nenhuma peça específica até agora. Poderia informar o nome ou código da peça que deseja consultar?",
+        "ferramentas": []
+      }
+    }
+  }
+}

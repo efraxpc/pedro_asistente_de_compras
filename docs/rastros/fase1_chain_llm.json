@@ -6,358 +6,367 @@
     "R05",
     "R06"
   ],
-  "modo": "real remoto (OpenAI); solicitudes sintéticas",
-  "fecha_utc": "2026-11-10T17:21:56+00:00",
+  "modo": "real remoto (OpenAI); solicitações sintéticas",
+  "data_utc": "2026-11-11T17:12:20+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "temperature": 0,
-  "plantilla": {
-    "clase": "ChatPromptTemplate",
-    "variables": [
+  "modelo_de_prompt": {
+    "classe": "ChatPromptTemplate",
+    "variaveis": [
       "formato",
       "texto"
     ],
-    "mensajes": [
+    "mensagens": [
       "SystemMessagePromptTemplate",
       "HumanMessagePromptTemplate"
     ]
   },
   "invoke_lcel": {
-    "entrada": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
-    "salida": {
-      "intencion": "comparar",
-      "solicitud": {
-        "producto_id": "PEC-01-0001",
-        "producto": null,
-        "cantidad": 2,
-        "presupuesto_centavos": 500000,
-        "plazo_max_dias": 7,
-        "cep": null
+    "entrada": "Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias",
+    "saida": {
+      "intencao": "comparar",
+      "solicitacao": {
+        "produto_id": "PEC-01-0001",
+        "produto": null,
+        "quantidade": 2,
+        "orcamento_centavos": 500000,
+        "prazo_max_dias": 7,
+        "cep": null,
+        "origem_preferida": null
       },
       "faltantes": []
     }
   },
   "invoke_chain_decorada": {
-    "entrada": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
-    "salida": {
-      "intencion": "comparar",
-      "solicitud": {
-        "producto_id": "PEC-01-0001",
-        "producto": null,
-        "cantidad": 2,
-        "presupuesto_centavos": 500000,
-        "plazo_max_dias": 7,
-        "cep": null
+    "entrada": "Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias",
+    "saida": {
+      "intencao": "comparar",
+      "solicitacao": {
+        "produto_id": "PEC-01-0001",
+        "produto": null,
+        "quantidade": 2,
+        "orcamento_centavos": 500000,
+        "prazo_max_dias": 7,
+        "cep": null,
+        "origem_preferida": null
       },
       "faltantes": []
     }
   },
   "batch_lcel": [
     {
-      "entrada": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
-      "salida": {
-        "intencion": "comparar",
-        "solicitud": {
-          "producto_id": "PEC-01-0001",
-          "producto": null,
-          "cantidad": 2,
-          "presupuesto_centavos": 500000,
-          "plazo_max_dias": 7,
-          "cep": null
+      "entrada": "Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias",
+      "saida": {
+        "intencao": "comparar",
+        "solicitacao": {
+          "produto_id": "PEC-01-0001",
+          "produto": null,
+          "quantidade": 2,
+          "orcamento_centavos": 500000,
+          "prazo_max_dias": 7,
+          "cep": null,
+          "origem_preferida": null
         },
         "faltantes": []
       }
     },
     {
-      "entrada": "Necesito un termostato para nevera, sin prisa",
-      "salida": {
-        "intencion": "consultar",
-        "solicitud": {
-          "producto_id": null,
-          "producto": "termostato para nevera",
-          "cantidad": null,
-          "presupuesto_centavos": null,
-          "plazo_max_dias": null,
-          "cep": null
+      "entrada": "Preciso de um termostato para geladeira, sem pressa",
+      "saida": {
+        "intencao": "outro",
+        "solicitacao": {
+          "produto_id": null,
+          "produto": "termostato para geladeira",
+          "quantidade": null,
+          "orcamento_centavos": null,
+          "prazo_max_dias": null,
+          "cep": null,
+          "origem_preferida": null
         },
         "faltantes": [
-          "cantidad"
+          "quantidade"
         ]
       }
     },
     {
-      "entrada": "¿A qué ciudad corresponde el CEP 01001000?",
-      "salida": {
-        "intencion": "cep",
-        "solicitud": {
-          "producto_id": null,
-          "producto": null,
-          "cantidad": null,
-          "presupuesto_centavos": null,
-          "plazo_max_dias": null,
-          "cep": "01001000"
+      "entrada": "A que cidade corresponde o CEP 01001000?",
+      "saida": {
+        "intencao": "cep",
+        "solicitacao": {
+          "produto_id": null,
+          "produto": null,
+          "quantidade": null,
+          "orcamento_centavos": null,
+          "prazo_max_dias": null,
+          "cep": "01001000",
+          "origem_preferida": null
         },
         "faltantes": [
-          "producto",
-          "cantidad"
+          "produto",
+          "quantidade"
         ]
       }
     }
   ],
-  "laboratorio_salidas_rotas": {
-    "solicitud": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
-    "nota": "El generador es un doble que emite la salida rota; el reparador es el modelo real.",
+  "laboratorio_saidas_quebradas": {
+    "solicitacao": "Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias",
+    "nota": "O gerador é um duplo que emite a saída quebrada; o reparador é o modelo real.",
     "casos": [
       {
         "caso": "JSON válido",
-        "capa_esperada": "ninguna",
-        "capa_observada": "ninguna",
-        "reparaciones": 0,
-        "error": null,
+        "camada_esperada": "nenhuma",
+        "camada_observada": "nenhuma",
+        "reparos": 0,
+        "erro": null,
         "resultado": {
-          "intencion": "comparar",
-          "solicitud": {
-            "producto_id": "PEC-01-0001",
-            "cantidad": 2,
-            "presupuesto_centavos": 500000,
-            "plazo_max_dias": 7
+          "intencao": "comparar",
+          "solicitacao": {
+            "produto_id": "PEC-01-0001",
+            "quantidade": 2,
+            "orcamento_centavos": 500000,
+            "prazo_max_dias": 7
           },
           "faltantes": []
         },
-        "datos_correctos": true
+        "dados_corretos": true
       },
       {
-        "caso": "cercas markdown y charla",
-        "capa_esperada": "parser",
-        "capa_observada": "parser",
-        "reparaciones": 0,
-        "error": null,
+        "caso": "cercas markdown e conversa",
+        "camada_esperada": "parser",
+        "camada_observada": "parser",
+        "reparos": 0,
+        "erro": null,
         "resultado": {
-          "intencion": "comparar",
-          "solicitud": {
-            "producto_id": "PEC-01-0001",
-            "cantidad": 2,
-            "presupuesto_centavos": 500000,
-            "plazo_max_dias": 7
+          "intencao": "comparar",
+          "solicitacao": {
+            "produto_id": "PEC-01-0001",
+            "quantidade": 2,
+            "orcamento_centavos": 500000,
+            "prazo_max_dias": 7
           },
           "faltantes": []
         },
-        "datos_correctos": true
+        "dados_corretos": true
       },
       {
         "caso": "JSON truncado",
-        "capa_esperada": "reparación",
-        "capa_observada": "reparación",
-        "reparaciones": 1,
-        "error": null,
+        "camada_esperada": "reparo",
+        "camada_observada": "reparo",
+        "reparos": 1,
+        "erro": null,
         "resultado": {
-          "intencion": "comparar",
-          "solicitud": {
-            "producto_id": "PEC-01-0001",
-            "cantidad": 2,
-            "presupuesto_centavos": 500000,
-            "plazo_max_dias": 7
+          "intencao": "comparar",
+          "solicitacao": {
+            "produto_id": "PEC-01-0001",
+            "quantidade": 2,
+            "orcamento_centavos": 500000,
+            "prazo_max_dias": 7
           },
           "faltantes": []
         },
-        "datos_correctos": true
+        "dados_corretos": true
       },
       {
-        "caso": "cantidad en letras",
-        "capa_esperada": "reparación",
-        "capa_observada": "reparación",
-        "reparaciones": 1,
-        "error": null,
+        "caso": "quantidade por extenso",
+        "camada_esperada": "reparo",
+        "camada_observada": "reparo",
+        "reparos": 1,
+        "erro": null,
         "resultado": {
-          "intencion": "comparar",
-          "solicitud": {
-            "producto_id": "PEC-01-0001",
-            "cantidad": 2,
-            "presupuesto_centavos": 500000,
-            "plazo_max_dias": 7
+          "intencao": "comparar",
+          "solicitacao": {
+            "produto_id": "PEC-01-0001",
+            "quantidade": 2,
+            "orcamento_centavos": 500000,
+            "prazo_max_dias": 7
           },
           "faltantes": []
         },
-        "datos_correctos": true
+        "dados_corretos": true
       },
       {
-        "caso": "cantidad negativa",
-        "capa_esperada": "reparación",
-        "capa_observada": "reparación",
-        "reparaciones": 1,
-        "error": null,
+        "caso": "quantidade negativa",
+        "camada_esperada": "reparo",
+        "camada_observada": "reparo",
+        "reparos": 1,
+        "erro": null,
         "resultado": {
-          "intencion": "comparar",
-          "solicitud": {
-            "producto_id": "PEC-01-0001",
-            "cantidad": 2,
-            "presupuesto_centavos": 500000,
-            "plazo_max_dias": 7
+          "intencao": "comparar",
+          "solicitacao": {
+            "produto_id": "PEC-01-0001",
+            "quantidade": 2,
+            "orcamento_centavos": 500000,
+            "prazo_max_dias": 7
           },
           "faltantes": []
         },
-        "datos_correctos": true
+        "dados_corretos": true
       },
       {
-        "caso": "intención fuera de la lista",
-        "capa_esperada": "reparación",
-        "capa_observada": "reparación",
-        "reparaciones": 1,
-        "error": null,
+        "caso": "intenção fora da lista",
+        "camada_esperada": "reparo",
+        "camada_observada": "reparo",
+        "reparos": 1,
+        "erro": null,
         "resultado": {
-          "intencion": "comparar",
-          "solicitud": {
-            "producto_id": "PEC-01-0001",
-            "cantidad": 2,
-            "presupuesto_centavos": 500000,
-            "plazo_max_dias": 7
+          "intencao": "comparar",
+          "solicitacao": {
+            "produto_id": "PEC-01-0001",
+            "quantidade": 2,
+            "orcamento_centavos": 500000,
+            "prazo_max_dias": 7
           },
           "faltantes": []
         },
-        "datos_correctos": true
+        "dados_corretos": true
       },
       {
-        "caso": "texto libre sin JSON",
-        "capa_esperada": "reparación",
-        "capa_observada": "reparación",
-        "reparaciones": 1,
-        "error": null,
+        "caso": "texto livre sem JSON",
+        "camada_esperada": "reparo",
+        "camada_observada": "reparo",
+        "reparos": 1,
+        "erro": null,
         "resultado": {
-          "intencion": "comparar",
-          "solicitud": {
-            "producto_id": "PEC-01-0001",
-            "cantidad": 2,
-            "presupuesto_centavos": 500000,
-            "plazo_max_dias": 7
+          "intencao": "comparar",
+          "solicitacao": {
+            "produto_id": "PEC-01-0001",
+            "quantidade": 2,
+            "orcamento_centavos": 500000,
+            "prazo_max_dias": 7
           },
           "faltantes": []
         },
-        "datos_correctos": true
+        "dados_corretos": true
       },
       {
         "caso": "faltantes mal declarados",
-        "capa_esperada": "regla de dominio",
-        "capa_observada": "regla de dominio",
-        "reparaciones": 0,
-        "error": null,
+        "camada_esperada": "regra de domínio",
+        "camada_observada": "regra de domínio",
+        "reparos": 0,
+        "erro": null,
         "resultado": {
-          "intencion": "comparar",
-          "solicitud": {
-            "producto_id": "PEC-01-0001",
-            "presupuesto_centavos": 500000,
-            "plazo_max_dias": 7
+          "intencao": "comparar",
+          "solicitacao": {
+            "produto_id": "PEC-01-0001",
+            "orcamento_centavos": 500000,
+            "prazo_max_dias": 7
           },
           "faltantes": [
-            "cantidad"
+            "quantidade"
           ]
         },
-        "datos_correctos": true
+        "dados_corretos": true
       }
     ]
   },
   "with_structured_output": [
     {
-      "entrada": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
-      "salida": {
-        "intencion": "comparar",
-        "solicitud": {
-          "producto_id": "PEC-01-0001",
-          "producto": null,
-          "cantidad": 2,
-          "presupuesto_centavos": 500000,
-          "plazo_max_dias": 7,
-          "cep": null
+      "entrada": "Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias",
+      "saida": {
+        "intencao": "comparar",
+        "solicitacao": {
+          "produto_id": "PEC-01-0001",
+          "produto": null,
+          "quantidade": 2,
+          "orcamento_centavos": 500000,
+          "prazo_max_dias": 7,
+          "cep": null,
+          "origem_preferida": null
         },
         "faltantes": []
       },
-      "igual_que_parser": true
+      "igual_ao_parser": true
     },
     {
-      "entrada": "Necesito un termostato para nevera, sin prisa",
-      "salida": {
-        "intencion": "consultar",
-        "solicitud": {
-          "producto_id": null,
-          "producto": "termostato para nevera",
-          "cantidad": null,
-          "presupuesto_centavos": null,
-          "plazo_max_dias": null,
-          "cep": null
+      "entrada": "Preciso de um termostato para geladeira, sem pressa",
+      "saida": {
+        "intencao": "consultar",
+        "solicitacao": {
+          "produto_id": null,
+          "produto": "termostato para geladeira",
+          "quantidade": null,
+          "orcamento_centavos": null,
+          "prazo_max_dias": null,
+          "cep": null,
+          "origem_preferida": null
         },
         "faltantes": [
-          "cantidad",
-          "presupuesto_centavos",
-          "plazo_max_dias",
+          "quantidade",
+          "orcamento_centavos",
           "cep"
         ]
       },
-      "igual_que_parser": true
+      "igual_ao_parser": false
     },
     {
-      "entrada": "¿A qué ciudad corresponde el CEP 01001000?",
-      "salida": {
-        "intencion": "cep",
-        "solicitud": {
-          "producto_id": null,
-          "producto": null,
-          "cantidad": null,
-          "presupuesto_centavos": null,
-          "plazo_max_dias": null,
-          "cep": "01001000"
+      "entrada": "A que cidade corresponde o CEP 01001000?",
+      "saida": {
+        "intencao": "cep",
+        "solicitacao": {
+          "produto_id": null,
+          "produto": null,
+          "quantidade": null,
+          "orcamento_centavos": null,
+          "prazo_max_dias": null,
+          "cep": "01001000",
+          "origem_preferida": null
         },
         "faltantes": []
       },
-      "igual_que_parser": true
+      "igual_ao_parser": true
     }
   ],
-  "tiempos_invoke_y_batch": {
-    "nota": "Una sola medición; depende de la red y del servicio. No es un benchmark.",
-    "tres_invoke_en_serie_segundos": 4.55,
-    "un_batch_de_tres_segundos": 1.43,
-    "mismos_resultados": true
+  "tempos_invoke_e_batch": {
+    "nota": "Uma única medição; depende da rede e do serviço. Não é um benchmark.",
+    "tres_invoke_em_serie_segundos": 4.83,
+    "um_batch_de_tres_segundos": 1.47,
+    "mesmos_resultados": true
   },
   "stream": {
-    "entrada": "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días",
-    "cadena_json_parcial": {
-      "estados_recibidos": 19,
-      "segundos_hasta_el_primero": 0.45,
-      "segundos_totales": 1.07,
-      "muestra": [
+    "entrada": "Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias",
+    "cadeia_json_parcial": {
+      "estados_recebidos": 20,
+      "segundos_ate_o_primeiro": 0.59,
+      "segundos_totais": 1.27,
+      "amostra": [
         {},
         {
-          "intencion": "comparar",
-          "solicitud": {
-            "producto_id": "PEC"
+          "intencao": "comparar",
+          "solicitacao": {
+            "produto_id": "PEC"
           }
         },
         {
-          "intencion": "comparar",
-          "solicitud": {
-            "producto_id": "PEC-01-0001",
-            "producto": null
+          "intencao": "comparar",
+          "solicitacao": {
+            "produto_id": "PEC-01-0001",
+            "produto": null,
+            "quantidade": 2
           }
         },
         {
-          "intencion": "comparar",
-          "solicitud": {
-            "producto_id": "PEC-01-0001",
-            "producto": null,
-            "cantidad": 2,
-            "presupuesto_centavos": 500000,
-            "plazo_max_dias": 7,
-            "cep": null
+          "intencao": "comparar",
+          "solicitacao": {
+            "produto_id": "PEC-01-0001",
+            "produto": null,
+            "quantidade": 2,
+            "orcamento_centavos": 500000,
+            "prazo_max_dias": 7,
+            "cep": null,
+            "origem_preferida": null
           },
           "faltantes": []
         }
       ]
     },
-    "cadena_pydantic_con_chain": {
-      "fragmentos_recibidos": 1,
-      "nota": "El parser Pydantic necesita el JSON completo: emite un único fragmento."
+    "cadeia_pydantic_com_chain": {
+      "fragmentos_recebidos": 1,
+      "nota": "O parser Pydantic precisa do JSON completo: emite um único fragmento."
     }
   },
-  "laboratorio_con_chain_imperativa": {
-    "misma_capa_que_la_declarativa": true,
-    "datos_correctos": [
+  "laboratorio_com_chain_imperativa": {
+    "mesma_camada_que_a_declarativa": true,
+    "dados_corretos": [
       true,
       true,
       true,

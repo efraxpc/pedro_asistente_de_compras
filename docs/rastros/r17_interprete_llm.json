@@ -1,336 +1,336 @@
 {
   "rubrica": "R17",
-  "modo": "real remoto (OpenAI) para el intérprete; reglas locales",
-  "fecha_utc": "2026-11-11T12:15:32+00:00",
+  "modo": "real remoto (OpenAI) para o intérprete; regras locais",
+  "data_utc": "2026-11-11T17:17:32+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "temperature": 0,
-  "nota": "Catorce mensajes elegidos por difíciles y etiquetados a mano. Cada resultado es None (no es compra) o (cantidad, presupuesto en centavos, plazo en días).",
-  "aciertos": {
-    "reglas": "8/14",
-    "reglas_y_modelo": "14/14"
+  "nota": "Catorze mensagens escolhidas por serem difíceis e rotuladas à mão. Cada resultado é None (não é compra) ou (quantidade, orçamento em centavos, prazo em dias).",
+  "acertos": {
+    "regras": "8/14",
+    "regras_e_modelo": "14/14"
   },
   "casos": [
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "Ahora que sean 3 y mantén el plazo",
+      "mensagem": "Agora que sejam 3 e mantenha o prazo",
       "esperado": [
         3,
         null,
         7
       ],
-      "reglas": [
+      "regras": [
         3,
         null,
         7
       ],
-      "reglas_y_modelo": [
+      "regras_e_modelo": [
         3,
         null,
         7
       ],
-      "lectura_del_modelo": {
-        "es_compra": true,
-        "cantidad": 3,
-        "quitar": []
+      "leitura_do_modelo": {
+        "e_compra": true,
+        "quantidade": 3,
+        "remover": []
       }
     },
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "Súbelo a media docena",
+      "mensagem": "Suba para meia dúzia",
       "esperado": [
         6,
         null,
         7
       ],
-      "reglas": null,
-      "reglas_y_modelo": [
+      "regras": null,
+      "regras_e_modelo": [
         6,
         null,
         7
       ],
-      "lectura_del_modelo": {
-        "es_compra": true,
-        "cantidad": 6,
-        "quitar": []
+      "leitura_do_modelo": {
+        "e_compra": true,
+        "quantidade": 6,
+        "remover": []
       }
     },
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "Con cuatro me alcanza",
+      "mensagem": "Com quatro já dá",
       "esperado": [
         4,
         null,
         7
       ],
-      "reglas": null,
-      "reglas_y_modelo": [
+      "regras": null,
+      "regras_e_modelo": [
         4,
         null,
         7
       ],
-      "lectura_del_modelo": {
-        "es_compra": true,
-        "cantidad": 4,
-        "quitar": []
+      "leitura_do_modelo": {
+        "e_compra": true,
+        "quantidade": 4,
+        "remover": []
       }
     },
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "Mejor sin límite de plazo, pero no puedo pasar de R$ 5.000",
+      "mensagem": "Melhor sem limite de prazo, mas não posso passar de R$ 5.000",
       "esperado": [
         2,
         500000,
         null
       ],
-      "reglas": [
+      "regras": [
         2,
         500000,
         null
       ],
-      "reglas_y_modelo": [
+      "regras_e_modelo": [
         2,
         500000,
         null
       ],
-      "lectura_del_modelo": {
-        "es_compra": true,
-        "presupuesto_centavos": 500000,
-        "quitar": [
-          "plazo"
+      "leitura_do_modelo": {
+        "e_compra": true,
+        "orcamento_centavos": 500000,
+        "remover": [
+          "prazo"
         ]
       }
     },
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "Necesito que llegue en dos semanas como mucho",
+      "mensagem": "Preciso que chegue em duas semanas no máximo",
       "esperado": [
         2,
         null,
         14
       ],
-      "reglas": [
+      "regras": [
         2,
         null,
         7
       ],
-      "reglas_y_modelo": [
+      "regras_e_modelo": [
         2,
         null,
         14
       ],
-      "lectura_del_modelo": {
-        "es_compra": true,
-        "plazo_max_dias": 14,
-        "quitar": []
+      "leitura_do_modelo": {
+        "e_compra": true,
+        "prazo_max_dias": 14,
+        "remover": []
       }
     },
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "Olvida el plazo",
+      "mensagem": "Esqueça o prazo",
       "esperado": [
         2,
         null,
         null
       ],
-      "reglas": [
+      "regras": [
         2,
         null,
         7
       ],
-      "reglas_y_modelo": [
+      "regras_e_modelo": [
         2,
         null,
         null
       ],
-      "lectura_del_modelo": {
-        "es_compra": true,
-        "quitar": [
-          "plazo"
+      "leitura_do_modelo": {
+        "e_compra": true,
+        "remover": [
+          "prazo"
         ]
       }
     },
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "Duplica la cantidad",
+      "mensagem": "Dobre a quantidade",
       "esperado": [
         4,
         null,
         7
       ],
-      "reglas": [
+      "regras": [
         2,
         null,
         7
       ],
-      "reglas_y_modelo": [
+      "regras_e_modelo": [
         4,
         null,
         7
       ],
-      "lectura_del_modelo": {
-        "es_compra": true,
-        "cantidad": 4,
-        "quitar": []
+      "leitura_do_modelo": {
+        "e_compra": true,
+        "quantidade": 4,
+        "remover": []
       }
     },
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "Tengo mil quinientos reales para esto",
+      "mensagem": "Tenho mil e quinhentos reais para isso",
       "esperado": [
         2,
         150000,
         7
       ],
-      "reglas": null,
-      "reglas_y_modelo": [
+      "regras": null,
+      "regras_e_modelo": [
         2,
         150000,
         7
       ],
-      "lectura_del_modelo": {
-        "es_compra": true,
-        "presupuesto_centavos": 150000,
-        "quitar": []
+      "leitura_do_modelo": {
+        "e_compra": true,
+        "orcamento_centavos": 150000,
+        "remover": []
       }
     },
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?",
+      "mensagem": "Como se verifica a compatibilidade elétrica antes de instalar uma peça?",
       "esperado": null,
-      "reglas": null,
-      "reglas_y_modelo": null,
-      "lectura_del_modelo": {
-        "es_compra": false,
-        "quitar": []
+      "regras": null,
+      "regras_e_modelo": null,
+      "leitura_do_modelo": {
+        "e_compra": false,
+        "remover": []
       }
     },
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "¿La garantía cubre dos piezas del mismo pedido?",
+      "mensagem": "A garantia cobre duas peças do mesmo pedido?",
       "esperado": null,
-      "reglas": null,
-      "reglas_y_modelo": null,
-      "lectura_del_modelo": {
-        "es_compra": false,
-        "quitar": []
+      "regras": null,
+      "regras_e_modelo": null,
+      "leitura_do_modelo": {
+        "e_compra": false,
+        "remover": []
       }
     },
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "¿A qué ciudad corresponde el CEP 01001000?",
+      "mensagem": "A que cidade corresponde o CEP 01001000?",
       "esperado": null,
-      "reglas": null,
-      "reglas_y_modelo": null,
-      "lectura_del_modelo": {
-        "es_compra": false,
-        "quitar": []
+      "regras": null,
+      "regras_e_modelo": null,
+      "leitura_do_modelo": {
+        "e_compra": false,
+        "remover": []
       }
     },
     {
-      "solicitud_en_curso": {
-        "producto_id": "PEC-01-0001",
-        "cantidad": 2,
-        "plazo_max_dias": 7
+      "solicitacao_em_andamento": {
+        "produto_id": "PEC-01-0001",
+        "quantidade": 2,
+        "prazo_max_dias": 7
       },
-      "mensaje": "Gracias, eso es todo",
+      "mensagem": "Obrigado, isso é tudo",
       "esperado": null,
-      "reglas": null,
-      "reglas_y_modelo": null,
-      "lectura_del_modelo": {
-        "es_compra": false,
-        "quitar": []
+      "regras": null,
+      "regras_e_modelo": null,
+      "leitura_do_modelo": {
+        "e_compra": false,
+        "remover": []
       }
     },
     {
-      "solicitud_en_curso": null,
-      "mensaje": "Compara un par de PEC-01-0002 en 10 días",
+      "solicitacao_em_andamento": null,
+      "mensagem": "Compare um par de PEC-01-0002 em 10 dias",
       "esperado": [
         2,
         null,
         10
       ],
-      "reglas": [
+      "regras": [
         2,
         null,
         10
       ],
-      "reglas_y_modelo": [
+      "regras_e_modelo": [
         2,
         null,
         10
       ],
-      "lectura_del_modelo": {
-        "es_compra": true,
-        "cantidad": 2,
-        "plazo_max_dias": 10,
-        "quitar": []
+      "leitura_do_modelo": {
+        "e_compra": true,
+        "quantidade": 2,
+        "prazo_max_dias": 10,
+        "remover": []
       }
     },
     {
-      "solicitud_en_curso": null,
-      "mensaje": "Compara PEC-01-0001",
+      "solicitacao_em_andamento": null,
+      "mensagem": "Compare PEC-01-0001",
       "esperado": [
         null,
         null,
         null
       ],
-      "reglas": [
+      "regras": [
         null,
         null,
         null
       ],
-      "reglas_y_modelo": [
+      "regras_e_modelo": [
         null,
         null,
         null
       ],
-      "lectura_del_modelo": {
-        "es_compra": true,
-        "quitar": []
+      "leitura_do_modelo": {
+        "e_compra": true,
+        "remover": []
       }
     }
   ]

@@ -1,93 +1,94 @@
 {
   "rubrica": "R15",
-  "modo": "real remoto (OpenAI); embeddings reales locales; catálogo sintético",
-  "fecha_utc": "2026-11-11T14:15:02+00:00",
+  "modo": "real remoto (OpenAI); embeddings reais locais; catálogo sintético",
+  "data_utc": "2026-11-11T17:17:18+00:00",
   "modelo_llm": "gpt-4.1-mini",
-  "versiones": {
+  "versoes": {
     "langmem": "0.0.30",
     "langgraph": "1.2.20",
     "langchain": "1.4.9"
   },
-  "nota": "La misma conversación de tres mensajes en los dos sistemas. Una ejecución: lo que el modelo decide guardar con LangMem puede variar de una corrida a otra.",
-  "memoria_propia_de_pedro": {
+  "nota": "A mesma conversa de três mensagens nos dois sistemas. Uma execução: o que o modelo decide salvar com o LangMem pode variar de uma execução para outra.",
+  "memoria_propria_do_pedro": {
     "turnos": [
       {
-        "usuario": "Prefiero proveedores nacionales, recuérdalo.",
-        "respuesta": "Guardé tu preferencia: proveedor = nacionales. La tendré en cuenta, pero tu petición de cada momento manda.",
-        "herramientas": [
-          "guardar_preferencia"
+        "usuario": "Prefiro fornecedores nacionais, lembre-se disso.",
+        "resposta": "Salvei a sua preferência: fornecedor = nacionais. Vou levá-la em conta, mas o seu pedido de cada momento é o que manda.",
+        "ferramentas": [
+          "salvar_preferencia"
         ]
       },
       {
-        "usuario": "Compara 5 unidades de PEC-01-0001 con plazo de 7 días.",
-        "respuesta": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.",
-        "herramientas": [
-          "consultar_catalogo",
+        "usuario": "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias.",
+        "resposta": "CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.",
+        "ferramentas": [
           "comparar_ofertas"
         ]
       },
       {
-        "usuario": "Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.",
-        "respuesta": "No puedo confirmar una recomendación con las evidencias disponibles.",
-        "herramientas": []
+        "usuario": "Ufa, acho que esse compressor vai sair caro para mim. Minha oficina é pequena.",
+        "resposta": "De qual peça você precisa? Indique o ID ou SKU.",
+        "ferramentas": [
+          "consultar_catalogo"
+        ]
       }
     ],
-    "guardado_para_ana": {
+    "salvo_para_ana": {
       "preferencias": {
-        "proveedor": "nacionales"
+        "fornecedor": "nacionais"
       },
       "episodios": [
-        "Compara 5 unidades de PEC-01-0001 con plazo de 7 días. | CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R"
+        "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias. | CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.\n- CentroPeças (nacional)"
       ]
     },
-    "guardado_para_otro_usuario": {
+    "salvo_para_outro_usuario": {
       "preferencias": {}
     },
-    "quien_decide": "el código: una preferencia solo con cita literal del usuario; un episodio solo tras una respuesta de compra verificada"
+    "quem_decide": "o código: uma preferência só com citação literal do usuário; um episódio só após uma resposta de compra verificada"
   },
   "langmem": {
     "turnos": [
       {
-        "usuario": "Prefiero proveedores nacionales, recuérdalo.",
-        "respuesta": "He registrado que prefieres proveedores nacionales para futuras consultas.",
-        "herramientas": [
-          "manage_memory({'content': 'Prefiere proveedores nacionales.', 'action': 'create'})"
+        "usuario": "Prefiro fornecedores nacionais, lembre-se disso.",
+        "resposta": "Entendido, vou lembrar que você prefere fornecedores nacionais para peças de reposição.",
+        "ferramentas": [
+          "manage_memory({'content': 'Prefere fornecedores nacionais para peças de reposição.', 'action': 'create'})"
         ]
       },
       {
-        "usuario": "Compara 5 unidades de PEC-01-0001 con plazo de 7 días.",
-        "respuesta": "El producto PEC-01-0001 no tiene stock con plazo de 7 días en proveedores nacionales; CentroPeças tiene 67 unidades con plazo de 2 días a $1438.92 cada una, y Atlantic Repair Parts tiene 9 unidades con plazo de 35 días a $1381.55 cada una. ¿Quieres que busque otras opciones?",
-        "herramientas": [
-          "buscar_pieza({'texto': 'PEC-01-0001'})",
-          "ofertas_de_pieza({'producto_id': 'PEC-01-0001'})"
+        "usuario": "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias.",
+        "resposta": "Para 5 unidades do Compressor para Geladeiras GELA-COMP-0001 com prazo de 7 dias, não há fornecedores nacionais com estoque e prazo compatíveis; o fornecedor nacional CentroPeças tem estoque suficiente, mas prazo de 2 dias e preço unitário de R$1438,92. Deseja que eu considere essa oferta?",
+        "ferramentas": [
+          "buscar_peca({'texto': 'PEC-01-0001'})",
+          "ofertas_da_peca({'produto_id': 'PEC-01-0001'})"
         ]
       },
       {
-        "usuario": "Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.",
-        "respuesta": "Entiendo, buscaré opciones más económicas o con mejores condiciones para tu taller pequeño cuando me indiques qué pieza necesitas.",
-        "herramientas": []
+        "usuario": "Ufa, acho que esse compressor vai sair caro para mim. Minha oficina é pequena.",
+        "resposta": "Entendo, posso ajudar a buscar opções mais econômicas ou peças alternativas para sua oficina pequena, se desejar.",
+        "ferramentas": []
       }
     ],
-    "guardado_para_ana": [
+    "salvo_para_ana": [
       {
-        "content": "Prefiere proveedores nacionales."
+        "content": "Prefere fornecedores nacionais para peças de reposição."
       }
     ],
-    "guardado_para_otro_usuario": [],
-    "sesion_nueva": {
-      "usuario": "¿Qué recuerdas de mis preferencias?",
-      "respuesta": "Recuerdo que prefieres proveedores nacionales. ¿Quieres que tenga esto en cuenta para futuras búsquedas de repuestos?",
-      "herramientas": [
-        "search_memory({'query': 'preferencias', 'limit': 1})"
+    "salvo_para_outro_usuario": [],
+    "sessao_nova": {
+      "usuario": "O que você lembra das minhas preferências?",
+      "resposta": "Você prefere fornecedores nacionais para peças de reposição. Posso ajudar com algo mais?",
+      "ferramentas": [
+        "search_memory({'query': 'preferências', 'limit': 5})"
       ]
     },
-    "otro_usuario": {
-      "usuario": "¿Qué recuerdas de mis preferencias?",
-      "respuesta": "No tengo registrado ninguna preferencia tuya hasta ahora. ¿Quieres que recuerde alguna para futuras consultas?",
-      "herramientas": [
-        "search_memory({'query': 'preferencias', 'limit': 5})"
+    "outro_usuario": {
+      "usuario": "O que você lembra das minhas preferências?",
+      "resposta": "No momento, não tenho registrado nenhuma preferência sua. Quer me contar alguma para eu lembrar?",
+      "ferramentas": [
+        "search_memory({'query': 'preferências', 'limit': 5})"
       ]
     },
-    "quien_decide": "el modelo, con las herramientas manage_memory y search_memory"
+    "quem_decide": "o modelo, com as ferramentas manage_memory e search_memory"
   }
 }

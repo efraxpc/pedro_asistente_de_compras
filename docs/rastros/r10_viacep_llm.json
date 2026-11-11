@@ -1,13 +1,13 @@
 {
   "rubrica": "R10",
-  "modo": "real remoto: OpenAI y ViaCEP (https://viacep.com.br)",
-  "fecha_utc": "2026-11-10T22:56:25+00:00",
+  "modo": "real remoto: OpenAI e ViaCEP (https://viacep.com.br)",
+  "data_utc": "2026-11-11T17:20:29+00:00",
   "modelo_llm": "gpt-4.1-mini",
-  "esquema_enviado_al_modelo": {
+  "esquema_enviado_ao_modelo": {
     "type": "function",
     "function": {
       "name": "consultar_cep",
-      "description": "Confirma ciudad y UF con ViaCEP; no calcula flete.",
+      "description": "Confirma cidade e UF com o ViaCEP; não calcula frete.",
       "parameters": {
         "properties": {
           "cep": {
@@ -23,81 +23,86 @@
   },
   "turnos": [
     {
-      "pregunta": "Voy a recibir el pedido en el CEP 01001000. ¿A qué ciudad y estado corresponde?",
-      "llamadas": [
+      "pergunta": "Vou receber o pedido no CEP 01001000. A que cidade e estado ele corresponde?",
+      "chamadas": [
         {
-          "herramienta": "consultar_cep",
-          "argumentos_del_modelo": "{'cep': '01001000'}",
-          "respuesta_de_la_api": "{\"estado\": \"ok\", \"cep\": \"01001000\", \"cidade\": \"São Paulo\", \"uf\": \"SP\", \"modo\": \"real\", \"fuente\": \"ViaCEP:01001000\"}"
+          "ferramenta": "consultar_cep",
+          "argumentos_do_modelo": "{'cep': '01001000'}",
+          "resposta_da_api": "{\"estado\": \"ok\", \"cep\": \"01001000\", \"cidade\": \"São Paulo\", \"uf\": \"SP\", \"modo\": \"real\", \"fonte\": \"ViaCEP:01001000\"}"
         }
       ],
-      "verificaciones": [
+      "verificacoes": [
         {
-          "intento": 1,
-          "errores": []
+          "tentativa": 1,
+          "erros": []
         }
       ],
-      "respuesta_publicada": "CEP 01001000: São Paulo/SP (ViaCEP, modo real)."
+      "resposta_publicada": "CEP 01001000: São Paulo/SP (ViaCEP, modo real)."
     },
     {
-      "pregunta": "¿Y el CEP 99999999?",
-      "llamadas": [
+      "pergunta": "E o CEP 99999999?",
+      "chamadas": [
         {
-          "herramienta": "consultar_cep",
-          "argumentos_del_modelo": "{'cep': '99999999'}",
-          "respuesta_de_la_api": "{\"estado\": \"no_encontrado\", \"cep\": \"99999999\"}"
+          "ferramenta": "consultar_cep",
+          "argumentos_do_modelo": "{'cep': '99999999'}",
+          "resposta_da_api": "{\"estado\": \"nao_encontrado\", \"cep\": \"99999999\"}"
         },
         {
-          "herramienta": "consultar_cep",
-          "argumentos_del_modelo": "{'cep': '99999999'}",
-          "respuesta_de_la_api": "{\"estado\": \"no_encontrado\", \"cep\": \"99999999\"}"
+          "ferramenta": "consultar_cep",
+          "argumentos_do_modelo": "{'cep': '99999999'}",
+          "resposta_da_api": "{\"estado\": \"nao_encontrado\", \"cep\": \"99999999\"}"
+        },
+        {
+          "ferramenta": "consultar_cep",
+          "argumentos_do_modelo": "{'cep': '01001000'}",
+          "resposta_da_api": "{\"estado\": \"ok\", \"cep\": \"01001000\", \"cidade\": \"São Paulo\", \"uf\": \"SP\", \"modo\": \"real\", \"fonte\": \"ViaCEP:01001000\"}"
         }
       ],
-      "verificaciones": [
+      "verificacoes": [
         {
-          "intento": 1,
-          "errores": [
-            "dataset ajeno"
+          "tentativa": 1,
+          "erros": [
+            "dataset alheio"
           ]
         },
         {
-          "intento": 2,
-          "errores": [
-            "ubicación incompleta"
+          "tentativa": 2,
+          "erros": [
+            "dataset alheio"
           ]
         }
       ],
-      "respuesta_publicada": "ViaCEP no tiene registrado el CEP 99999999."
+      "resposta_publicada": "O ViaCEP não tem registro do CEP 99999999."
     },
     {
-      "pregunta": "¿Y el CEP 123?",
-      "llamadas": [
+      "pergunta": "E o CEP 123?",
+      "chamadas": [
         {
-          "herramienta": "consultar_cep",
-          "argumentos_del_modelo": "{'cep': '123'}",
-          "respuesta_de_la_api": "{\"estado\": \"invalido\", \"error\": \"CEP debe tener ocho dígitos\"}"
+          "ferramenta": "consultar_cep",
+          "argumentos_do_modelo": "{'cep': '123'}",
+          "resposta_da_api": "{\"estado\": \"invalido\", \"erro\": \"CEP deve ter oito dígitos\"}"
         },
         {
-          "herramienta": "consultar_cep",
-          "argumentos_del_modelo": "{'cep': '123'}",
-          "respuesta_de_la_api": "{\"estado\": \"invalido\", \"error\": \"CEP debe tener ocho dígitos\"}"
+          "ferramenta": "consultar_cep",
+          "argumentos_do_modelo": "{'cep': '123'}",
+          "resposta_da_api": "{\"estado\": \"invalido\", \"erro\": \"CEP deve ter oito dígitos\"}"
         }
       ],
-      "verificaciones": [
+      "verificacoes": [
         {
-          "intento": 1,
-          "errores": [
-            "dataset ajeno"
+          "tentativa": 1,
+          "erros": [
+            "OutputParserException"
           ]
         },
         {
-          "intento": 2,
-          "errores": [
-            "dataset ajeno"
+          "tentativa": 2,
+          "erros": [
+            "dataset alheio"
           ]
         }
       ],
-      "respuesta_publicada": "Un CEP debe tener ocho dígitos."
+      "resposta_publicada": "Um CEP deve ter oito dígitos."
     }
   ]
 }

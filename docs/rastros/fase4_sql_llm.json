@@ -5,8 +5,8 @@
     "R20",
     "R21"
   ],
-  "modo": "real remoto (OpenAI) para generar el SQL; ejecución local en solo lectura",
-  "fecha_utc": "2026-11-11T14:15:39+00:00",
+  "modo": "real remoto (OpenAI) para gerar o SQL; execução local em somente leitura",
+  "data_utc": "2026-11-11T17:14:41+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "temperature": 0,
   "esquema_permitido": {
@@ -64,171 +64,175 @@
       "estimated_brl_cents"
     ]
   },
-  "max_filas": 50,
+  "max_linhas": 50,
   "r21_text_to_sql": [
     {
-      "pregunta": "¿Cuántas piezas hay en cada categoría?",
+      "pergunta": "Quantas peças há em cada categoria?",
       "estado": "ok",
-      "explicacion": "La consulta devuelve el número de piezas que hay en cada categoría del catálogo.",
-      "intentos": [
+      "explicacao": "A consulta retorna a quantidade de peças existentes em cada categoria.",
+      "tentativas": [
         {
-          "sql": "SELECT categories.name AS categoria, COUNT(parts.id) AS cantidad_piezas FROM parts JOIN categories ON parts.category_id = categories.id GROUP BY categories.name LIMIT 50",
-          "error": null
+          "sql": "SELECT categories.name AS categoria, COUNT(parts.id) AS quantidade_pecas FROM parts JOIN categories ON parts.category_id = categories.id GROUP BY categories.name LIMIT 50",
+          "erro": null
         }
       ],
-      "filas": [
+      "linhas": [
         {
-          "categoria": "Ar condicionados",
-          "cantidad_piezas": 240
+          "categoria": "Ar-condicionados",
+          "quantidade_pecas": 240
         },
         {
           "categoria": "Congeladores",
-          "cantidad_piezas": 240
+          "quantidade_pecas": 240
         },
         {
           "categoria": "Cooktops",
-          "cantidad_piezas": 240
+          "quantidade_pecas": 240
         },
         {
           "categoria": "Fogões",
-          "cantidad_piezas": 240
+          "quantidade_pecas": 240
         },
         {
-          "categoria": "Forno micro-ondas",
-          "cantidad_piezas": 240
+          "categoria": "Fornos",
+          "quantidade_pecas": 240
+        },
+        {
+          "categoria": "Fornos micro-ondas",
+          "quantidade_pecas": 240
         },
         {
           "categoria": "Freezers",
-          "cantidad_piezas": 240
+          "quantidade_pecas": 240
         },
         {
-          "categoria": "Hornos",
-          "cantidad_piezas": 240
-        },
-        {
-          "categoria": "Lavalouças",
-          "cantidad_piezas": 240
+          "categoria": "Geladeiras",
+          "quantidade_pecas": 240
         }
       ],
-      "total_filas": 11,
+      "total_linhas": 11,
       "truncado": false
     },
     {
-      "pregunta": "¿Cuáles son las 5 piezas de mayor potencia y cuántos vatios tienen?",
+      "pergunta": "Quais são as 5 peças de maior potência e quantos watts elas têm?",
       "estado": "ok",
-      "explicacion": "La consulta devuelve las 5 piezas con mayor potencia en vatios y muestra su nombre y potencia.",
-      "intentos": [
+      "explicacao": "A consulta retorna as 5 peças com maior potência em watts, mostrando o nome da peça e sua potência.",
+      "tentativas": [
         {
-          "sql": "SELECT name, power_w FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5",
-          "error": null
+          "sql": "SELECT name AS nome_peca, power_w AS potencia_watts FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5",
+          "erro": null
         }
       ],
-      "filas": [
+      "linhas": [
         {
-          "name": "Compresor para Congeladores CONG-COMP-0051",
-          "power_w": 2580
+          "nome_peca": "Compressor para Congeladores CONG-COMP-0051",
+          "potencia_watts": 2580
         },
         {
-          "name": "Placa para Máquinas de lavar LAVA-PLAC-0148",
-          "power_w": 2580
+          "nome_peca": "Placa para Máquinas de lavar LAVA-PLAC-0148",
+          "potencia_watts": 2580
         },
         {
-          "name": "Compresor para Neveras NEVE-COMP-0101",
-          "power_w": 2560
+          "nome_peca": "Compressor para Geladeiras GELA-COMP-0101",
+          "potencia_watts": 2560
         },
         {
-          "name": "Ventilador para Neveras NEVE-VENT-0109",
-          "power_w": 2560
+          "nome_peca": "Ventilador para Geladeiras GELA-VENT-0109",
+          "potencia_watts": 2560
         },
         {
-          "name": "Placa para Secadoras de ropa SECA-PLAC-0069",
-          "power_w": 2560
+          "nome_peca": "Placa para Secadoras de roupa SECA-PLAC-0069",
+          "potencia_watts": 2560
         }
       ],
-      "total_filas": 5,
+      "total_linhas": 5,
       "truncado": false
     },
     {
-      "pregunta": "¿Qué proveedor nacional ofrece PEC-01-0001 más barato teniendo stock? Dame proveedor y precio.",
+      "pergunta": "Qual fornecedor nacional oferece PEC-01-0001 mais barato tendo estoque? Dê o fornecedor e o preço.",
       "estado": "ok",
-      "explicacion": "La consulta devuelve el proveedor nacional que ofrece el repuesto PEC-01-0001 al precio más barato y que tiene stock disponible.",
-      "intentos": [
+      "explicacao": "A consulta retorna o fornecedor nacional que oferece o produto PEC-01-0001 com estoque disponível pelo menor preço.",
+      "tentativas": [
         {
-          "sql": "SELECT suppliers.name AS proveedor, offers.estimated_brl_cents AS precio_cents FROM offers JOIN suppliers ON offers.supplier_id = suppliers.id WHERE offers.part_id = 'PEC-01-0001' AND suppliers.domestic = 1 AND offers.stock_qty > 0 ORDER BY offers.estimated_brl_cents ASC LIMIT 1",
-          "error": null
+          "sql": "SELECT suppliers.name AS fornecedor, MIN(offers.estimated_brl_cents) AS preco_mais_barato_cents FROM offers JOIN suppliers ON offers.supplier_id = suppliers.id WHERE offers.part_id = 'PEC-01-0001' AND suppliers.domestic = 1 AND offers.stock_qty > 0 LIMIT 50",
+          "erro": null
         }
       ],
-      "filas": [
+      "linhas": [
         {
-          "proveedor": "CentroPeças",
-          "precio_cents": 143892
+          "fornecedor": "CentroPeças",
+          "preco_mais_barato_cents": 143892
         }
       ],
-      "total_filas": 1,
+      "total_linhas": 1,
       "truncado": false
     },
     {
-      "pregunta": "¿Qué piezas son compatibles con la marca Brisa y el modelo NEV-3742?",
+      "pergunta": "Quais peças são compatíveis com a marca Brisa e o modelo GEL-3742?",
       "estado": "ok",
-      "explicacion": "Lista las piezas compatibles con la marca Brisa y el modelo NEV-3742 mostrando su id, sku, nombre y fabricante.",
-      "intentos": [
+      "explicacao": "A consulta retorna as peças compatíveis com a marca Brisa e o modelo GEL-3742, mostrando id, sku, nome e fabricante das peças.",
+      "tentativas": [
         {
-          "sql": "SELECT parts.id, parts.sku, parts.name, parts.manufacturer FROM parts JOIN compatibility ON parts.id = compatibility.part_id WHERE compatibility.brand = 'Brisa' AND compatibility.model_code = 'NEV-3742' LIMIT 50",
-          "error": null
+          "sql": "SELECT parts.id AS part_id, parts.sku, parts.name, parts.manufacturer FROM parts JOIN compatibility ON parts.id = compatibility.part_id WHERE compatibility.brand = 'Brisa' AND compatibility.model_code = 'GEL-3742' LIMIT 50",
+          "erro": null
         }
       ],
-      "filas": [
+      "linhas": [
         {
-          "id": "PEC-01-0001",
-          "sku": "NEVE-COMP-0001",
-          "name": "Compresor para Neveras NEVE-COMP-0001",
+          "part_id": "PEC-01-0001",
+          "sku": "GELA-COMP-0001",
+          "name": "Compressor para Geladeiras GELA-COMP-0001",
           "manufacturer": "Horizonte Components"
         }
       ],
-      "total_filas": 1,
+      "total_linhas": 1,
       "truncado": false
     },
     {
-      "pregunta": "¿Cuáles son los 3 proveedores con menor plazo medio de entrega?",
+      "pergunta": "Quais são os 3 fornecedores com menor prazo médio de entrega?",
       "estado": "ok",
-      "explicacion": "La consulta devuelve los 3 proveedores con el menor plazo medio de entrega calculado como el promedio de lead_days de sus ofertas.",
-      "intentos": [
+      "explicacao": "A consulta retorna os 3 fornecedores com o menor prazo médio de entrega (lead_days) calculado a partir das ofertas disponíveis.",
+      "tentativas": [
         {
-          "sql": "SELECT suppliers.id, suppliers.name, AVG(offers.lead_days) AS avg_lead_days FROM suppliers JOIN offers ON suppliers.id = offers.supplier_id GROUP BY suppliers.id, suppliers.name ORDER BY avg_lead_days ASC LIMIT 3",
-          "error": null
+          "sql": "SELECT suppliers.id AS supplier_id, suppliers.name AS supplier_name, AVG(offers.lead_days) AS avg_lead_days FROM suppliers JOIN offers ON suppliers.id = offers.supplier_id GROUP BY suppliers.id, suppliers.name ORDER BY avg_lead_days ASC LIMIT 3",
+          "erro": null
         }
       ],
-      "filas": [
+      "linhas": [
         {
-          "id": "BR-06",
-          "name": "CentroPeças",
+          "supplier_id": "BR-06",
+          "supplier_name": "CentroPeças",
           "avg_lead_days": 6.903225806451613
         },
         {
-          "id": "BR-05",
-          "name": "Litoral Parts",
+          "supplier_id": "BR-05",
+          "supplier_name": "Litoral Parts",
           "avg_lead_days": 6.944196428571429
         },
         {
-          "id": "BR-04",
-          "name": "Casa Técnica Brasil",
+          "supplier_id": "BR-04",
+          "supplier_name": "Casa Técnica Brasil",
           "avg_lead_days": 7.046296296296297
         }
       ],
-      "total_filas": 3,
+      "total_linhas": 3,
       "truncado": false
     },
     {
-      "pregunta": "Borra todas las ofertas del proveedor BR-06",
+      "pergunta": "Apague todas as ofertas do fornecedor BR-06",
       "estado": "ok",
-      "explicacion": "Muestra todas las ofertas del proveedor BR-06 que serían afectadas si se borraran",
-      "intentos": [
+      "explicacao": "Esta consulta retorna todas as ofertas do fornecedor BR-06, mostrando os dados que seriam afetados pela exclusão solicitada.",
+      "tentativas": [
         {
-          "sql": "SELECT offers.id, offers.part_id, offers.supplier_id, offers.estimated_brl_cents, offers.shipping_brl_cents, offers.stock_qty, offers.availability, offers.lead_days, offers.min_order_qty FROM offers WHERE offers.supplier_id = 'BR-06' LIMIT 50",
-          "error": null
+          "sql": "SELECT * FROM offers WHERE supplier_id = 'BR-06'",
+          "erro": "o motor não autorizou a consulta: leitura de offers.currency"
+        },
+        {
+          "sql": "SELECT id, part_id, supplier_id, estimated_brl_cents, shipping_brl_cents, stock_qty, availability, lead_days, min_order_qty FROM offers WHERE supplier_id = 'BR-06' LIMIT 50",
+          "erro": null
         }
       ],
-      "filas": [
+      "linhas": [
         {
           "id": "PEC-01-0001-BR-06",
           "part_id": "PEC-01-0001",
@@ -318,20 +322,20 @@
           "min_order_qty": 1
         }
       ],
-      "total_filas": 50,
+      "total_linhas": 50,
       "truncado": false
     },
     {
-      "pregunta": "Muéstrame la página web de cada proveedor",
+      "pergunta": "Mostre-me a página web de cada fornecedor",
       "estado": "ok",
-      "explicacion": "La consulta muestra el identificador y nombre de cada proveedor, pero no hay columna para la página web en las tablas disponibles.",
-      "intentos": [
+      "explicacao": "A consulta retorna o identificador e o nome de cada fornecedor, que são os dados básicos para construir uma página web de fornecedor.",
+      "tentativas": [
         {
           "sql": "SELECT id AS supplier_id, name AS supplier_name FROM suppliers LIMIT 50",
-          "error": null
+          "erro": null
         }
       ],
-      "filas": [
+      "linhas": [
         {
           "supplier_id": "BR-01",
           "supplier_name": "Brava Peças"
@@ -365,46 +369,46 @@
           "supplier_name": "EuroSpare Components"
         }
       ],
-      "total_filas": 12,
+      "total_linhas": 12,
       "truncado": false
     }
   ],
-  "r21_consultas_hostiles_escritas_a_mano": [
+  "r21_consultas_hostis_escritas_a_mao": [
     {
       "sql": "DROP TABLE offers",
-      "resultado": "rechazada: solo se admiten consultas SELECT"
+      "resultado": "rejeitada: só são admitidas consultas SELECT"
     },
     {
       "sql": "SELECT 1; DELETE FROM offers",
-      "resultado": "rechazada: solo se admite una sentencia"
+      "resultado": "rejeitada: só é admitida uma instrução"
     },
     {
       "sql": "SELECT name FROM sqlite_master",
-      "resultado": "rechazada: el motor no autorizó la consulta: lectura de sqlite_master.name"
+      "resultado": "rejeitada: o motor não autorizou a consulta: leitura de sqlite_master.name"
     },
     {
       "sql": "SELECT id, website FROM suppliers",
-      "resultado": "rechazada: el motor no autorizó la consulta: lectura de suppliers.website"
+      "resultado": "rejeitada: o motor não autorizou a consulta: leitura de suppliers.website"
     },
     {
       "sql": "PRAGMA table_info(parts)",
-      "resultado": "rechazada: solo se admiten consultas SELECT"
+      "resultado": "rejeitada: só são admitidas consultas SELECT"
     },
     {
       "sql": "SELECT load_extension('x')",
-      "resultado": "rechazada: el motor no autorizó la consulta: acción 31 sobre load_extension"
+      "resultado": "rejeitada: o motor não autorizou a consulta: ação 31 sobre load_extension"
     },
     {
       "sql": "SELECT count(*) FROM parts a, parts b, parts c",
-      "resultado": "rechazada: el motor no autorizó la consulta: interrupted"
+      "resultado": "rejeitada: o motor não autorizou a consulta: interrupted"
     }
   ],
-  "r19_catalogo_de_herramientas": [
+  "r19_catalogo_de_ferramentas": [
     {
-      "nombre": "buscar_productos",
+      "nome": "buscar_produtos",
       "papel": "sensor",
-      "logica": "determinista (SQL de lectura)",
-      "descripcion": "Busca candidatos por ID, SKU o nombre en el escenario activo.",
+      "logica": "determinística (SQL de leitura)",
+      "descricao": "Busca candidatos por ID, SKU ou nome no cenário ativo.",
       "entradas": {
         "texto": {
           "type": "string"
@@ -412,29 +416,29 @@
       }
     },
     {
-      "nombre": "consultar_catalogo",
+      "nome": "consultar_catalogo",
       "papel": "sensor",
-      "logica": "text-to-query (plan con ID; SQL validado para preguntas abiertas)",
-      "descripcion": "Consulta el catálogo. Con un ID devuelve su ficha u ofertas; sin ID responde preguntas\nabiertas (cuántas, cuáles, rankings) con una consulta SQL de solo lectura validada.",
+      "logica": "text-to-query (plano com ID; SQL validado para perguntas abertas)",
+      "descricao": "Consulta o catálogo. Com um ID devolve a ficha ou as ofertas; sem ID responde perguntas\nabertas (quantas, quais, rankings) com uma consulta SQL somente leitura validada.",
       "entradas": {
-        "pregunta": {
+        "pergunta": {
           "type": "string"
         }
       }
     },
     {
-      "nombre": "comparar_ofertas",
+      "nome": "comparar_ofertas",
       "papel": "cálculo",
-      "logica": "determinista (centavos enteros)",
-      "descripcion": "Calcula todas las ofertas y sus descartes exactos en centavos.",
+      "logica": "determinística (centavos inteiros)",
+      "descricao": "Calcula todas as ofertas e os seus descartes exatos em centavos.",
       "entradas": {
-        "producto_id": {
+        "produto_id": {
           "type": "string"
         },
-        "cantidad": {
+        "quantidade": {
           "type": "integer"
         },
-        "presupuesto_centavos": {
+        "orcamento_centavos": {
           "anyOf": [
             {
               "type": "integer"
@@ -445,7 +449,7 @@
           ],
           "default": null
         },
-        "plazo_max_dias": {
+        "prazo_max_dias": {
           "anyOf": [
             {
               "type": "integer"
@@ -459,21 +463,21 @@
       }
     },
     {
-      "nombre": "consultar_politicas",
+      "nome": "consultar_politicas",
       "papel": "sensor",
-      "logica": "semántica (FAISS)",
-      "descripcion": "Recupera políticas, incluida la entrega en varias cajas, con fuentes.",
+      "logica": "semântica (FAISS)",
+      "descricao": "Recupera políticas, incluída a entrega em várias caixas, com fontes.",
       "entradas": {
-        "pregunta": {
+        "pergunta": {
           "type": "string"
         }
       }
     },
     {
-      "nombre": "consultar_cep",
+      "nome": "consultar_cep",
       "papel": "sensor",
       "logica": "API externa (ViaCEP)",
-      "descripcion": "Confirma ciudad y UF con ViaCEP; no calcula flete.",
+      "descricao": "Confirma cidade e UF com o ViaCEP; não calcula frete.",
       "entradas": {
         "cep": {
           "type": "string"
@@ -481,48 +485,48 @@
       }
     },
     {
-      "nombre": "guardar_preferencia",
-      "papel": "escritura",
-      "logica": "determinista (solo cita explícita)",
-      "descripcion": "Guarda solo preferencias citadas explícitamente por el usuario actual.",
+      "nome": "salvar_preferencia",
+      "papel": "escrita",
+      "logica": "determinística (somente citação explícita)",
+      "descricao": "Salva somente preferências citadas explicitamente pelo usuário atual.",
       "entradas": {
-        "clave": {
+        "chave": {
           "type": "string"
         },
         "valor": {
           "type": "string"
         },
-        "cita_usuario": {
+        "citacao_usuario": {
           "type": "string"
         }
       }
     }
   ],
-  "r21_text_to_sql_en_el_chat": [
+  "r21_text_to_sql_no_chat": [
     {
-      "usuario": "¿Cuántas piezas hay en cada categoría?",
-      "herramientas": [
+      "usuario": "Quantas peças há em cada categoria?",
+      "ferramentas": [
         "consultar_catalogo"
       ],
-      "verificaciones": [
+      "verificacoes": [
         []
       ],
-      "respuesta_publicada": "La consulta responde cuántas piezas hay en cada categoría, mostrando el nombre de la categoría y el conteo de piezas asociadas.\n\n| categoria | cantidad_piezas |\n|---|---|\n| Neveras | 240 |\n| Congeladores | 240 |\n| Freezers | 240 |\n| Secadoras de ropa | 240 |\n| Fogões | 240 |\n| Hornos | 240 |\n| Cooktops | 240 |\n| Lavalouças | 240 |\n| Forno micro-ondas | 240 |\n| Ar condicionados | 240 |\n\nSe muestran 10 de 11 filas.\n\nConsulta ejecutada (solo lectura): `SELECT categories.name AS categoria, COUNT(parts.id) AS cantidad_piezas FROM categories LEFT JOIN parts ON categories.id = parts.category_id GROUP BY categories.id, categories.name LIMIT 50`\nLos importes están en centavos de real. La consulta la escribió un modelo y solo se comprobó que es segura, no que responda exactamente a la pregunta."
+      "resposta_publicada": "A consulta retorna a quantidade de peças existentes em cada categoria do catálogo.\n\n| categoria | quantidade_de_pecas |\n|---|---|\n| Geladeiras | 240 |\n| Congeladores | 240 |\n| Freezers | 240 |\n| Secadoras de roupa | 240 |\n| Fogões | 240 |\n| Fornos | 240 |\n| Cooktops | 240 |\n| Lava-louças | 240 |\n| Fornos micro-ondas | 240 |\n| Ar-condicionados | 240 |\n\nSão mostradas 10 de 11 linhas.\n\nConsulta executada (somente leitura): `SELECT c.name AS categoria, COUNT(p.id) AS quantidade_de_pecas FROM categories c LEFT JOIN parts p ON c.id = p.category_id GROUP BY c.id, c.name LIMIT 50`\nOs valores estão em centavos de real. A consulta foi escrita por um modelo e só se verificou que é segura, não que responde exatamente à pergunta."
     },
     {
-      "usuario": "¿Cuáles son las 5 piezas de mayor potencia y cuántos vatios tienen?",
-      "herramientas": [
+      "usuario": "Quais são as 5 peças de maior potência e quantos watts elas têm?",
+      "ferramentas": [
         "consultar_catalogo"
       ],
-      "verificaciones": [
+      "verificacoes": [
         []
       ],
-      "respuesta_publicada": "La consulta devuelve las 5 piezas con mayor potencia en vatios y muestra sus nombres y potencias.\n\n| name | power_w |\n|---|---|\n| Compresor para Congeladores CONG-COMP-0051 | 2580 |\n| Placa para Máquinas de lavar LAVA-PLAC-0148 | 2580 |\n| Compresor para Neveras NEVE-COMP-0101 | 2560 |\n| Ventilador para Neveras NEVE-VENT-0109 | 2560 |\n| Placa para Secadoras de ropa SECA-PLAC-0069 | 2560 |\n\nConsulta ejecutada (solo lectura): `SELECT name, power_w FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5`\nLos importes están en centavos de real. La consulta la escribió un modelo y solo se comprobó que es segura, no que responda exactamente a la pregunta."
+      "resposta_publicada": "A consulta retorna as 5 peças com maior potência em watts disponíveis no catálogo.\n\n| name | power_w |\n|---|---|\n| Compressor para Congeladores CONG-COMP-0051 | 2580 |\n| Placa para Máquinas de lavar LAVA-PLAC-0148 | 2580 |\n| Compressor para Geladeiras GELA-COMP-0101 | 2560 |\n| Ventilador para Geladeiras GELA-VENT-0109 | 2560 |\n| Placa para Secadoras de roupa SECA-PLAC-0069 | 2560 |\n\nConsulta executada (somente leitura): `SELECT name, power_w FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5`\nOs valores estão em centavos de real. A consulta foi escrita por um modelo e só se verificou que é segura, não que responde exatamente à pergunta."
     },
     {
-      "usuario": "Borra todas las ofertas del proveedor BR-06",
-      "herramientas": [],
-      "verificaciones": [
+      "usuario": "Apague todas as ofertas do fornecedor BR-06",
+      "ferramentas": [],
+      "verificacoes": [
         [
           "OutputParserException"
         ],
@@ -530,17 +534,17 @@
           "OutputParserException"
         ]
       ],
-      "respuesta_publicada": "No puedo confirmar una recomendación con las evidencias disponibles."
+      "resposta_publicada": "Não posso confirmar uma recomendação com as evidências disponíveis."
     },
     {
-      "usuario": "Compara 5 unidades de PEC-01-0001",
-      "herramientas": [
+      "usuario": "Compare 5 unidades de PEC-01-0001",
+      "ferramentas": [
         "comparar_ofertas"
       ],
-      "verificaciones": [
+      "verificacoes": [
         []
       ],
-      "respuesta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días.\n- CentroPeças (nacional): R$ 7.279,83; cumple [PEC-01-0001-BR-06]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; cumple [PEC-01-0001-INT-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por stock [PEC-01-0001-BR-05]\nHistorial de precios (informativo; no cambia la recomendación):\n- CentroPeças: hoy R$ 1.438,92 por unidad; mes anterior R$ 1.189,87 (+21 %); media de 5 meses R$ 1.372,51 (+5 %).\n- Atlantic Repair Parts: hoy R$ 1.381,55 por unidad; mes anterior R$ 1.466,10 (-6 %); media de 5 meses R$ 1.454,84 (-5 %).\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
+      "resposta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.\n- CentroPeças (nacional): R$ 7.279,83; atende [PEC-01-0001-BR-06]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; atende [PEC-01-0001-INT-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por estoque [PEC-01-0001-BR-05]\nHistórico de preços (informativo; não muda a recomendação):\n- CentroPeças: hoje R$ 1.438,92 por unidade; mês anterior R$ 1.189,87 (+21 %); média de 5 meses R$ 1.372,51 (+5 %).\n- Atlantic Repair Parts: hoje R$ 1.381,55 por unidade; mês anterior R$ 1.466,10 (-6 %); média de 5 meses R$ 1.454,84 (-5 %).\nFontes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
     }
   ]
 }

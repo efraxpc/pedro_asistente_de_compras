@@ -1,75 +1,75 @@
 {
   "rubrica": "R09",
-  "modo": "router LLM real remoto (OpenAI); router por reglas local; ViaCEP simulado",
-  "fecha_utc": "2026-11-10T22:53:09+00:00",
+  "modo": "router LLM real remoto (OpenAI); router por regras local; ViaCEP simulado",
+  "data_utc": "2026-11-11T17:16:28+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "temperature": 0,
   "destinos": {
-    "catalogo": "buscar o describir una pieza por nombre, SKU o ID, sin hablar de precios",
-    "comparacion": "precios, costes, ofertas, proveedores, stock o plazos de una pieza",
-    "cep": "confirmar la ciudad o el estado de un código postal brasileño (CEP)"
+    "catalogo": "buscar ou descrever uma peça por nome, SKU ou ID, sem falar de preços",
+    "comparacao": "preços, custos, ofertas, fornecedores, estoque ou prazos de uma peça",
+    "cep": "confirmar a cidade ou o estado de um código postal brasileiro (CEP)"
   },
-  "nota": "Las rutas esperadas las fijó una persona. Siete casos no son una medida de exactitud.",
-  "aciertos": {
-    "reglas": "2/7",
+  "nota": "As rotas esperadas foram fixadas por uma pessoa. Sete casos não são uma medida de exatidão.",
+  "acertos": {
+    "regras": "2/7",
     "llm": "6/7"
   },
   "casos": [
     {
-      "pregunta": "precio de PEC-01-0001",
-      "ruta_esperada": "comparacion",
-      "ruta_reglas": "comparacion",
-      "resultado_reglas": "3 filas",
-      "ruta_llm": "comparacion",
-      "resultado_llm": "3 filas"
+      "pergunta": "preço de PEC-01-0001",
+      "rota_esperada": "comparacao",
+      "rota_regras": "comparacao",
+      "resultado_regras": "3 linhas",
+      "rota_llm": "comparacao",
+      "resultado_llm": "3 linhas"
     },
     {
-      "pregunta": "Busca compresores para nevera",
-      "ruta_esperada": "catalogo",
-      "ruta_reglas": "catalogo",
-      "resultado_reglas": "0 filas",
-      "ruta_llm": "catalogo",
-      "resultado_llm": "0 filas"
+      "pergunta": "Busque compressores para geladeira",
+      "rota_esperada": "catalogo",
+      "rota_regras": "catalogo",
+      "resultado_regras": "0 linhas",
+      "rota_llm": "catalogo",
+      "resultado_llm": "0 linhas"
     },
     {
-      "pregunta": "¿Cuánto cuesta el compresor PEC-01-0001?",
-      "ruta_esperada": "comparacion",
-      "ruta_reglas": "catalogo",
-      "resultado_reglas": "0 filas",
-      "ruta_llm": "comparacion",
-      "resultado_llm": "3 filas"
+      "pergunta": "Quanto custa o compressor PEC-01-0001?",
+      "rota_esperada": "comparacao",
+      "rota_regras": "catalogo",
+      "resultado_regras": "0 linhas",
+      "rota_llm": "comparacao",
+      "resultado_llm": "3 linhas"
     },
     {
-      "pregunta": "¿Quién vende PEC-01-0001 y en cuántos días llega?",
-      "ruta_esperada": "comparacion",
-      "ruta_reglas": "catalogo",
-      "resultado_reglas": "0 filas",
-      "ruta_llm": "comparacion",
-      "resultado_llm": "3 filas"
+      "pergunta": "Quem vende PEC-01-0001 e em quantos dias chega?",
+      "rota_esperada": "comparacao",
+      "rota_regras": "catalogo",
+      "resultado_regras": "0 linhas",
+      "rota_llm": "comparacao",
+      "resultado_llm": "3 linhas"
     },
     {
-      "pregunta": "¿A qué ciudad corresponde el CEP 01001-000?",
-      "ruta_esperada": "cep",
-      "ruta_reglas": "catalogo",
-      "resultado_reglas": "0 filas",
-      "ruta_llm": "cep",
+      "pergunta": "A que cidade corresponde o CEP 01001-000?",
+      "rota_esperada": "cep",
+      "rota_regras": "catalogo",
+      "resultado_regras": "0 linhas",
+      "rota_llm": "cep",
       "resultado_llm": "{'estado': 'ok', 'cep': '01001000', 'cidade': 'Cidade Simulada', 'uf': 'SP', 'mo"
     },
     {
-      "pregunta": "¿Tienen en stock algún termostato?",
-      "ruta_esperada": "catalogo",
-      "ruta_reglas": "comparacion",
-      "resultado_reglas": "0 filas",
-      "ruta_llm": "comparacion",
-      "resultado_llm": "0 filas"
+      "pergunta": "Vocês têm algum termostato em estoque?",
+      "rota_esperada": "catalogo",
+      "rota_regras": "comparacao",
+      "resultado_regras": "0 linhas",
+      "rota_llm": "comparacao",
+      "resultado_llm": "0 linhas"
     },
     {
-      "pregunta": "Hola, buenos días",
-      "ruta_esperada": "aclaracion",
-      "ruta_reglas": "catalogo",
-      "resultado_reglas": "0 filas",
-      "ruta_llm": "aclaracion",
-      "resultado_llm": "¿Buscas una pieza, sus ofertas o un CEP?"
+      "pergunta": "Olá, bom dia",
+      "rota_esperada": "esclarecimento",
+      "rota_regras": "catalogo",
+      "resultado_regras": "0 linhas",
+      "rota_llm": "esclarecimento",
+      "resultado_llm": "Você procura uma peça, as ofertas dela ou um CEP?"
     }
   ]
 }

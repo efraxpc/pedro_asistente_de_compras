@@ -1,0 +1,135 @@
+{
+  "rubrica": "R02",
+  "modo": "real remoto (OpenAI e ViaCEP); NLI real local; dados sintéticos",
+  "data_utc": "2026-11-11T17:18:52+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "modelo_nli": "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
+  "revisao_nli": "8adb042d524ecd5c26d3e3ba0e3fbcf7e2d0864c",
+  "dataset_id": "5864b38a-f98f-405d-8375-e37e06b38c59",
+  "origem_politicas": "ficticio_demo",
+  "nota": "Cada turno admite até duas propostas do agente; a lista de ferramentas inclui as de ambas. A trajetória depende do modelo e pode variar.",
+  "solicitacao_mista_em_um_turno": [
+    {
+      "pergunta": "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias e diga o que a política de devoluções diz sobre peças danificadas, e confirme o CEP 01001000",
+      "plano": [
+        {
+          "tipo": "compra",
+          "pedido": "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias"
+        },
+        {
+          "tipo": "politica",
+          "pedido": "O que a política de devoluções diz sobre peças danificadas?"
+        },
+        {
+          "tipo": "cep",
+          "pedido": "Confirme o CEP 01001000"
+        }
+      ],
+      "ferramentas": [
+        {
+          "nome": "comparar_ofertas",
+          "argumentos": "{'produto_id': 'PEC-01-0001', 'quantidade': 5, 'prazo_max_dias': 7}"
+        },
+        {
+          "nome": "consultar_politicas",
+          "argumentos": "{'pergunta': 'política de devoluções sobre peças danificadas'}"
+        },
+        {
+          "nome": "consultar_cep",
+          "argumentos": "{'cep': '01001000'}"
+        }
+      ],
+      "erros_de_execucao": [],
+      "verificacoes": [
+        [],
+        [],
+        []
+      ],
+      "citacoes_ancoradas": [
+        {
+          "fonte_id": "FIC-DEV-01-S05-C01",
+          "estado": "literal",
+          "cobertura": 1.0
+        }
+      ],
+      "resposta_publicada": "Sua mensagem tinha 3 pedidos; respondo cada um separadamente.\n\n**1. Compare 5 unidades de PEC-01-0001 com prazo de 7 dias**\nCentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.\n- CentroPeças (nacional): R$ 7.279,83; atende [PEC-01-0001-BR-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por estoque, prazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; descartada por prazo [PEC-01-0001-INT-06]\nHistórico de preços (informativo; não muda a recomendação):\n- CentroPeças: hoje R$ 1.438,92 por unidade; mês anterior R$ 1.189,87 (+21 %); média de 5 meses R$ 1.372,51 (+5 %).\nFontes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06\n\n**2. O que a política de devoluções diz sobre peças danificadas?**\nPolítica fictícia de demonstração. A política fictícia de devoluções esclarece que ao receber o pacote, a peça, quantidade e acessórios são inspecionados para identificar dano declarado, uso na instalação ou peças faltantes. Esse resultado é registrado com data e explicação verificável, e caso o dano visível seja confirmado, pode haver substituição ou devolução simulada. O trâmite é comunicado com código de autorização para acompanhamento.\nFontes: FIC-DEV-01-S05-C01\n\n**3. Confirme o CEP 01001000**\nCEP 01001000: São Paulo/SP (ViaCEP, modo real)."
+    }
+  ],
+  "solicitacao_repartida_em_turnos": [
+    {
+      "pergunta": "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias",
+      "plano": null,
+      "ferramentas": [
+        {
+          "nome": "comparar_ofertas",
+          "argumentos": "{'produto_id': 'PEC-01-0001', 'quantidade': 5, 'prazo_max_dias': 7}"
+        }
+      ],
+      "erros_de_execucao": [],
+      "verificacoes": [
+        []
+      ],
+      "citacoes_ancoradas": [],
+      "resposta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.\n- CentroPeças (nacional): R$ 7.279,83; atende [PEC-01-0001-BR-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por estoque, prazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; descartada por prazo [PEC-01-0001-INT-06]\nHistórico de preços (informativo; não muda a recomendação):\n- CentroPeças: hoje R$ 1.438,92 por unidade; mês anterior R$ 1.189,87 (+21 %); média de 5 meses R$ 1.372,51 (+5 %).\nFontes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06"
+    },
+    {
+      "pergunta": "O que a política de devoluções diz sobre peças danificadas?",
+      "plano": null,
+      "ferramentas": [
+        {
+          "nome": "consultar_politicas",
+          "argumentos": "{'pergunta': 'política de devoluções sobre peças danificadas'}"
+        }
+      ],
+      "erros_de_execucao": [],
+      "verificacoes": [
+        []
+      ],
+      "citacoes_ancoradas": [
+        {
+          "fonte_id": "FIC-DEV-01-S05-C01",
+          "estado": "literal",
+          "cobertura": 1.0
+        },
+        {
+          "fonte_id": "FIC-DEV-01-S06-C01",
+          "estado": "literal",
+          "cobertura": 1.0
+        }
+      ],
+      "resposta_publicada": "Política fictícia de demonstração. A política de devoluções sobre peças danificadas diz que, ao receber o pacote, a peça e acessórios são inspecionados para distinguir dano declarado, uso durante instalação e componentes faltantes, registrando o resultado com data e explicação. Se aprovado, a devolução considera o valor total pago no pedido simulado e pode ocorrer substituição ou devolução simulada. O usuário deve conferir marca, modelo, voltagem e dimensões antes da seleção; peças incompatíveis podem ser devolvidas em 30 dias se mantiverem condições originais, mas peças instaladas para teste entram em revisão, e peças modificadas não são consideradas sem uso.\nFontes: FIC-DEV-01-S05-C01, FIC-DEV-01-S06-C01"
+    },
+    {
+      "pergunta": "Confirme o CEP 01001000",
+      "plano": null,
+      "ferramentas": [
+        {
+          "nome": "consultar_cep",
+          "argumentos": "{'cep': '01001000'}"
+        }
+      ],
+      "erros_de_execucao": [],
+      "verificacoes": [
+        []
+      ],
+      "citacoes_ancoradas": [],
+      "resposta_publicada": "CEP 01001000: São Paulo/SP (ViaCEP, modo real)."
+    },
+    {
+      "pergunta": "agora 6 unidades",
+      "plano": null,
+      "ferramentas": [
+        {
+          "nome": "comparar_ofertas",
+          "argumentos": "{'produto_id': 'PEC-01-0001', 'quantidade': 6, 'prazo_max_dias': 7}"
+        }
+      ],
+      "erros_de_execucao": [],
+      "verificacoes": [
+        []
+      ],
+      "citacoes_ancoradas": [],
+      "resposta_publicada": "CentroPeças: R$ 8.718,75 para 6 unidades; prazo de 2 dias.\n- CentroPeças (nacional): R$ 8.718,75; atende [PEC-01-0001-BR-06]\n- Litoral Parts (nacional): R$ 2.300,60; descartada por estoque, prazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts (internacional): R$ 8.726,47; descartada por prazo [PEC-01-0001-INT-06]\nHistórico de preços (informativo; não muda a recomendação):\n- CentroPeças: hoje R$ 1.438,92 por unidade; mês anterior R$ 1.189,87 (+21 %); média de 5 meses R$ 1.372,51 (+5 %).\nFontes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06"
+    }
+  ]
+}
