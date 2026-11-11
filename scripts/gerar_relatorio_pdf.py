@@ -4,6 +4,7 @@ Admite um subconjunto de Markdown: títulos (#, ##, ###), parágrafos, listas co
 tabelas com barras e **negrito**. Não executa nada: só diagrama docs/relatorio.md.
 """
 import re
+import sys
 from html import escape
 from pathlib import Path
 
@@ -16,8 +17,10 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 ROOT = Path(__file__).resolve().parents[1]
-ORIGEM = ROOT / "docs/relatorio.md"
-DESTINO = ROOT / "docs/relatorio.pdf"
+# Sem argumentos gera o relatório; com `<origem.md> <destino.pdf> [título]` gera outro documento.
+ORIGEM = Path(sys.argv[1]).resolve() if len(sys.argv) > 2 else ROOT / "docs/relatorio.md"
+DESTINO = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else ROOT / "docs/relatorio.pdf"
+TITULO = sys.argv[3] if len(sys.argv) > 3 else "Relatório técnico — Pedro"
 FONTE = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
 NEGRITO = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
 if FONTE.is_file() and NEGRITO.is_file():
@@ -99,6 +102,6 @@ for bloco in ORIGEM.read_text(encoding="utf-8").split("\n\n"):
         elementos.append(Paragraph(marcar(" ".join(linhas)), estilos["texto"]))
 
 SimpleDocTemplate(str(DESTINO), pagesize=A4, leftMargin=48, rightMargin=48, topMargin=48,
-                  bottomMargin=48, title="Relatório técnico — Pedro",
+                  bottomMargin=48, title=TITULO,
                   author="Projeto Pedro (Infnet)").build(elementos)
 print(DESTINO)
