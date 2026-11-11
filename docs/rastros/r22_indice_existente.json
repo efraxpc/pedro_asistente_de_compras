@@ -1,18 +1,18 @@
 {
   "rubrica": "R22",
   "modo": "índice carregado do disco; agente real remoto (OpenAI); NLI real local; corpus fictício",
-  "data_utc": "2026-11-11T17:20:51+00:00",
+  "data_utc": "2026-11-11T17:47:57+00:00",
   "indice": {
     "pasta": "knowledge/politicas",
     "origem": "ficticio_demo: corpus próprio em knowledge/politicas_demo, indexado por scripts/construir_indice_politicas.py",
-    "criado_utc": "2026-11-11T17:10:20+00:00",
+    "criado_utc": "2026-11-11T17:47:35+00:00",
     "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "dimension": 384,
     "metrica": "L2",
     "fragmentos": 75,
     "sha256": {
-      "index.faiss": "caf34d83bf1b5d56987f871c117d8c7d2d42aca132b0ef4beaeb4087e78e58d3",
-      "index.pkl": "6210ccc2b6fb7872afb59d96f88db9b5b4880c59b585e53369e76f9c30b2119c"
+      "index.faiss": "955831a2617981b0700d4b339a5af7d182220f64192570eb507aa9ee8c761fc6",
+      "index.pkl": "8b57a12da117e4d3181a74fb55a4353fe4c4e41247268e0a2164cc22113550ea"
     },
     "segundos_de_carga": 0.03
   },
@@ -65,17 +65,22 @@
             "cobertura": 1.0
           },
           {
+            "fonte_id": "FIC-DEV-01-S02-C01",
+            "estado": "rejeitada",
+            "cobertura": 0.71
+          },
+          {
             "fonte_id": "FIC-DEV-01-S06-C01",
             "estado": "literal",
             "cobertura": 1.0
           },
           {
             "fonte_id": "FIC-DEV-01-S02-C01",
-            "estado": "rejeitada",
-            "cobertura": 0.474
+            "estado": "literal",
+            "cobertura": 1.0
           }
         ],
-        "resposta_publicada": "Política fictícia de demonstração. Não consegui verificar um resumo próprio, então cito o texto literal da fonte:\n- «Antes de selecionar uma peça, o usuário deve conferir marca, modelo, voltagem e dimensões com a ficha técnica fictícia. Uma compra simulada de uma peça incompatível, ainda sem instalar, pode seguir o procedimento de devolução de 30 dias se conserva suas condições originais.» [FIC-DEV-01-S06-C01]"
+        "resposta_publicada": "Política fictícia de demonstração. Antes de selecionar uma peça para instalação, deve-se conferir a marca, modelo, voltagem e dimensões com a ficha técnica para assegurar a compatibilidade elétrica. Uma peça incompatível pode ser devolvida dentro de 30 dias se mantiver suas condições originais, incluindo não mostrar marcas de montagem ou conexões elétricas usadas.\nFontes: FIC-DEV-01-S06-C01, FIC-DEV-01-S02-C01"
       },
       {
         "pergunta": "Posso receber em várias caixas?",

@@ -831,13 +831,13 @@
     }
   ],
   "sha256": {
-    "index.faiss": "caf34d83bf1b5d56987f871c117d8c7d2d42aca132b0ef4beaeb4087e78e58d3",
-    "index.pkl": "6210ccc2b6fb7872afb59d96f88db9b5b4880c59b585e53369e76f9c30b2119c"
+    "index.faiss": "955831a2617981b0700d4b339a5af7d182220f64192570eb507aa9ee8c761fc6",
+    "index.pkl": "8b57a12da117e4d3181a74fb55a4353fe4c4e41247268e0a2164cc22113550ea"
   },
-  "corpus_sha256": "a1caf6bc396988b7b84bb318a68d4d48be3685fdc92b979248db39e71dceb4c2",
+  "corpus_sha256": "027051d3ca4ed08b2d98130ce4ee5e1f3393975e49da113b1eac7ef81504ff8d",
   "fragmentacao": {
     "tamanho": 700,
     "sobreposicao": 100
   },
-  "criado_utc": "2026-11-11T17:10:20+00:00"
+  "criado_utc": "2026-11-11T17:47:35+00:00"
 }

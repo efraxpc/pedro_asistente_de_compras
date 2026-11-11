@@ -1682,7 +1682,7 @@ Depois de carregar, comparam-se de novo dimensão, contagem, métrica, identific
 
 | Pergunta | O que fez | Resposta publicada |
 |---|---|---|
-| «Como se verifica a compatibilidade elétrica antes de instalar uma peça?» | O LLM chamou `consultar_politicas` duas vezes; a citação de `FIC-DEV-01-S06-C01` ficou ancorada como literal (cobertura 1,0) e uma citação de `FIC-DEV-01-S02-C01` foi rejeitada (cobertura 0,474). O resumo do modelo não foi verificado | Citação literal da fonte `FIC-DEV-01-S06-C01`, no lugar do resumo: conferir marca, modelo, voltagem e dimensões com a ficha técnica |
+| «Como se verifica a compatibilidade elétrica antes de instalar uma peça?» | O LLM chamou `consultar_politicas` duas vezes. O rastro registra quatro citações, nesta ordem: `FIC-DEV-01-S06-C01` literal (cobertura 1,0), `FIC-DEV-01-S02-C01` rejeitada (cobertura 0,71), `FIC-DEV-01-S06-C01` literal (1,0) e `FIC-DEV-01-S02-C01` literal (1,0). O resumo do modelo foi publicado | Resumo do modelo com as fontes `FIC-DEV-01-S06-C01` e `FIC-DEV-01-S02-C01`: conferir marca, modelo, voltagem e dimensões com a ficha técnica; uma peça incompatível pode ser devolvida em 30 dias se mantiver as condições originais |
 | «Posso receber em várias caixas?» | Rota de entrega: reformula a consulta e recupera `FIC-ENT-01-S05-C01` | Regra de entrega parcial com a fonte |
 
 Na primeira pergunta, o top-4 da ferramenta foi `FIC-DEV-01-S02-C01`, `FIC-DEV-01-S06-C01`, `FIC-GAR-01-S06-C01` e `FIC-GAR-01-S05-C01`. A seção 3 de `garantia.md` («Compatibilidade antes da instalação») não entrou no top-4.

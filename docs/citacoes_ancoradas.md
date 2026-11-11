@@ -62,9 +62,14 @@ A verificação exata e o NLI não foram afrouxados: continuam sendo a porta. A 
 | «O que a política de devoluções diz sobre peças danificadas?» | 2 `literal` (cobertura 1,0), uma só proposta, sem erros de verificação | Resumo da política com as fontes `FIC-DEV-01-S05-C01` e `FIC-DEV-01-S06-C01` | [rastros/r02_planejamento_llm.json](rastros/r02_planejamento_llm.json) |
 | A mesma pergunta dentro de uma mensagem com três pedidos | 1 `literal` (cobertura 1,0) | Resumo com a fonte `FIC-DEV-01-S05-C01` | [rastros/r02_planejamento_llm.json](rastros/r02_planejamento_llm.json) |
 | «Como se verifica a compatibilidade elétrica antes de instalar uma peça?» (índice em memória) | Uma proposta, sem erros de verificação | Resumo com a fonte `FIC-DEV-01-S06-C01` | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json) |
-| A mesma pergunta (índice salvo em disco) | Duas propostas: 2 `literal` (cobertura 1,0) e 1 `rejeitada` (`FIC-DEV-01-S02-C01`, cobertura 0,474) | Só a citação textual, sem resumo (degradação extrativa) | [rastros/r22_indice_existente.json](rastros/r22_indice_existente.json) |
+| A mesma pergunta (índice salvo em disco) | Quatro citações registradas, nesta ordem: `FIC-DEV-01-S06-C01` `literal` (cobertura 1,0), `FIC-DEV-01-S02-C01` `rejeitada` (cobertura 0,71), `FIC-DEV-01-S06-C01` `literal` (1,0) e `FIC-DEV-01-S02-C01` `literal` (1,0) | Resumo do modelo com as fontes `FIC-DEV-01-S06-C01` e `FIC-DEV-01-S02-C01` | [rastros/r22_indice_existente.json](rastros/r22_indice_existente.json) |
 
-Resposta publicada na última linha, com o texto literal de `knowledge/politicas_demo/devolucoes.md`:
+Resposta publicada na última linha (resumo do modelo, verificado):
+
+> Política fictícia de demonstração. Antes de selecionar uma peça para instalação, deve-se conferir a marca, modelo, voltagem e dimensões com a ficha técnica para assegurar a compatibilidade elétrica. Uma peça incompatível pode ser devolvida dentro de 30 dias se mantiver suas condições originais, incluindo não mostrar marcas de montagem ou conexões elétricas usadas.
+> Fontes: FIC-DEV-01-S06-C01, FIC-DEV-01-S02-C01
+
+A degradação extrativa não aparece neste rastro. Ela foi observada na execução anterior do mesmo script, em português (2026-11-11T17:20:51 UTC), com uma citação de `FIC-DEV-01-S02-C01` rejeitada (cobertura 0,474). Essa execução foi substituída pela atual e só está no histórico do git (commit `c92ba32`). A resposta publicada naquela execução foi:
 
 > Política fictícia de demonstração. Não consegui verificar um resumo próprio, então cito o texto literal da fonte:
 > - «Antes de selecionar uma peça, o usuário deve conferir marca, modelo, voltagem e dimensões com a ficha técnica fictícia. Uma compra simulada de uma peça incompatível, ainda sem instalar, pode seguir o procedimento de devolução de 30 dias se conserva suas condições originais.» [FIC-DEV-01-S06-C01]
@@ -80,7 +85,7 @@ Resposta publicada na última linha, com o texto literal de `knowledge/politicas
 ## 6. Limitações
 
 - Uma execução antes e outra depois não medem uma taxa de sucesso; a medição corresponde a R29.
-- A degradação extrativa está testada com duplos e foi observada uma vez com o modelo real (rastro R22). O estado `reancorada` só foi observado com o modelo real na versão anterior, em espanhol; nas execuções em português todas as citações aceitas foram `literal`.
+- A degradação extrativa está testada com duplos. Com o modelo real foi observada uma vez, em uma execução anterior de R22 em português que foi substituída (só está no histórico do git, commit `c92ba32`). No rastro R22 salvo hoje ela não ocorre: o resumo do modelo foi publicado. O estado `reancorada` só foi observado com o modelo real na versão anterior, em espanhol; nas execuções em português todas as citações aceitas foram `literal`.
 - O limiar de 80 % foi fixado por critério, sem calibração com dados.
 - O modelo NLI aceita 512 tokens: com várias citações longas a premissa é truncada (observou-se um aviso de 539 tokens na execução em português de R02; na versão anterior, em espanhol, de 652 tokens).
 - Quando este diagnóstico foi escrito, uma solicitação mista em um só turno não era publicada; isso foi resolvido depois com o planejador de turno (R02).
