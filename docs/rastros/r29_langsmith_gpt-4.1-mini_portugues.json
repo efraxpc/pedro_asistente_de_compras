@@ -1,0 +1,860 @@
+{
+  "data_utc": "2026-11-11T17:21:30.074793+00:00",
+  "modo": "real",
+  "modelo_llm": "gpt-4.1-mini",
+  "rotulo": "portugues",
+  "memoria": "nova para este experimento",
+  "experimento_langsmith": "pedro-infnet-fluxo-gpt-4.1-mini-portugues-235aa9f1",
+  "dataset_langsmith": "pedro-infnet-casos-derivados-efff08ab",
+  "dataset_id": "40a9dc8f-d897-4e1f-92f8-0f66604dcef6",
+  "resumo": {
+    "vencedor": {
+      "acertos": 14,
+      "total": 14,
+      "taxa": 1.0
+    },
+    "valor": {
+      "acertos": 14,
+      "total": 14,
+      "taxa": 1.0
+    },
+    "trajetoria": {
+      "acertos": 26,
+      "total": 30,
+      "taxa": 0.8666666666666667
+    },
+    "ferramenta_decisiva": {
+      "acertos": 23,
+      "total": 23,
+      "taxa": 1.0
+    },
+    "primeira_proposta": {
+      "acertos": 24,
+      "total": 24,
+      "taxa": 1.0
+    },
+    "conteudo": {
+      "acertos": 16,
+      "total": 16,
+      "taxa": 1.0
+    }
+  },
+  "por_grupo": {
+    "recomendacao": {
+      "vencedor": "14/14",
+      "valor": "14/14",
+      "trajetoria": "10/14",
+      "ferramenta_decisiva": "14/14",
+      "primeira_proposta": "14/14"
+    },
+    "esclarecimento": {
+      "conteudo": "4/4",
+      "trajetoria": "4/4",
+      "primeira_proposta": "1/1"
+    },
+    "sem_oferta": {
+      "conteudo": "5/5",
+      "trajetoria": "5/5",
+      "ferramenta_decisiva": "5/5",
+      "primeira_proposta": "5/5"
+    },
+    "politica_sem_indice": {
+      "conteudo": "2/2",
+      "trajetoria": "2/2",
+      "ferramenta_decisiva": "2/2",
+      "primeira_proposta": "2/2"
+    },
+    "cep": {
+      "conteudo": "2/2",
+      "trajetoria": "2/2",
+      "ferramenta_decisiva": "2/2",
+      "primeira_proposta": "2/2"
+    },
+    "catalogo": {
+      "conteudo": "3/3",
+      "trajetoria": "3/3"
+    }
+  },
+  "casos": [
+    {
+      "caso_id": "rec-09",
+      "pergunta": "Compare 2 unidades de PEC-11-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba1-0e83-7bb5-bb1c-4d5773e5b9f3",
+      "saida": {
+        "resposta": "Atlantic Repair Parts: R$ 619,38 para 2 unidades; prazo de 29 dias.\n- Atlantic Repair Parts (internacional): R$ 619,38; atende [PEC-11-0001-INT-06]\n- Casa Técnica Brasil (nacional): R$ 1.970,38; atende [PEC-11-0001-BR-04]\n- CentroPeças (nacional): R$ 1.179,23; descartada por estoque [PEC-11-0001-BR-06]\nHistórico de preços (informativo; não muda a recomendação):\n- Atlantic Repair Parts: hoje R$ 97,40 por unidade; mês anterior R$ 111,90 (-13 %); média de 5 meses R$ 103,63 (-6 %).\n- Casa Técnica Brasil: hoje R$ 976,71 por unidade; mês anterior R$ 1.262,04 (-23 %); média de 5 meses R$ 1.110,59 (-12 %); é o seu preço mais baixo do período.\nFontes: PEC-11-0001-INT-06, PEC-11-0001-BR-04, PEC-11-0001-BR-06",
+        "ferramentas": [
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 0,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "esc-23",
+      "pergunta": "Quero comparar ofertas, mas ainda não sei a peça nem a quantidade.",
+      "grupo": "esclarecimento",
+      "run_id": "01a1cba1-40b6-7fd9-8d69-7c6777726fb6",
+      "saida": {
+        "resposta": "De qual peça você precisa? Indique o ID ou SKU.",
+        "ferramentas": [],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "esclarecimento",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": null,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "sem-16",
+      "pergunta": "Compare 1000 unidades de PEC-02-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "sem_oferta",
+      "run_id": "01a1cba1-4964-72ff-ac41-665332cb597b",
+      "saida": {
+        "resposta": "Nenhuma oferta atende às restrições indicadas.\n- Brava Peças (nacional): R$ 117.107,49; descartada por estoque, orçamento [PEC-02-0001-BR-01]\n- Norte Reposição (nacional): R$ 893.991,31; descartada por estoque, orçamento [PEC-02-0001-BR-03]\n- Global Fix México (internacional): R$ 918.589,08; descartada por estoque, orçamento [PEC-02-0001-INT-05]\nFontes: PEC-02-0001-BR-01, PEC-02-0001-BR-03, PEC-02-0001-INT-05",
+        "ferramentas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "sem_oferta",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "rec-02",
+      "pergunta": "Compare 2 unidades de PEC-02-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba1-739b-737c-b424-82f1173fbae1",
+      "saida": {
+        "resposta": "Brava Peças: R$ 311,55 para 2 unidades; prazo de 8 dias.\n- Brava Peças (nacional): R$ 311,55; atende [PEC-02-0001-BR-01]\n- Global Fix México (internacional): R$ 2.075,78; atende [PEC-02-0001-INT-05]\n- Norte Reposição (nacional): R$ 1.839,19; descartada por estoque [PEC-02-0001-BR-03]\nHistórico de preços (informativo; não muda a recomendação):\n- Brava Peças: hoje R$ 117,03 por unidade; mês anterior R$ 120,58 (-3 %); média de 5 meses R$ 119,16 (-2 %).\n- Global Fix México: hoje R$ 918,35 por unidade; mês anterior R$ 822,55 (+12 %); média de 5 meses R$ 763,45 (+20 %); é o seu preço mais alto do período.\nFontes: PEC-02-0001-BR-01, PEC-02-0001-INT-05, PEC-02-0001-BR-03",
+        "ferramentas": [
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 0,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "rec-12",
+      "pergunta": "Compare 2 unidades de PEC-04-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba1-9808-7706-88e6-430db4bd3c10",
+      "saida": {
+        "resposta": "Atlantic Repair Parts: R$ 1.721,00 para 2 unidades; prazo de 33 dias.\n- Atlantic Repair Parts (internacional): R$ 1.721,00; atende [PEC-04-0002-INT-06]\n- Litoral Parts (nacional): R$ 1.729,25; descartada por pedido mínimo (5 unidades) [PEC-04-0002-BR-05]\n- Casa Técnica Brasil (nacional): R$ 1.995,30; descartada por pedido mínimo (5 unidades) [PEC-04-0002-BR-04]\nHistórico de preços (informativo; não muda a recomendação):\n- Atlantic Repair Parts: hoje R$ 708,65 por unidade; mês anterior R$ 678,50 (+4 %); média de 5 meses R$ 734,28 (-3 %).\nFontes: PEC-04-0002-INT-06, PEC-04-0002-BR-05, PEC-04-0002-BR-04",
+        "ferramentas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "pol-30",
+      "pergunta": "Existe política de trocas?",
+      "grupo": "politica_sem_indice",
+      "run_id": "01a1cba1-c367-7a9b-a599-7fdb9d46dcea",
+      "saida": {
+        "resposta": "Não posso confirmar a resposta com as fontes disponíveis.",
+        "ferramentas": [
+          "consultar_politicas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "sem_evidencia",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "rec-13",
+      "pergunta": "Compare 2 unidades de PEC-05-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba1-cf9b-7d8d-8fd6-249f600be7b6",
+      "saida": {
+        "resposta": "Global Fix México: R$ 1.172,38 para 2 unidades; prazo de 40 dias.\n- Global Fix México (internacional): R$ 1.172,38; atende [PEC-05-0002-INT-05]\n- Casa Técnica Brasil (nacional): R$ 312,62; descartada por estoque [PEC-05-0002-BR-04]\n- CentroPeças (nacional): R$ 530,41; descartada por estoque [PEC-05-0002-BR-06]\nHistórico de preços (informativo; não muda a recomendação):\n- Global Fix México: hoje R$ 332,55 por unidade; mês anterior R$ 404,35 (-18 %); média de 5 meses R$ 371,08 (-10 %).\nConselho sobre o preço (redigido pelo modelo e verificado): O preço de Global Fix México está 10 % abaixo da sua média de 5 meses.\nFontes: PEC-05-0002-INT-05, PEC-05-0002-BR-04, PEC-05-0002-BR-06",
+        "ferramentas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "rec-07",
+      "pergunta": "Compare 2 unidades de PEC-09-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba2-05cc-79f7-aa79-ae65118faa44",
+      "saida": {
+        "resposta": "Brava Peças: R$ 523,31 para 2 unidades; prazo de 9 dias.\n- Brava Peças (nacional): R$ 523,31; atende [PEC-09-0001-BR-01]\n- Norte Reposição (nacional): R$ 1.349,36; atende [PEC-09-0001-BR-03]\n- TecnoParts Italia (internacional): R$ 2.450,02; descartada por pedido mínimo (5 unidades) [PEC-09-0001-INT-03]\nHistórico de preços (informativo; não muda a recomendação):\n- Brava Peças: hoje R$ 244,12 por unidade; mês anterior R$ 298,68 (-18 %); média de 5 meses R$ 308,45 (-21 %); é o seu preço mais baixo do período.\n- Norte Reposição: hoje R$ 626,58 por unidade; mês anterior R$ 645,56 (-3 %); média de 5 meses R$ 624,05 (igual).\nAviso de preço: O preço de Brava Peças está 21 % abaixo da sua média de 5 meses e é o mais baixo do período.\nFontes: PEC-09-0001-BR-01, PEC-09-0001-BR-03, PEC-09-0001-INT-03",
+        "ferramentas": [
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 0,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "rec-11",
+      "pergunta": "Compare 2 unidades de PEC-03-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba2-38f3-7efb-96cf-bfc47b49c1a8",
+      "saida": {
+        "resposta": "Brava Peças: R$ 792,35 para 2 unidades; prazo de 11 dias.\n- Brava Peças (nacional): R$ 792,35; atende [PEC-03-0002-BR-01]\n- Pacific Appliance Supply (internacional): R$ 1.477,02; descartada por estoque [PEC-03-0002-INT-04]\n- CentroPeças (nacional): R$ 2.433,36; descartada por estoque, pedido mínimo (5 unidades) [PEC-03-0002-BR-06]\nHistórico de preços (informativo; não muda a recomendação):\n- Brava Peças: hoje R$ 370,64 por unidade; mês anterior R$ 366,65 (+1 %); média de 5 meses R$ 376,22 (-1 %).\nFontes: PEC-03-0002-BR-01, PEC-03-0002-INT-04, PEC-03-0002-BR-06",
+        "ferramentas": [
+          "consultar_catalogo",
+          "buscar_produtos",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "cep-28",
+      "pergunta": "A qual cidade corresponde 01001000?",
+      "grupo": "cep",
+      "run_id": "01a1cba2-5fbd-74e3-8e95-76682dd8e777",
+      "saida": {
+        "resposta": "CEP 01001000: São Paulo/SP (ViaCEP, modo real).",
+        "ferramentas": [
+          "consultar_cep"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "cep",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "sem-15",
+      "pergunta": "Compare 1000 unidades de PEC-01-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "sem_oferta",
+      "run_id": "01a1cba2-7345-7978-9a1a-ba5c9ffada0f",
+      "saida": {
+        "resposta": "Nenhuma oferta atende às restrições indicadas.\n- Litoral Parts (nacional): R$ 370.279,40; descartada por estoque, orçamento [PEC-01-0001-BR-05]\n- Atlantic Repair Parts (internacional): R$ 1.381.987,17; descartada por estoque, orçamento [PEC-01-0001-INT-06]\n- CentroPeças (nacional): R$ 1.439.005,23; descartada por estoque, orçamento [PEC-01-0001-BR-06]\nFontes: PEC-01-0001-BR-05, PEC-01-0001-INT-06, PEC-01-0001-BR-06",
+        "ferramentas": [
+          "consultar_catalogo",
+          "buscar_produtos",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "sem_oferta",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "rec-04",
+      "pergunta": "Compare 2 unidades de PEC-04-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba2-978b-7baa-a570-c7101a4818d1",
+      "saida": {
+        "resposta": "Brava Peças: R$ 1.140,09 para 2 unidades; prazo de 4 dias.\n- Brava Peças (nacional): R$ 1.140,09; atende [PEC-04-0001-BR-01]\n- North Parts Trading (internacional): R$ 1.412,98; atende [PEC-04-0001-INT-01]\n- Casa Técnica Brasil (nacional): R$ 2.220,87; descartada por estoque, pedido mínimo (5 unidades) [PEC-04-0001-BR-04]\nHistórico de preços (informativo; não muda a recomendação):\n- Brava Peças: hoje R$ 515,65 por unidade; mês anterior R$ 468,77 (+10 %); média de 5 meses R$ 517,73 (igual).\n- North Parts Trading: hoje R$ 523,55 por unidade; mês anterior R$ 579,25 (-10 %); média de 5 meses R$ 551,40 (-5 %).\nFontes: PEC-04-0001-BR-01, PEC-04-0001-INT-01, PEC-04-0001-BR-04",
+        "ferramentas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "sem-17",
+      "pergunta": "Compare 2 unidades de PEC-06-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "sem_oferta",
+      "run_id": "01a1cba2-bfd2-778e-a155-3754c1a33eb7",
+      "saida": {
+        "resposta": "Nenhuma oferta atende às restrições indicadas.\n- TecnoParts Italia (internacional): R$ 862,82; descartada por estoque [PEC-06-0001-INT-03]\n- Casa Técnica Brasil (nacional): R$ 877,79; descartada por pedido mínimo (5 unidades) [PEC-06-0001-BR-04]\n- Sul Componentes (nacional): R$ 1.418,25; descartada por estoque, pedido mínimo (5 unidades) [PEC-06-0001-BR-02]\nFontes: PEC-06-0001-INT-03, PEC-06-0001-BR-04, PEC-06-0001-BR-02",
+        "ferramentas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "sem_oferta",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "cat-26",
+      "pergunta": "ficha PEC-01-0001",
+      "grupo": "catalogo",
+      "run_id": "01a1cba2-ee3c-78be-baf6-315a3b649e9f",
+      "saida": {
+        "resposta": "Compressor para Geladeiras GELA-COMP-0001 (PEC-01-0001, SKU GELA-COMP-0001). Peça fictícia de reposição para geladeiras; confira o modelo compatível. Compatibilidade fictícia: Brisa GEL-3742, Domus GEL-5724, Solare GEL-1434",
+        "ferramentas": [],
+        "verificacoes": []
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": null,
+        "primeira_proposta": null
+      }
+    },
+    {
+      "caso_id": "rec-08",
+      "pergunta": "Compare 2 unidades de PEC-10-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba2-ee63-76fb-9f55-047da2f635d1",
+      "saida": {
+        "resposta": "Casa Técnica Brasil: R$ 958,03 para 2 unidades; prazo de 2 dias.\n- Casa Técnica Brasil (nacional): R$ 958,03; atende [PEC-10-0001-BR-04]\n- North Parts Trading (internacional): R$ 1.940,58; atende [PEC-10-0001-INT-01]\n- Sul Componentes (nacional): R$ 2.330,78; descartada por estoque, pedido mínimo (5 unidades) [PEC-10-0001-BR-02]\nHistórico de preços (informativo; não muda a recomendação):\n- Casa Técnica Brasil: hoje R$ 436,42 por unidade; mês anterior R$ 411,94 (+6 %); média de 5 meses R$ 402,97 (+8 %).\n- North Parts Trading: hoje R$ 716,05 por unidade; mês anterior R$ 811,55 (-12 %); média de 5 meses R$ 755,84 (-5 %).\nFontes: PEC-10-0001-BR-04, PEC-10-0001-INT-01, PEC-10-0001-BR-02",
+        "ferramentas": [
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 0,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "cep-27",
+      "pergunta": "Consulte o CEP 01001000",
+      "grupo": "cep",
+      "run_id": "01a1cba3-1162-7d2b-b427-84c1e0054a4f",
+      "saida": {
+        "resposta": "CEP 01001000: São Paulo/SP (ViaCEP, modo real).",
+        "ferramentas": [
+          "consultar_cep"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "cep",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "cat-25",
+      "pergunta": "lista peças página 2",
+      "grupo": "catalogo",
+      "run_id": "01a1cba3-1cf8-7c08-a4e4-74e2ff0b5b46",
+      "saida": {
+        "resposta": "Peças do cenário (2640; página 2):\n- PEC-01-0021 · GELA-COMP-0021 · Compressor para Geladeiras GELA-COMP-0021\n- PEC-01-0022 · GELA-TERM-0022 · Termostato para Geladeiras GELA-TERM-0022\n- PEC-01-0023 · GELA-EVAP-0023 · Evaporador para Geladeiras GELA-EVAP-0023\n- PEC-01-0024 · GELA-COND-0024 · Condensador para Geladeiras GELA-COND-0024\n- PEC-01-0025 · GELA-PLAC-0025 · Placa para Geladeiras GELA-PLAC-0025\n- PEC-01-0026 · GELA-SENS-0026 · Sensor para Geladeiras GELA-SENS-0026\n- PEC-01-0027 · GELA-PORT-0027 · Porta para Geladeiras GELA-PORT-0027\n- PEC-01-0028 · GELA-VEDA-0028 · Vedação para Geladeiras GELA-VEDA-0028\n- PEC-01-0029 · GELA-VENT-0029 · Ventilador para Geladeiras GELA-VENT-0029\n- PEC-01-0030 · GELA-FILT-0030 · Filtro para Geladeiras GELA-FILT-0030\n- PEC-01-0031 · GELA-COMP-0031 · Compressor para Geladeiras GELA-COMP-0031\n- PEC-01-0032 · GELA-TERM-0032 · Termostato para Geladeiras GELA-TERM-0032\n- PEC-01-0033 · GELA-EVAP-0033 · Evaporador para Geladeiras GELA-EVAP-0033\n- PEC-01-0034 · GELA-COND-0034 · Condensador para Geladeiras GELA-COND-0034\n- PEC-01-0035 · GELA-PLAC-0035 · Placa para Geladeiras GELA-PLAC-0035\n- PEC-01-0036 · GELA-SENS-0036 · Sensor para Geladeiras GELA-SENS-0036\n- PEC-01-0037 · GELA-PORT-0037 · Porta para Geladeiras GELA-PORT-0037\n- PEC-01-0038 · GELA-VEDA-0038 · Vedação para Geladeiras GELA-VEDA-0038\n- PEC-01-0039 · GELA-VENT-0039 · Ventilador para Geladeiras GELA-VENT-0039\n- PEC-01-0040 · GELA-FILT-0040 · Filtro para Geladeiras GELA-FILT-0040",
+        "ferramentas": [],
+        "verificacoes": []
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": null,
+        "primeira_proposta": null
+      }
+    },
+    {
+      "caso_id": "pol-29",
+      "pergunta": "O que diz a política de devoluções?",
+      "grupo": "politica_sem_indice",
+      "run_id": "01a1cba3-1d14-79a1-91e7-c1036e1c97f1",
+      "saida": {
+        "resposta": "Não posso confirmar a resposta com as fontes disponíveis.",
+        "ferramentas": [
+          "consultar_politicas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "sem_evidencia",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "esc-21",
+      "pergunta": "Compare PEC-02-0001 com orçamento R$ 100000 e prazo 60 dias.",
+      "grupo": "esclarecimento",
+      "run_id": "01a1cba3-24a4-7dbe-855a-69cff869dc67",
+      "saida": {
+        "resposta": "De quantas unidades de PEC-02-0001 você precisa? Posso comparar sem orçamento ou prazo máximo se você não tiver esses limites.",
+        "ferramentas": [],
+        "verificacoes": []
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": null,
+        "primeira_proposta": null
+      }
+    },
+    {
+      "caso_id": "rec-05",
+      "pergunta": "Compare 2 unidades de PEC-05-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba3-27b9-7010-b0c2-f8dd7c8bf676",
+      "saida": {
+        "resposta": "Brava Peças: R$ 715,45 para 2 unidades; prazo de 5 dias.\n- Brava Peças (nacional): R$ 715,45; atende [PEC-05-0001-BR-01]\n- Sul Componentes (nacional): R$ 1.069,98; atende [PEC-05-0001-BR-02]\n- North Parts Trading (internacional): R$ 2.740,98; descartada por pedido mínimo (5 unidades) [PEC-05-0001-INT-01]\nHistórico de preços (informativo; não muda a recomendação):\n- Brava Peças: hoje R$ 331,80 por unidade; mês anterior R$ 304,15 (+9 %); média de 5 meses R$ 355,30 (-7 %).\n- Sul Componentes: hoje R$ 518,34 por unidade; mês anterior R$ 626,83 (-17 %); média de 5 meses R$ 605,13 (-14 %); é o seu preço mais baixo do período.\nFontes: PEC-05-0001-BR-01, PEC-05-0001-BR-02, PEC-05-0001-INT-01",
+        "ferramentas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "sem-18",
+      "pergunta": "Compare 2 unidades de PEC-08-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "sem_oferta",
+      "run_id": "01a1cba3-4ba8-71e7-8de3-a5fcfc4b97e2",
+      "saida": {
+        "resposta": "Nenhuma oferta atende às restrições indicadas.\n- Litoral Parts (nacional): R$ 1.755,58; descartada por pedido mínimo (5 unidades) [PEC-08-0001-BR-05]\n- Sul Componentes (nacional): R$ 2.469,72; descartada por pedido mínimo (5 unidades) [PEC-08-0001-BR-02]\n- EuroSpare Components (internacional): R$ 2.705,51; descartada por estoque [PEC-08-0001-INT-02]\nFontes: PEC-08-0001-BR-05, PEC-08-0001-BR-02, PEC-08-0001-INT-02",
+        "ferramentas": [
+          "comparar_ofertas",
+          "consultar_catalogo"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "sem_oferta",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "rec-10",
+      "pergunta": "Compare 2 unidades de PEC-02-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba3-785f-76c1-a434-236147ebe2ba",
+      "saida": {
+        "resposta": "EuroSpare Components: R$ 1.127,77 para 2 unidades; prazo de 41 dias.\n- EuroSpare Components (internacional): R$ 1.127,77; atende [PEC-02-0002-INT-02]\n- Norte Reposição (nacional): R$ 2.300,66; atende [PEC-02-0002-BR-03]\n- Litoral Parts (nacional): R$ 197,23; descartada por estoque [PEC-02-0002-BR-05]\nHistórico de preços (informativo; não muda a recomendação):\n- EuroSpare Components: hoje R$ 329,88 por unidade; mês anterior R$ 364,62 (-10 %); média de 5 meses R$ 349,34 (-6 %).\n- Norte Reposição: hoje R$ 1.103,71 por unidade; mês anterior R$ 1.344,75 (-18 %); média de 5 meses R$ 1.189,98 (-7 %).\nFontes: PEC-02-0002-INT-02, PEC-02-0002-BR-03, PEC-02-0002-BR-05",
+        "ferramentas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "sem-19",
+      "pergunta": "Compare 2 unidades de PEC-01-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "sem_oferta",
+      "run_id": "01a1cba3-a66d-7e45-9a32-59b04734a93d",
+      "saida": {
+        "resposta": "Nenhuma oferta atende às restrições indicadas.\n- Casa Técnica Brasil (nacional): R$ 195,47; descartada por estoque [PEC-01-0002-BR-04]\n- Brava Peças (nacional): R$ 1.718,52; descartada por pedido mínimo (5 unidades) [PEC-01-0002-BR-01]\n- North Parts Trading (internacional): R$ 2.174,28; descartada por estoque, pedido mínimo (5 unidades) [PEC-01-0002-INT-01]\nFontes: PEC-01-0002-BR-04, PEC-01-0002-BR-01, PEC-01-0002-INT-01",
+        "ferramentas": [
+          "consultar_catalogo",
+          "buscar_produtos",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "sem_oferta",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "rec-14",
+      "pergunta": "Compare 2 unidades de PEC-06-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba3-cbbd-7b4d-95d5-9c09f09fcafe",
+      "saida": {
+        "resposta": "Casa Técnica Brasil: R$ 3.059,46 para 2 unidades; prazo de 9 dias.\n- Casa Técnica Brasil (nacional): R$ 3.059,46; atende [PEC-06-0002-BR-04]\n- EuroSpare Components (internacional): R$ 327,18; descartada por estoque, pedido mínimo (5 unidades) [PEC-06-0002-INT-02]\n- Sul Componentes (nacional): R$ 1.101,76; descartada por pedido mínimo (5 unidades) [PEC-06-0002-BR-02]\nHistórico de preços (informativo; não muda a recomendação):\n- Casa Técnica Brasil: hoje R$ 1.486,24 por unidade; mês anterior R$ 1.446,07 (+3 %); média de 5 meses R$ 1.296,11 (+15 %); é o seu preço mais alto do período.\nConselho sobre o preço (redigido pelo modelo e verificado): O preço de Casa Técnica Brasil está 15 % acima da sua média de 5 meses e é o mais alto do período.\nFontes: PEC-06-0002-BR-04, PEC-06-0002-INT-02, PEC-06-0002-BR-02",
+        "ferramentas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "esc-20",
+      "pergunta": "Quero PEC-01-0001.",
+      "grupo": "esclarecimento",
+      "run_id": "01a1cba4-0466-7da3-a6b2-9c4f9fa79c69",
+      "saida": {
+        "resposta": "De quantas unidades de PEC-01-0001 você precisa? Posso comparar sem orçamento ou prazo máximo se você não tiver esses limites.",
+        "ferramentas": [],
+        "verificacoes": []
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": null,
+        "primeira_proposta": null
+      }
+    },
+    {
+      "caso_id": "rec-06",
+      "pergunta": "Compare 2 unidades de PEC-07-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba4-06f4-7d8c-8950-53dcd462bb77",
+      "saida": {
+        "resposta": "Casa Técnica Brasil: R$ 1.653,94 para 2 unidades; prazo de 9 dias.\n- Casa Técnica Brasil (nacional): R$ 1.653,94; atende [PEC-07-0001-BR-04]\n- Sul Componentes (nacional): R$ 2.240,03; atende [PEC-07-0001-BR-02]\n- Pacific Appliance Supply (internacional): R$ 2.801,34; descartada por pedido mínimo (5 unidades) [PEC-07-0001-INT-04]\nHistórico de preços (informativo; não muda a recomendação):\n- Casa Técnica Brasil: hoje R$ 774,74 por unidade; mês anterior R$ 757,13 (+2 %); média de 5 meses R$ 838,13 (-8 %).\n- Sul Componentes: hoje R$ 1.086,72 por unidade; mês anterior R$ 952,28 (+14 %); média de 5 meses R$ 1.044,14 (+4 %).\nFontes: PEC-07-0001-BR-04, PEC-07-0001-BR-02, PEC-07-0001-INT-04",
+        "ferramentas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "rec-01",
+      "pergunta": "Compare 2 unidades de PEC-01-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba4-3012-7e29-b5e5-ada230056c33",
+      "saida": {
+        "resposta": "Atlantic Repair Parts: R$ 3.200,27 para 2 unidades; prazo de 35 dias.\n- Atlantic Repair Parts (internacional): R$ 3.200,27; atende [PEC-01-0001-INT-06]\n- Litoral Parts (nacional): R$ 819,80; descartada por estoque, pedido mínimo (5 unidades) [PEC-01-0001-BR-05]\n- CentroPeças (nacional): R$ 2.963,07; descartada por pedido mínimo (5 unidades) [PEC-01-0001-BR-06]\nHistórico de preços (informativo; não muda a recomendação):\n- Atlantic Repair Parts: hoje R$ 1.381,55 por unidade; mês anterior R$ 1.466,10 (-6 %); média de 5 meses R$ 1.454,84 (-5 %).\nFontes: PEC-01-0001-INT-06, PEC-01-0001-BR-05, PEC-01-0001-BR-06",
+        "ferramentas": [
+          "consultar_catalogo",
+          "buscar_produtos",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "esc-22",
+      "pergunta": "Preciso de 2 peças de reposição com orçamento R$ 100000 e prazo 60 dias. Qual peça?",
+      "grupo": "esclarecimento",
+      "run_id": "01a1cba4-5bec-7596-be2a-b9dd34a499ea",
+      "saida": {
+        "resposta": "De qual peça você precisa? Indique o ID ou SKU; posso buscá-la pelo nome.",
+        "ferramentas": [],
+        "verificacoes": []
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": null,
+        "primeira_proposta": null
+      }
+    },
+    {
+      "caso_id": "rec-03",
+      "pergunta": "Compare 2 unidades de PEC-03-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
+      "grupo": "recomendacao",
+      "run_id": "01a1cba4-5f7c-71e8-8756-3317563cf540",
+      "saida": {
+        "resposta": "Casa Técnica Brasil: R$ 2.546,74 para 2 unidades; prazo de 7 dias.\n- Casa Técnica Brasil (nacional): R$ 2.546,74; atende [PEC-03-0001-BR-04]\n- Norte Reposição (nacional): R$ 2.735,10; atende [PEC-03-0001-BR-03]\n- EuroSpare Components (internacional): R$ 716,33; descartada por pedido mínimo (5 unidades) [PEC-03-0001-INT-02]\nHistórico de preços (informativo; não muda a recomendação):\n- Casa Técnica Brasil: hoje R$ 1.228,00 por unidade; mês anterior R$ 1.425,61 (-14 %); média de 5 meses R$ 1.465,13 (-16 %); é o seu preço mais baixo do período.\n- Norte Reposição: hoje R$ 1.345,52 por unidade; mês anterior R$ 1.373,84 (-2 %); média de 5 meses R$ 1.410,67 (-5 %).\nConselho sobre o preço (redigido pelo modelo e verificado): O preço de Casa Técnica Brasil está 16 % abaixo da sua média de 5 meses e é o mais baixo do período. Norte Reposição custa 7 % a mais que a recomendada e está em linha com a sua média de 5 meses.\nFontes: PEC-03-0001-BR-04, PEC-03-0001-BR-03, PEC-03-0001-INT-02",
+        "ferramentas": [
+          "consultar_catalogo",
+          "buscar_produtos",
+          "comparar_ofertas"
+        ],
+        "verificacoes": [
+          {
+            "tentativa": 1,
+            "estado": "recomendacao",
+            "erros": []
+          }
+        ]
+      },
+      "scores": {
+        "conteudo": null,
+        "vencedor": 1,
+        "valor": 1,
+        "trajetoria": 1,
+        "ferramenta_decisiva": 1,
+        "primeira_proposta": 1
+      }
+    },
+    {
+      "caso_id": "cat-24",
+      "pergunta": "lista peças",
+      "grupo": "catalogo",
+      "run_id": "01a1cba4-9de9-7329-8230-ae8dd2f476d4",
+      "saida": {
+        "resposta": "Peças do cenário (2640; página 1):\n- PEC-01-0001 · GELA-COMP-0001 · Compressor para Geladeiras GELA-COMP-0001\n- PEC-01-0002 · GELA-TERM-0002 · Termostato para Geladeiras GELA-TERM-0002\n- PEC-01-0003 · GELA-EVAP-0003 · Evaporador para Geladeiras GELA-EVAP-0003\n- PEC-01-0004 · GELA-COND-0004 · Condensador para Geladeiras GELA-COND-0004\n- PEC-01-0005 · GELA-PLAC-0005 · Placa para Geladeiras GELA-PLAC-0005\n- PEC-01-0006 · GELA-SENS-0006 · Sensor para Geladeiras GELA-SENS-0006\n- PEC-01-0007 · GELA-PORT-0007 · Porta para Geladeiras GELA-PORT-0007\n- PEC-01-0008 · GELA-VEDA-0008 · Vedação para Geladeiras GELA-VEDA-0008\n- PEC-01-0009 · GELA-VENT-0009 · Ventilador para Geladeiras GELA-VENT-0009\n- PEC-01-0010 · GELA-FILT-0010 · Filtro para Geladeiras GELA-FILT-0010\n- PEC-01-0011 · GELA-COMP-0011 · Compressor para Geladeiras GELA-COMP-0011\n- PEC-01-0012 · GELA-TERM-0012 · Termostato para Geladeiras GELA-TERM-0012\n- PEC-01-0013 · GELA-EVAP-0013 · Evaporador para Geladeiras GELA-EVAP-0013\n- PEC-01-0014 · GELA-COND-0014 · Condensador para Geladeiras GELA-COND-0014\n- PEC-01-0015 · GELA-PLAC-0015 · Placa para Geladeiras GELA-PLAC-0015\n- PEC-01-0016 · GELA-SENS-0016 · Sensor para Geladeiras GELA-SENS-0016\n- PEC-01-0017 · GELA-PORT-0017 · Porta para Geladeiras GELA-PORT-0017\n- PEC-01-0018 · GELA-VEDA-0018 · Vedação para Geladeiras GELA-VEDA-0018\n- PEC-01-0019 · GELA-VENT-0019 · Ventilador para Geladeiras GELA-VENT-0019\n- PEC-01-0020 · GELA-FILT-0020 · Filtro para Geladeiras GELA-FILT-0020",
+        "ferramentas": [],
+        "verificacoes": []
+      },
+      "scores": {
+        "conteudo": 1,
+        "vencedor": null,
+        "valor": null,
+        "trajetoria": 1,
+        "ferramenta_decisiva": null,
+        "primeira_proposta": null
+      }
+    }
+  ]
+}
