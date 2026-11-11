@@ -160,7 +160,7 @@ En clase, la anatomía general de un agente se describió con cuatro elementos �
 | **Base de conocimiento** | Datos estructurados: catálogo SQLite (2640 piezas, 7920 ofertas). Datos documentales: políticas indexadas en FAISS con metadatos y filtro por tema. | [catalog.py](../src/pedro/catalog.py); [policy_demo.py](../src/pedro/policy_demo.py); [knowledge/politicas_demo/](../knowledge/politicas_demo/) |
 | **Orquestrador** | LangChain: `create_openai_tools_agent` + `AgentExecutor` (máximo 6 iteraciones) envueltos en `RunnableWithMessageHistory`. | `crear_agente` y `crear_flujo` en [agent.py](../src/pedro/agent.py) |
 | **Puerta de publicación** | Verificación exacta (total, stock, presupuesto, plazo, IDs, procedencia) y NLI local triclase. Solo se muestra lo que pasa ambas. | [verification.py](../src/pedro/verification.py); [nli.py](../src/pedro/nli.py) |
-| **Interfaz** | Streamlit con vistas de Chat y Comparación sobre el mismo agente, memoria y verificador. | [app.py](../app.py) |
+| **Interfaz** | Streamlit con un chat sobre el mismo agente, memoria y verificador. | [app.py](../app.py) |
 
 ### 2. Arquitectura cognitiva y flujo general
 
@@ -1472,7 +1472,7 @@ Hay una función semántica de otro tipo dentro de `consultar_catalogo`: en preg
 | API | Tipo de uso | Por qué existe | Cómo se integra | Si falla |
 |---|---|---|---|---|
 | **ViaCEP** | Consulta de un dato público | Una compra necesita un destino; confirma ciudad y UF | Herramienta `consultar_cep`, llamada por *function calling*, con límite de 5 s | Devuelve `indisponible`; el agente no publica ciudad |
-| **OpenAI** | Razonamiento | Es el motor del agente: entiende la solicitud y elige herramientas | `ChatOpenAI` dentro del ejecutor | La app sigue en modo degradado: listado, ficha y comparación local |
+| **OpenAI** | Razonamiento | Es el motor del agente: entiende la solicitud y elige herramientas | `ChatOpenAI` dentro del ejecutor | La app sigue en modo degradado: listado y comparación en el chat, sin modelo |
 | **LangSmith** | Evaluación y trazas | Medir calidad y trayectoria (R29) | Solo desde el script de evaluación | No afecta al chat |
 
 ### 2. APIs internas
@@ -2012,14 +2012,13 @@ En la conversación de ocho turnos (R18):
 
 > ¿El alumno integró el agente completo a una interfaz Streamlit?
 
-**Respuesta corta.** Sí. [app.py](../app.py) es una interfaz Streamlit conectada al mismo agente, la misma memoria y el mismo verificador. Se ejecutó de verdad con el modelo real: cuatro turnos de chat, cambio de conversación y la vista de comparación, sin ninguna excepción.
+**Respuesta corta.** Sí. [app.py](../app.py) es una interfaz Streamlit conectada al mismo agente, la misma memoria y el mismo verificador. Se ejecutó de verdad con el modelo real: cuatro turnos de chat, nuevo chat y conversación reabierta, sin ninguna excepción.
 
 ### 1. La interfaz
 
 | Vista | Qué ofrece | Qué usa |
 |---|---|---|
 | **Chat** | Conversación con el agente | `crear_flujo`: agente, memoria, verificación y NLI |
-| **Comparación local** | Formulario: pieza, cantidad, presupuesto y plazo | El mismo cálculo y el mismo verificador que el agente |
 
 En la barra lateral: nuevo chat (misma base de datos, conversación nueva), nuevo escenario (otra copia del catálogo) y la lista de conversaciones para reabrirlas, cada una con el título de su primera pregunta.
 
@@ -2039,7 +2038,7 @@ Todo usa componentes nativos de Streamlit, sin CSS; los colores están en [.stre
 
 **Cómo llegan los datos a la pantalla.** El agente adjunta la comparación ya verificada al mensaje público (`mensaje_publico` en [agent.py](../src/pedro/agent.py), campo `additional_kwargs["partes"]`). La interfaz dibuja desde esos datos y nunca relee el texto para sacar cifras. Como viajan con el mensaje, al reabrir una conversación las tarjetas se vuelven a dibujar.
 
-La vista de solo navegación del catálogo se retiró el 2026-11-11: no usaba el agente. Las preguntas sobre el catálogo se hacen en el chat, donde las resuelve la herramienta `consultar_catalogo` (R17).
+La interfaz es solo el chat. Las vistas de catálogo y de comparación por formulario se retiraron el 2026-11-11 porque no usaban el agente: el catálogo se consulta en el chat con la herramienta `consultar_catalogo` (R17) y la comparación se pide en el chat, con o sin modelo.
 
 ### 2. Es el mismo agente
 
@@ -2063,9 +2062,8 @@ La app se ejecutó con `AppTest`, la herramienta de pruebas de Streamlit: corre 
 | Chat: «¿Se puede mandar en varias cajas?» | Regla de entrega parcial, con su fuente. Paso: busqué en las políticas |
 | Botón «Nuevo chat» | Sesión distinta y pantalla vacía |
 | Reabrir la conversación anterior | Vuelven sus 8 mensajes y se redibujan las 8 tarjetas |
-| Vista «Comparación local»: PEC-01-0001, 6 unidades | Tarjetas: CentroPeças, R$ 8.718,75, 2 días, Nacional; tabla con las 3 ofertas |
 
-Dos comprobaciones salen de esa tabla: **la memoria funciona en la interfaz** (el segundo turno depende del primero y la conversación se puede reabrir) y **el chat y el formulario dan el mismo importe** para la misma compra, R$ 8.718,75, porque comparten cálculo y verificador.
+De esa tabla sale una comprobación: **la memoria funciona en la interfaz**. El segundo turno depende del primero y la conversación se puede reabrir con sus tarjetas.
 
 ### 4. Funciona sin credenciales
 
@@ -2077,11 +2075,11 @@ Sin `OPENAI_API_KEY` la interfaz no se rompe: lista piezas, muestra fichas, comp
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| `app.py` ejecutada: cuatro turnos, nuevo chat, conversación reabierta y las dos vistas | [trazas/r28_streamlit.json](trazas/r28_streamlit.json); [scripts/demostrar_r28.py](../scripts/demostrar_r28.py) | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
+| `app.py` ejecutada: cuatro turnos, nuevo chat, conversación reabierta | [trazas/r28_streamlit.json](trazas/r28_streamlit.json); [scripts/demostrar_r28.py](../scripts/demostrar_r28.py) | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
 | Interfaz ejecutable | `uv run streamlit run app.py` o `./project.sh start` | Aplicación |
 | Capturas en navegador: chat con el agente y chat sin clave | [capturas/chat_agente.png](capturas/chat_agente.png); [capturas/chat_modo_local.png](capturas/chat_modo_local.png) | **Ejecución real remota** y real local |
 | La comparación estructurada viaja con el mensaje y se conserva en el historial | [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Prueba con doble |
-| Chat y comparación sin clave de OpenAI | [evidencias.md](evidencias.md), filas R5.5 | Ejecución real local |
+| Chat sin clave de OpenAI | [evidencias.md](evidencias.md), filas R5.5 | Ejecución real local |
 
 ### Pendientes y limitaciones
 

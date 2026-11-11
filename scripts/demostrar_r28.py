@@ -1,6 +1,6 @@
 """R28: la interfaz Streamlit conectada al agente final, conducida con AppTest.
 
-Ejecuta app.py de verdad (sin navegador): escribe en el chat, cambia de vista y de conversación.
+Ejecuta app.py de verdad (sin navegador): escribe en el chat y cambia de conversación.
 Requiere OPENAI_API_KEY. Usa una carpeta de datos propia para no tocar las conversaciones del
 usuario, y habilita el índice de políticas guardado, que es propio y tiene manifiesto.
 """
@@ -80,17 +80,6 @@ def main() -> None:
         "tarjetas_redibujadas": sum(len(m.metric) for m in app.chat_message)}
     print("nuevo chat:", informe["nuevo_chat"], "| reabierta:", len(reabierta), "mensajes")
 
-    # La otra vista usa el mismo escenario y el mismo verificador.
-    app.sidebar.button_group[0].set_value("Comparación local").run()
-    app.text_input[0].set_value("PEC-01-0001")
-    app.number_input[0].set_value(6)
-    next(b for b in app.button if b.label == "Comparar proveedores").click().run()
-    informe["vista_comparacion"] = {"titulo": app.title[0].value,
-                                    "resultado": {m.label: m.value for m in app.metric},
-                                    "avisos": [w.value for w in app.warning] + [e.value for e in app.error],
-                                    "ofertas_mostradas": [len(d.value) for d in app.dataframe],
-                                    "excepciones": [str(e.value) for e in app.exception]}
-    print("comparación:", informe["vista_comparacion"])
     salida.parent.mkdir(parents=True, exist_ok=True)
     salida.write_text(json.dumps(informe, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("guardado en", salida)

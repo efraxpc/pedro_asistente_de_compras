@@ -1,7 +1,7 @@
 {
   "rubrica": "R28",
   "modo": "app.py ejecutada con streamlit.testing.v1.AppTest; agente real remoto (OpenAI, ViaCEP); NLI real local; índice de políticas cargado de disco",
-  "fecha_utc": "2026-11-11T16:06:46+00:00",
+  "fecha_utc": "2026-11-11T16:11:26+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "arranque": {
     "titulos": [
@@ -15,8 +15,9 @@
       {
         "usuario": "Necesito 5 unidades de PEC-01-0001 con plazo máximo de 7 días",
         "pasos": [
-          "Cómo llegué a esta respuesta · 4 pasos",
+          "Cómo llegué a esta respuesta · 5 pasos",
           "Leí tu mensaje",
+          "Consulté el catálogo",
           "Comparé las ofertas de los proveedores",
           "Tomé las cifras del cálculo de la herramienta",
           "Verifiqué la respuesta"
@@ -29,7 +30,7 @@
         },
         "consejo_o_aviso": [],
         "tablas": 2,
-        "texto": "Cambios en la solicitud: `{\"cantidad\": 5, \"plazo_max_dias\": 7}` `comparar_ofertas` con `{'producto_id': 'PEC-01-0001', 'cantidad': 5, 'plazo_max_dias': 7}` Sin errores.",
+        "texto": "Cambios en la solicitud: `{\"cantidad\": 5, \"plazo_max_dias\": 7}` `consultar_catalogo` con `{'pregunta': 'PEC-01-0001'}` `comparar_ofertas` con `{'producto_id': 'PEC-01-0001', 'cantidad': 5, 'plazo_max_dias': 7}` Sin errores.",
         "errores": []
       },
       {
@@ -90,20 +91,5 @@
     "mensajes_en_pantalla": 8,
     "primer_mensaje": "Necesito 5 unidades de PEC-01-0001 con plazo máximo de 7 días",
     "tarjetas_redibujadas": 8
-  },
-  "vista_comparacion": {
-    "titulo": "Comparación local",
-    "resultado": {
-      "Proveedor recomendado": "CentroPeças",
-      "Total por 6 unidades": "R$ 8.718,75",
-      "Entrega": "2 días",
-      "Origen": "Nacional"
-    },
-    "avisos": [],
-    "ofertas_mostradas": [
-      3,
-      2
-    ],
-    "excepciones": []
   }
 }

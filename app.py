@@ -1,7 +1,6 @@
-"""Interfaz local: chat y comparación de proveedores de piezas ficticias."""
+"""Interfaz local: chat que compara proveedores de piezas ficticias."""
 import json
 import os
-from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 import streamlit as st
@@ -9,12 +8,12 @@ from dotenv import load_dotenv
 
 from pedro.agent import Traza, crear_flujo, es_diagnostico_t24, partes_de
 from pedro.business import brl, describir_motivos, variacion_porcentual
-from pedro.catalog import abrir_escenario, crear_escenario, ficha
-from pedro.contracts import Alternativa, Oferta, RespuestaCompra, Solicitud
+from pedro.catalog import abrir_escenario, crear_escenario
+from pedro.contracts import Alternativa, Oferta, RespuestaCompra
 from pedro.memory import MODELO_RECUERDOS, Historial, nueva_sesion, sesiones
 from pedro.policy_demo import crear_indice_demo, huella_corpus
 from pedro.precios import aviso_de_precio
-from pedro.verification import mejor_sin_preferencia, respuesta_local, verificar
+from pedro.verification import mejor_sin_preferencia
 
 load_dotenv()
 BASE = Path(os.getenv("PEDRO_STORAGE", "storage"))
@@ -287,8 +286,6 @@ if "pasos" not in st.session_state:
 with st.sidebar:
     st.title(":material/shopping_cart: Pedro")
     st.caption("Asistente de compras · datos ficticios")
-    vista = st.segmented_control("Vista", ["Chat", "Comparación local"],
-                                default="Chat", key="vista", width="stretch")
     with st.container(horizontal=True):
         st.button("Nuevo chat", on_click=nuevo_chat, icon=":material/edit_square:", width="stretch")
         st.button("Nuevo escenario", on_click=nuevo_escenario, icon=":material/refresh:",
@@ -314,104 +311,66 @@ if escenario is None:
     st.stop()
 con_agente = bool(os.getenv("OPENAI_API_KEY"))
 
-if vista == "Chat":
-    st.title("Chat")
+st.title("Chat")
+with st.container(horizontal=True):
+    st.badge(f"Escenario {escenario.dataset_id[:8]}", icon=":material/database:", color="gray")
+    if con_agente:
+        st.badge("Agente activo", icon=":material/smart_toy:", color="green")
+    else:
+        st.badge("Modo local, sin modelo", icon=":material/offline_bolt:", color="orange")
+    st.badge("Datos comerciales ficticios", icon=":material/science:", color="gray")
+mensajes = Historial(MEMORIA, USUARIO, st.session_state.sesion).todos()
+# El campo de entrada se fija abajo aunque se declare aquí; así se sabe ya si hay pregunta.
+pregunta = st.chat_input("Pregunta por piezas, ofertas, proveedores o políticas", key="pregunta",
+                         submit_mode="disable") or st.session_state.pop("sugerida", None)
+for numero, mensaje in enumerate(mensajes):
+    with st.chat_message("user" if mensaje.type == "human" else "assistant"):
+        if mensaje.type == "human":
+            st.markdown(str(mensaje.content))
+            continue
+        pasos = st.session_state.pasos.get((st.session_state.sesion, numero))
+        if pasos:
+            with st.expander(f"Cómo llegué a esta respuesta · {len(pasos)} pasos", type="compact"):
+                for paso in pasos:
+                    mostrar_paso(paso)
+        mostrar_mensaje(mensaje)
+if not mensajes and not pregunta:
+    st.caption("Prueba con una de estas preguntas o escribe la tuya.")
+    sugerencias = ["Compara 5 unidades de PEC-01-0001 con plazo de 7 días",
+                   "Compara 5 unidades de PEC-02-0189", "Lista piezas"]
+    if con_agente:
+        sugerencias += ["¿Se puede mandar en varias cajas?",
+                        "¿A qué ciudad corresponde el CEP 01001000?",
+                        "¿Cuáles son las 5 piezas de mayor potencia?"]
     with st.container(horizontal=True):
-        st.badge(f"Escenario {escenario.dataset_id[:8]}", icon=":material/database:", color="gray")
-        if con_agente:
-            st.badge("Agente activo", icon=":material/smart_toy:", color="green")
-        else:
-            st.badge("Modo local, sin modelo", icon=":material/offline_bolt:", color="orange")
-        st.badge("Datos comerciales ficticios", icon=":material/science:", color="gray")
-    mensajes = Historial(MEMORIA, USUARIO, st.session_state.sesion).todos()
-    # El campo de entrada se fija abajo aunque se declare aquí; así se sabe ya si hay pregunta.
-    pregunta = st.chat_input("Pregunta por piezas, ofertas, proveedores o políticas", key="pregunta",
-                             submit_mode="disable") or st.session_state.pop("sugerida", None)
-    for numero, mensaje in enumerate(mensajes):
-        with st.chat_message("user" if mensaje.type == "human" else "assistant"):
-            if mensaje.type == "human":
-                st.markdown(str(mensaje.content))
-                continue
-            pasos = st.session_state.pasos.get((st.session_state.sesion, numero))
-            if pasos:
-                with st.expander(f"Cómo llegué a esta respuesta · {len(pasos)} pasos", type="compact"):
-                    for paso in pasos:
-                        mostrar_paso(paso)
-            mostrar_mensaje(mensaje)
-    if not mensajes and not pregunta:
-        st.caption("Prueba con una de estas preguntas o escribe la tuya.")
-        sugerencias = ["Compara 5 unidades de PEC-01-0001 con plazo de 7 días",
-                       "Compara 5 unidades de PEC-02-0189", "Lista piezas"]
-        if con_agente:
-            sugerencias += ["¿Se puede mandar en varias cajas?",
-                            "¿A qué ciudad corresponde el CEP 01001000?",
-                            "¿Cuáles son las 5 piezas de mayor potencia?"]
-        with st.container(horizontal=True):
-            for texto in sugerencias:
-                st.button(texto, key=f"sugerencia_{texto}", on_click=sugerir, args=(texto,))
-        if not con_agente:
-            st.info("Sin clave de OpenAI puedes listar piezas, comparar ofertas y ejecutar /t24. "
-                    "Las políticas, el CEP y las preguntas abiertas necesitan el agente.",
-                    title="Modo local", icon=":material/info:")
-    if pregunta:
-        with st.chat_message("user"):
-            st.markdown(pregunta)
-        with st.chat_message("assistant"):
-            traza = Traza()
-            traza.eventos = PasosEnVivo()
-            salida = None
-            with st.status(":shimmer[Consultando y verificando]", type="compact") as estado:
-                llm, clasificador, indice = preparar_agente(es_diagnostico_t24(pregunta))
-                flujo = crear_flujo(escenario, MEMORIA, llm=llm, clasificador=clasificador,
-                                    indice=indice, traza=traza)
-                try:
-                    salida = flujo.invoke({"input": pregunta}, config={"configurable": {
-                        "user_id": USUARIO, "session_id": st.session_state.sesion}})
-                except Exception as exc:
-                    estado.update(label=f"Consulta no completada: {type(exc).__name__}", state="error")
-                else:
-                    pasos = traza.eventos.pasos
-                    estado.update(state="complete", label=(
-                        f"Cómo llegué a esta respuesta · {len(pasos)} pasos" if pasos
-                        else "Respondí con las reglas del catálogo, sin llamar al modelo"))
-                    if pasos:
-                        st.session_state.pasos[(st.session_state.sesion, len(mensajes) + 1)] = pasos
-            if salida is not None:
-                mostrar_mensaje(salida)
-
-else:
-    st.title("Comparación local")
-    st.caption("Cálculo determinista en centavos sobre las ofertas del escenario activo. No usa el modelo.")
-    with st.form("comparacion", border=True):
-        with st.container(horizontal=True, vertical_alignment="bottom"):
-            producto_id = st.text_input("ID de pieza", placeholder="PEC-01-0001")
-            cantidad = st.number_input("Cantidad", min_value=1, value=5, step=1)
-            presupuesto = st.text_input("Presupuesto máximo (R$), opcional", placeholder="Sin límite")
-            plazo = st.text_input("Plazo máximo (días), opcional", placeholder="Sin límite")
-        enviado = st.form_submit_button("Comparar proveedores", icon=":material/compare_arrows:",
-                                        type="primary")
-    if enviado:
-        try:
-            cifra = presupuesto.strip()
-            if "," in cifra:
-                cifra = cifra.replace(".", "").replace(",", ".")
-            elif "." in cifra and len(cifra.rsplit(".", 1)[1]) == 3:
-                cifra = cifra.replace(".", "")
-            importe = Decimal(cifra) if cifra else None
-            if importe is not None and (not importe.is_finite() or importe < 0 or
-                                       int(importe.as_tuple().exponent) < -2):
-                raise ValueError("Presupuesto inválido; indique hasta dos decimales.")
-            solicitud = Solicitud(producto_id=producto_id.upper().strip(), cantidad=int(cantidad),
-                                 presupuesto_centavos=int(importe * 100) if importe is not None else None,
-                                 plazo_max_dias=int(plazo) if plazo.strip() else None)
-            if solicitud.producto_id is None or ficha(escenario, solicitud.producto_id) is None:
-                st.warning("No encontré ese ID de pieza en este escenario.", icon=":material/search_off:")
+        for texto in sugerencias:
+            st.button(texto, key=f"sugerencia_{texto}", on_click=sugerir, args=(texto,))
+    if not con_agente:
+        st.info("Sin clave de OpenAI puedes listar piezas, comparar ofertas y ejecutar /t24. "
+                "Las políticas, el CEP y las preguntas abiertas necesitan el agente.",
+                title="Modo local", icon=":material/info:")
+if pregunta:
+    with st.chat_message("user"):
+        st.markdown(pregunta)
+    with st.chat_message("assistant"):
+        traza = Traza()
+        traza.eventos = PasosEnVivo()
+        salida = None
+        with st.status(":shimmer[Consultando y verificando]", type="compact") as estado:
+            llm, clasificador, indice = preparar_agente(es_diagnostico_t24(pregunta))
+            flujo = crear_flujo(escenario, MEMORIA, llm=llm, clasificador=clasificador,
+                                indice=indice, traza=traza)
+            try:
+                salida = flujo.invoke({"input": pregunta}, config={"configurable": {
+                    "user_id": USUARIO, "session_id": st.session_state.sesion}})
+            except Exception as exc:
+                estado.update(label=f"Consulta no completada: {type(exc).__name__}", state="error")
             else:
-                respuesta = respuesta_local(escenario, solicitud)
-                errores = verificar(respuesta, escenario)
-                if errores:
-                    st.error(", ".join(errores), title="La comparación no superó la verificación")
-                else:
-                    mostrar_comparacion(respuesta)
-        except (ValueError, InvalidOperation) as exc:
-            st.error(str(exc), icon=":material/error:")
+                pasos = traza.eventos.pasos
+                estado.update(state="complete", label=(
+                    f"Cómo llegué a esta respuesta · {len(pasos)} pasos" if pasos
+                    else "Respondí con las reglas del catálogo, sin llamar al modelo"))
+                if pasos:
+                    st.session_state.pasos[(st.session_state.sesion, len(mensajes) + 1)] = pasos
+        if salida is not None:
+            mostrar_mensaje(salida)
