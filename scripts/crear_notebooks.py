@@ -312,6 +312,26 @@ pregunta = 'ofertas PEC-01-0001'
 plan = planear(pregunta)
 print(plan.model_dump())
 print(ejecutar(escenario, pregunta, plan))"""),
+    ("md", "## R21 · text-to-SQL: el modelo escribe la consulta y el motor decide\nLa celda anterior muestra la versión conservadora (un plan con dos plantillas fijas), que es la que usa la herramienta del agente. Aquí está la versión con modelo: genera un `SELECT`, se valida su forma, y el **autorizador de SQLite** solo deja leer las tablas y columnas permitidas. **Doble de prueba:** el generador devuelve consultas escritas a mano, la primera con un error a propósito, para ver la corrección. La ejecución con el modelo real está en `docs/trazas/fase4_sql_llm.json`."),
+    ("code", """import json
+from langchain_core.runnables import RunnableLambda
+from pedro.query import ConsultaRechazada, consultar_sql, crear_generador_sql, describir_esquema, responder_sql
+print(describir_esquema())
+guion = iter(['SELECT * FROM suppliers WHERE domestic = 1',
+              'SELECT id, name FROM suppliers WHERE domestic = 1 ORDER BY id LIMIT 3'])
+generador = crear_generador_sql(RunnableLambda(lambda p: json.dumps({'sql': next(guion), 'explicacion': 'proveedores nacionales'})))
+resultado = responder_sql(escenario, '¿Qué proveedores nacionales hay?', generador)
+for intento in resultado['intentos']:
+    print('SQL  :', intento['sql'])
+    print('error:', intento['error'])
+print('estado:', resultado['estado'], '| filas:', resultado['filas'])
+for sql in ('DROP TABLE offers', 'SELECT 1; DELETE FROM offers', 'SELECT name FROM sqlite_master',
+            'SELECT id, website FROM suppliers', 'SELECT count(*) FROM parts a, parts b, parts c'):
+    try:
+        consultar_sql(escenario, sql)
+        print('EJECUTADA:', sql)
+    except ConsultaRechazada as error:
+        print('rechazada:', sql, '->', error)"""),
     ("md", "## T15 · embeddings, FAISS y filtros\nLas tres políticas son sintéticas y citan campos y ejemplos de la base generada con semilla 20261107. Cada sección produce varios fragmentos con ID y metadatos estables; el índice se construye en memoria y no se carga ningún pickle. Los ejemplos fechados no sustituyen los datos del escenario activo."),
     ("code", """from collections import Counter
 from pedro.policy_demo import fragmentos_demo, crear_indice_demo, huella_corpus

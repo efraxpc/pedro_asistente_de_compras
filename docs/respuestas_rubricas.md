@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** redactadas y con ejecución guardada R01–R18 (Fases 1, 2 y 3 completas), R22, R23 y R29. Pendientes de redactar: R19–R21 y R24–R28.
+**Avance de redacción:** redactadas y con ejecución guardada R01–R23 (Fases 1 a 4 completas) y R29. Pendientes de redactar: R24–R28.
 
 ---
 
@@ -1185,15 +1185,200 @@ Las dos trazas se conservan. Las pruebas automáticas ya pasaban antes: el fallo
 
 ## R19 — Herramientas hardcoded y semánticas
 
-*Pendiente de redactar.*
+> ¿El alumno estructuró herramientas del agente diferenciando funciones hardcoded de funciones semánticas?
+
+**Respuesta corta.** Sí. El agente tiene seis herramientas: cinco de lógica fija (*hardcoded*) y una semántica. La regla de reparto es clara: **todo lo que es un número o una regla lo hace código fijo; lo semántico se reserva para buscar por significado en las políticas.**
+
+### 1. El criterio
+
+| Tipo | Qué la define | Cuándo usarla |
+|---|---|---|
+| **Hardcoded** | La misma entrada da siempre la misma salida; la lógica es código | Cálculos, reglas, datos exactos |
+| **Semántica** | El resultado depende del significado del texto y lo decide un modelo (aquí, de embeddings) | Buscar en texto libre lo que el usuario dice con otras palabras |
+
+### 2. Catálogo de herramientas
+
+| Herramienta | Tipo | Lógica | Entradas | Salida | Errores que devuelve |
+|---|---|---|---|---|---|
+| `buscar_productos` | Hardcoded | SQL de lectura | `texto` | Candidatos (ID, SKU, nombre, categoría) | Lista vacía si no hay coincidencias |
+| `consultar_catalogo` | Hardcoded | Text-to-query: plan validado → `SELECT` con parámetros | `pregunta` | Plan, SQL, parámetros y filas | Error si la pregunta no trae exactamente un ID |
+| `comparar_ofertas` | Hardcoded | Cálculo en centavos enteros con desempate fijo | `producto_id`, `cantidad`, `presupuesto_centavos`, `plazo_max_dias` | Todas las ofertas, con «cumple» o el motivo de descarte | Rechaza una cantidad no positiva |
+| `consultar_politicas` | **Semántica** | Búsqueda por similitud en FAISS, con reformulación de la consulta | `pregunta` | Fragmentos con fuente y distancia; estado | `sin_evidencia` o `indisponible` |
+| `consultar_cep` | Hardcoded | Llamada a una API externa | `cep` | Ciudad, UF y modo | `no_encontrado`, `invalido`, `indisponible` |
+| `guardar_preferencia` | Hardcoded | Escritura condicionada a una cita literal | `clave`, `valor`, `cita_usuario` | Confirmación | `invalido` si el usuario no lo dijo |
+
+El catálogo se genera del código: nombre, descripción y entradas salen de las propias herramientas, y el tipo, de una tabla (`PAPELES`) que una prueba mantiene sincronizada.
+
+### 3. Por qué este reparto
+
+- **`comparar_ofertas` es hardcoded a propósito.** Sumar precio y flete, comprobar stock y elegir al ganador son operaciones exactas. Un modelo podría equivocarse en una suma; el código no. La evaluación lo confirmó: cuando un modelo propuso un ganador distinto del calculado, la verificación lo rechazó (R29).
+- **`consultar_politicas` es semántica porque no hay otra forma.** El usuario pregunta «¿se puede mandar en varias cajas?» y la política dice «entrega parcial». Solo una búsqueda por significado las une.
+- **Lo semántico nunca decide un número.** La herramienta semántica devuelve fragmentos de texto con su fuente; los importes vienen siempre de herramientas hardcoded.
+- **El LLM es el que elige.** Las herramientas no se llaman entre sí; el agente decide cuál usar leyendo su descripción.
+
+Además del agente, hay una función semántica de otro tipo: el generador de text-to-SQL (R21) usa un LLM dentro de la propia función. No está entre las herramientas del agente, pero ilustra el otro sentido de «semántica»: una función cuyo interior es un modelo.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Catálogo generado del código: nombre, tipo, lógica, descripción y entradas | [trazas/fase4_sql_llm.json](trazas/fase4_sql_llm.json), `r19_catalogo_de_herramientas`; [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomía» | Ejecución real local |
+| Las seis herramientas usadas por el modelo real | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json); [trazas/r22_indice_existente.json](trazas/r22_indice_existente.json) | Ejecución real remota |
+| Seis herramientas con tipo; el catálogo coincide con el agente | [tests/test_anatomia.py](../tests/test_anatomia.py); [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- No hay herramientas asíncronas: todas se ejecutan una tras otra.
+- Solo una herramienta del agente es semántica.
+- `consultar_catalogo` acepta únicamente preguntas con un ID de pieza; las preguntas abiertas sobre el catálogo las cubre el text-to-SQL de R21, que no está conectado al agente.
 
 ## R20 — Integración con APIs internas o externas
 
-*Pendiente de redactar.*
+> ¿El alumno integró el agente a APIs internas o externas de acuerdo con el tipo de uso de cada una?
+
+**Respuesta corta.** Sí. El agente usa tres APIs externas y cuatro internas. Cada una existe para un tipo de uso distinto, y ese uso fija cómo se integra: qué puede hacer, qué permisos tiene y qué ocurre si falla.
+
+### 1. APIs externas
+
+| API | Tipo de uso | Por qué existe | Cómo se integra | Si falla |
+|---|---|---|---|---|
+| **ViaCEP** | Consulta de un dato público | Una compra necesita un destino; confirma ciudad y UF | Herramienta `consultar_cep`, llamada por *function calling*, con límite de 5 s | Devuelve `indisponible`; el agente no publica ciudad |
+| **OpenAI** | Razonamiento | Es el motor del agente: entiende la solicitud y elige herramientas | `ChatOpenAI` dentro del ejecutor | La app sigue en modo degradado: listado, ficha y comparación local |
+| **LangSmith** | Evaluación y trazas | Medir calidad y trayectoria (R29) | Solo desde el script de evaluación | No afecta al chat |
+
+### 2. APIs internas
+
+| API | Tipo de uso | Por qué existe | Cómo se integra |
+|---|---|---|---|
+| **Catálogo** ([catalog.py](../src/pedro/catalog.py)) | Lectura de datos exactos | Precios, stock y plazos vigentes | SQLite abierto en solo lectura; funciones con parámetros, sin SQL libre |
+| **Políticas** ([rag.py](../src/pedro/rag.py)) | Búsqueda semántica | Reglas escritas en texto | Índice FAISS cargado tras comprobar manifiesto y huellas |
+| **Memoria** ([memory.py](../src/pedro/memory.py)) | Lectura y escritura acotada | Continuidad entre turnos y sesiones | Toda consulta lleva usuario y sesión; la única escritura del agente es una preferencia citada |
+| **Verificación y NLI** ([verification.py](../src/pedro/verification.py), [nli.py](../src/pedro/nli.py)) | Control | Que nada falso se publique | No es una herramienta: el flujo la aplica siempre, el agente no puede saltársela |
+
+### 3. El tipo de uso decide la integración
+
+| Si el uso es… | Entonces… | Ejemplo |
+|---|---|---|
+| Leer un dato exacto | Solo lectura y resultado determinista | Catálogo |
+| Buscar por significado | El resultado lleva su fuente y pasa por verificación | Políticas |
+| Llamar a un tercero | Límite de tiempo, estados de error explícitos y modo simulado para pruebas | ViaCEP |
+| Escribir | Mínimo imprescindible y con una condición comprobable | Preferencias |
+| Controlar | Fuera del alcance del modelo | Verificación |
+
+**Decisión técnica.** El agente no tiene ninguna API que compre, pague o modifique el catálogo. Es una decisión de alcance: un asistente que recomienda puede equivocarse sin consecuencias irreversibles, y uno que ejecuta compras no. La única escritura permitida es una preferencia, y exige la cita literal del usuario.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| ViaCEP llamado por el agente: esquema, argumentos, respuesta y uso del resultado | [trazas/r10_viacep_llm.json](trazas/r10_viacep_llm.json) | **Ejecución real remota** |
+| Catálogo, políticas, memoria y verificación usados en una misma conversación | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | Ejecución real remota |
+| Experimentos registrados en LangSmith | [trazas/](trazas/): `r29_langsmith_*.json` | Ejecución real remota |
+| Solo lectura del catálogo, aislamiento de memoria y ViaCEP real y simulado | [tests/test_core.py](../tests/test_core.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_rag_integrations.py](../tests/test_rag_integrations.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- ViaCEP no se usa para calcular flete ni plazo según el destino: solo confirma la ubicación.
+- No hay reintentos ni caché para las APIs externas.
+- Las «APIs internas» son módulos de Python del mismo proceso, no servicios separados.
 
 ## R21 — Patrón text-to-query
 
-*Pendiente de redactar.*
+> ¿El alumno implementó el patrón text-to-query para consultar datos estructurados?
+
+**Respuesta corta.** Sí, en dos versiones. La herramienta del agente usa un plan con plantillas fijas. Además hay un **text-to-SQL completo**: el modelo escribe el `SELECT`, el motor de SQLite decide si lo deja ejecutar y se devuelven las filas. Con el modelo real respondió bien 5 de 5 preguntas (3 de 5 antes de mejorar el prompt) y las 7 consultas hostiles fueron rechazadas.
+
+### 1. Las dos versiones
+
+| | Plan con plantillas | Text-to-SQL con modelo |
+|---|---|---|
+| Quién escribe el SQL | El código: dos plantillas fijas | El LLM |
+| Qué preguntas admite | Ficha u ofertas de **una** pieza con su ID | Cualquier pregunta de lectura sobre el esquema permitido |
+| Riesgo | Ninguno: no hay SQL libre | El SQL es libre, así que se valida |
+| Dónde se usa | Herramienta `consultar_catalogo` del agente | Módulo [query.py](../src/pedro/query.py), con script y notebook |
+
+### 2. El recorrido completo
+
+Pregunta: «¿Qué proveedor nacional ofrece PEC-01-0001 más barato teniendo stock? Dame proveedor y precio.»
+
+1. **Consulta generada** por `gpt-4.1-mini`:
+   ```sql
+   SELECT suppliers.name AS proveedor,
+          (offers.estimated_brl_cents + offers.shipping_brl_cents) / 100.0 AS precio_real
+   FROM offers JOIN suppliers ON offers.supplier_id = suppliers.id
+   WHERE offers.part_id = 'PEC-01-0001' AND suppliers.domestic = 1 AND offers.stock_qty > 0
+   ORDER BY (offers.estimated_brl_cents + offers.shipping_brl_cents) ASC LIMIT 1
+   ```
+2. **Validación**: una sola sentencia, empieza por `SELECT`, sin comentarios.
+3. **Ejecución** con el autorizador activo, en solo lectura.
+4. **Filas**: `CentroPeças, 1524.15`. Coincide con el catálogo: 1.438,92 de precio más 85,23 de flete.
+
+### 3. Tres barreras
+
+El SQL lo escribe un modelo, así que no se confía en él. Se confía en el motor:
+
+| Barrera | Qué impide | Cómo |
+|---|---|---|
+| **Forma** | Varias sentencias, comentarios, todo lo que no sea `SELECT` | Comprobación del texto antes de tocar la base |
+| **Autorizador de SQLite** | Leer tablas o columnas fuera de la lista, funciones no previstas y cualquier escritura | El propio motor consulta una función por cada acceso y deniega lo no permitido |
+| **Límites** | Consultas enormes o interminables | Base en solo lectura, 50 filas como máximo y tope de pasos de ejecución |
+
+La segunda barrera es la importante. No se intenta adivinar con expresiones regulares si un SQL es peligroso: **se le pregunta al motor qué va a leer**, y si no está en la lista, no se ejecuta.
+
+Siete consultas hostiles escritas a mano, todas rechazadas:
+
+| Consulta | Motivo del rechazo |
+|---|---|
+| `DROP TABLE offers` | Solo se admiten consultas `SELECT` |
+| `SELECT 1; DELETE FROM offers` | Solo se admite una sentencia |
+| `SELECT name FROM sqlite_master` | Tabla fuera de la lista |
+| `SELECT id, website FROM suppliers` | Columna fuera de la lista |
+| `PRAGMA table_info(parts)` | Solo se admiten consultas `SELECT` |
+| `SELECT load_extension('x')` | Función no permitida |
+| Producto cartesiano de tres tablas | Interrumpida por el tope de pasos |
+
+### 4. Válida no es lo mismo que correcta
+
+La primera ejecución con el modelo real dejó una lección. Las cinco consultas eran **válidas**, pero dos daban una respuesta **equivocada**:
+
+| Pregunta | Qué hizo el modelo | Resultado |
+|---|---|---|
+| Proveedor nacional más barato de PEC-01-0001 | Buscó el ID en la columna `sku` | Cero filas |
+| Tres proveedores con menor plazo medio | Añadió por su cuenta el filtro «con stock» | Otro orden de proveedores |
+
+Ninguna barrera de seguridad detecta esto: la consulta es legal, pero no responde a la pregunta. Se corrigió por tres vías:
+
+- **Dar al modelo el formato de los valores**: cómo es un ID de pieza, un SKU y un ID de proveedor.
+- **Pedirle que no añada filtros** que la pregunta no menciona, y que nombre las columnas en vez de usar `*`.
+- **Señalar los resultados vacíos**: una consulta válida sin filas devuelve el estado `sin_filas`, no `ok`.
+
+| | Antes | Después |
+|---|---|---|
+| Preguntas respondidas correctamente | 3 de 5 | **5 de 5** |
+| Consultas que necesitaron una corrección | 2 | 0 |
+| Consultas hostiles rechazadas | 7 de 7 | 7 de 7 |
+
+Cuando el motor rechaza una consulta, el error vuelve al modelo para **un** intento de corrección. En la primera ejecución eso arregló dos consultas: una que usaba `SELECT *` y otra con un nombre de columna ambiguo.
+
+Dos casos límite, tras la mejora: ante «Borra todas las ofertas del proveedor BR-06» el modelo escribió un `SELECT` que muestra esas ofertas, y no se borró nada; ante «Muéstrame la página web de cada proveedor» devolvió los nombres con la web vacía, porque esa columna no es legible.
+
+**Decisión técnica.** El agente conserva la versión de plantillas porque sus respuestas deben poder verificarse contra una oferta concreta. El text-to-SQL con modelo responde preguntas abiertas, pero su resultado no se puede comprobar del mismo modo: como se vio, una consulta puede ser válida y estar mal planteada. Por eso no está conectado al chat.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Siete preguntas con el SQL generado, los intentos, las filas y las consultas hostiles | [trazas/fase4_sql_llm.json](trazas/fase4_sql_llm.json); [scripts/demostrar_fase4.py](../scripts/demostrar_fase4.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0); ejecución local en solo lectura |
+| La misma ejecución antes de mejorar el prompt | [trazas/fase4_sql_llm_antes.json](trazas/fase4_sql_llm_antes.json) | Ejecución real remota |
+| Plan con plantillas y text-to-SQL con corrección, sin credenciales | [notebooks/04_rag_text_to_query.ipynb](../notebooks/04_rag_text_to_query.ipynb), primera celda y §«R21» | Ejecución local; el generador es un **doble** |
+| Once consultas rechazadas, límite de filas, corrección con el error, dos rechazos sin datos y aviso de cero filas | [tests/test_text_to_sql.py](../tests/test_text_to_sql.py); [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- **El text-to-SQL con modelo no está conectado al agente**; se demuestra por separado.
+- Cinco preguntas son pocas: 5 de 5 no garantiza que el modelo acierte siempre. La corrección de una consulta válida pero equivocada sigue dependiendo de que alguien revise el resultado.
+- Las respuestas correctas se comprobaron a mano contra la base.
+- No se admiten consultas con `WITH`.
 
 ## R22 — Agente de recuperación sobre un índice FAISS existente
 

@@ -43,9 +43,9 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Rúbrica | Pregunta resumida | ID previo | Ubicación | Evidencia o condición | Estado |
 |---|---|---|---|---|---|
-| R19 | Herramientas hardcoded vs. semánticas | R4.1 | src/pedro/agent.py; docs/informe.md | Seis herramientas tipadas con docstring; deterministas (comparar, CEP), text-to-query y semántica (políticas) diferenciadas | Local |
-| R20 | APIs internas/externas según tipo de uso | R2.4 | src/pedro/integrations.py; src/pedro/agent.py | ViaCEP real y simulado integrado como herramienta con propósito documentado (confirmar ciudad/UF, no flete) | Real puntual |
-| R21 | Patrón text-to-query | R4.2 | src/pedro/query.py; NB04; tests/test_tools_flow.py | Pregunta natural → PlanConsulta Pydantic → SELECT parametrizado de solo lectura, validación, ejecución y filas con traza | Local |
+| R19 | Herramientas hardcoded vs. semánticas | R4.1 | docs/respuestas_rubricas.md §R19; src/pedro/agent.py; src/pedro/anatomia.py; docs/trazas/fase4_sql_llm.json | Catálogo de seis herramientas generado del código con tipo, lógica, entradas, salidas y errores: cinco hardcoded y una semántica (FAISS); criterio de reparto justificado; las seis usadas por el modelo real | Real local y remoto puntual |
+| R20 | APIs internas/externas según tipo de uso | R2.4 | docs/respuestas_rubricas.md §R20; src/pedro/integrations.py; src/pedro/catalog.py; src/pedro/rag.py; src/pedro/memory.py | Tres APIs externas (ViaCEP, OpenAI, LangSmith) y cuatro internas (catálogo, políticas, memoria, verificación), cada una con su tipo de uso, su integración y su comportamiento ante fallos; todas ejercitadas con el modelo real | Real remoto puntual |
+| R21 | Patrón text-to-query | R4.2 | docs/respuestas_rubricas.md §R21; src/pedro/query.py; scripts/demostrar_fase4.py; NB04; tests/test_text_to_sql.py; docs/trazas/fase4_sql_llm.json | Plan con plantillas en la herramienta del agente y text-to-SQL completo: SELECT generado por gpt-4.1-mini, validación de forma, autorizador de SQLite por tabla y columna, solo lectura y límites; 5/5 preguntas correctas (3/5 antes de mejorar el prompt) y 7/7 consultas hostiles rechazadas; no conectado al agente | Real remoto puntual y local |
 | R22 | Agente de recuperación sobre índice FAISS existente | R4.3 | docs/respuestas_rubricas.md §R22; knowledge/politicas/; scripts/construir_indice_politicas.py; scripts/demostrar_r22.py; NB04; tests/test_indice_existente.py; docs/trazas/r22_indice_existente.json | Índice guardado (75 fragmentos, 384d, L2) con manifiesto y huellas; el agente lo carga sin reconstruirlo y respondió dos preguntas con gpt-4.1-mini real; puerta de seguridad probada; **índice propio: la actividad no entregó uno** | Real local y remoto puntual |
 | R23 | Fallo real de recuperación diagnosticado y corregido | R4.4, R4.5 | docs/respuestas_rubricas.md §R23; docs/t24_recuperacion.md; scripts/diagnosticar_t24.py; NB04; docs/trazas/r23_t24_indice_existente.json | Antes/después sobre el índice guardado en disco: `FIC-ENT-01-S05-C01` fuera del top-4 y luego primero tras reformular la consulta, con fuente, ID y distancia L2; diagnóstico de desajuste de vocabulario y técnica justificada; corpus ficticio propio | Real local |
 
@@ -75,7 +75,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Entregable | Estado |
 |---|---|
-| Código y notebooks reproducibles con dobles identificados | Local: 79/79 pruebas, 5/5 notebooks reejecutados |
+| Código y notebooks reproducibles con dobles identificados | Local: 95/95 pruebas, 5/5 notebooks reejecutados |
 | Informe técnico en PDF | Local: docs/informe.md y docs/informe.pdf; actualizar tras cerrar pendientes |
 | Registro de evaluación en LangSmith | Real: cinco experimentos sobre el conjunto pedro-infnet-casos-derivados-7610315f (ver R29) |
 | Video de demostración + enlace Drive institucional | Pendiente: requiere grabación y acceso del alumno |

@@ -95,6 +95,24 @@ PLANTILLA_REPARACION = ChatPromptTemplate.from_messages([
     ("human", "Solicitud original: {texto}\nSalida inválida: {salida}\nError de validación: {error}"),
 ])
 
+# Text-to-SQL: convierte una pregunta en un SELECT. Variables: esquema, max_filas, formato,
+# pregunta y error (vacío salvo en el intento de corrección).
+PLANTILLA_SQL = ChatPromptTemplate.from_messages([
+    ("system", "Persona: analista de datos del catálogo ficticio de Pedro. "
+     "Tarea: escribir UNA consulta SELECT de SQLite que responda la pregunta. "
+     "Contexto: solo existen estas tablas y columnas:\n{esquema}\n"
+     "Los importes están en centavos de real (estimated_brl_cents, shipping_brl_cents). "
+     "suppliers.domestic vale 1 si el proveedor es nacional. Hay stock si stock_qty > 0. "
+     "Formatos de los valores: parts.id y offers.part_id son como PEC-01-0001; parts.sku es como "
+     "NEVE-COMP-0001; suppliers.id es como BR-06. "
+     "Reglas: solo lectura; una sola sentencia; sin comentarios; no uses tablas ni columnas "
+     "que no estén en la lista; no uses SELECT *, nombra las columnas; no añadas filtros que la "
+     "pregunta no pida; añade siempre LIMIT con {max_filas} filas como máximo. "
+     "Si la pregunta pide modificar datos, escribe un SELECT que muestre los datos afectados, "
+     "nunca una modificación. Formato: {formato}"),
+    ("human", "Pregunta: {pregunta}\n{error}"),
+])
+
 # System message del agente final. Variables: dataset_id, ejemplos, formato, input,
 # chat_history (opcional) y agent_scratchpad.
 PLANTILLA_AGENTE = ChatPromptTemplate.from_messages([

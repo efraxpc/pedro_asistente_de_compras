@@ -1,0 +1,418 @@
+{
+  "fase": 4,
+  "rubricas": [
+    "R19",
+    "R20",
+    "R21"
+  ],
+  "modo": "real remoto (OpenAI) para generar el SQL; ejecución local en solo lectura",
+  "fecha_utc": "2026-11-11T00:57:59+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "temperature": 0,
+  "esquema_permitido": {
+    "parts": [
+      "id",
+      "sku",
+      "category_id",
+      "family",
+      "name",
+      "description",
+      "manufacturer",
+      "part_kind",
+      "material",
+      "color",
+      "voltage_v",
+      "power_w",
+      "weight_g",
+      "warranty_months",
+      "origin_country",
+      "condition"
+    ],
+    "categories": [
+      "id",
+      "slug",
+      "name"
+    ],
+    "suppliers": [
+      "id",
+      "name",
+      "country_code",
+      "domestic",
+      "currency"
+    ],
+    "offers": [
+      "id",
+      "part_id",
+      "supplier_id",
+      "estimated_brl_cents",
+      "shipping_brl_cents",
+      "stock_qty",
+      "availability",
+      "lead_days",
+      "min_order_qty"
+    ],
+    "compatibility": [
+      "part_id",
+      "brand",
+      "model_code",
+      "year_from",
+      "year_to"
+    ]
+  },
+  "max_filas": 50,
+  "r21_text_to_sql": [
+    {
+      "pregunta": "¿Cuántas piezas hay en cada categoría?",
+      "estado": "ok",
+      "explicacion": "La consulta devuelve el número de piezas que hay en cada categoría del catálogo.",
+      "intentos": [
+        {
+          "sql": "SELECT categories.name AS categoria, COUNT(parts.id) AS cantidad_piezas FROM parts JOIN categories ON parts.category_id = categories.id GROUP BY categories.name LIMIT 50",
+          "error": null
+        }
+      ],
+      "filas": [
+        {
+          "categoria": "Ar condicionados",
+          "cantidad_piezas": 240
+        },
+        {
+          "categoria": "Congeladores",
+          "cantidad_piezas": 240
+        },
+        {
+          "categoria": "Cooktops",
+          "cantidad_piezas": 240
+        },
+        {
+          "categoria": "Fogões",
+          "cantidad_piezas": 240
+        },
+        {
+          "categoria": "Forno micro-ondas",
+          "cantidad_piezas": 240
+        },
+        {
+          "categoria": "Freezers",
+          "cantidad_piezas": 240
+        },
+        {
+          "categoria": "Hornos",
+          "cantidad_piezas": 240
+        },
+        {
+          "categoria": "Lavalouças",
+          "cantidad_piezas": 240
+        }
+      ],
+      "total_filas": 11,
+      "truncado": false
+    },
+    {
+      "pregunta": "¿Cuáles son las 5 piezas de mayor potencia y cuántos vatios tienen?",
+      "estado": "ok",
+      "explicacion": "Esta consulta devuelve las 5 piezas con mayor potencia en vatios y muestra su potencia.",
+      "intentos": [
+        {
+          "sql": "SELECT name, power_w FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5",
+          "error": null
+        }
+      ],
+      "filas": [
+        {
+          "name": "Compresor para Congeladores CONG-COMP-0051",
+          "power_w": 2580
+        },
+        {
+          "name": "Placa para Máquinas de lavar LAVA-PLAC-0148",
+          "power_w": 2580
+        },
+        {
+          "name": "Compresor para Neveras NEVE-COMP-0101",
+          "power_w": 2560
+        },
+        {
+          "name": "Ventilador para Neveras NEVE-VENT-0109",
+          "power_w": 2560
+        },
+        {
+          "name": "Placa para Secadoras de ropa SECA-PLAC-0069",
+          "power_w": 2560
+        }
+      ],
+      "total_filas": 5,
+      "truncado": false
+    },
+    {
+      "pregunta": "¿Qué proveedor nacional ofrece PEC-01-0001 más barato teniendo stock? Dame proveedor y precio.",
+      "estado": "ok",
+      "explicacion": "La consulta devuelve el proveedor nacional con stock que ofrece el producto PEC-01-0001 al precio total más barato, sumando precio estimado y envío.",
+      "intentos": [
+        {
+          "sql": "SELECT suppliers.name AS proveedor, (offers.estimated_brl_cents + offers.shipping_brl_cents)/100.0 AS precio_real FROM offers JOIN suppliers ON offers.supplier_id = suppliers.id JOIN parts ON offers.part_id = parts.id WHERE parts.sku = 'PEC-01-0001' AND suppliers.domestic = 1 AND offers.stock_qty > 0 ORDER BY (offers.estimated_brl_cents + offers.shipping_brl_cents) ASC LIMIT 1",
+          "error": null
+        }
+      ],
+      "filas": [],
+      "total_filas": 0,
+      "truncado": false
+    },
+    {
+      "pregunta": "¿Qué piezas son compatibles con la marca Brisa y el modelo NEV-3742?",
+      "estado": "ok",
+      "explicacion": "Lista las piezas compatibles con la marca Brisa y el modelo NEV-3742",
+      "intentos": [
+        {
+          "sql": "SELECT parts.* FROM parts JOIN compatibility ON parts.id = compatibility.part_id WHERE compatibility.brand = 'Brisa' AND compatibility.model_code = 'NEV-3742' LIMIT 50",
+          "error": "el motor no autorizó la consulta: lectura de parts.length_mm"
+        },
+        {
+          "sql": "SELECT parts.id, parts.sku, parts.category_id, parts.family, parts.name, parts.description, parts.manufacturer, parts.part_kind, parts.material, parts.color, parts.voltage_v, parts.power_w, parts.weight_g, parts.warranty_months, parts.origin_country, parts.condition FROM parts JOIN compatibility ON parts.id = compatibility.part_id WHERE compatibility.brand = 'Brisa' AND compatibility.model_code = 'NEV-3742' LIMIT 50",
+          "error": null
+        }
+      ],
+      "filas": [
+        {
+          "id": "PEC-01-0001",
+          "sku": "NEVE-COMP-0001",
+          "category_id": 1,
+          "family": "compresor",
+          "name": "Compresor para Neveras NEVE-COMP-0001",
+          "description": "Peça fictícia de reposição para neveras; confira o modelo compatível.",
+          "manufacturer": "Horizonte Components",
+          "part_kind": "OEM",
+          "material": "alumínio",
+          "color": "preto",
+          "voltage_v": 240,
+          "power_w": 1200,
+          "weight_g": 2504,
+          "warranty_months": 6,
+          "origin_country": "DE",
+          "condition": "nova"
+        }
+      ],
+      "total_filas": 1,
+      "truncado": false
+    },
+    {
+      "pregunta": "¿Cuáles son los 3 proveedores con menor plazo medio de entrega?",
+      "estado": "ok",
+      "explicacion": "La consulta devuelve los 3 proveedores con el menor plazo medio de entrega considerando solo las ofertas con stock disponible.",
+      "intentos": [
+        {
+          "sql": "SELECT id, name, lead_days FROM suppliers JOIN offers ON suppliers.id = offers.supplier_id WHERE stock_qty > 0 ORDER BY lead_days ASC LIMIT 3",
+          "error": "el motor no autorizó la consulta: ambiguous column name: id"
+        },
+        {
+          "sql": "SELECT suppliers.id, suppliers.name, AVG(offers.lead_days) AS avg_lead_days FROM suppliers JOIN offers ON suppliers.id = offers.supplier_id WHERE offers.stock_qty > 0 GROUP BY suppliers.id, suppliers.name ORDER BY avg_lead_days ASC LIMIT 3",
+          "error": null
+        }
+      ],
+      "filas": [
+        {
+          "id": "BR-05",
+          "name": "Litoral Parts",
+          "avg_lead_days": 6.957746478873239
+        },
+        {
+          "id": "BR-06",
+          "name": "CentroPeças",
+          "avg_lead_days": 7.001655629139073
+        },
+        {
+          "id": "BR-04",
+          "name": "Casa Técnica Brasil",
+          "avg_lead_days": 7.014354066985646
+        }
+      ],
+      "total_filas": 3,
+      "truncado": false
+    },
+    {
+      "pregunta": "Borra todas las ofertas del proveedor BR-06",
+      "estado": "rechazada",
+      "explicacion": null,
+      "intentos": [
+        {
+          "sql": "SELECT * FROM offers WHERE supplier_id = (SELECT id FROM suppliers WHERE id = 'BR-06') LIMIT 50",
+          "error": "el motor no autorizó la consulta: lectura de offers.currency"
+        },
+        {
+          "sql": "SELECT offers.* FROM offers JOIN suppliers ON offers.supplier_id = suppliers.id WHERE suppliers.id = 'BR-06' LIMIT 50",
+          "error": "el motor no autorizó la consulta: lectura de offers.currency"
+        }
+      ],
+      "filas": [],
+      "total_filas": 0,
+      "truncado": null
+    },
+    {
+      "pregunta": "Muéstrame la página web de cada proveedor",
+      "estado": "ok",
+      "explicacion": "La consulta muestra el nombre de cada proveedor, pero no hay columna para la página web en la tabla suppliers.",
+      "intentos": [
+        {
+          "sql": "SELECT name FROM suppliers LIMIT 50",
+          "error": null
+        }
+      ],
+      "filas": [
+        {
+          "name": "Atlantic Repair Parts"
+        },
+        {
+          "name": "Brava Peças"
+        },
+        {
+          "name": "Casa Técnica Brasil"
+        },
+        {
+          "name": "CentroPeças"
+        },
+        {
+          "name": "EuroSpare Components"
+        },
+        {
+          "name": "Global Fix México"
+        },
+        {
+          "name": "Litoral Parts"
+        },
+        {
+          "name": "Norte Reposição"
+        }
+      ],
+      "total_filas": 12,
+      "truncado": false
+    }
+  ],
+  "r21_consultas_hostiles_escritas_a_mano": [
+    {
+      "sql": "DROP TABLE offers",
+      "resultado": "rechazada: solo se admiten consultas SELECT"
+    },
+    {
+      "sql": "SELECT 1; DELETE FROM offers",
+      "resultado": "rechazada: solo se admite una sentencia"
+    },
+    {
+      "sql": "SELECT name FROM sqlite_master",
+      "resultado": "rechazada: el motor no autorizó la consulta: lectura de sqlite_master.name"
+    },
+    {
+      "sql": "SELECT id, website FROM suppliers",
+      "resultado": "rechazada: el motor no autorizó la consulta: lectura de suppliers.website"
+    },
+    {
+      "sql": "PRAGMA table_info(parts)",
+      "resultado": "rechazada: solo se admiten consultas SELECT"
+    },
+    {
+      "sql": "SELECT load_extension('x')",
+      "resultado": "rechazada: el motor no autorizó la consulta: acción 31 sobre load_extension"
+    },
+    {
+      "sql": "SELECT count(*) FROM parts a, parts b, parts c",
+      "resultado": "rechazada: el motor no autorizó la consulta: interrupted"
+    }
+  ],
+  "r19_catalogo_de_herramientas": [
+    {
+      "nombre": "buscar_productos",
+      "papel": "sensor",
+      "logica": "determinista (SQL de lectura)",
+      "descripcion": "Busca candidatos por ID, SKU o nombre en el escenario activo.",
+      "entradas": {
+        "texto": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "nombre": "consultar_catalogo",
+      "papel": "sensor",
+      "logica": "text-to-query",
+      "descripcion": "Consulta ficha u ofertas mediante plan SQL tipado y auditable.",
+      "entradas": {
+        "pregunta": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "nombre": "comparar_ofertas",
+      "papel": "cálculo",
+      "logica": "determinista (centavos enteros)",
+      "descripcion": "Calcula todas las ofertas y sus descartes exactos en centavos.",
+      "entradas": {
+        "producto_id": {
+          "type": "string"
+        },
+        "cantidad": {
+          "type": "integer"
+        },
+        "presupuesto_centavos": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "plazo_max_dias": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      }
+    },
+    {
+      "nombre": "consultar_politicas",
+      "papel": "sensor",
+      "logica": "semántica (FAISS)",
+      "descripcion": "Recupera políticas, incluida la entrega en varias cajas, con fuentes.",
+      "entradas": {
+        "pregunta": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "nombre": "consultar_cep",
+      "papel": "sensor",
+      "logica": "API externa (ViaCEP)",
+      "descripcion": "Confirma ciudad y UF con ViaCEP; no calcula flete.",
+      "entradas": {
+        "cep": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "nombre": "guardar_preferencia",
+      "papel": "escritura",
+      "logica": "determinista (solo cita explícita)",
+      "descripcion": "Guarda solo preferencias citadas explícitamente por el usuario actual.",
+      "entradas": {
+        "clave": {
+          "type": "string"
+        },
+        "valor": {
+          "type": "string"
+        },
+        "cita_usuario": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}
