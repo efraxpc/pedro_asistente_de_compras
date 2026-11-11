@@ -1,0 +1,87 @@
+{
+  "rubrica": "R07",
+  "modo": "real remoto (OpenAI); catálogo sintético",
+  "fecha_utc": "2026-11-11T12:19:40+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "temperature": 0,
+  "versiones": {
+    "langchain-core": "1.7.6",
+    "langchain-classic": "1.0.8",
+    "langchain": "1.4.9",
+    "langgraph": "1.2.20"
+  },
+  "nota": "Mismo modelo, mismas dos herramientas y mismo prompt. Una ejecución por orquestador: los tiempos no son un benchmark.",
+  "orquestadores": {
+    "LangChain clásico": {
+      "lineas_para_construirlo": 25,
+      "memoria": "RunnableWithMessageHistory + historial por session_id",
+      "nodos_del_grafo": null,
+      "segundos_tres_turnos": 5.0,
+      "turnos": [
+        {
+          "usuario": "Busca el compresor con SKU NEVE-COMP-0001 y dime su ID.",
+          "respuesta": "El compresor con SKU NEVE-COMP-0001 tiene el ID PEC-01-0001. ¿Quieres que te busque las ofertas para esta pieza?",
+          "herramientas": [
+            "buscar_pieza({'texto': 'NEVE-COMP-0001'})"
+          ]
+        },
+        {
+          "usuario": "¿Cuál de sus proveedores entrega más rápido y en cuántos días?",
+          "respuesta": "El proveedor que entrega más rápido el compresor con SKU NEVE-COMP-0001 es CentroPeças, con un plazo de entrega de 2 días.",
+          "herramientas": [
+            "ofertas_de_pieza({'producto_id': 'PEC-01-0001'})"
+          ]
+        },
+        {
+          "usuario": "¿Y cuál es el más barato con stock? Dime el precio en reales.",
+          "respuesta": "El proveedor más barato con stock para el compresor con SKU NEVE-COMP-0001 es Atlantic Repair Parts, con un precio de R$1381,55.",
+          "herramientas": [
+            "ofertas_de_pieza({'producto_id': 'PEC-01-0001'})"
+          ]
+        }
+      ],
+      "otro_hilo": {
+        "usuario": "¿De qué pieza estábamos hablando?",
+        "respuesta": "No hemos mencionado ninguna pieza aún, ¿podrías decirme qué repuesto necesitas consultar?",
+        "herramientas": []
+      }
+    },
+    "LangGraph": {
+      "lineas_para_construirlo": 19,
+      "memoria": "checkpointer InMemorySaver + thread_id",
+      "nodos_del_grafo": [
+        "__end__",
+        "__start__",
+        "model",
+        "tools"
+      ],
+      "segundos_tres_turnos": 3.6,
+      "turnos": [
+        {
+          "usuario": "Busca el compresor con SKU NEVE-COMP-0001 y dime su ID.",
+          "respuesta": "El compresor con SKU NEVE-COMP-0001 tiene el ID PEC-01-0001.",
+          "herramientas": [
+            "buscar_pieza({'texto': 'NEVE-COMP-0001'})"
+          ]
+        },
+        {
+          "usuario": "¿Cuál de sus proveedores entrega más rápido y en cuántos días?",
+          "respuesta": "El proveedor que entrega más rápido el compresor PEC-01-0001 es CentroPeças, con un plazo de 2 días.",
+          "herramientas": [
+            "ofertas_de_pieza({'producto_id': 'PEC-01-0001'})"
+          ]
+        },
+        {
+          "usuario": "¿Y cuál es el más barato con stock? Dime el precio en reales.",
+          "respuesta": "El proveedor más barato con stock para el compresor PEC-01-0001 es Atlantic Repair Parts, con un precio de 1381.55 reales.",
+          "herramientas": []
+        }
+      ],
+      "otro_hilo": {
+        "usuario": "¿De qué pieza estábamos hablando?",
+        "respuesta": "No hemos mencionado ninguna pieza aún, ¿podrías decirme qué repuesto necesitas consultar?",
+        "herramientas": []
+      }
+    }
+  }
+}

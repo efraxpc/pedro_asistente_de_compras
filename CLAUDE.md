@@ -43,6 +43,7 @@ Type-check edited code with `ty` when available. Run the full test suite before 
 - `memory.py` — full messages, 12-message window, per-session purchase drafts, per-user preferences and FastEmbed episodes (SQLite-backed).
 - `rag.py` — FAISS retrieval with metadata filtering; inspects a `manifest.json` (origin, embedding model, dimension, metric, per-file sha256) before allowing docstore deserialization.
 - `policy_demo.py` + `knowledge/politicas_demo/` — extensive fictitious policy corpus indexed in-memory with FastEmbed/FAISS; the chat uses this demo index when no authorized index exists.
+- `orquestadores.py` — the same two-tool agent built with LangChain classic and with LangGraph (`create_agent` + checkpointer) for the R07 comparison; LangGraph is an optional extra (`comparacion`) imported lazily, not used by the product.
 - `chains.py` + `laboratorio.py` — teaching chains (LCEL, `@chain`, and `crear_lcel_robusta` with a one-shot repair fallback and a strict complete-JSON check) and the broken-output lab that exercises them; not used by the chat flow.
 - `prompts.py` — the two named reusable templates (`PLANTILLA_EXTRACCION`, `PLANTILLA_AGENTE`, PTCF) and the observable-action few-shot examples.
 

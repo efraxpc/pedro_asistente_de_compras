@@ -21,7 +21,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Rúbrica | Pregunta resumida | ID previo | Ubicación | Evidencia o condición | Estado |
 |---|---|---|---|---|---|
-| R07 | Comparación de orquestadores y justificación de LangChain | — | docs/respuestas_rubricas.md §R07; docs/comparaciones.md; src/pedro/anatomia.py; NB02 | Seis orquestadores comparados por autonomía, abstracción y modularidad; decisión argumentada con el inventario de 13 piezas de LangChain usadas (obtenido de los imports) y con sus límites (APIs obsoletas, migración a LangGraph); comparación conceptual, solo LangChain ejecutado | Local |
+| R07 | Comparación de orquestadores y justificación de LangChain | — | docs/respuestas_rubricas.md §R07; src/pedro/orquestadores.py; scripts/demostrar_r07.py; src/pedro/anatomia.py; NB02; docs/trazas/r07_orquestadores_llm.json | Seis orquestadores comparados por autonomía, abstracción y modularidad; el mismo agente ejecutado en LangChain y en LangGraph con gpt-4.1-mini real (mismas respuestas; LangGraph reutiliza el resultado de la herramienta guardado en su estado); decisión argumentada con el inventario de 13 piezas y sus límites; los otros cuatro, comparación conceptual | Real remoto puntual y local |
 | R08 | ReAct con initialize_agent, herramientas y memoria | R2.2 | docs/respuestas_rubricas.md §R08; src/pedro/legacy.py; scripts/demostrar_r08.py; NB02; tests/test_legacy.py; docs/trazas/r08_react_llm.json | ZERO_SHOT_REACT_DESCRIPTION con dos herramientas y ConversationBufferMemory ejecutado con gpt-4.1-mini real: pensamiento, acción, observación y respuesta correcta; contraste con y sin historial en el prompt | Real remoto puntual y doble |
 | R09 | Chains secuenciales/paralelas y RouterChain | R2.3 | docs/respuestas_rubricas.md §R09; src/pedro/legacy.py; src/pedro/chains.py; scripts/demostrar_r09.py; NB02; tests/test_legacy.py; docs/trazas/r09_router_llm.json | Cadenas secuenciales y RunnableParallel; dos routers sobre RouterChain (reglas y LLMRouterChain) comparados con gpt-4.1-mini real en siete preguntas: reglas 2/7, LLM 6/7 | Real remoto puntual y local |
 | R10 | API externa como herramienta vía function calling | R2.4 | docs/respuestas_rubricas.md §R10; src/pedro/integrations.py; src/pedro/agent.py; src/pedro/verification.py; scripts/demostrar_r10.py; docs/trazas/r10_viacep_llm.json | ViaCEP real llamado por gpt-4.1-mini por function calling: esquema, argumentos, respuesta de la API y respuesta publicada en tres casos (válido, inexistente, inválido); fallo real de publicación diagnosticado con la traza y corregido con anclar_cep, con antes/después | Real remoto puntual |
@@ -75,7 +75,7 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Entregable | Estado |
 |---|---|
-| Código y notebooks reproducibles con dobles identificados | Local: 112/112 pruebas, 5/5 notebooks reejecutados |
+| Código y notebooks reproducibles con dobles identificados | Local: 115/115 pruebas, 5/5 notebooks reejecutados |
 | Informe técnico en PDF | Local: docs/informe.md y docs/informe.pdf; actualizar tras cerrar pendientes |
 | Registro de evaluación en LangSmith | Real: cinco experimentos sobre el conjunto pedro-infnet-casos-derivados-7610315f (ver R29) |
 | Video de demostración + enlace Drive institucional | Pendiente: requiere grabación y acceso del alumno |

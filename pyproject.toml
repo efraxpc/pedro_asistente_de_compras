@@ -19,6 +19,10 @@ dev = [
     "nbformat>=5,<6",
     "reportlab>=4,<5",
 ]
+comparacion = [
+    "langchain>=1,<2",
+    "langgraph>=1,<2",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pedro"]

@@ -456,7 +456,7 @@ En una frase: **declarativo para lo que es una tubería, imperativo para lo que 
 
 > ¿El alumno comparó orquestadores de agentes autónomos y justificó la elección de LangChain para el problema?
 
-**Respuesta corta.** Sí. Se comparan los seis orquestadores vistos en clase con los criterios de clase (autonomía, abstracción y modularidad). LangChain se mantiene porque Pedro es **un solo agente** que necesita **muchas piezas distintas** bajo un control estricto, y LangChain las trae todas: el proyecto usa 13 tipos de componentes suyos.
+**Respuesta corta.** Sí. Se comparan los seis orquestadores vistos en clase con los criterios de clase (autonomía, abstracción y modularidad), y dos de ellos —LangChain y LangGraph— se ejecutaron con el mismo agente y el modelo real. LangChain se mantiene porque Pedro es **un solo agente** que necesita **muchas piezas distintas** bajo un control estricto, y LangChain las trae todas: el proyecto usa 13 tipos de componentes suyos.
 
 ### 1. Para qué sirve un orquestador
 
@@ -473,9 +473,34 @@ En clase (14-10-2026) se dieron cuatro razones para no programar el agente desde
 | **Semantic Kernel** | Funciones («plugins») y planificadores, orientado a integrarse en aplicaciones de empresa | Media | Media | Alta | Medio: su ecosistema natural es otro |
 | **Langflow** | Construcción visual, sin código o con poco código | La que tenga el flujo dibujado | Muy alta | Media: se trabaja con cajas | Bajo para un entregable de código probado |
 
-La tabla es conceptual. **Solo LangChain se ejecutó en este proyecto**; no se atribuye ninguna prueba a los demás.
+LangChain y LangGraph se ejecutaron (ver el apartado siguiente). Para LlamaIndex, AutoGen, Semantic Kernel y Langflow la tabla es conceptual: no se instalaron y no se les atribuye ninguna prueba.
 
-### 3. Por qué LangChain para este problema
+### 3. Comparación ejecutada: el mismo agente en LangChain y en LangGraph
+
+Para no comparar solo en teoría, se construyó el mismo agente pequeño en los dos ([orquestadores.py](../src/pedro/orquestadores.py)): mismo modelo, mismas dos herramientas (`buscar_pieza` y `ofertas_de_pieza`) y mismo prompt. LangGraph se usó como en clase: `create_agent` con un *checkpointer* y un `thread_id`.
+
+| | LangChain clásico | LangGraph |
+|---|---|---|
+| Cómo se construye | `create_openai_tools_agent` + `AgentExecutor` + `RunnableWithMessageHistory` | `create_agent` con `InMemorySaver` |
+| Líneas para construirlo | 25 | 19 |
+| Memoria | Un historial por `session_id`, que guarda solo pregunta y respuesta | El estado completo del grafo por `thread_id`, incluidos los resultados de las herramientas |
+| Estructura visible | Una cadena con un ejecutor | Un grafo: `model` ⇄ `tools` |
+| Turno 1: «Busca el compresor con SKU NEVE-COMP-0001…» | `buscar_pieza` → PEC-01-0001 | `buscar_pieza` → PEC-01-0001 |
+| Turno 2: «¿Cuál de sus proveedores entrega más rápido…?» | `ofertas_de_pieza` → CentroPeças, 2 días | `ofertas_de_pieza` → CentroPeças, 2 días |
+| Turno 3: «¿Y cuál es el más barato con stock?» | **Vuelve a llamar** a `ofertas_de_pieza` → Atlantic Repair Parts, R$ 1.381,55 | **No llama a nada**: usa el resultado del turno 2 → la misma respuesta |
+| Otro hilo: «¿De qué pieza estábamos hablando?» | No lo sabe (hilos aislados) | No lo sabe (hilos aislados) |
+| Tiempo de los tres turnos | 5,0 s | 3,6 s |
+
+Lo que enseña la ejecución:
+
+- **Los dos resuelven la tarea igual.** Mismas herramientas y mismas respuestas, todas correctas según el catálogo.
+- **La diferencia real está en la memoria.** LangGraph guarda el estado entero, también lo que devolvieron las herramientas, y por eso en el turno 3 no repite la consulta. El historial de LangChain guarda solo lo que se dijo, y el agente tiene que volver a preguntar.
+- **Esa diferencia tiene dos caras.** Reutilizar un resultado ahorra una llamada, pero en Pedro sería un riesgo: los precios y el stock no deben salir de la memoria, sino releerse (R13). Aquí el comportamiento de LangChain —volver a consultar— es el que el dominio exige.
+- **LangGraph pide menos código** para este caso y da el grafo hecho.
+
+Los tiempos son de una sola ejecución y dependen de la red.
+
+### 4. Por qué LangChain para este problema
 
 1. **El problema es de un solo agente.** Recomendar una oferta verificada no necesita agentes que conversen. La coordinación multiagente de AutoGen añadiría mensajes que auditar sin resolver nada.
 2. **Hacen falta muchas piezas distintas, no una sola.** El proyecto usa 13 tipos de componentes de LangChain (34 nombres importados): plantillas, parsers, composición LCEL, herramientas, agente y ejecutor, memoria, historial, callbacks, FAISS, embeddings, troceado, cadenas clásicas y el modelo de chat. Este inventario sale de leer los imports del código. Un orquestador centrado en datos como LlamaIndex cubriría bien la parte de políticas y dejaría fuera el resto.
@@ -483,23 +508,27 @@ La tabla es conceptual. **Solo LangChain se ejecutó en este proyecto**; no se a
 4. **Se puede probar sin credenciales.** Cualquier componente se sustituye por un doble porque todos comparten la interfaz `Runnable`. Todas las pruebas automáticas del proyecto corren sin llamar a ningún modelo.
 5. **La rúbrica nombra APIs de LangChain**: `initialize_agent`, `RouterChain`, `ConversationBufferMemory`, `create_openai_tools_agent`, `AgentExecutor` y `RunnableWithMessageHistory`.
 
-### 4. Lo que LangChain no resuelve bien aquí
+### 5. Lo que LangChain no resuelve bien aquí
 
 La elección tiene un coste, y conviene decirlo. Tres de las APIs que pide la rúbrica están marcadas como obsoletas por la propia biblioteca (`initialize_agent`, `ConversationBufferMemory` y `RunnableWithMessageHistory`), y sus avisos recomiendan pasar a LangGraph. En clase se usó la forma moderna, `create_agent` con memoria por `thread_id`.
 
-Por eso las APIs clásicas están aisladas en [legacy.py](../src/pedro/legacy.py) y el flujo del turno —que tiene ramas, un bucle de dos propuestas y salidas anticipadas— está escrito a mano. Ese flujo es justamente lo que LangGraph modelaría como un grafo. **Si el proyecto siguiera creciendo, el paso natural sería migrar la orquestación del turno a LangGraph y conservar los componentes de LangChain.**
+Por eso las APIs clásicas están aisladas en [legacy.py](../src/pedro/legacy.py) y el flujo del turno —que tiene ramas, un bucle de dos propuestas y salidas anticipadas— está escrito a mano. Ese flujo es justamente lo que LangGraph modelaría como un grafo. **Si el proyecto siguiera creciendo, el paso natural sería migrar la orquestación del turno a LangGraph y conservar los componentes de LangChain.** La comparación ejecutada muestra que esa migración es viable —el mismo agente funciona con menos código— y también qué habría que vigilar: que el estado guardado no convierta en memoria los datos que deben releerse.
 
 ### Evidencia
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
 | Inventario de piezas de LangChain usadas, obtenido de los imports | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) §«R07»; `inventario_langchain` en [anatomia.py](../src/pedro/anatomia.py) | Ejecución real local (sin modelo) |
+| El mismo agente en LangChain y en LangGraph: tres turnos y un hilo aparte en cada uno | [trazas/r07_orquestadores_llm.json](trazas/r07_orquestadores_llm.json); [scripts/demostrar_r07.py](../scripts/demostrar_r07.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0) |
+| Los dos ejecutan la herramienta y separan los hilos | [tests/test_orquestadores.py](../tests/test_orquestadores.py) | Pruebas con doble |
 | Tabla comparativa y decisión | Esta sección; [comparaciones.md](comparaciones.md) | Documentación |
 | El inventario refleja el código | [tests/test_anatomia.py](../tests/test_anatomia.py) | Prueba automática |
 
 ### Pendientes y limitaciones
 
-- La comparación con LangGraph, LlamaIndex, AutoGen, Semantic Kernel y Langflow es conceptual: no se instalaron ni se ejecutaron.
+- La comparación con LlamaIndex, AutoGen, Semantic Kernel y Langflow es conceptual: no se instalaron ni se ejecutaron.
+- La comparación ejecutada usa un agente de dos herramientas y una conversación; no es el agente completo de Pedro.
+- LangGraph es una dependencia opcional (extra `comparacion`); el producto no lo usa.
 - Las valoraciones de autonomía, abstracción y modularidad son cualitativas.
 
 ## R08 — Agente ReAct con initialize_agent, herramientas y memoria
