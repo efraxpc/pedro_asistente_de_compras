@@ -160,7 +160,7 @@ En clase, la anatomía general de un agente se describió con cuatro elementos �
 | **Base de conocimiento** | Datos estructurados: catálogo SQLite (2640 piezas, 7920 ofertas). Datos documentales: políticas indexadas en FAISS con metadatos y filtro por tema. | [catalog.py](../src/pedro/catalog.py); [policy_demo.py](../src/pedro/policy_demo.py); [knowledge/politicas_demo/](../knowledge/politicas_demo/) |
 | **Orquestrador** | LangChain: `create_openai_tools_agent` + `AgentExecutor` (máximo 6 iteraciones) envueltos en `RunnableWithMessageHistory`. | `crear_agente` y `crear_flujo` en [agent.py](../src/pedro/agent.py) |
 | **Puerta de publicación** | Verificación exacta (total, stock, presupuesto, plazo, IDs, procedencia) y NLI local triclase. Solo se muestra lo que pasa ambas. | [verification.py](../src/pedro/verification.py); [nli.py](../src/pedro/nli.py) |
-| **Interfaz** | Streamlit con vistas de Chat, Catálogo y Comparación sobre el mismo agente, memoria y verificador. | [app.py](../app.py) |
+| **Interfaz** | Streamlit con vistas de Chat y Comparación sobre el mismo agente, memoria y verificador. | [app.py](../app.py) |
 
 ### 2. Arquitectura cognitiva y flujo general
 
@@ -2012,14 +2012,13 @@ En la conversación de ocho turnos (R18):
 
 > ¿El alumno integró el agente completo a una interfaz Streamlit?
 
-**Respuesta corta.** Sí. [app.py](../app.py) es una interfaz Streamlit conectada al mismo agente, la misma memoria y el mismo verificador. Se ejecutó de verdad con el modelo real: cuatro turnos de chat, cambio de conversación y las otras dos vistas, sin ninguna excepción.
+**Respuesta corta.** Sí. [app.py](../app.py) es una interfaz Streamlit conectada al mismo agente, la misma memoria y el mismo verificador. Se ejecutó de verdad con el modelo real: cuatro turnos de chat, cambio de conversación y la vista de comparación, sin ninguna excepción.
 
 ### 1. La interfaz
 
 | Vista | Qué ofrece | Qué usa |
 |---|---|---|
 | **Chat** | Conversación con el agente | `crear_flujo`: agente, memoria, verificación y NLI |
-| **Catálogo de piezas** | Búsqueda paginada y ficha técnica con ofertas | Consultas de solo lectura al escenario |
 | **Comparación local** | Formulario: pieza, cantidad, presupuesto y plazo | El mismo cálculo y el mismo verificador que el agente |
 
 En la barra lateral: nuevo chat (misma base de datos, conversación nueva), nuevo escenario (otra copia del catálogo) y la lista de conversaciones para reabrirlas, cada una con el título de su primera pregunta.
@@ -2039,6 +2038,8 @@ En la barra lateral: nuevo chat (misma base de datos, conversación nueva), nuev
 Todo usa componentes nativos de Streamlit, sin CSS; los colores están en [.streamlit/config.toml](../.streamlit/config.toml), con modo claro y oscuro.
 
 **Cómo llegan los datos a la pantalla.** El agente adjunta la comparación ya verificada al mensaje público (`mensaje_publico` en [agent.py](../src/pedro/agent.py), campo `additional_kwargs["partes"]`). La interfaz dibuja desde esos datos y nunca relee el texto para sacar cifras. Como viajan con el mensaje, al reabrir una conversación las tarjetas se vuelven a dibujar.
+
+La vista de solo navegación del catálogo se retiró el 2026-11-11: no usaba el agente. Las preguntas sobre el catálogo se hacen en el chat, donde las resuelve la herramienta `consultar_catalogo` (R17).
 
 ### 2. Es el mismo agente
 
@@ -2062,7 +2063,6 @@ La app se ejecutó con `AppTest`, la herramienta de pruebas de Streamlit: corre 
 | Chat: «¿Se puede mandar en varias cajas?» | Regla de entrega parcial, con su fuente. Paso: busqué en las políticas |
 | Botón «Nuevo chat» | Sesión distinta y pantalla vacía |
 | Reabrir la conversación anterior | Vuelven sus 8 mensajes y se redibujan las 8 tarjetas |
-| Vista «Catálogo de piezas» | 2640 piezas, 20 por página |
 | Vista «Comparación local»: PEC-01-0001, 6 unidades | Tarjetas: CentroPeças, R$ 8.718,75, 2 días, Nacional; tabla con las 3 ofertas |
 
 Dos comprobaciones salen de esa tabla: **la memoria funciona en la interfaz** (el segundo turno depende del primero y la conversación se puede reabrir) y **el chat y el formulario dan el mismo importe** para la misma compra, R$ 8.718,75, porque comparten cálculo y verificador.
@@ -2077,11 +2077,11 @@ Sin `OPENAI_API_KEY` la interfaz no se rompe: lista piezas, muestra fichas, comp
 
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
-| `app.py` ejecutada: cuatro turnos, nuevo chat, conversación reabierta y las tres vistas | [trazas/r28_streamlit.json](trazas/r28_streamlit.json); [scripts/demostrar_r28.py](../scripts/demostrar_r28.py) | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
+| `app.py` ejecutada: cuatro turnos, nuevo chat, conversación reabierta y las dos vistas | [trazas/r28_streamlit.json](trazas/r28_streamlit.json); [scripts/demostrar_r28.py](../scripts/demostrar_r28.py) | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
 | Interfaz ejecutable | `uv run streamlit run app.py` o `./project.sh start` | Aplicación |
 | Capturas en navegador: chat con el agente y chat sin clave | [capturas/chat_agente.png](capturas/chat_agente.png); [capturas/chat_modo_local.png](capturas/chat_modo_local.png) | **Ejecución real remota** y real local |
 | La comparación estructurada viaja con el mensaje y se conserva en el historial | [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Prueba con doble |
-| Las tres vistas sin clave de OpenAI | [evidencias.md](evidencias.md), filas R5.5 | Ejecución real local |
+| Chat y comparación sin clave de OpenAI | [evidencias.md](evidencias.md), filas R5.5 | Ejecución real local |
 
 ### Pendientes y limitaciones
 

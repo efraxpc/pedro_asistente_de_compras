@@ -80,11 +80,7 @@ def main() -> None:
         "tarjetas_redibujadas": sum(len(m.metric) for m in app.chat_message)}
     print("nuevo chat:", informe["nuevo_chat"], "| reabierta:", len(reabierta), "mensajes")
 
-    # Las otras dos vistas usan el mismo escenario y el mismo verificador.
-    app.sidebar.button_group[0].set_value("Catálogo de piezas").run()
-    informe["vista_catalogo"] = {"titulo": app.title[0].value,
-                                 "resumen": [c.value for c in app.caption if "piezas" in c.value][-1:],
-                                 "excepciones": [str(e.value) for e in app.exception]}
+    # La otra vista usa el mismo escenario y el mismo verificador.
     app.sidebar.button_group[0].set_value("Comparación local").run()
     app.text_input[0].set_value("PEC-01-0001")
     app.number_input[0].set_value(6)
@@ -94,7 +90,7 @@ def main() -> None:
                                     "avisos": [w.value for w in app.warning] + [e.value for e in app.error],
                                     "ofertas_mostradas": [len(d.value) for d in app.dataframe],
                                     "excepciones": [str(e.value) for e in app.exception]}
-    print("catálogo:", informe["vista_catalogo"], "| comparación:", informe["vista_comparacion"])
+    print("comparación:", informe["vista_comparacion"])
     salida.parent.mkdir(parents=True, exist_ok=True)
     salida.write_text(json.dumps(informe, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("guardado en", salida)

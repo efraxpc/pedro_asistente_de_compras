@@ -1,4 +1,4 @@
-"""Interfaz local: chat, catálogo y comparación de piezas ficticias."""
+"""Interfaz local: chat y comparación de proveedores de piezas ficticias."""
 import json
 import os
 from decimal import Decimal, InvalidOperation
@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 from pedro.agent import Traza, crear_flujo, es_diagnostico_t24, partes_de
 from pedro.business import brl, describir_motivos, variacion_porcentual
-from pedro.catalog import abrir_escenario, crear_escenario, ficha, listar, ofertas
+from pedro.catalog import abrir_escenario, crear_escenario, ficha
 from pedro.contracts import Alternativa, Oferta, RespuestaCompra, Solicitud
 from pedro.memory import MODELO_RECUERDOS, Historial, nueva_sesion, sesiones
 from pedro.policy_demo import crear_indice_demo, huella_corpus
@@ -287,7 +287,7 @@ if "pasos" not in st.session_state:
 with st.sidebar:
     st.title(":material/shopping_cart: Pedro")
     st.caption("Asistente de compras · datos ficticios")
-    vista = st.segmented_control("Vista", ["Chat", "Catálogo de piezas", "Comparación local"],
+    vista = st.segmented_control("Vista", ["Chat", "Comparación local"],
                                 default="Chat", key="vista", width="stretch")
     with st.container(horizontal=True):
         st.button("Nuevo chat", on_click=nuevo_chat, icon=":material/edit_square:", width="stretch")
@@ -378,54 +378,6 @@ if vista == "Chat":
                         st.session_state.pasos[(st.session_state.sesion, len(mensajes) + 1)] = pasos
             if salida is not None:
                 mostrar_mensaje(salida)
-
-elif vista == "Catálogo de piezas":
-    st.title("Catálogo de piezas")
-    st.caption("Copia SQLite sintética del escenario activo. Ofertas y compatibilidades ficticias.")
-    with st.container(horizontal=True, vertical_alignment="bottom"):
-        termino = st.text_input("Buscar por nombre, SKU o ID", key="termino",
-                                placeholder="Compresor, NEVE-COMP-0001, PEC-01-0001…")
-        pagina = st.number_input("Página", min_value=1, value=1, step=1, key="pagina", width=140)
-    total, piezas = listar(escenario, int(pagina), termino)
-    st.caption(f"{total} piezas · hasta 20 por página")
-    st.dataframe(
-        piezas, hide_index=True, alt="Piezas del escenario activo",
-        column_config={"id": "ID", "sku": "SKU", "name": st.column_config.TextColumn("Pieza", width="large"),
-                       "category": "Categoría"})
-    producto_id = st.selectbox("Ver la ficha de una pieza", [p["id"] for p in piezas], index=None,
-                               key="ficha_id", placeholder="Elige una pieza de esta página")
-    if producto_id:
-        dato = ficha(escenario, producto_id)
-        if dato is None:
-            st.warning("La pieza ya no está disponible.")
-            st.stop()
-        with st.container(border=True):
-            st.subheader(dato["name"])
-            with st.container(horizontal=True):
-                st.badge(dato["category"], icon=":material/category:", color="blue")
-                st.badge(dato["manufacturer"], icon=":material/factory:", color="gray")
-                st.badge(dato["condition"], color="gray")
-            st.markdown(dato["description"])
-            with st.container(horizontal=True):
-                st.metric("SKU", dato["sku"], border=True, height="stretch")
-                st.metric("Voltaje", f"{dato['voltage_v']} V" if dato["voltage_v"] else "—",
-                          border=True, height="stretch")
-                st.metric("Potencia", f"{dato['power_w']} W" if dato["power_w"] else "—",
-                          border=True, height="stretch")
-                st.metric("Garantía", f"{dato['warranty_months']} meses", border=True, height="stretch")
-            st.markdown("**Ofertas de los proveedores**")
-            st.dataframe(
-                [{"Proveedor": o.proveedor_nombre, "Origen": origen(o),
-                  "Precio por unidad": brl(o.precio_unitario_centavos),
-                  "Frente a su media": frente_a_media(o), "Flete": brl(o.flete_centavos),
-                  "Stock": o.stock, "Pedido mínimo": o.pedido_minimo, "Entrega (días)": o.plazo_dias,
-                  "Oferta": o.id} for o in ofertas(escenario, producto_id)],
-                hide_index=True, alt="Ofertas vigentes de la pieza en el escenario activo")
-            st.markdown("**Compatibilidad**")
-            st.dataframe(dato["compatibility"], hide_index=True, alt="Modelos compatibles ficticios",
-                         column_config={"brand": "Marca", "model_code": "Modelo",
-                                        "year_from": st.column_config.NumberColumn("Desde", format="%d"),
-                                        "year_to": st.column_config.NumberColumn("Hasta", format="%d")})
 
 else:
     st.title("Comparación local")
