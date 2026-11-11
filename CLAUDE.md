@@ -20,6 +20,7 @@ uv run python scripts/crear_notebooks.py          # regenerate the 5 teaching no
 uv run python scripts/ejecutar_notebooks.py       # execute notebooks and save outputs
 uv run python scripts/diagnosticar_t24.py --salida storage/evidencias/t24_demo.json  # T24 retrieval diagnostic (no OpenAI needed)
 uv run python scripts/construir_indice_politicas.py  # rebuild the persisted policy index in knowledge/politicas/ (run after editing the corpus)
+uv run python scripts/demostrar_fase3.py            # real-LLM evidence scripts (also demostrar_fase1/fase4/r08/r09/r10/r11/r22/r28); write docs/trazas/*.json, need OPENAI_API_KEY
 uv run python evals/evaluar_flujo.py          # LangSmith eval (requires OPENAI_API_KEY + LANGSMITH_API_KEY; never simulate metrics)
 ```
 
@@ -46,7 +47,7 @@ Type-check edited code with `ty` when available. Run the full test suite before 
 
 **Security gate:** the persisted index at `knowledge/politicas/` (our own, built from the fictitious corpus; committed with its manifest) requires `index.faiss`, `index.pkl`, and a complete `manifest.json`; its docstore is pickle, so `PEDRO_TRUST_POLICY_INDEX=true` must only be set after verifying provenance, hashes, model, dimension, metric, and metadata. The in-memory demo index never uses that flag.
 
-**Env vars:** `OPENAI_API_KEY`, `PEDRO_MODEL`, `PEDRO_TRUST_POLICY_INDEX`, `PEDRO_PORT`, `LANGSMITH_API_KEY` (evals). Copy `.env.example` to `.env`; never commit `.env` or `storage/`.
+**Env vars:** `OPENAI_API_KEY`, `PEDRO_MODEL`, `PEDRO_TRUST_POLICY_INDEX`, `PEDRO_PORT`, `PEDRO_STORAGE` (app data folder, default `storage`), `LANGSMITH_API_KEY` (evals). Copy `.env.example` to `.env`; never commit `.env` or `storage/`.
 
 ## Style and tests
 
@@ -57,3 +58,4 @@ Python 3.13, four-space indentation, `snake_case`, type hints on public function
 - External calls and test doubles must be labeled separately in `docs/evidencias.md`; notebooks identify their test doubles explicitly.
 - The matrix in `docs/matriz.md` maps evidence to the 29 rubrics (R01–R29) of the integrated guide in `guide/`; those codes are the guide's labels, and the final check against the original Portuguese enunciado is still pending.
 - Derived eval cases in `evals/casos_derivados.json` are frozen and are not the official cases.
+- `docs/respuestas_rubricas.md` answers each rubric (what, evidence, decision, limitations); `docs/trazas/` holds the saved real-LLM runs it cites. When behaviour changes, re-run the affected `scripts/demostrar_*.py` and update both.

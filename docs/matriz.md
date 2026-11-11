@@ -53,11 +53,11 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 | Rúbrica | Pregunta resumida | ID previo | Ubicación | Evidencia o condición | Estado |
 |---|---|---|---|---|---|
-| R24 | Verificación de consistencia factual y coherencia | R5.2, R5.3 | src/pedro/verification.py; src/pedro/nli.py; docs/citas_ancladas.md; tests/test_citas_ancladas.py | Verificación exacta (total, stock, presupuesto, plazo, IDs, dataset) + NLI triclase real local integradas antes de publicar; anclaje de citas con cuatro estados en la traza: el modelo elige la fuente y el sistema pone el texto | Real local |
-| R25 | Agente único con ≥2 categorías de herramientas | R4.1, R5.1 | src/pedro/agent.py | SQL + RAG + API + deterministas bajo el mismo executor; ejecuciones remotas puntuales registradas en T24 | Local |
-| R26 | Executor con create_openai_tools_agent y AgentExecutor | R5.1 | src/pedro/agent.py | Constructor con las APIs exigidas; ejecuciones remotas puntuales con gpt-4.1-mini (T24); **sesión remota completa documentada pendiente** | Parcial |
-| R27 | Historial con RunnableWithMessageHistory | R5.4 | src/pedro/agent.py; tests/test_tools_flow.py | Historial multi-turno operativo que guarda solo petición y respuesta pública | Local |
-| R28 | Agente completo integrado a Streamlit | R5.5 | app.py | Agent API ready en Chat, Catálogo y Comparación con el mismo agente, memoria y verificador | Real local |
+| R24 | Verificación de consistencia factual y coherencia | R5.2, R5.3 | docs/respuestas_rubricas.md §R24; src/pedro/verification.py; src/pedro/nli.py; docs/citas_ancladas.md; docs/trazas/r29_langsmith_*.json | Verificación exacta y NLI triclase dentro del flujo, con anclaje de citas, CEP y preferencias; 0 recomendaciones erróneas publicadas en cinco experimentos; ganadores equivocados de gpt-4o-mini bloqueados; rechazos y correcciones registrados en la traza | Real remoto y local |
+| R25 | Agente único con ≥2 categorías de herramientas | R4.1, R5.1 | docs/respuestas_rubricas.md §R25; src/pedro/agent.py; docs/trazas/fase3_memoria_llm.json | SQL, RAG y API bajo el mismo AgentExecutor; las tres categorías usadas en una conversación real de siete turnos y desde Streamlit; una solicitud que mezcla categorías en un solo mensaje no se publica (declarado) | Real remoto puntual |
+| R26 | Executor con create_openai_tools_agent y AgentExecutor | R5.1 | docs/respuestas_rubricas.md §R26; src/pedro/agent.py; docs/trazas/fase3_memoria_llm.json; docs/trazas/r29_langsmith_*.json | Agente final construido con las dos APIs exigidas, 6 herramientas y 6 iteraciones; ejecutado con gpt-4.1-mini en una conversación de siete turnos, en cinco experimentos de 30 casos y desde la interfaz | Real remoto |
+| R27 | Historial con RunnableWithMessageHistory | R5.4 | docs/respuestas_rubricas.md §R27; src/pedro/agent.py; src/pedro/memory.py; docs/trazas/fase3_memoria_llm.json | Agente envuelto en RunnableWithMessageHistory con historial SQLite por usuario y sesión; siete turnos reales con contexto, 14 mensajes guardados (solo lo publicado), ventana de 12 y recuperación tras recrear el flujo | Real remoto puntual |
+| R28 | Agente completo integrado a Streamlit | R5.5 | docs/respuestas_rubricas.md §R28; app.py; scripts/demostrar_r28.py; docs/trazas/r28_streamlit.json | app.py ejecutada con AppTest y el modelo real: cuatro turnos de chat (compra, cambio de cantidad, CEP, política), nuevo chat, conversación reabierta y las tres vistas sin excepciones; chat y formulario coinciden en R$ 4.401,99; falta el vídeo | Real remoto puntual |
 | R29 | Evaluación LangSmith de calidad y trayectoria | R5.5 | docs/respuestas_rubricas.md §R29; evals/evaluar_flujo.py; evals/casos_derivados.json; docs/trazas/r29_langsmith_*.json | Cinco experimentos reales sobre 30 casos derivados con seis métricas: gpt-4.1-mini 14/14 en ganador e importe y 16/16 en contenido; gpt-4o-mini 13/14; 0 recomendaciones erróneas publicadas; la evaluación halló el defecto del CEP y el efecto de la memoria compartida, ambos corregidos y remedidos; casos derivados, no oficiales; una corrida por configuración | Real remoto |
 
 ## Infraestructura de soporte (sin rúbrica oficial directa)
@@ -82,6 +82,18 @@ El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubr
 
 ## Pendientes que bloquean el cierre
 
-1. **R01**: sustituir la escala genérica de madurez por la de la clase 1 cuando esté disponible.
+Las 29 rúbricas tienen respuesta redactada y ejecución guardada. Lo que queda no es código:
+
+1. **Vídeo de demostración** y enlace Drive institucional: requieren grabación y acceso del alumno.
+2. **Cotejo contra el enunciado original en portugués**, que no está en este workspace. Los códigos R01–R29 son etiquetas de la guía.
+3. **R01**: sustituir la escala genérica de madurez por la de la clase 1 cuando esté disponible.
 4. **R22–R23**: confirmar con el profesor si la actividad entrega un índice FAISS; hoy se usa uno propio guardado en knowledge/politicas/.
-6. Cotejo final contra el enunciado original en portugués cuando esté disponible, y actualización del diagrama rubricas_proyecto.mmd/svg a los IDs oficiales.
+5. **R29**: los 30 casos son derivados, no los oficiales; si el curso entrega casos, hay que repetir la evaluación.
+6. Actualizar el diagrama rubricas_proyecto.mmd/svg a los IDs oficiales.
+
+## Limitaciones conocidas del agente
+
+- Una solicitud que mezcla compra, política y CEP en un solo mensaje no se publica (R02, R25).
+- Las reglas de diálogo son frágiles ante formas de hablar no previstas (R17).
+- La verificación comprueba que la respuesta sea cierta, no que sea pertinente (R24).
+- El text-to-SQL con modelo no está conectado al chat (R21).

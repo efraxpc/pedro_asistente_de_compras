@@ -1,0 +1,64 @@
+{
+  "rubrica": "R28",
+  "modo": "app.py ejecutada con streamlit.testing.v1.AppTest; agente real remoto (OpenAI, ViaCEP); NLI real local; índice de políticas cargado de disco",
+  "fecha_utc": "2026-11-11T01:03:05+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "arranque": {
+    "titulos": [
+      "Chat",
+      "Pedro"
+    ],
+    "excepciones": []
+  },
+  "vista_chat": {
+    "turnos": [
+      {
+        "usuario": "Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días",
+        "pedro": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07; cumple [PEC-01-0001-BR-06]\n- Litoral Parts: R$ 819,80; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts: R$ 3.200,27; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06",
+        "avisos": []
+      },
+      {
+        "usuario": "Ahora que sean 3 y mantén el plazo",
+        "pedro": "CentroPeças: R$ 4.401,99 para 3 unidades; plazo 2 días.\n- CentroPeças: R$ 4.401,99; cumple [PEC-01-0001-BR-06]\n- Litoral Parts: R$ 1.190,00; descartada por stock, plazo [PEC-01-0001-BR-05]\n- Atlantic Repair Parts: R$ 4.581,82; descartada por plazo [PEC-01-0001-INT-06]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-BR-05, PEC-01-0001-INT-06",
+        "avisos": []
+      },
+      {
+        "usuario": "¿A qué ciudad corresponde el CEP 01001000?",
+        "pedro": "CEP 01001000: São Paulo/SP (ViaCEP, modo real).",
+        "avisos": []
+      },
+      {
+        "usuario": "¿Se puede mandar en varias cajas?",
+        "pedro": "Política ficticia de demostración. Una entrega parcial solo puede describirse si hay un acuerdo simulado explícito que identifica las unidades, el proveedor y los plazos de cada envío. Si no existe ese acuerdo, el asistente debe indicar que la oferta no cubre la cantidad pedida.\nFuentes: FIC-ENT-01-S05-C01\n\nRecuperación T24: la pregunta inicial dejó `FIC-ENT-01-S05-C01` fuera del top-4; la reformulación lo situó en la posición 1 con el mismo índice y top-k.",
+        "avisos": []
+      }
+    ],
+    "mensajes_en_pantalla": 8
+  },
+  "nuevo_chat": {
+    "sesion_distinta": true,
+    "mensajes_en_pantalla": 0
+  },
+  "conversacion_reabierta": {
+    "mensajes_en_pantalla": 8,
+    "primer_mensaje": "Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días"
+  },
+  "vista_catalogo": {
+    "titulo": "Catálogo de piezas",
+    "resumen": [
+      "2640 piezas · hasta 20 por página"
+    ],
+    "excepciones": []
+  },
+  "vista_comparacion": {
+    "titulo": "Comparación local",
+    "resultado": [
+      "BR-06: R$ 4.401,99"
+    ],
+    "avisos": [],
+    "ofertas_mostradas": [
+      3
+    ],
+    "excepciones": []
+  }
+}

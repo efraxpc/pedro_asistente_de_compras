@@ -4,7 +4,7 @@ Este documento responde, una por una, a las 29 preguntas de la rúbrica según l
 
 Todos los datos del proyecto (catálogo, proveedores, stock, precios y políticas) son sintéticos.
 
-**Avance de redacción:** redactadas y con ejecución guardada R01–R23 (Fases 1 a 4 completas) y R29. Pendientes de redactar: R24–R28.
+**Avance de redacción:** las 29 rúbricas (R01–R29) están redactadas y tienen ejecución guardada. Las limitaciones de cada una figuran en su sección.
 
 ---
 
@@ -89,16 +89,18 @@ Pedro no es **reactivo puro** porque conserva estado entre turnos y elige herram
 | 4 | Agente con memoria y autoverificación: estado entre turnos y sesiones, y revisión de la propia salida antes de publicar | **Sí — nivel actual** |
 | 5 | Sistema multiagente o autónomo: planificación de largo horizonte, varios agentes, acciones con efecto real | No, y no es el objetivo |
 
-**Madurez actual: nivel 4 en diseño, demostrado solo en local.** El agente decide herramientas, recuerda y se autoverifica, con autonomía acotada a propósito: solo lee del escenario, su única escritura es una preferencia explícita del usuario, tiene un máximo de 6 iteraciones y una sola corrección. Lo que falta para darlo por demostrado es evidencia con el modelo real: no hay todavía una sesión remota completa documentada ni métricas.
+**Punto de partida: nivel 4 en diseño, demostrado solo en local.** Al empezar este documento el agente ya decidía herramientas, recordaba y se autoverificaba, con autonomía acotada a propósito: solo lee del escenario, su única escritura es una preferencia explícita del usuario, tiene un máximo de 6 iteraciones y una sola corrección. Faltaba la evidencia con el modelo real.
 
-**Madurez objetivo: nivel 4 demostrado con mediciones.** Se considera alcanzado cuando se cumplan estos criterios:
+**Madurez objetivo: nivel 4 demostrado con mediciones.** Se fijaron cuatro criterios. Esta es su situación tras ejecutar el resto de rúbricas:
 
-| Criterio | Cómo se mide | Rúbrica |
-|---|---|---|
-| El LLM real elige las herramientas correctas | Trayectoria esperada frente a observada en los 30 casos de LangSmith | R29 |
-| Las respuestas son correctas | Métricas de contenido, ganador e importe en LangSmith | R29 |
-| Nada se publica sin respaldo | Cero recomendaciones publicadas que no pasen verificación exacta y NLI | R24 |
-| Hay continuidad entre turnos con el modelo real | Sesión remota multi-turno documentada | R18, R26, R27 |
+| Criterio | Cómo se midió | Resultado | Rúbrica |
+|---|---|---|---|
+| El LLM real elige las herramientas correctas | Trayectoria en 30 casos de LangSmith | Herramienta decisiva 23 de 23; trayectoria completa 24 de 30 | R29 |
+| Las respuestas son correctas | Ganador, importe y contenido en LangSmith | 14 de 14, 14 de 14 y 16 de 16 | R29 |
+| Nada se publica sin respaldo | Recomendaciones erróneas publicadas | 0 en cinco experimentos | R24 |
+| Hay continuidad entre turnos con el modelo real | Conversación real multi-turno | Siete turnos con estado correcto | R18, R26, R27 |
+
+**Madurez actual: nivel 4 demostrado**, con tres reservas que impiden darlo por consolidado: una solicitud que mezcla varias intenciones en un mismo mensaje no se publica, las reglas de diálogo son frágiles ante formas de hablar no previstas, y las mediciones son corridas únicas sobre casos derivados, no sobre los oficiales.
 
 No se persigue el nivel 5 porque el problema — recomendar una oferta verificada para una pieza — no requiere varios agentes ni ejecutar compras, y más autonomía reduciría la trazabilidad que la puerta de verificación garantiza.
 
@@ -1490,23 +1492,330 @@ En el agente, la herramienta `consultar_politicas` aplica esta reformulación a 
 
 ## R24 — Verificación de consistencia factual y coherencia lógica
 
-*Pendiente de redactar.*
+> ¿El alumno construyó un mecanismo de verificación de consistencia factual y coherencia lógica de las respuestas del agente?
+
+**Respuesta corta.** Sí. Ninguna respuesta del agente se muestra sin pasar por dos puertas dentro del flujo: una **verificación exacta** (coherencia lógica) y un modelo **NLI** (consistencia factual). En cinco experimentos con el modelo real no se publicó ninguna recomendación equivocada.
+
+### 1. Dónde está
+
+La verificación no es un análisis posterior: es un paso del flujo, entre la propuesta del modelo y lo que ve el usuario. El modelo no puede saltársela porque no es una herramienta suya.
+
+```text
+propuesta del modelo → anclaje de datos → verificación exacta → NLI → publicar
+                                               │                 │
+                                               └── error ────────┴──→ una corrección → o no se publica
+```
+
+### 2. Coherencia lógica: verificación exacta
+
+`verificar`, en [verification.py](../src/pedro/verification.py), recalcula la respuesta con los datos del escenario y la compara con la propuesta:
+
+| Comprobación | Qué detecta |
+|---|---|
+| Total | Un importe que no coincide con precio × cantidad + flete |
+| Stock, presupuesto y plazo | Una oferta marcada como válida que no cumple, o al revés |
+| Ganador | Un proveedor recomendado que no es el mejor según la regla |
+| Ofertas completas | Que falte o sobre alguna alternativa |
+| Identificadores | Una oferta o una pieza que no existe |
+| Procedencia | Una cita que no está en el fragmento recuperado; un escenario distinto del activo |
+| Petición vigente | Una respuesta para otra cantidad u otros límites que los pedidos |
+
+### 3. Consistencia factual: NLI
+
+Un modelo de inferencia en lenguaje natural clasifica la relación entre la evidencia y la afirmación en tres clases:
+
+| Evidencia (premisa) | Afirmación (hipótesis) | Clase |
+|---|---|---|
+| Entrega en 5 días | Entrega en 5 días | *entailment* (la sustenta) |
+| Entrega en 5 días | Entrega en 10 días | *contradiction* |
+| Entrega en 5 días | La pieza es azul | *neutral* (no dice nada) |
+
+Solo *entailment* permite publicar. El modelo es `mDeBERTa-v3-base-mnli-xnli`, local, con la revisión fijada. Se aplica a las recomendaciones (¿la evidencia sustenta el stock y el plazo del ganador?) y a las políticas (¿el fragmento sustenta el resumen?).
+
+### 4. Anclaje: el modelo decide, el sistema pone los datos
+
+Al probar con el modelo real, la verificación exacta rechazaba respuestas correctas por errores de copia. Se añadió un paso previo que rellena los datos con lo que devolvieron las herramientas:
+
+| Anclaje | Qué rellena | Si no puede |
+|---|---|---|
+| `anclar_citas` | El texto literal del fragmento de política recuperado | La cita queda como estaba y se rechaza |
+| `anclar_cep` | Ciudad, estado y evidencia de ViaCEP | No rellena y se rechaza |
+| `anclar_preferencia` | La confirmación con lo que se guardó de verdad | No se confirma |
+
+El anclaje no relaja la verificación: solo evita rechazar lo que ya era cierto. Una cita inventada, un CEP sin respuesta de la API o una preferencia no guardada siguen bloqueados.
+
+### 5. Qué pasa cuando falla
+
+1. **Una corrección.** El error vuelve al modelo y propone otra respuesta.
+2. **Degradación.** En políticas, si las citas son válidas pero el resumen no pasa el NLI, se publican solo las citas literales.
+3. **No se publica.** Si nada pasa, el usuario lee «no puedo confirmar…». Nunca una respuesta sin verificar.
+
+### 6. Resultados medidos
+
+| Hecho observado | Dónde |
+|---|---|
+| **0 recomendaciones erróneas publicadas** en cinco experimentos de 30 casos | R29 |
+| `gpt-4o-mini` propuso un ganador equivocado; la verificación lo rechazó dos veces y no se publicó | R29 |
+| `gpt-4.1-mini`: 22 de 23 propuestas aceptadas a la primera; la otra, corregida | R29 |
+| Una primera propuesta con el ganador o el total incorrecto fue rechazada y la segunda fue correcta | Turno 3 de la conversación de R18 |
+| Una política cuyo resumen no pasó el NLI se corrigió y la segunda propuesta sí lo pasó | [citas_ancladas.md](citas_ancladas.md) |
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Errores de verificación de cada caso en cinco experimentos | [trazas/](trazas/): `r29_langsmith_*.json` | **Ejecución real remota**; NLI real local |
+| Rechazo y corrección dentro de una conversación | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), turno 3 | Ejecución real remota |
+| Anclaje de citas y de CEP, antes y después | [citas_ancladas.md](citas_ancladas.md); [trazas/r10_viacep_llm_antes.json](trazas/r10_viacep_llm_antes.json) | Ejecución real remota |
+| Tres pares NLI con sus tres clases | [evidencias.md](evidencias.md), fila R5.3 | Ejecución real local |
+| Cada comprobación exacta, las tres clases NLI, los anclajes y la degradación | [tests/test_core.py](../tests/test_core.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_policy_cep.py](../tests/test_policy_cep.py); [tests/test_citas_ancladas.py](../tests/test_citas_ancladas.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- **Verifica que la respuesta sea cierta, no que sea pertinente.** En un experimento con memoria contaminada, una pregunta de CEP recibió una respuesta de compra verificada pero fuera de tema.
+- El NLI se probó con tres pares ilustrativos; no se midió su exactitud general.
+- El modelo NLI admite 512 tokens: con varias citas largas la premisa se trunca.
+- El umbral del 80 % para anclar citas se fijó por criterio, sin calibrarlo.
 
 ## R25 — Agente único con herramientas de RAG, SQL o API
 
-*Pendiente de redactar.*
+> ¿El alumno consolidó un agente único integrando herramientas de RAG, SQL o API bajo un mismo executor?
+
+**Respuesta corta.** Sí. Un solo agente, con un solo ejecutor, reúne las tres categorías: SQL, RAG y API. En una misma conversación real usó las tres.
+
+### 1. Un agente, seis herramientas, tres categorías
+
+Todas se registran en el mismo `AgentExecutor`, en `crear_agente` ([agent.py](../src/pedro/agent.py)):
+
+| Categoría | Herramientas | Qué consultan |
+|---|---|---|
+| **SQL** | `buscar_productos`, `consultar_catalogo`, `comparar_ofertas` | Catálogo SQLite del escenario |
+| **RAG** | `consultar_politicas` | Índice FAISS de políticas |
+| **API** | `consultar_cep` | ViaCEP |
+| Memoria | `guardar_preferencia` | Preferencias del usuario |
+
+No hay un agente por tema ni un router previo: el mismo modelo ve las seis descripciones y elige.
+
+### 2. Las tres categorías en una misma conversación
+
+Conversación real de siete turnos con el agente final (la de R18):
+
+| Turno | Pregunta | Categoría | Herramienta llamada |
+|---|---|---|---|
+| 1 | Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días | SQL | `consultar_catalogo`, `comparar_ofertas` |
+| 4 | Prefiero proveedores nacionales, recuérdalo | Memoria | `guardar_preferencia` |
+| 5 | ¿A qué ciudad corresponde el CEP 01001000? | API | `consultar_cep` |
+| 6 | ¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza? | RAG | `consultar_politicas` |
+| 7 | Vuelve a comparar con lo último que te pedí | SQL | `consultar_catalogo`, `comparar_ofertas` |
+
+El mismo ejecutor, la misma memoria y el mismo verificador atienden los siete turnos.
+
+### 3. Por qué un solo agente
+
+- **El usuario no cambia de asistente al cambiar de tema.** Pregunta por un precio, luego por una política y luego por un destino, sin perder la compra en curso.
+- **Una sola puerta de salida.** Venga de donde venga, toda respuesta pasa por la misma verificación.
+- **Una sola traza.** Las llamadas a las seis herramientas quedan en el mismo registro.
+
+**Decisión técnica.** Se descartó un agente por categoría coordinado por otro agente. Añadiría llamadas al modelo y un punto más donde equivocarse (elegir el agente) para resolver un problema que el *function calling* ya resuelve: elegir entre seis herramientas con buenas descripciones.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| SQL, API y RAG usados por el mismo ejecutor en una conversación | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), `r18_conversacion_compleja` | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP) |
+| Las mismas tres categorías desde la interfaz Streamlit | [trazas/r28_streamlit.json](trazas/r28_streamlit.json) | Ejecución real remota |
+| Trayectorias de herramientas en 30 casos | [trazas/](trazas/): `r29_langsmith_*.json` | Ejecución real remota |
+| El agente construido tiene las seis herramientas | [tests/test_anatomia.py](../tests/test_anatomia.py); [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- **Cada turno usa una categoría.** Una pregunta que mezcla SQL, RAG y API en un solo mensaje hace que el agente llame a las herramientas correctas, pero la respuesta no se publica: el formato de respuesta admite un solo tipo (R02).
+- Parte de los turnos los resuelve una regla sin pasar por el agente (listado, aclaraciones, entrega parcial).
 
 ## R26 — Executor con create_openai_tools_agent y AgentExecutor
 
-*Pendiente de redactar.*
+> ¿El alumno construyó el executor del agente con create_openai_tools_agent y AgentExecutor?
+
+**Respuesta corta.** Sí. El agente final se construye exactamente con esas dos APIs y se ejecutó con el modelo real en conversaciones completas, desde scripts y desde la interfaz.
+
+### 1. El código
+
+En `crear_agente`, [agent.py](../src/pedro/agent.py):
+
+```python
+prompt = PLANTILLA_AGENTE.partial(dataset_id=escenario.dataset_id, ejemplos=EJEMPLOS_ACCIONES,
+                                  formato=parser.get_format_instructions())
+lista = herramientas(escenario, memoria_db, user_id, mensaje_actual, indice, cep_simulado=cep_simulado)
+return AgentExecutor(agent=create_openai_tools_agent(llm, lista, prompt), tools=lista,
+                     return_intermediate_steps=True, max_iterations=6)
+```
+
+| Pieza | Qué hace |
+|---|---|
+| `create_openai_tools_agent` | Une el modelo, las herramientas y el prompt. El modelo decide por *function calling* qué herramienta llamar y con qué argumentos |
+| `AgentExecutor` | Ejecuta el ciclo: llama a la herramienta, devuelve el resultado al modelo y repite hasta que haya respuesta |
+| `max_iterations=6` | Tope de vueltas del ciclo |
+| `return_intermediate_steps=True` | Devuelve cada llamada con su resultado; el verificador los usa para contrastar la respuesta |
+
+### 2. El ejecutor en marcha
+
+Un turno real, tal como lo registró la traza:
+
+```text
+Usuario:      Ahora que sean 3 y mantén el plazo
+Herramienta:  comparar_ofertas {'producto_id': 'PEC-01-0001', 'cantidad': 3, 'plazo_max_dias': 7}
+Verificación: intento 1, sin errores
+Respuesta:    CentroPeças: R$ 4.401,99 para 3 unidades; plazo 2 días.
+```
+
+### 3. Lo que rodea al ejecutor
+
+El ejecutor no se usa solo. `crear_flujo` lo envuelve:
+
+1. Antes: reglas de diálogo, memoria y recuerdos.
+2. El ejecutor propone una respuesta.
+3. Después: anclaje, verificación exacta y NLI.
+4. Si la verificación falla, el ejecutor se invoca **una** vez más con los errores.
+
+**Decisión técnica.** Frente al agente ReAct clásico de R08, este agente recibe argumentos con tipo (una cantidad es un número, no un texto que interpretar) y la elección de herramienta llega estructurada desde la API del modelo. Eso elimina los errores de formato del ReAct en texto y permite verificar cada llamada.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Conversación de siete turnos con el ejecutor, sus herramientas y verificaciones | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | **Ejecución real remota** (`gpt-4.1-mini`) |
+| Cinco experimentos de 30 casos sobre el mismo ejecutor | [trazas/](trazas/): `r29_langsmith_*.json` | Ejecución real remota |
+| El ejecutor llamando a ViaCEP y al índice de políticas | [trazas/r10_viacep_llm.json](trazas/r10_viacep_llm.json); [trazas/r22_indice_existente.json](trazas/r22_indice_existente.json) | Ejecución real remota |
+| El objeto construido es un `AgentExecutor` con `create_openai_tools_agent`, 6 iteraciones y 6 herramientas | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomía»; [tests/test_anatomia.py](../tests/test_anatomia.py) | Ejecución real local y prueba |
+
+### Pendientes y limitaciones
+
+- `AgentExecutor` pertenece a las APIs clásicas de LangChain; la biblioteca recomienda hoy LangGraph.
+- Se crea un ejecutor nuevo en cada propuesta, porque las herramientas se ligan al mensaje actual.
 
 ## R27 — Historial con RunnableWithMessageHistory
 
-*Pendiente de redactar.*
+> ¿El alumno integró el histórico de conversación al agente con RunnableWithMessageHistory?
+
+**Respuesta corta.** Sí. El agente final está envuelto en `RunnableWithMessageHistory`, con el historial guardado en SQLite por usuario y sesión. Se demostró en conversaciones reales de varios turnos y tras reiniciar el flujo.
+
+### 1. El código
+
+Al final de `crear_flujo`, [agent.py](../src/pedro/agent.py):
+
+```python
+return RunnableWithMessageHistory(
+    RunnableLambda(turno),
+    lambda user_id, session_id: Historial(memoria_db, user_id, session_id),
+    input_messages_key="input", history_messages_key="chat_history",
+    history_factory_config=[ConfigurableFieldSpec(id="user_id", ...),
+                            ConfigurableFieldSpec(id="session_id", ...)])
+```
+
+| Pieza | Qué hace |
+|---|---|
+| `RunnableWithMessageHistory` | Antes de cada turno carga el historial y lo pasa como `chat_history`; después guarda la pregunta y la respuesta |
+| `Historial` | Implementación propia de `BaseChatMessageHistory` sobre SQLite ([memory.py](../src/pedro/memory.py)) |
+| Dos claves: `user_id` y `session_id` | Cada conversación es de un usuario y de una sesión; no se puede abrir la de otro |
+
+### 2. Tres decisiones sobre qué es «el historial»
+
+| Decisión | Por qué |
+|---|---|
+| **Se guarda solo lo publicado.** Las propuestas rechazadas y los pasos intermedios no entran | Si entraran, el modelo los leería en el turno siguiente como si fueran ciertos |
+| **El agente ve una ventana de 12 mensajes**; el historial completo se conserva | Limita el coste sin perder el registro |
+| **El historial es persistente** | Se puede reabrir una conversación días después |
+
+### 3. Historial operativo en una sesión real
+
+En la conversación de siete turnos (R18):
+
+- El turno 2, «Ahora que sean 3 y mantén el plazo», no nombra la pieza: viene del contexto.
+- El turno 7, «Vuelve a comparar con lo último que te pedí», se resuelve tres turnos después de la última compra.
+- Al terminar había **14 mensajes guardados**: siete del usuario y siete respuestas publicadas. El turno 3 tuvo una propuesta rechazada, y **no aparece** en el historial.
+- Al crear un flujo nuevo sobre la misma base, como tras reiniciar, los 14 mensajes seguían ahí y el agente veía los últimos 12.
+- Desde la interfaz, al reabrir una conversación anterior volvieron sus 8 mensajes.
+
+**Decisión técnica.** Se eligió `RunnableWithMessageHistory`, y no pasar el historial a mano, porque separa dos responsabilidades: el turno recibe el historial ya cargado y no sabe dónde vive. Cambiar SQLite por otro almacén sería cambiar una sola clase.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| Siete turnos con contexto, 14 mensajes guardados, 12 en ventana y recuperación tras recrear el flujo | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json) | **Ejecución real remota** (`gpt-4.1-mini`) |
+| Conversación reabierta desde la interfaz con sus 8 mensajes | [trazas/r28_streamlit.json](trazas/r28_streamlit.json) | Ejecución real remota |
+| Bitácora de un turno: la propuesta rechazada no llega a la memoria | [notebooks/02_react_herramientas.ipynb](../notebooks/02_react_herramientas.ipynb) §«R12» | Ejecución con **doble** |
+| Solo se guarda lo público; ventana de 12; aislamiento por usuario y sesión | [tests/test_tools_flow.py](../tests/test_tools_flow.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_dialogue.py](../tests/test_dialogue.py) | Pruebas automáticas |
+
+### Pendientes y limitaciones
+
+- `RunnableWithMessageHistory` emite un aviso de obsolescencia en la versión instalada; LangChain recomienda la persistencia de LangGraph.
+- La ventana cuenta mensajes, no tokens.
+- El borrador de compra se guarda aparte del historial de mensajes: son dos mecanismos que conviven.
 
 ## R28 — Integración del agente en Streamlit
 
-*Pendiente de redactar.*
+> ¿El alumno integró el agente completo a una interfaz Streamlit?
+
+**Respuesta corta.** Sí. [app.py](../app.py) es una interfaz Streamlit conectada al mismo agente, la misma memoria y el mismo verificador. Se ejecutó de verdad con el modelo real: cuatro turnos de chat, cambio de conversación y las otras dos vistas, sin ninguna excepción.
+
+### 1. La interfaz
+
+| Vista | Qué ofrece | Qué usa |
+|---|---|---|
+| **Chat** | Conversación con el agente | `crear_flujo`: agente, memoria, verificación y NLI |
+| **Catálogo de piezas** | Búsqueda paginada y ficha técnica con ofertas | Consultas de solo lectura al escenario |
+| **Comparación local** | Formulario: pieza, cantidad, presupuesto y plazo | El mismo cálculo y el mismo verificador que el agente |
+
+En la barra lateral: nuevo chat (misma base de datos, conversación nueva), nuevo escenario (otra copia del catálogo) y la lista de conversaciones para reabrirlas.
+
+### 2. Es el mismo agente
+
+La interfaz no tiene lógica propia de recomendación. Llama a la misma función que usan los scripts y la evaluación:
+
+```python
+flujo = crear_flujo(escenario, MEMORIA, llm=llm, clasificador=clasificador, indice=indice)
+salida = flujo.invoke({"input": pregunta}, config={"configurable": {
+    "user_id": USUARIO, "session_id": st.session_state.sesion}})
+```
+
+### 3. Ejecución real de la interfaz
+
+La app se ejecutó con `AppTest`, la herramienta de pruebas de Streamlit: corre `app.py` entero, sin navegador, y permite escribir en el chat y pulsar botones.
+
+| Acción | Resultado |
+|---|---|
+| Chat: «Necesito 2 unidades de PEC-01-0001 con plazo máximo de 7 días» | CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días |
+| Chat: «Ahora que sean 3 y mantén el plazo» | CentroPeças: R$ 4.401,99 para 3 unidades; plazo 2 días |
+| Chat: «¿A qué ciudad corresponde el CEP 01001000?» | CEP 01001000: São Paulo/SP (ViaCEP, modo real) |
+| Chat: «¿Se puede mandar en varias cajas?» | Regla de entrega parcial, con su fuente |
+| Botón «Nuevo chat» | Sesión distinta y pantalla vacía |
+| Reabrir la conversación anterior | Vuelven sus 8 mensajes |
+| Vista «Catálogo de piezas» | 2640 piezas, 20 por página |
+| Vista «Comparación local»: PEC-01-0001, 3 unidades | BR-06: R$ 4.401,99, con las 3 ofertas |
+
+Dos comprobaciones salen de esa tabla: **la memoria funciona en la interfaz** (el segundo turno depende del primero y la conversación se puede reabrir) y **el chat y el formulario dan el mismo importe** para la misma compra, R$ 4.401,99, porque comparten cálculo y verificador.
+
+### 4. Funciona sin credenciales
+
+Sin `OPENAI_API_KEY` la interfaz no se rompe: lista piezas, muestra fichas, compara ofertas y responde en el chat las compras y el diagnóstico `/t24`, todo con la capa determinista. Avisa de que las políticas y el CEP necesitan el agente.
+
+**Decisión técnica.** Toda la lógica vive en `src/pedro/` y `app.py` solo dibuja. Por eso el mismo agente se puede probar sin interfaz, evaluar en LangSmith y usar desde Streamlit sin duplicar nada.
+
+### Evidencia
+
+| Evidencia | Ubicación | Tipo |
+|---|---|---|
+| `app.py` ejecutada: cuatro turnos, nuevo chat, conversación reabierta y las tres vistas | [trazas/r28_streamlit.json](trazas/r28_streamlit.json); [scripts/demostrar_r28.py](../scripts/demostrar_r28.py) | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
+| Interfaz ejecutable | `uv run streamlit run app.py` o `./project.sh start` | Aplicación |
+| Las tres vistas sin clave de OpenAI | [evidencias.md](evidencias.md), filas R5.5 | Ejecución real local |
+
+### Pendientes y limitaciones
+
+- La evidencia se obtuvo con `AppTest`, sin navegador: comprueba el comportamiento, no el aspecto. **Falta el vídeo de demostración**, que es un entregable aparte.
+- La interfaz usa un único usuario fijo (`usuario-demo`); no hay inicio de sesión.
+- Para que el chat use el índice de políticas guardado hay que poner `PEDRO_TRUST_POLICY_INDEX=true` en `.env`; sin eso usa el índice de demostración en memoria, con el mismo contenido.
+- La respuesta se muestra entera al final, sin transmisión progresiva, porque antes debe pasar la verificación.
 
 ## R29 — Evaluación de calidad y trayectoria con LangSmith
 

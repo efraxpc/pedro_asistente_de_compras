@@ -16,7 +16,7 @@ from pedro.policy_demo import crear_indice_demo, huella_corpus
 from pedro.verification import respuesta_local, verificar
 
 load_dotenv()
-BASE = Path("storage")
+BASE = Path(os.getenv("PEDRO_STORAGE", "storage"))
 CATALOGOS = BASE / "catalogos"
 MEMORIA = BASE / "memoria.sqlite3"
 USUARIO = "usuario-demo"
