@@ -39,3 +39,29 @@ def test_los_dos_orquestadores_ejecutan_la_herramienta_y_separan_los_hilos(tmp_p
     assert primero["herramientas"] == ["buscar_pieza({'texto': 'NEVE-COMP-0001'})"]
     assert conversar("¿De qué hablábamos?", "hilo-a")["herramientas"] == []
     assert conversar("¿De qué hablábamos?", "hilo-b")["respuesta"] == "No hemos hablado de ninguna pieza."
+
+
+def test_langmem_guarda_por_usuario_lo_que_el_modelo_decide_recordar(tmp_path):
+    pytest.importorskip("langmem")
+    from langchain_core.embeddings import Embeddings
+
+    from pedro.orquestadores import agente_con_langmem
+
+    class Vectores(Embeddings):
+        def embed_documents(self, texts):
+            return [[1.0, 0.0, 0.0] for _ in texts]
+
+        def embed_query(self, text):
+            return [1.0, 0.0, 0.0]
+
+    modelo = ModeloDoble(responses=[
+        AIMessage(content="", tool_calls=[{"name": "manage_memory", "id": "m1", "args": {
+            "content": "Prefiere proveedores nacionales.", "action": "create"}}]),
+        AIMessage(content="Lo recordaré.")])
+    conversar, almacen = agente_con_langmem(modelo, crear_escenario(tmp_path / "catalogos"),
+                                            Vectores(), 3)
+    turno = conversar("Prefiero proveedores nacionales, recuérdalo", "ana", "hilo-1")
+    assert turno["respuesta"] == "Lo recordaré." and turno["herramientas"][0].startswith("manage_memory")
+    assert [item.value["content"] for item in almacen.search(("recuerdos", "ana"))] == [
+        "Prefiere proveedores nacionales."]
+    assert almacen.search(("recuerdos", "luis")) == []

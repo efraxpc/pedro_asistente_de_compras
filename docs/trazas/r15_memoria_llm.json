@@ -1,0 +1,97 @@
+{
+  "rubrica": "R15",
+  "modo": "real remoto (OpenAI); embeddings reales locales; catálogo sintético",
+  "fecha_utc": "2026-11-11T12:23:57+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "versiones": {
+    "langmem": "0.0.30",
+    "langgraph": "1.2.20",
+    "langchain": "1.4.9"
+  },
+  "nota": "La misma conversación de tres mensajes en los dos sistemas. Una ejecución: lo que el modelo decide guardar con LangMem puede variar de una corrida a otra.",
+  "memoria_propia_de_pedro": {
+    "turnos": [
+      {
+        "usuario": "Prefiero proveedores nacionales, recuérdalo.",
+        "respuesta": "Guardé tu preferencia: proveedor = nacionales. La tendré en cuenta, pero tu petición de cada momento manda.",
+        "herramientas": [
+          "guardar_preferencia"
+        ]
+      },
+      {
+        "usuario": "Compara 2 unidades de PEC-01-0001 con plazo de 7 días.",
+        "respuesta": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.",
+        "herramientas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ]
+      },
+      {
+        "usuario": "Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.",
+        "respuesta": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.",
+        "herramientas": [
+          "consultar_catalogo",
+          "comparar_ofertas"
+        ]
+      }
+    ],
+    "guardado_para_ana": {
+      "preferencias": {
+        "proveedor": "nacionales"
+      },
+      "episodios": [
+        "Compara 2 unidades de PEC-01-0001 con plazo de 7 días. | CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07;",
+        "Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño. | CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças"
+      ]
+    },
+    "guardado_para_otro_usuario": {
+      "preferencias": {}
+    },
+    "quien_decide": "el código: una preferencia solo con cita literal del usuario; un episodio solo tras una respuesta de compra verificada"
+  },
+  "langmem": {
+    "turnos": [
+      {
+        "usuario": "Prefiero proveedores nacionales, recuérdalo.",
+        "respuesta": "Perfecto, recordaré que prefieres proveedores nacionales para las piezas de repuesto. ¿En qué puedo ayudarte hoy?",
+        "herramientas": [
+          "manage_memory({'content': 'Prefiere proveedores nacionales para las piezas de repuesto.', 'action': 'create'})"
+        ]
+      },
+      {
+        "usuario": "Compara 2 unidades de PEC-01-0001 con plazo de 7 días.",
+        "respuesta": "Para 2 unidades del compresor PEC-01-0001 con plazo de 7 días, el único proveedor nacional con stock y plazo menor es CentroPeças, con precio unitario de $1,438.92 y plazo de 2 días; los otros proveedores no cumplen con el plazo o no tienen stock. ¿Quieres que te ayude a hacer el pedido con CentroPeças?",
+        "herramientas": [
+          "buscar_pieza({'texto': 'PEC-01-0001'})",
+          "ofertas_de_pieza({'producto_id': 'PEC-01-0001'})"
+        ]
+      },
+      {
+        "usuario": "Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.",
+        "respuesta": "Entiendo, prefieres opciones más económicas para tu taller pequeño; puedo ayudarte a buscar alternativas más accesibles o piezas similares si quieres.",
+        "herramientas": []
+      }
+    ],
+    "guardado_para_ana": [
+      {
+        "content": "Prefiere proveedores nacionales para las piezas de repuesto."
+      }
+    ],
+    "guardado_para_otro_usuario": [],
+    "sesion_nueva": {
+      "usuario": "¿Qué recuerdas de mis preferencias?",
+      "respuesta": "Recuerdo que prefieres proveedores nacionales para las piezas de repuesto. ¿Quieres que te ayude a buscar algo específico?",
+      "herramientas": [
+        "search_memory({'query': 'preferencias', 'limit': 5})"
+      ]
+    },
+    "otro_usuario": {
+      "usuario": "¿Qué recuerdas de mis preferencias?",
+      "respuesta": "No tengo registrado ninguna preferencia tuya hasta ahora. ¿Quieres que recuerde alguna para futuras consultas?",
+      "herramientas": [
+        "search_memory({'query': 'preferencias', 'limit': 5})"
+      ]
+    },
+    "quien_decide": "el modelo, con las herramientas manage_memory y search_memory"
+  }
+}

@@ -22,6 +22,7 @@ dev = [
 comparacion = [
     "langchain>=1,<2",
     "langgraph>=1,<2",
+    "langmem>=0.0.20",
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -992,7 +992,7 @@ La evaluación de R29 mostró el otro lado de esta memoria: con 73 episodios acu
 
 > ¿El alumno comparó herramientas especializadas de memoria por arquitectura y caso de uso?
 
-**Respuesta corta.** Sí. Se comparan Mem0, Letta (MemGPT) y LangMem con la implementación propia de Pedro, por arquitectura y por caso de uso. Se mantiene la implementación propia porque el dominio exige controlar qué se guarda, y lo que hay que guardar es poco y está bien delimitado.
+**Respuesta corta.** Sí. Se comparan Mem0, Letta (MemGPT) y LangMem con la implementación propia de Pedro, por arquitectura y por caso de uso, y **LangMem se ejecutó** con la misma conversación que la memoria propia. Se mantiene la implementación propia porque el dominio exige controlar qué se guarda, y lo que hay que guardar es poco y está bien delimitado.
 
 ### 1. Comparación por arquitectura
 
@@ -1013,13 +1013,40 @@ La evaluación de R29 mostró el otro lado de esta memoria: con 73 episodios acu
 | LangMem | El agente ya está en LangGraph y necesita memoria entre conversaciones | Requiere el almacén de LangGraph, que este proyecto no usa |
 | Propia | Lo que se guarda es poco, conocido y debe poder auditarse | Es el caso |
 
-### 3. Decisión
+### 3. Comparación ejecutada: la misma conversación con LangMem y con la memoria de Pedro
+
+Tres mensajes, el mismo modelo (`gpt-4.1-mini`) y dos memorias. LangMem se montó sobre un agente de LangGraph con sus dos herramientas, `manage_memory` y `search_memory`, y un almacén por usuario ([orquestadores.py](../src/pedro/orquestadores.py)).
+
+| Mensaje | Memoria de Pedro | LangMem |
+|---|---|---|
+| «Prefiero proveedores nacionales, recuérdalo.» | Llama a `guardar_preferencia`. Guarda `proveedor = nacionales` | Llama a `manage_memory`. Guarda «Prefiere proveedores nacionales para las piezas de repuesto.» |
+| «Compara 2 unidades de PEC-01-0001 con plazo de 7 días.» | Recomendación verificada: CentroPeças, R$ 2.963,07. Guarda un episodio | Responde con el proveedor nacional y su precio unitario, **sin verificación**, y ofrece «hacer el pedido» |
+| «Uf, creo que ese compresor me va a salir caro. Mi taller es pequeño.» | Repite la comparación y guarda otro episodio | Responde al comentario; no guarda nada nuevo |
+
+| Después | Memoria de Pedro | LangMem |
+|---|---|---|
+| Qué quedó guardado | 1 preferencia (clave y valor) y 2 episodios | 1 recuerdo en texto libre |
+| Quién decidió guardarlo | El código: cita literal del usuario, o respuesta verificada | El modelo |
+| Sesión nueva: «¿Qué recuerdas de mis preferencias?» | La preferencia está disponible y se inyecta en el contexto, pero Pedro no tiene una respuesta para esa pregunta | Busca en su memoria y contesta: «prefieres proveedores nacionales» |
+| Otro usuario | No ve nada | No ve nada |
+
+Lo que enseña la ejecución:
+
+- **Las dos guardaron la preferencia y las dos aíslan por usuario.** En lo básico son equivalentes.
+- **LangMem conversa mejor sobre lo que recuerda.** Sabe responder «¿qué recuerdas de mí?»; Pedro no tiene ese tipo de respuesta.
+- **LangMem guarda texto libre que redacta el modelo**; Pedro guarda una clave y un valor comprobados contra la cita. En esta corrida LangMem guardó algo correcto, pero nada impide que guarde una inferencia.
+- **Sin verificación, la memoria influye sin control.** El agente con LangMem aplicó la preferencia por su cuenta al comparar, dio un precio sin comprobar y ofreció hacer un pedido que no puede hacer. En Pedro, la preferencia está «subordinada a la petición actual» y toda cifra pasa por la verificación.
+- **Pedro también falló en algo.** Ante un comentario sin petición («me va a salir caro») repitió la comparación y guardó un episodio redundante: no sabe conversar fuera de sus tipos de respuesta.
+
+### 4. Decisión
 
 Se mantiene la implementación propia por tres razones:
 
 1. **Qué entra en memoria debe ser comprobable.** Solo se guarda un episodio cuando la respuesta pasó la verificación, y solo una preferencia que el usuario dijo con sus palabras. Una herramienta que deja a un modelo decidir qué recordar podría guardar una inferencia errónea como si fuera un hecho.
 2. **El aislamiento por usuario, sesión y escenario es un requisito.** Con tablas propias es una condición en cada consulta y se prueba directamente.
 3. **El volumen es pequeño.** Unos pocos episodios y preferencias por usuario no justifican un servicio adicional.
+
+La ejecución confirmó la decisión y señaló qué mejorar: Pedro debería poder responder qué recuerda del usuario, y no debería guardar un episodio por un comentario.
 
 Lo que sí se tomó de estas herramientas es una idea de LangMem vista en clase: **el agente guarda preferencias durante la conversación con una herramienta**. Pedro la tiene (`guardar_preferencia`), con una condición añadida: la herramienta rechaza el guardado si el valor no aparece en una cita literal del mensaje del usuario.
 
@@ -1030,12 +1057,16 @@ Ejecutado con el modelo real: ante «Prefiero proveedores nacionales, recuérdal
 | Evidencia | Ubicación | Tipo |
 |---|---|---|
 | El agente guarda una preferencia con una herramienta y la recupera en otra sesión | [trazas/fase3_memoria_llm.json](trazas/fase3_memoria_llm.json), turno 4 de `r18_conversacion_compleja` y `r14_r18_persistencia_y_aislamiento` | **Ejecución real remota** (`gpt-4.1-mini`) |
+| La misma conversación con la memoria de Pedro y con LangMem: qué guarda cada una, sesión nueva y otro usuario | [trazas/r15_memoria_llm.json](trazas/r15_memoria_llm.json); [scripts/demostrar_r15.py](../scripts/demostrar_r15.py) | **Ejecución real remota** (`gpt-4.1-mini`), embeddings reales locales |
+| LangMem guarda por usuario lo que el modelo decide recordar | [tests/test_orquestadores.py](../tests/test_orquestadores.py) | Prueba con doble |
 | Tablas comparativas y decisión | Esta sección; [comparaciones.md](comparaciones.md) | Documentación |
 | La preferencia solo se confirma si la herramienta la guardó | [tests/test_dialogue.py](../tests/test_dialogue.py) | Prueba automática |
 
 ### Pendientes y limitaciones
 
-- **Mem0, Letta y LangMem no se instalaron ni se ejecutaron.** La comparación es conceptual, a partir de su arquitectura; la única memoria medida es la de Pedro.
+- **Mem0 y Letta no se instalaron ni se ejecutaron**: su comparación es conceptual. LangMem sí se ejecutó, en una conversación de tres mensajes y una sola corrida; lo que el modelo decide guardar puede variar.
+- LangMem es una dependencia opcional (extra `comparacion`); el producto no lo usa.
+- Pedro no tiene una respuesta para «¿qué recuerdas de mí?» y repite la comparación ante un comentario sin petición.
 - La implementación propia no deduplica episodios ni extrae hechos por sí sola.
 
 ## R16 — Chatbot con ConversationBufferMemory

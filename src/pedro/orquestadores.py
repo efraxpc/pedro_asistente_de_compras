@@ -77,3 +77,36 @@ def agente_langgraph(llm, escenario: Escenario) -> Callable[[str, str], dict]:
 
     setattr(conversar, "grafo", grafo)  # para inspeccionar el grafo desde fuera
     return conversar
+
+
+def agente_con_langmem(llm, escenario: Escenario, embeddings, dimension: int):
+    """Agente LangGraph cuya memoria de largo plazo la gestiona LangMem.
+
+    El agente recibe dos herramientas de LangMem: una para crear, corregir o borrar recuerdos y
+    otra para buscarlos. Es el propio modelo quien decide qué merece guardarse. Los recuerdos
+    viven en un almacén por usuario. Devuelve `conversar(texto, usuario, hilo)` y el almacén.
+    """
+    from langchain.agents import create_agent
+    from langgraph.checkpoint.memory import InMemorySaver
+    from langgraph.store.memory import InMemoryStore
+    from langmem import create_manage_memory_tool, create_search_memory_tool
+
+    almacen = InMemoryStore(index={"dims": dimension, "embed": embeddings})
+    espacio = ("recuerdos", "{user_id}")
+    grafo = create_agent(
+        llm, tools=[*herramientas_basicas(escenario), create_manage_memory_tool(namespace=espacio),
+                    create_search_memory_tool(namespace=espacio)],
+        system_prompt=SISTEMA + " Tienes memoria de largo plazo: úsala para recordar lo que el "
+                                "usuario prefiere y consúltala cuando te pregunten por ello.",
+        checkpointer=InMemorySaver(), store=almacen)
+
+    def conversar(texto: str, usuario: str, hilo: str) -> dict:
+        config: RunnableConfig = {"configurable": {"thread_id": hilo, "user_id": usuario}}
+        previos = len(grafo.get_state(config).values.get("messages", []))
+        estado = grafo.invoke({"messages": [{"role": "user", "content": texto}]}, config)
+        nuevos = estado["messages"][previos:]
+        return {"respuesta": str(nuevos[-1].content),
+                "herramientas": [f"{llamada['name']}({llamada['args']})" for mensaje in nuevos
+                                 for llamada in getattr(mensaje, "tool_calls", None) or []]}
+
+    return conversar, almacen
