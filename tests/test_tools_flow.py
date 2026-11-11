@@ -127,3 +127,25 @@ def test_traza_registra_cada_verificacion_con_sus_errores(tmp_path, monkeypatch)
     verificaciones = [e for e in traza.eventos if e["evento"] == "verificacion"]
     assert [(v["intento"], v["estado"], v["errores"]) for v in verificaciones] == [
         (1, None, ["OutputParserException"]), (2, "recomendacion", [])]
+
+
+def test_la_respuesta_adjunta_la_comparacion_estructurada_y_se_conserva_en_el_historial(tmp_path):
+    from pedro.agent import partes_de
+    from pedro.contracts import RespuestaCompra
+
+    escenario = crear_escenario(tmp_path / "catalogos")
+    memoria = tmp_path / "memoria.sqlite3"
+    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
+    flujo = crear_flujo(escenario, memoria)
+    config = {"configurable": {"user_id": "ana", "session_id": sesion}}
+    salida = flujo.invoke({"input": "Compara 5 unidades de PEC-01-0001"}, config=config)
+    (parte,) = partes_de(salida)
+    comparacion = RespuestaCompra.model_validate(parte["comparacion"])
+    assert comparacion.proveedor_id == "BR-06" and parte["texto"] == salida.content
+    # Tras releer el historial, la interfaz puede volver a dibujar la misma comparación.
+    guardado = Historial(memoria, "ana", sesion).todos()[-1]
+    assert partes_de(guardado) == [parte]
+    # Una respuesta que no es una comparación solo lleva texto.
+    listado = flujo.invoke({"input": "lista piezas"}, config=config)
+    assert partes_de(listado) == [{"titulo": None, "texto": listado.content, "comparacion": None,
+                                   "consejo": None}]

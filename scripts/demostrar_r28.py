@@ -24,6 +24,17 @@ def _mensajes(app) -> list[dict]:
             for m in app.chat_message]
 
 
+def _ultima_respuesta(app) -> dict:
+    """Lo que la interfaz dibujó en la última respuesta: pasos, tarjetas, avisos y texto."""
+    mensaje = app.chat_message[-1]
+    return {"pasos": [s.label for s in mensaje.status],
+            "tarjetas": {m.label: m.value for m in mensaje.metric},
+            "consejo_o_aviso": [a.value for a in [*mensaje.info, *mensaje.warning]],
+            "tablas": len(mensaje.dataframe),
+            "texto": " ".join(m.value for m in mensaje.markdown)[:400],
+            "errores": [e.value for e in mensaje.error]}
+
+
 def main() -> None:
     argumentos = argparse.ArgumentParser(description=__doc__)
     argumentos.add_argument("--salida", type=Path, default=ROOT / "docs/trazas/r28_streamlit.json")
@@ -50,10 +61,9 @@ def main() -> None:
     chat = []
     for texto in TURNOS:
         app.chat_input[0].set_value(texto).run()
-        respuesta = _mensajes(app)[-1]["texto"]
-        chat.append({"usuario": texto, "pedro": respuesta,
-                     "avisos": [w.value for w in app.warning] + [e.value for e in app.error]})
-        print("chat |", texto, "->", respuesta.splitlines()[0][:110] if respuesta else "(vacío)")
+        respuesta = _ultima_respuesta(app)
+        chat.append({"usuario": texto, **respuesta})
+        print("chat |", texto, "->", respuesta["pasos"], "|", respuesta["tarjetas"] or respuesta["texto"][:110])
     informe["vista_chat"] = {"turnos": chat, "mensajes_en_pantalla": len(_mensajes(app))}
     primera_sesion = app.session_state["sesion"]
 
@@ -62,10 +72,12 @@ def main() -> None:
     informe["nuevo_chat"] = {"sesion_distinta": app.session_state["sesion"] != primera_sesion,
                              "mensajes_en_pantalla": len(_mensajes(app))}
     # Reabrir la conversación anterior desde la barra lateral: el historial vuelve.
-    next(b for b in app.sidebar.button if b.label.startswith(primera_sesion[:8])).click().run()
+    next(b for b in app.sidebar.button if b.key == f"sesion_{primera_sesion}").click().run()
     reabierta = _mensajes(app)
-    informe["conversacion_reabierta"] = {"mensajes_en_pantalla": len(reabierta),
-                                         "primer_mensaje": reabierta[0]["texto"] if reabierta else None}
+    informe["conversacion_reabierta"] = {
+        "mensajes_en_pantalla": len(reabierta),
+        "primer_mensaje": reabierta[0]["texto"] if reabierta else None,
+        "tarjetas_redibujadas": sum(len(m.metric) for m in app.chat_message)}
     print("nuevo chat:", informe["nuevo_chat"], "| reabierta:", len(reabierta), "mensajes")
 
     # Las otras dos vistas usan el mismo escenario y el mismo verificador.
@@ -76,9 +88,9 @@ def main() -> None:
     app.sidebar.button_group[0].set_value("Comparación local").run()
     app.text_input[0].set_value("PEC-01-0001")
     app.number_input[0].set_value(6)
-    next(b for b in app.button if b.label == "Comparar").click().run()
+    next(b for b in app.button if b.label == "Comparar proveedores").click().run()
     informe["vista_comparacion"] = {"titulo": app.title[0].value,
-                                    "resultado": [s.value for s in app.success],
+                                    "resultado": {m.label: m.value for m in app.metric},
                                     "avisos": [w.value for w in app.warning] + [e.value for e in app.error],
                                     "ofertas_mostradas": [len(d.value) for d in app.dataframe],
                                     "excepciones": [str(e.value) for e in app.exception]}

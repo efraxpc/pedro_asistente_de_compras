@@ -2022,7 +2022,23 @@ En la conversación de ocho turnos (R18):
 | **Catálogo de piezas** | Búsqueda paginada y ficha técnica con ofertas | Consultas de solo lectura al escenario |
 | **Comparación local** | Formulario: pieza, cantidad, presupuesto y plazo | El mismo cálculo y el mismo verificador que el agente |
 
-En la barra lateral: nuevo chat (misma base de datos, conversación nueva), nuevo escenario (otra copia del catálogo) y la lista de conversaciones para reabrirlas.
+En la barra lateral: nuevo chat (misma base de datos, conversación nueva), nuevo escenario (otra copia del catálogo) y la lista de conversaciones para reabrirlas, cada una con el título de su primera pregunta.
+
+**Qué se ve en una respuesta del chat.** La comparación de proveedores es el núcleo, así que la interfaz la dibuja con datos, no solo con texto:
+
+| Elemento | Qué muestra |
+|---|---|
+| **Pasos del agente** | «Cómo llegué a esta respuesta»: leí tu mensaje, comparé las ofertas, tomé las cifras del cálculo, verifiqué la respuesta, redacté el consejo de precio. Salen de la `Traza` del turno, en vivo |
+| **Cuatro tarjetas** | Proveedor recomendado, total, entrega y origen |
+| **Consejo o aviso de precio** | Recuadro azul si el consejo del modelo pasó la verificación; amarillo si se usó el aviso fijo |
+| **Tabla de ofertas** | Todas las ofertas, con la descartada y su motivo (stock, pedido mínimo, plazo o presupuesto) |
+| **Historial de precios** | Desplegable con mes anterior, media, mínimo y máximo |
+
+![Chat con el agente](capturas/chat_agente.png)
+
+Todo usa componentes nativos de Streamlit, sin CSS; los colores están en [.streamlit/config.toml](../.streamlit/config.toml), con modo claro y oscuro.
+
+**Cómo llegan los datos a la pantalla.** El agente adjunta la comparación ya verificada al mensaje público (`mensaje_publico` en [agent.py](../src/pedro/agent.py), campo `additional_kwargs["partes"]`). La interfaz dibuja desde esos datos y nunca relee el texto para sacar cifras. Como viajan con el mensaje, al reabrir una conversación las tarjetas se vuelven a dibujar.
 
 ### 2. Es el mismo agente
 
@@ -2040,14 +2056,14 @@ La app se ejecutó con `AppTest`, la herramienta de pruebas de Streamlit: corre 
 
 | Acción | Resultado |
 |---|---|
-| Chat: «Necesito 5 unidades de PEC-01-0001 con plazo máximo de 7 días» | CentroPeças: R$ 7.279,83 para 5 unidades; plazo 2 días |
-| Chat: «Ahora que sean 6 y mantén el plazo» | CentroPeças: R$ 8.718,75 para 6 unidades; plazo 2 días |
-| Chat: «¿A qué ciudad corresponde el CEP 01001000?» | CEP 01001000: São Paulo/SP (ViaCEP, modo real) |
-| Chat: «¿Se puede mandar en varias cajas?» | Regla de entrega parcial, con su fuente |
+| Chat: «Necesito 5 unidades de PEC-01-0001 con plazo máximo de 7 días» | Tarjetas: CentroPeças, R$ 7.279,83, 2 días, Nacional. 4 pasos del agente |
+| Chat: «Ahora que sean 6 y mantén el plazo» | Tarjetas: CentroPeças, R$ 8.718,75, 2 días, Nacional. 4 pasos |
+| Chat: «¿A qué ciudad corresponde el CEP 01001000?» | CEP 01001000: São Paulo/SP (ViaCEP, modo real). Pasos: no es una compra, consulté ViaCEP, verifiqué |
+| Chat: «¿Se puede mandar en varias cajas?» | Regla de entrega parcial, con su fuente. Paso: busqué en las políticas |
 | Botón «Nuevo chat» | Sesión distinta y pantalla vacía |
-| Reabrir la conversación anterior | Vuelven sus 8 mensajes |
+| Reabrir la conversación anterior | Vuelven sus 8 mensajes y se redibujan las 8 tarjetas |
 | Vista «Catálogo de piezas» | 2640 piezas, 20 por página |
-| Vista «Comparación local»: PEC-01-0001, 6 unidades | BR-06: R$ 8.718,75, con las 3 ofertas, su origen y su pedido mínimo |
+| Vista «Comparación local»: PEC-01-0001, 6 unidades | Tarjetas: CentroPeças, R$ 8.718,75, 2 días, Nacional; tabla con las 3 ofertas |
 
 Dos comprobaciones salen de esa tabla: **la memoria funciona en la interfaz** (el segundo turno depende del primero y la conversación se puede reabrir) y **el chat y el formulario dan el mismo importe** para la misma compra, R$ 8.718,75, porque comparten cálculo y verificador.
 
@@ -2063,11 +2079,14 @@ Sin `OPENAI_API_KEY` la interfaz no se rompe: lista piezas, muestra fichas, comp
 |---|---|---|
 | `app.py` ejecutada: cuatro turnos, nuevo chat, conversación reabierta y las tres vistas | [trazas/r28_streamlit.json](trazas/r28_streamlit.json); [scripts/demostrar_r28.py](../scripts/demostrar_r28.py) | **Ejecución real remota** (`gpt-4.1-mini`, ViaCEP), NLI real local |
 | Interfaz ejecutable | `uv run streamlit run app.py` o `./project.sh start` | Aplicación |
+| Capturas en navegador: chat con el agente y chat sin clave | [capturas/chat_agente.png](capturas/chat_agente.png); [capturas/chat_modo_local.png](capturas/chat_modo_local.png) | **Ejecución real remota** y real local |
+| La comparación estructurada viaja con el mensaje y se conserva en el historial | [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Prueba con doble |
 | Las tres vistas sin clave de OpenAI | [evidencias.md](evidencias.md), filas R5.5 | Ejecución real local |
 
 ### Pendientes y limitaciones
 
-- La evidencia se obtuvo con `AppTest`, sin navegador: comprueba el comportamiento, no el aspecto. **Falta el vídeo de demostración**, que es un entregable aparte.
+- `AppTest` comprueba el comportamiento sin navegador; el aspecto queda en dos capturas. **Falta el vídeo de demostración**, que es un entregable aparte.
+- Los pasos del agente se guardan solo durante la sesión del navegador: al reabrir una conversación antigua vuelven las tarjetas, no los pasos.
 - La interfaz usa un único usuario fijo (`usuario-demo`); no hay inicio de sesión.
 - Para que el chat use el índice de políticas guardado hay que poner `PEDRO_TRUST_POLICY_INDEX=true` en `.env`; sin eso usa el índice de demostración en memoria, con el mismo contenido.
 - La respuesta se muestra entera al final, sin transmisión progresiva, porque antes debe pasar la verificación.

@@ -28,7 +28,7 @@ Type-check edited code with `ty` when available. Run the full test suite before 
 
 ## Architecture
 
-`app.py` is the only Streamlit entry point; all reusable logic lives in `src/pedro/`. The app works degraded without credentials (paginated listing, part detail, local comparison, comparison chat); `OPENAI_API_KEY` enables the agent and policy RAG.
+`app.py` is the only Streamlit entry point; all reusable logic lives in `src/pedro/`. It uses native components only (no CSS; theme in `.streamlit/config.toml`) and draws each reply from the verified data the flow attaches to the public message (`mensaje_publico`, `additional_kwargs["partes"]`), never by re-parsing the text. The app works degraded without credentials (paginated listing, part detail, local comparison, comparison chat); `OPENAI_API_KEY` enables the agent and policy RAG.
 
 **Data flow:** On first access the app creates a *scenario* — a UUID `dataset_id`, a copy of `datasets/piezas_electrodomesticos.sqlite3`, and a SHA-256 manifest — under ignored `storage/`. "New chat" keeps the scenario; "new scenario" creates a chat. Reopening a conversation restores its dataset or warns if missing. Preserve `dataset_id` isolation in any change.
 

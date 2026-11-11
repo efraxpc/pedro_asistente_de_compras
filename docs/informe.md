@@ -1,6 +1,6 @@
 # Informe técnico — Pedro, asistente de compras
 
-**Curso:** Agentes Cognitivos com LangChain (Infnet). **Actualizado:** 2026-11-11. **Modelo:** gpt-4.1-mini. **Pruebas automáticas:** 142, todas en verde.
+**Curso:** Agentes Cognitivos com LangChain (Infnet). **Actualizado:** 2026-11-11. **Modelo:** gpt-4.1-mini. **Pruebas automáticas:** 143, todas en verde.
 
 Este informe explica cómo el proyecto responde a las 29 rúbricas de la guía integrada (R01–R29). Cada rúbrica tiene aquí un resumen; la respuesta completa, con sus tablas y sus límites, está en docs/respuestas_rubricas.md. Las ejecuciones con el modelo real están guardadas en docs/trazas/ y el registro de lo ejecutado, en docs/evidencias.md.
 
@@ -228,7 +228,7 @@ El agente está envuelto en RunnableWithMessageHistory, con el historial en SQLi
 
 ### R28 — Interfaz
 
-app.py conecta Streamlit al mismo flujo. Ejecutada con la herramienta de pruebas de Streamlit y el modelo real, respondió cuatro turnos de chat, abrió un chat nuevo, reabrió la conversación anterior con sus 8 mensajes y mostró las vistas de catálogo y de comparación sin errores. El chat y el formulario dieron el mismo importe para la misma compra (R$ 8.718,75 por 6 unidades).
+app.py conecta Streamlit al mismo flujo. Ejecutada con la herramienta de pruebas de Streamlit y el modelo real, respondió cuatro turnos de chat, abrió un chat nuevo, reabrió la conversación anterior con sus 8 mensajes y mostró las vistas de catálogo y de comparación sin errores. Cada respuesta de compra se dibuja con datos: los pasos que siguió el agente, cuatro tarjetas (proveedor, total, entrega y origen), el consejo o aviso de precio destacado y la tabla de ofertas con la descartada y su motivo. Esos datos viajan con el mensaje ya verificado, así que la interfaz no relee el texto y al reabrir una conversación las tarjetas se redibujan. Todo usa componentes nativos de Streamlit, sin CSS; hay dos capturas en docs/capturas/. El chat y el formulario dieron el mismo importe para la misma compra (R$ 8.718,75 por 6 unidades).
 
 ### R29 — Evaluación con LangSmith
 

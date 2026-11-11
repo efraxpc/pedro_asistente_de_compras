@@ -391,6 +391,31 @@ def consulta_directa(escenario: Escenario, pregunta: str) -> str | None:
     return None
 
 
+CLAVE_PARTES = "partes"
+
+
+def mensaje_publico(texto: str, respuesta: RespuestaCompra | None = None,
+                    consejo: str | None = None, titulo: str | None = None) -> AIMessage:
+    """Respuesta pública de una petición.
+
+    El texto es la respuesta completa y es lo único que lee el modelo en turnos posteriores.
+    Para una comparación de ofertas se adjunta además, como metadatos, la respuesta
+    estructurada ya verificada: la interfaz la usa para dibujar tarjetas y tabla en vez de
+    texto. Son los mismos datos que el texto, no información adicional.
+    """
+    parte: dict = {"titulo": titulo, "texto": texto, "comparacion": None, "consejo": consejo}
+    if respuesta is not None and respuesta.estado in ("recomendacion", "sin_oferta"):
+        parte["comparacion"] = respuesta.model_dump(mode="json")
+    return AIMessage(content=texto, additional_kwargs={CLAVE_PARTES: [parte]})
+
+
+def partes_de(mensaje) -> list[dict]:
+    """Partes estructuradas de un mensaje del asistente; una sola de texto si no trae."""
+    partes = getattr(mensaje, "additional_kwargs", {}).get(CLAVE_PARTES)
+    return partes or [{"titulo": None, "texto": str(mensaje.content), "comparacion": None,
+                       "consejo": None}]
+
+
 def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                clasificador: Clasificador | None = None, indice=None,
                cep_simulado: bool = False, traza: Traza | None = None):
@@ -405,11 +430,15 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
             return resolver(dato, config, mensaje)
         if traza:
             traza.eventos.append({"evento": "plan", "peticiones": [p.model_dump() for p in peticiones]})
-        partes = [f"Tu mensaje tenía {len(peticiones)} peticiones; respondo cada una por separado."]
+        entrada = f"Tu mensaje tenía {len(peticiones)} peticiones; respondo cada una por separado."
+        textos = [entrada]
+        partes: list[dict] = [{"titulo": None, "texto": entrada, "comparacion": None, "consejo": None}]
         for numero, peticion in enumerate(peticiones, 1):
             respuesta = resolver({**dato, "input": peticion.peticion}, config, mensaje)
-            partes.append(f"**{numero}. {peticion.peticion}**\n{respuesta.content}")
-        return AIMessage(content="\n\n".join(partes))
+            titulo = f"{numero}. {peticion.peticion}"
+            textos.append(f"**{titulo}**\n{respuesta.content}")
+            partes.extend({**parte, "titulo": titulo} for parte in partes_de(respuesta))
+        return AIMessage(content="\n\n".join(textos), additional_kwargs={CLAVE_PARTES: partes})
 
     def resolver(dato: dict, config: RunnableConfig, mensaje_usuario: str) -> AIMessage:
         """Resuelve una petición de una sola intención."""
@@ -453,7 +482,7 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                 errores = verificar(propuesta, escenario)
                 if errores:
                     return AIMessage(content="No puedo confirmar una recomendación con las evidencias disponibles.")
-                return AIMessage(content=renderizar(propuesta))
+                return mensaje_publico(renderizar(propuesta), propuesta)
         if llm is None:
             return AIMessage(content="Puedo comparar piezas aquí. Indica un ID o SKU y la cantidad; para políticas o CEP configura OPENAI_API_KEY.")
         recuerdos = []
@@ -562,7 +591,7 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                                              FastEmbedder())
                         except Exception:
                             pass
-                    return AIMessage(content=texto)
+                    return mensaje_publico(texto, propuesta, consejo)
             except Exception as exc:
                 errores = [type(exc).__name__]
                 if traza:

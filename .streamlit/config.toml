@@ -1,0 +1,44 @@
+# Tema de Pedro. Colores y forma desde la configuración, sin CSS.
+# Admite el cambio claro/oscuro del menú de ajustes.
+
+[theme]
+showWidgetBorder = true
+showSidebarBorder = true
+baseRadius = "8px"
+buttonRadius = "8px"
+baseFontSize = 15
+headingFontWeights = [650, 650, 600, 600, 600, 600]
+
+[theme.light]
+primaryColor = "#1F5FBF"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F4F6FA"
+textColor = "#111827"
+linkColor = "#1F5FBF"
+borderColor = "#DFE3EB"
+dataframeBorderColor = "#DFE3EB"
+dataframeHeaderBackgroundColor = "#F4F6FA"
+
+[theme.dark]
+primaryColor = "#6EA8FE"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#1A1F2B"
+textColor = "#F3F4F6"
+linkColor = "#8AB9FF"
+borderColor = "#2A3140"
+dataframeBorderColor = "#2A3140"
+dataframeHeaderBackgroundColor = "#1A1F2B"
+
+[theme.light.sidebar]
+backgroundColor = "#F4F6FA"
+secondaryBackgroundColor = "#E9EDF5"
+textColor = "#111827"
+borderColor = "#DFE3EB"
+primaryColor = "#1F5FBF"
+
+[theme.dark.sidebar]
+backgroundColor = "#131722"
+secondaryBackgroundColor = "#1F2533"
+textColor = "#F3F4F6"
+borderColor = "#2A3140"
+primaryColor = "#6EA8FE"
