@@ -1,116 +1,116 @@
-"""Laboratorio de salidas rotas: defectos típicos de un LLM frente a la cadena de extracción."""
+"""Laboratório de saídas quebradas: defeitos típicos de um LLM diante da cadeia de extração."""
 import json
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.runnables import RunnableLambda
 
-from .chains import crear_chain_robusta, crear_lcel_robusta
-from .contracts import Extraccion
+from .chains import criar_chain_robusta, criar_lcel_robusta
+from .contracts import Extracao
 
-SOLICITUD = "Compara 2 unidades de PEC-01-0001 hasta R$ 5.000 en 7 días"
-DATOS = {"producto_id": "PEC-01-0001", "cantidad": 2,
-         "presupuesto_centavos": 500000, "plazo_max_dias": 7}
-CORRECTA = {"intencion": "comparar", "faltantes": [], "solicitud": DATOS}
-
-
-def _variante(intencion: str = "comparar", **solicitud) -> str:
-    return json.dumps({"intencion": intencion, "faltantes": [],
-                       "solicitud": {**DATOS, **solicitud}}, ensure_ascii=False)
+SOLICITACAO = "Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias"
+DADOS = {"produto_id": "PEC-01-0001", "quantidade": 2,
+         "orcamento_centavos": 500000, "prazo_max_dias": 7}
+CORRETA = {"intencao": "comparar", "faltantes": [], "solicitacao": DADOS}
 
 
-# nombre -> (salida del modelo, capa que debe resolverla)
-SALIDAS_ROTAS: dict[str, tuple[str, str]] = {
-    "JSON válido": (_variante(), "ninguna"),
-    "cercas markdown y charla": ("Claro, aquí tienes:\n```json\n" + _variante()
-                                 + "\n```\nEspero que ayude.", "parser"),
-    "JSON truncado": (_variante()[:-12], "reparación"),
-    "cantidad en letras": (_variante(cantidad="dos"), "reparación"),
-    "cantidad negativa": (_variante(cantidad=-2), "reparación"),
-    "intención fuera de la lista": (_variante(intencion="comprar"), "reparación"),
-    "texto libre sin JSON": ("No puedo responder en JSON, pero quieres 2 compresores.",
-                             "reparación"),
-    "faltantes mal declarados": (_variante(cantidad=None), "regla de dominio"),
+def _variante(intencao: str = "comparar", **solicitacao) -> str:
+    return json.dumps({"intencao": intencao, "faltantes": [],
+                       "solicitacao": {**DADOS, **solicitacao}}, ensure_ascii=False)
+
+
+# nome -> (saída do modelo, camada que deve resolvê-la)
+SAIDAS_QUEBRADAS: dict[str, tuple[str, str]] = {
+    "JSON válido": (_variante(), "nenhuma"),
+    "cercas markdown e conversa": ("Claro, aqui está:\n```json\n" + _variante()
+                                   + "\n```\nEspero que ajude.", "parser"),
+    "JSON truncado": (_variante()[:-12], "reparo"),
+    "quantidade por extenso": (_variante(quantidade="dois"), "reparo"),
+    "quantidade negativa": (_variante(quantidade=-2), "reparo"),
+    "intenção fora da lista": (_variante(intencao="comprar"), "reparo"),
+    "texto livre sem JSON": ("Não posso responder em JSON, mas você quer 2 compressores.",
+                             "reparo"),
+    "faltantes mal declarados": (_variante(quantidade=None), "regra de domínio"),
 }
 
 
-def ensayar(reparador, constructor=crear_lcel_robusta) -> list[dict]:
-    """Pasa cada salida rota por la cadena robusta y registra qué capa la resolvió.
+def ensaiar(reparador, construtor=criar_lcel_robusta) -> list[dict]:
+    """Passa cada saída quebrada pela cadeia robusta e registra qual camada a resolveu.
 
-    El generador es un doble que emite la salida rota; `reparador` es el modelo que repara
-    (real o doble). `constructor` elige la cadena: declarativa o imperativa. La capa se
-    deduce de lo observado, no de la etiqueta esperada.
+    O gerador é um duplo que emite a saída quebrada; `reparador` é o modelo que repara
+    (real ou duplo). `construtor` escolhe a cadeia: declarativa ou imperativa. A camada é
+    deduzida do que foi observado, não do rótulo esperado.
     """
-    informe = []
-    for nombre, (salida, esperada) in SALIDAS_ROTAS.items():
-        reparaciones = []
+    relatorio = []
+    for nome, (saida, esperada) in SAIDAS_QUEBRADAS.items():
+        reparos = []
 
-        def contar(prompt, registro=reparaciones):
+        def contar(prompt, registro=reparos):
             registro.append(1)
             return prompt
 
-        cadena = constructor(RunnableLambda(lambda _, texto=salida: texto),
-                             RunnableLambda(contar) | reparador)
+        cadeia = construtor(RunnableLambda(lambda _, texto=saida: texto),
+                            RunnableLambda(contar) | reparador)
         try:
-            resultado: Extraccion | None = cadena.invoke({"texto": SOLICITUD})
-            error = None
+            resultado: Extracao | None = cadeia.invoke({"texto": SOLICITACAO})
+            erro = None
         except Exception as exc:
-            resultado, error = None, type(exc).__name__
-        if error:
-            capa = "sin resolver"
-        elif reparaciones:
-            capa = "reparación"
+            resultado, erro = None, type(exc).__name__
+        if erro:
+            camada = "sem resolver"
+        elif reparos:
+            camada = "reparo"
         elif resultado is not None and resultado.faltantes:
-            capa = "regla de dominio"
-        elif salida.strip().startswith("{"):
-            capa = "ninguna"
+            camada = "regra de domínio"
+        elif saida.strip().startswith("{"):
+            camada = "nenhuma"
         else:
-            capa = "parser"
-        informe.append({"caso": nombre, "capa_esperada": esperada, "capa_observada": capa,
-                        "reparaciones": len(reparaciones), "error": error,
-                        "resultado": resultado.model_dump(exclude_none=True) if resultado else None})
-    return informe
+            camada = "parser"
+        relatorio.append({"caso": nome, "camada_esperada": esperada, "camada_observada": camada,
+                          "reparos": len(reparos), "erro": erro,
+                          "resultado": resultado.model_dump(exclude_none=True) if resultado else None})
+    return relatorio
 
 
-class _PasosTrazados(BaseCallbackHandler):
-    """Anota cada paso que la traza de LangChain llega a ver."""
+class _PassosRastreados(BaseCallbackHandler):
+    """Anota cada passo que o rastro do LangChain chega a ver."""
 
     def __init__(self):
-        self.pasos: list[str] = []
+        self.passos: list[str] = []
 
     def on_chain_start(self, serialized, inputs, *, name=None, **kwargs) -> None:
-        self.pasos.append(name or "paso")
+        self.passos.append(name or "passo")
 
     def on_chain_error(self, error, **kwargs) -> None:
-        self.pasos.append("ERROR:" + type(error).__name__)
+        self.passos.append("ERRO:" + type(error).__name__)
 
 
 def comparar_estilos() -> dict[str, dict]:
-    """Mide lo que deja ver cada estilo de la misma cadena con reparación.
+    """Mede o que cada estilo da mesma cadeia com reparo deixa ver.
 
-    Usa dobles: no llama a ningún modelo. Ejecuta un caso sin fallo y otro con reparación
-    y cuenta los pasos que registra la traza y los nodos del grafo.
+    Usa duplos: não chama nenhum modelo. Executa um caso sem falha e outro com reparo
+    e conta os passos que o rastro registra e os nós do grafo.
     """
-    correcta = json.dumps(CORRECTA)
-    reparador = RunnableLambda(lambda _: correcta)
+    correta = json.dumps(CORRETA)
+    reparador = RunnableLambda(lambda _: correta)
     medidas = {}
-    for estilo, constructor in (("declarativa (LCEL)", crear_lcel_robusta),
-                                ("imperativa (@chain)", crear_chain_robusta)):
+    for estilo, construtor in (("declarativa (LCEL)", criar_lcel_robusta),
+                               ("imperativa (@chain)", criar_chain_robusta)):
         registro = {}
-        for caso, salida in (("sin_fallo", correcta),
-                             ("con_reparacion", SALIDAS_ROTAS["cantidad negativa"][0])):
-            traza = _PasosTrazados()
-            cadena = constructor(RunnableLambda(lambda _, texto=salida: texto), reparador)
-            resultado = cadena.invoke({"texto": SOLICITUD}, config={"callbacks": [traza]})
-            registro[caso] = {"pasos": traza.pasos, "cantidad": resultado.solicitud.cantidad}
-        nodos = [nodo.name for nodo in cadena.get_graph().nodes.values()]
+        for caso, saida in (("sem_falha", correta),
+                            ("com_reparo", SAIDAS_QUEBRADAS["quantidade negativa"][0])):
+            rastro = _PassosRastreados()
+            cadeia = construtor(RunnableLambda(lambda _, texto=saida: texto), reparador)
+            resultado = cadeia.invoke({"texto": SOLICITACAO}, config={"callbacks": [rastro]})
+            registro[caso] = {"passos": rastro.passos, "quantidade": resultado.solicitacao.quantidade}
+        nos = [no.name for no in cadeia.get_graph().nodes.values()]
         medidas[estilo] = {
-            "pasos_trazados_sin_fallo": len(registro["sin_fallo"]["pasos"]),
-            "pasos_trazados_con_reparacion": len(registro["con_reparacion"]["pasos"]),
-            "el_error_queda_en_la_traza": any(
-                paso.startswith("ERROR") for paso in registro["con_reparacion"]["pasos"]),
-            "la_validacion_de_dominio_queda_en_la_traza": "_validar" in registro["sin_fallo"]["pasos"],
-            "el_grafo_muestra_la_reparacion": "WithFallbacks" in nodos,
-            "resultado_tras_reparar": registro["con_reparacion"]["cantidad"],
-            "pasos_con_reparacion": registro["con_reparacion"]["pasos"],
+            "passos_rastreados_sem_falha": len(registro["sem_falha"]["passos"]),
+            "passos_rastreados_com_reparo": len(registro["com_reparo"]["passos"]),
+            "o_erro_fica_no_rastro": any(
+                passo.startswith("ERRO") for passo in registro["com_reparo"]["passos"]),
+            "a_validacao_de_dominio_fica_no_rastro": "_validar" in registro["sem_falha"]["passos"],
+            "o_grafo_mostra_o_reparo": "WithFallbacks" in nos,
+            "resultado_apos_reparar": registro["com_reparo"]["quantidade"],
+            "passos_com_reparo": registro["com_reparo"]["passos"],
         }
     return medidas

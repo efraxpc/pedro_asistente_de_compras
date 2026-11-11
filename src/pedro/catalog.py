@@ -1,4 +1,4 @@
-"""Escenarios inmutables a partir de una base sintética reproducible."""
+"""Cenários imutáveis a partir de uma base sintética reproduzível."""
 import hashlib
 import json
 import shutil
@@ -10,119 +10,119 @@ from pathlib import Path
 
 from .contracts import Oferta
 
-SOURCE = Path(__file__).resolve().parents[2] / "datasets/piezas_electrodomesticos.sqlite3"
+SOURCE = Path(__file__).resolve().parents[2] / "datasets/pecas_eletrodomesticos.sqlite3"
 
 
 @dataclass(frozen=True)
-class Escenario:
+class Cenario:
     dataset_id: str
-    ruta: Path
+    caminho: Path
 
 
-def conectar(escenario: Escenario) -> sqlite3.Connection:
-    db = sqlite3.connect(f"file:{escenario.ruta}?mode=ro", uri=True)
+def conectar(cenario: Cenario) -> sqlite3.Connection:
+    db = sqlite3.connect(f"file:{cenario.caminho}?mode=ro", uri=True)
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA query_only=ON")
     return db
 
 
-def crear_escenario(base: Path, source: Path = SOURCE) -> Escenario:
+def criar_cenario(base: Path, source: Path = SOURCE) -> Cenario:
     if not source.is_file():
         raise FileNotFoundError(source)
     identificador = str(uuid.uuid4())
-    carpeta = base / identificador
-    carpeta.mkdir(parents=True, exist_ok=False)
-    destino = carpeta / "catalogo.sqlite3"
+    pasta = base / identificador
+    pasta.mkdir(parents=True, exist_ok=False)
+    destino = pasta / "catalogo.sqlite3"
     shutil.copyfile(source, destino)
-    huella = hashlib.sha256(destino.read_bytes()).hexdigest()
-    escenario = Escenario(identificador, destino)
-    with conectar(escenario) as db:
-        recuentos = {tabla: db.execute(f"SELECT count(*) FROM {tabla}").fetchone()[0]
-                    for tabla in ("parts", "offers", "compatibility", "price_history")}
-        semilla = db.execute("SELECT value FROM metadata WHERE key='seed'").fetchone()[0]
-    manifiesto = {"dataset_id": identificador, "version": "synthetic-parts-v1",
-                  "capturado_en": datetime.now(timezone.utc).isoformat(),
-                  "fuente": str(source.resolve()), "semilla": int(semilla),
-                  "sha256": huella, "recuentos": recuentos}
-    (carpeta / "manifest.json").write_text(json.dumps(manifiesto, indent=2), encoding="utf-8")
-    return escenario
+    impressao = hashlib.sha256(destino.read_bytes()).hexdigest()
+    cenario = Cenario(identificador, destino)
+    with conectar(cenario) as db:
+        contagens = {tabela: db.execute(f"SELECT count(*) FROM {tabela}").fetchone()[0]
+                     for tabela in ("parts", "offers", "compatibility", "price_history")}
+        semente = db.execute("SELECT value FROM metadata WHERE key='seed'").fetchone()[0]
+    manifesto = {"dataset_id": identificador, "version": "synthetic-parts-v1",
+                 "capturado_em": datetime.now(timezone.utc).isoformat(),
+                 "fonte": str(source.resolve()), "semente": int(semente),
+                 "sha256": impressao, "contagens": contagens}
+    (pasta / "manifest.json").write_text(json.dumps(manifesto, indent=2), encoding="utf-8")
+    return cenario
 
 
-def abrir_escenario(base: Path, dataset_id: str) -> Escenario:
+def abrir_cenario(base: Path, dataset_id: str) -> Cenario:
     uuid.UUID(dataset_id)
-    carpeta = base / dataset_id
-    meta = json.loads((carpeta / "manifest.json").read_text(encoding="utf-8"))
-    ruta = carpeta / "catalogo.sqlite3"
-    if meta["dataset_id"] != dataset_id or hashlib.sha256(ruta.read_bytes()).hexdigest() != meta["sha256"]:
-        raise ValueError("manifesto o catálogo alterado")
-    return Escenario(dataset_id, ruta)
+    pasta = base / dataset_id
+    meta = json.loads((pasta / "manifest.json").read_text(encoding="utf-8"))
+    caminho = pasta / "catalogo.sqlite3"
+    if meta["dataset_id"] != dataset_id or hashlib.sha256(caminho.read_bytes()).hexdigest() != meta["sha256"]:
+        raise ValueError("manifesto ou catálogo alterado")
+    return Cenario(dataset_id, caminho)
 
 
-def buscar(escenario: Escenario, texto: str, limite: int = 20) -> list[dict]:
+def buscar(cenario: Cenario, texto: str, limite: int = 20) -> list[dict]:
     if not texto.strip():
         return []
-    patron = f"%{texto.strip().lower()}%"
-    with conectar(escenario) as db:
-        filas = db.execute("SELECT p.id,p.sku,p.name,c.name AS category FROM parts p "
-                           "JOIN categories c ON c.id=p.category_id WHERE lower(p.id)=? "
-                           "OR lower(p.sku)=? OR lower(p.name) LIKE ? ORDER BY p.id LIMIT ?",
-                           (texto.lower(), texto.lower(), patron, min(max(limite, 1), 50))).fetchall()
-    return [dict(f) for f in filas]
+    padrao = f"%{texto.strip().lower()}%"
+    with conectar(cenario) as db:
+        linhas = db.execute("SELECT p.id,p.sku,p.name,c.name AS category FROM parts p "
+                            "JOIN categories c ON c.id=p.category_id WHERE lower(p.id)=? "
+                            "OR lower(p.sku)=? OR lower(p.name) LIKE ? ORDER BY p.id LIMIT ?",
+                            (texto.lower(), texto.lower(), padrao, min(max(limite, 1), 50))).fetchall()
+    return [dict(linha) for linha in linhas]
 
 
-def listar(escenario: Escenario, pagina: int = 1, termino: str = "") -> tuple[int, list[dict]]:
+def listar(cenario: Cenario, pagina: int = 1, termo: str = "") -> tuple[int, list[dict]]:
     if pagina < 1:
         raise ValueError("página inválida")
-    patron = f"%{termino.strip().lower()}%"
+    padrao = f"%{termo.strip().lower()}%"
     filtro = "WHERE lower(p.name) LIKE ? OR lower(p.sku) LIKE ? OR lower(p.id) LIKE ?"
-    with conectar(escenario) as db:
-        total = db.execute(f"SELECT count(*) FROM parts p {filtro}", (patron,) * 3).fetchone()[0]
-        filas = db.execute(f"SELECT p.id,p.sku,p.name,c.name AS category FROM parts p "
-                           f"JOIN categories c ON c.id=p.category_id {filtro} "
-                           "ORDER BY p.id LIMIT 20 OFFSET ?", (*((patron,) * 3), (pagina - 1) * 20)).fetchall()
-    return total, [dict(f) for f in filas]
+    with conectar(cenario) as db:
+        total = db.execute(f"SELECT count(*) FROM parts p {filtro}", (padrao,) * 3).fetchone()[0]
+        linhas = db.execute(f"SELECT p.id,p.sku,p.name,c.name AS category FROM parts p "
+                            f"JOIN categories c ON c.id=p.category_id {filtro} "
+                            "ORDER BY p.id LIMIT 20 OFFSET ?", (*((padrao,) * 3), (pagina - 1) * 20)).fetchall()
+    return total, [dict(linha) for linha in linhas]
 
 
-def ficha(escenario: Escenario, producto_id: str) -> dict | None:
-    with conectar(escenario) as db:
-        fila = db.execute("SELECT p.*,c.name AS category FROM parts p JOIN categories c "
-                          "ON c.id=p.category_id WHERE p.id=?", (producto_id,)).fetchone()
-        if fila is None:
+def ficha(cenario: Cenario, produto_id: str) -> dict | None:
+    with conectar(cenario) as db:
+        linha = db.execute("SELECT p.*,c.name AS category FROM parts p JOIN categories c "
+                           "ON c.id=p.category_id WHERE p.id=?", (produto_id,)).fetchone()
+        if linha is None:
             return None
-        dato = dict(fila)
-        dato["compatibility"] = [dict(f) for f in db.execute(
-            "SELECT brand,model_code,year_from,year_to FROM compatibility WHERE part_id=?", (producto_id,))]
-    return dato
+        dado = dict(linha)
+        dado["compatibility"] = [dict(c) for c in db.execute(
+            "SELECT brand,model_code,year_from,year_to FROM compatibility WHERE part_id=?", (produto_id,))]
+    return dado
 
 
-def ofertas(escenario: Escenario, producto_id: str) -> list[Oferta]:
-    with conectar(escenario) as db:
-        filas = db.execute("SELECT o.id,o.part_id AS producto_id,o.supplier_id AS proveedor_id,"
-                           "s.name AS proveedor_nombre,o.estimated_brl_cents AS precio_unitario_centavos,"
-                           "o.shipping_brl_cents AS flete_centavos,o.stock_qty AS stock,"
-                           "o.lead_days AS plazo_dias,o.min_order_qty AS pedido_minimo,"
-                           "s.domestic AS nacional FROM offers o JOIN suppliers s ON s.id=o.supplier_id "
-                           "WHERE o.part_id=? ORDER BY o.supplier_id", (producto_id,)).fetchall()
-        historiales: dict[str, list[int]] = {}
-        marcas = ",".join("?" * len(filas))
-        for oferta_id, precio in db.execute(
+def ofertas(cenario: Cenario, produto_id: str) -> list[Oferta]:
+    with conectar(cenario) as db:
+        linhas = db.execute("SELECT o.id,o.part_id AS produto_id,o.supplier_id AS fornecedor_id,"
+                            "s.name AS fornecedor_nome,o.estimated_brl_cents AS preco_unitario_centavos,"
+                            "o.shipping_brl_cents AS frete_centavos,o.stock_qty AS estoque,"
+                            "o.lead_days AS prazo_dias,o.min_order_qty AS pedido_minimo,"
+                            "s.domestic AS nacional FROM offers o JOIN suppliers s ON s.id=o.supplier_id "
+                            "WHERE o.part_id=? ORDER BY o.supplier_id", (produto_id,)).fetchall()
+        historicos: dict[str, list[int]] = {}
+        marcas = ",".join("?" * len(linhas))
+        for oferta_id, preco in db.execute(
                 f"SELECT offer_id,estimated_brl_cents FROM price_history WHERE offer_id IN ({marcas}) "
-                "ORDER BY offer_id,observed_on", [f["id"] for f in filas]):
-            historiales.setdefault(oferta_id, []).append(precio)
-    return [Oferta(dataset_id=escenario.dataset_id, **dict(f), **_resumen_historial(
-        historiales.get(f["id"], []), f["precio_unitario_centavos"])) for f in filas]
+                "ORDER BY offer_id,observed_on", [linha["id"] for linha in linhas]):
+            historicos.setdefault(oferta_id, []).append(preco)
+    return [Oferta(dataset_id=cenario.dataset_id, **dict(linha), **_resumo_historico(
+        historicos.get(linha["id"], []), linha["preco_unitario_centavos"])) for linha in linhas]
 
 
-def _resumen_historial(precios: list[int], vigente: int) -> dict:
-    """Resume el historial de una oferta en centavos enteros.
+def _resumo_historico(precos: list[int], vigente: int) -> dict:
+    """Resume o histórico de uma oferta em centavos inteiros.
 
-    La última observación es el precio vigente; la media y el precio anterior se calculan
-    con las anteriores. La media se redondea al centavo más cercano sin usar decimales.
+    A última observação é o preço vigente; a média e o preço anterior são calculados
+    com as anteriores. A média é arredondada ao centavo mais próximo sem usar decimais.
     """
-    previos = precios[:-1] if precios and precios[-1] == vigente else precios
-    if not previos:
+    anteriores = precos[:-1] if precos and precos[-1] == vigente else precos
+    if not anteriores:
         return {}
-    return {"meses_historial": len(previos), "precio_anterior_centavos": previos[-1],
-            "precio_medio_centavos": (2 * sum(previos) + len(previos)) // (2 * len(previos)),
-            "precio_minimo_centavos": min(*previos, vigente),
-            "precio_maximo_centavos": max(*previos, vigente)}
+    return {"meses_historico": len(anteriores), "preco_anterior_centavos": anteriores[-1],
+            "preco_medio_centavos": (2 * sum(anteriores) + len(anteriores)) // (2 * len(anteriores)),
+            "preco_minimo_centavos": min(*anteriores, vigente),
+            "preco_maximo_centavos": max(*anteriores, vigente)}

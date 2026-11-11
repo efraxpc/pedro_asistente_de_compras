@@ -1,300 +1,301 @@
-"""Puerta de publicación independiente del agente generador."""
+"""Porta de publicação independente do agente gerador."""
 from difflib import SequenceMatcher
 
 from .business import comparar
-from .catalog import Escenario, buscar, ofertas
-from .contracts import Alternativa, RespuestaCompra
+from .catalog import Cenario, buscar, ofertas
+from .contracts import Alternativa, RespostaCompra
 
 
-def verificar(respuesta: RespuestaCompra, escenario: Escenario, *, indice=None,
-             observaciones: list[tuple[str, dict]] | None = None) -> list[str]:
-    errores = []
-    if respuesta.dataset_id != escenario.dataset_id:
-        return ["dataset ajeno"]
-    if respuesta.estado == "aclaracion":
-        ambiguo = bool(respuesta.solicitud.producto and
-                       len(buscar(escenario, respuesta.solicitud.producto, 2)) > 1)
-        return [] if respuesta.solicitud.faltantes() or ambiguo else ["aclaración injustificada"]
-    if respuesta.estado == "sin_evidencia":
+def verificar(resposta: RespostaCompra, cenario: Cenario, *, indice=None,
+              observacoes: list[tuple[str, dict]] | None = None) -> list[str]:
+    erros = []
+    if resposta.dataset_id != cenario.dataset_id:
+        return ["dataset alheio"]
+    if resposta.estado == "esclarecimento":
+        ambiguo = bool(resposta.solicitacao.produto and
+                       len(buscar(cenario, resposta.solicitacao.produto, 2)) > 1)
+        return [] if resposta.solicitacao.faltantes() or ambiguo else ["esclarecimento injustificado"]
+    if resposta.estado == "sem_evidencia":
         return []
-    if respuesta.estado == "catalogo":
-        consultas = [dato for nombre, dato in (observaciones or [])
-                     if nombre == "consultar_catalogo" and dato.get("modo") == "sql"]
+    if resposta.estado == "catalogo":
+        consultas = [dado for nome, dado in (observacoes or [])
+                     if nome == "consultar_catalogo" and dado.get("modo") == "sql"]
         if not consultas:
-            return ["consulta al catálogo no observada"]
+            return ["consulta ao catálogo não observada"]
         ultima = consultas[-1]
-        if ultima.get("dataset_id") != escenario.dataset_id:
-            return ["dataset ajeno"]
-        return [] if ultima.get("estado") in ("ok", "sin_filas") else ["consulta rechazada"]
-    if respuesta.estado == "preferencia":
-        guardada = any(nombre == "guardar_preferencia" and dato.get("estado") == "ok"
-                       for nombre, dato in (observaciones or []))
-        return [] if guardada else ["preferencia no guardada"]
-    if respuesta.estado == "cep":
-        cep = respuesta.solicitud.cep
-        if not cep or not respuesta.cidade or not respuesta.uf or not respuesta.modo_cep:
-            return ["ubicación incompleta"]
-        fuentes = [e for e in respuesta.evidencias if e.tipo == "viacep"
-                   and e.fuente_id == f"ViaCEP:{cep}"]
-        if not fuentes:
-            return ["falta evidencia ViaCEP"]
-        if not any(nombre == "consultar_cep" and dato.get("estado") == "ok" and
-                   dato.get("cep") == cep and dato.get("cidade") == respuesta.cidade and
-                   dato.get("uf") == respuesta.uf and dato.get("modo") == respuesta.modo_cep
-                   for nombre, dato in (observaciones or [])):
-            return ["ubicación no coincide con ViaCEP"]
+        if ultima.get("dataset_id") != cenario.dataset_id:
+            return ["dataset alheio"]
+        return [] if ultima.get("estado") in ("ok", "sem_linhas") else ["consulta rejeitada"]
+    if resposta.estado == "preferencia":
+        salva = any(nome == "salvar_preferencia" and dado.get("estado") == "ok"
+                    for nome, dado in (observacoes or []))
+        return [] if salva else ["preferência não salva"]
+    if resposta.estado == "cep":
+        cep = resposta.solicitacao.cep
+        if not cep or not resposta.cidade or not resposta.uf or not resposta.modo_cep:
+            return ["localização incompleta"]
+        fontes = [e for e in resposta.evidencias if e.tipo == "viacep"
+                  and e.fonte_id == f"ViaCEP:{cep}"]
+        if not fontes:
+            return ["falta evidência ViaCEP"]
+        if not any(nome == "consultar_cep" and dado.get("estado") == "ok" and
+                   dado.get("cep") == cep and dado.get("cidade") == resposta.cidade and
+                   dado.get("uf") == resposta.uf and dado.get("modo") == resposta.modo_cep
+                   for nome, dado in (observacoes or [])):
+            return ["localização não coincide com o ViaCEP"]
         return []
-    if respuesta.estado == "politica":
-        if indice is None or not respuesta.mensaje.strip():
-            return ["política sin índice o afirmación"]
-        fuentes = [e for e in respuesta.evidencias if e.tipo == "politica" and e.fuente_id]
-        if not fuentes:
-            return ["política sin evidencia"]
-        for evidencia in fuentes:
-            doc = indice.docstore.search(evidencia.fuente_id)
+    if resposta.estado == "politica":
+        if indice is None or not resposta.mensagem.strip():
+            return ["política sem índice ou afirmação"]
+        fontes = [e for e in resposta.evidencias if e.tipo == "politica" and e.fonte_id]
+        if not fontes:
+            return ["política sem evidência"]
+        for evidencia in fontes:
+            doc = indice.docstore.search(evidencia.fonte_id)
             if not hasattr(doc, "page_content") or not evidencia.texto or evidencia.texto not in doc.page_content:
-                errores.append(f"fragmento no corresponde: {evidencia.fuente_id}")
-        if observaciones is not None:
+                erros.append(f"fragmento não corresponde: {evidencia.fonte_id}")
+        if observacoes is not None:
             recuperados = {
-                fragmento.get("fuente_id"): fragmento.get("texto", "")
-                for nombre, dato in observaciones if nombre == "consultar_politicas"
-                for fragmento in dato.get("fragmentos", [])
+                fragmento.get("fonte_id"): fragmento.get("texto", "")
+                for nome, dado in observacoes if nome == "consultar_politicas"
+                for fragmento in dado.get("fragmentos", [])
                 if isinstance(fragmento, dict)
             }
             if not recuperados:
-                errores.append("política sin recuperación observada")
-            for evidencia in fuentes:
-                if evidencia.texto not in recuperados.get(evidencia.fuente_id, ""):
-                    errores.append(f"fuente no recuperada: {evidencia.fuente_id}")
-        return errores
-    if respuesta.solicitud.faltantes() or not respuesta.producto_id:
-        return ["solicitud incompleta"]
-    if respuesta.producto_id != respuesta.solicitud.producto_id:
-        errores.append("producto incoherente")
-    oficiales = ofertas(escenario, respuesta.producto_id)
-    esperadas = comparar(respuesta.solicitud, oficiales)
+                erros.append("política sem recuperação observada")
+            for evidencia in fontes:
+                if evidencia.texto not in recuperados.get(evidencia.fonte_id, ""):
+                    erros.append(f"fonte não recuperada: {evidencia.fonte_id}")
+        return erros
+    if resposta.solicitacao.faltantes() or not resposta.produto_id:
+        return ["solicitação incompleta"]
+    if resposta.produto_id != resposta.solicitacao.produto_id:
+        erros.append("produto incoerente")
+    oficiais = ofertas(cenario, resposta.produto_id)
+    esperadas = comparar(resposta.solicitacao, oficiais)
     por_id = {a.oferta.id: a for a in esperadas}
-    actuales = {a.oferta.id: a for a in respuesta.alternativas}
-    if not oficiales or len(actuales) != len(respuesta.alternativas) or set(actuales) != set(por_id):
-        errores.append("ofertas incompletas")
-    for oid, alternativa in actuales.items():
+    atuais = {a.oferta.id: a for a in resposta.alternativas}
+    if not oficiais or len(atuais) != len(resposta.alternativas) or set(atuais) != set(por_id):
+        erros.append("ofertas incompletas")
+    for oid, alternativa in atuais.items():
         if oid not in por_id or alternativa != por_id[oid]:
-            errores.append(f"alternativa incoherente: {oid}")
-    fuentes = {e.fuente_id for e in respuesta.evidencias
-               if e.tipo == "catalogo" and e.dataset_id == escenario.dataset_id}
-    if set(por_id) - fuentes:
-        errores.append("evidencia incompleta")
-    validas = [a for a in esperadas if a.cumple]
-    if respuesta.estado == "recomendacion":
+            erros.append(f"alternativa incoerente: {oid}")
+    fontes = {e.fonte_id for e in resposta.evidencias
+              if e.tipo == "catalogo" and e.dataset_id == cenario.dataset_id}
+    if set(por_id) - fontes:
+        erros.append("evidência incompleta")
+    validas = [a for a in esperadas if a.atende]
+    if resposta.estado == "recomendacao":
         if not validas:
-            errores.append("no existe oferta válida")
-        elif (respuesta.proveedor_id != validas[0].oferta.proveedor_id or
-              respuesta.total_centavos != validas[0].total_centavos):
-            errores.append("ganador o total incorrecto")
-    elif respuesta.estado == "sin_oferta" and validas:
-        errores.append("sí existe oferta válida")
-    return errores
+            erros.append("não existe oferta válida")
+        elif (resposta.fornecedor_id != validas[0].oferta.fornecedor_id or
+              resposta.total_centavos != validas[0].total_centavos):
+            erros.append("vencedor ou total incorreto")
+    elif resposta.estado == "sem_oferta" and validas:
+        erros.append("existe, sim, oferta válida")
+    return erros
 
 
-COBERTURA_MINIMA_CITA = 0.8
-LONGITUD_MINIMA_CITA = 20
+COBERTURA_MINIMA_CITACAO = 0.8
+COMPRIMENTO_MINIMO_CITACAO = 20
 
 
-def anclar_cita(cita: str, fragmento: str) -> tuple[str | None, float]:
-    """Localiza en el fragmento el tramo literal que corresponde a una cita casi literal.
+def ancorar_citacao(citacao: str, fragmento: str) -> tuple[str | None, float]:
+    """Localiza no fragmento o trecho literal que corresponde a uma citação quase literal.
 
-    Devuelve el tramo copiado del fragmento y la cobertura de la cita (0 a 1). El texto
-    devuelto procede siempre del fragmento, nunca de la cita.
+    Devolve o trecho copiado do fragmento e a cobertura da citação (0 a 1). O texto
+    devolvido vem sempre do fragmento, nunca da citação.
     """
-    cita = " ".join(cita.split())
-    if len(cita) < LONGITUD_MINIMA_CITA or not fragmento:
+    citacao = " ".join(citacao.split())
+    if len(citacao) < COMPRIMENTO_MINIMO_CITACAO or not fragmento:
         return None, 0.0
-    bloques = [b for b in SequenceMatcher(None, fragmento, cita, autojunk=False)
-               .get_matching_blocks() if b.size >= 4]
-    cobertura = sum(b.size for b in bloques) / len(cita)
-    if not bloques or cobertura < COBERTURA_MINIMA_CITA:
+    blocos = [b for b in SequenceMatcher(None, fragmento, citacao, autojunk=False)
+              .get_matching_blocks() if b.size >= 4]
+    cobertura = sum(b.size for b in blocos) / len(citacao)
+    if not blocos or cobertura < COBERTURA_MINIMA_CITACAO:
         return None, cobertura
-    tramo = fragmento[bloques[0].a:bloques[-1].a + bloques[-1].size]
-    if len(tramo) > 1.5 * len(cita) + 20:
+    trecho = fragmento[blocos[0].a:blocos[-1].a + blocos[-1].size]
+    if len(trecho) > 1.5 * len(citacao) + 20:
         return None, cobertura
-    return tramo, cobertura
+    return trecho, cobertura
 
 
-def anclar_citas(respuesta: RespuestaCompra,
-                 observaciones: list[tuple[str, dict]] | None) -> list[dict]:
-    """Sustituye cada cita de política por el texto literal del fragmento recuperado.
+def ancorar_citacoes(resposta: RespostaCompra,
+                     observacoes: list[tuple[str, dict]] | None) -> list[dict]:
+    """Substitui cada citação de política pelo texto literal do fragmento recuperado.
 
-    El modelo propone qué fuente respalda la respuesta; el texto de la evidencia lo pone
-    el sistema. Una cita que no se puede anclar queda intacta y la rechazará `verificar`.
+    O modelo propõe qual fonte sustenta a resposta; o texto da evidência é posto pelo
+    sistema. Uma citação que não pode ser ancorada fica intacta e será rejeitada por `verificar`.
     """
     recuperados = {
-        fragmento.get("fuente_id"): fragmento.get("texto", "")
-        for nombre, dato in (observaciones or []) if nombre == "consultar_politicas"
-        for fragmento in dato.get("fragmentos", []) if isinstance(fragmento, dict)
+        fragmento.get("fonte_id"): fragmento.get("texto", "")
+        for nome, dado in (observacoes or []) if nome == "consultar_politicas"
+        for fragmento in dado.get("fragmentos", []) if isinstance(fragmento, dict)
     }
-    informe = []
-    for evidencia in respuesta.evidencias:
+    relatorio = []
+    for evidencia in resposta.evidencias:
         if evidencia.tipo != "politica":
             continue
-        fragmento = recuperados.get(evidencia.fuente_id, "")
+        fragmento = recuperados.get(evidencia.fonte_id, "")
         if not fragmento:
-            estado, cobertura = "fuente_no_recuperada", 0.0
+            estado, cobertura = "fonte_nao_recuperada", 0.0
         elif evidencia.texto and evidencia.texto in fragmento:
             estado, cobertura = "literal", 1.0
         elif not evidencia.texto.strip():
             evidencia.texto, estado, cobertura = fragmento, "por_identificador", 1.0
         else:
-            tramo, cobertura = anclar_cita(evidencia.texto, fragmento)
-            if tramo is None:
-                estado = "rechazada"
+            trecho, cobertura = ancorar_citacao(evidencia.texto, fragmento)
+            if trecho is None:
+                estado = "rejeitada"
             else:
-                evidencia.texto, estado = tramo, "reanclada"
-        informe.append({"fuente_id": evidencia.fuente_id, "estado": estado,
-                        "cobertura": round(cobertura, 3)})
-    return informe
+                evidencia.texto, estado = trecho, "reancorada"
+        relatorio.append({"fonte_id": evidencia.fonte_id, "estado": estado,
+                          "cobertura": round(cobertura, 3)})
+    return relatorio
 
 
-def anclar_cep(respuesta: RespuestaCompra, observaciones: list[tuple[str, dict]] | None,
-               dataset_id: str) -> dict | None:
-    """Rellena una respuesta de CEP con lo que devolvió ViaCEP en este turno.
+def ancorar_cep(resposta: RespostaCompra, observacoes: list[tuple[str, dict]] | None,
+                dataset_id: str) -> dict | None:
+    """Preenche uma resposta de CEP com o que o ViaCEP devolveu neste turno.
 
-    El modelo decide que la respuesta es un CEP; ciudad, estado, modo y evidencia los pone
-    el sistema a partir de la observación de la herramienta. Sin una observación válida la
-    respuesta queda intacta y la rechazará `verificar`.
+    O modelo decide que a resposta é um CEP; cidade, estado, modo e evidência são postos
+    pelo sistema a partir da observação da ferramenta. Sem uma observação válida a
+    resposta fica intacta e será rejeitada por `verificar`.
     """
-    if respuesta.estado != "cep":
+    if resposta.estado != "cep":
         return None
-    validas = [dato for nombre, dato in (observaciones or [])
-               if nombre == "consultar_cep" and dato.get("estado") == "ok"]
-    pedido = respuesta.solicitud.cep
-    dato = next((d for d in validas if d.get("cep") == pedido), None)
-    if dato is None and not pedido and len({d.get("cep") for d in validas}) == 1:
-        dato = validas[0]
-    if dato is None:
-        return {"estado": "sin_observacion_valida", "cep": pedido}
+    validas = [dado for nome, dado in (observacoes or [])
+               if nome == "consultar_cep" and dado.get("estado") == "ok"]
+    pedido = resposta.solicitacao.cep
+    dado = next((d for d in validas if d.get("cep") == pedido), None)
+    if dado is None and not pedido and len({d.get("cep") for d in validas}) == 1:
+        dado = validas[0]
+    if dado is None:
+        return {"estado": "sem_observacao_valida", "cep": pedido}
     from .contracts import Evidencia
-    respuesta.solicitud.cep = dato["cep"]
-    respuesta.cidade, respuesta.uf, respuesta.modo_cep = dato["cidade"], dato["uf"], dato["modo"]
-    respuesta.evidencias = [Evidencia(tipo="viacep", fuente_id=f"ViaCEP:{dato['cep']}",
-                                      texto=f"{dato['cidade']}/{dato['uf']}")]
-    # Una respuesta de CEP no usa datos del catálogo: el escenario lo fija el sistema.
-    respuesta.dataset_id = dataset_id
-    return {"estado": "anclada", "cep": dato["cep"]}
+    resposta.solicitacao.cep = dado["cep"]
+    resposta.cidade, resposta.uf, resposta.modo_cep = dado["cidade"], dado["uf"], dado["modo"]
+    resposta.evidencias = [Evidencia(tipo="viacep", fonte_id=f"ViaCEP:{dado['cep']}",
+                                     texto=f"{dado['cidade']}/{dado['uf']}")]
+    # Uma resposta de CEP não usa dados do catálogo: o cenário é definido pelo sistema.
+    resposta.dataset_id = dataset_id
+    return {"estado": "ancorada", "cep": dado["cep"]}
 
 
-CAMPOS_SOLICITUD = ("producto_id", "cantidad", "presupuesto_centavos", "plazo_max_dias")
-# Lo que el sistema añade a la solicitud y el modelo no tiene por qué repetir.
-CAMPOS_DEL_SISTEMA = ("origen_preferido",)
+CAMPOS_SOLICITACAO = ("produto_id", "quantidade", "orcamento_centavos", "prazo_max_dias")
+# O que o sistema acrescenta à solicitação e o modelo não precisa repetir.
+CAMPOS_DO_SISTEMA = ("origem_preferida",)
 
 
-def anclar_recomendacion(respuesta: RespuestaCompra,
-                         observaciones: list[tuple[str, dict]] | None) -> dict | None:
-    """Sustituye las cifras de una comparación por las que calculó `comparar_ofertas`.
+def ancorar_recomendacao(resposta: RespostaCompra,
+                         observacoes: list[tuple[str, dict]] | None) -> dict | None:
+    """Substitui os números de uma comparação pelos que `comparar_ofertas` calculou.
 
-    El modelo decide que la respuesta es la comparación de una solicitud; el ganador, el total,
-    las alternativas y las evidencias los pone el sistema con el resultado de la herramienta
-    para esa misma solicitud. Si la herramienta no se llamó con esa solicitud, no se toca nada
-    y la verificación exacta decide.
+    O modelo decide que a resposta é a comparação de uma solicitação; o vencedor, o total,
+    as alternativas e as evidências são postos pelo sistema com o resultado da ferramenta
+    para essa mesma solicitação. Se a ferramenta não foi chamada com essa solicitação, nada
+    é alterado e a verificação exata decide.
     """
-    if respuesta.estado not in ("recomendacion", "sin_oferta"):
+    if resposta.estado not in ("recomendacao", "sem_oferta"):
         return None
-    pedido = tuple(getattr(respuesta.solicitud, campo) for campo in CAMPOS_SOLICITUD)
-    for nombre, dato in reversed(observaciones or []):
-        if nombre != "comparar_ofertas":
+    pedido = tuple(getattr(resposta.solicitacao, campo) for campo in CAMPOS_SOLICITACAO)
+    for nome, dado in reversed(observacoes or []):
+        if nome != "comparar_ofertas":
             continue
         try:
-            calculada = RespuestaCompra.model_validate(dato)
+            calculada = RespostaCompra.model_validate(dado)
         except ValueError:
             continue
-        if tuple(getattr(calculada.solicitud, campo) for campo in CAMPOS_SOLICITUD) != pedido:
+        if tuple(getattr(calculada.solicitacao, campo) for campo in CAMPOS_SOLICITACAO) != pedido:
             continue
-        cambios = [campo for campo in ("estado", "proveedor_id", "total_centavos", "alternativas")
-                   if getattr(respuesta, campo) != getattr(calculada, campo)]
-        for campo in ("estado", "dataset_id", "producto_id", "proveedor_id", "total_centavos",
+        mudancas = [campo for campo in ("estado", "fornecedor_id", "total_centavos", "alternativas")
+                    if getattr(resposta, campo) != getattr(calculada, campo)]
+        for campo in ("estado", "dataset_id", "produto_id", "fornecedor_id", "total_centavos",
                       "alternativas", "evidencias"):
-            setattr(respuesta, campo, getattr(calculada, campo))
-        for campo in CAMPOS_DEL_SISTEMA:
-            setattr(respuesta.solicitud, campo, getattr(calculada.solicitud, campo))
-        return {"estado": "anclada", "campos_corregidos": cambios}
-    return {"estado": "sin_calculo_para_esa_solicitud"}
+            setattr(resposta, campo, getattr(calculada, campo))
+        for campo in CAMPOS_DO_SISTEMA:
+            setattr(resposta.solicitacao, campo, getattr(calculada.solicitacao, campo))
+        return {"estado": "ancorada", "campos_corrigidos": mudancas}
+    return {"estado": "sem_calculo_para_essa_solicitacao"}
 
 
-FILAS_VISIBLES = 10
+LINHAS_VISIVEIS = 10
 
 
-def anclar_catalogo(respuesta: RespuestaCompra,
-                    observaciones: list[tuple[str, dict]] | None) -> dict | None:
-    """Redacta una respuesta de catálogo con las filas que devolvió la consulta SQL.
+def ancorar_catalogo(resposta: RespostaCompra,
+                     observacoes: list[tuple[str, dict]] | None) -> dict | None:
+    """Redige uma resposta de catálogo com as linhas que a consulta SQL devolveu.
 
-    El modelo decide que la respuesta es una consulta al catálogo; la tabla, el recuento y la
-    consulta ejecutada los pone el sistema. Ningún número lo escribe el modelo.
+    O modelo decide que a resposta é uma consulta ao catálogo; a tabela, a contagem e a
+    consulta executada são postas pelo sistema. Nenhum número é escrito pelo modelo.
     """
-    if respuesta.estado != "catalogo":
+    if resposta.estado != "catalogo":
         return None
-    consulta = next((dato for nombre, dato in reversed(observaciones or [])
-                     if nombre == "consultar_catalogo" and dato.get("modo") == "sql"), None)
-    if consulta is None or consulta.get("estado") not in ("ok", "sin_filas"):
-        return {"estado": "sin_consulta_valida"}
+    consulta = next((dado for nome, dado in reversed(observacoes or [])
+                     if nome == "consultar_catalogo" and dado.get("modo") == "sql"), None)
+    if consulta is None or consulta.get("estado") not in ("ok", "sem_linhas"):
+        return {"estado": "sem_consulta_valida"}
     from .contracts import Evidencia
-    sql = consulta["intentos"][-1]["sql"]
-    filas = consulta.get("filas", [])
-    if not filas:
-        cuerpo = "La consulta no devolvió ninguna fila; puede que esté mal planteada."
+    sql = consulta["tentativas"][-1]["sql"]
+    linhas = consulta.get("linhas", [])
+    if not linhas:
+        corpo = "A consulta não devolveu nenhuma linha; pode ser que esteja mal formulada."
     else:
-        columnas = list(filas[0])
-        cuerpo = "\n".join(
-            ["| " + " | ".join(columnas) + " |", "|" + "---|" * len(columnas)]
-            + ["| " + " | ".join(str(fila[c]) for c in columnas) + " |"
-               for fila in filas[:FILAS_VISIBLES]])
-        if len(filas) > FILAS_VISIBLES or consulta.get("truncado"):
-            cuerpo += f"\n\nSe muestran {min(len(filas), FILAS_VISIBLES)} de {len(filas)} filas" + (
-                " (el resultado se cortó en el límite)." if consulta.get("truncado") else ".")
-    respuesta.mensaje = (f"{consulta.get('explicacion', 'Consulta al catálogo.')}\n\n{cuerpo}\n\n"
-                         f"Consulta ejecutada (solo lectura): `{sql}`\n"
-                         "Los importes están en centavos de real. La consulta la escribió un modelo "
-                         "y solo se comprobó que es segura, no que responda exactamente a la pregunta.")
-    respuesta.dataset_id = consulta["dataset_id"]
-    respuesta.evidencias = [Evidencia(tipo="catalogo", fuente_id="SQL", texto=sql,
-                                      dataset_id=consulta["dataset_id"])]
-    return {"estado": "anclada", "filas": len(filas), "sql": sql}
+        colunas = list(linhas[0])
+        corpo = "\n".join(
+            ["| " + " | ".join(colunas) + " |", "|" + "---|" * len(colunas)]
+            + ["| " + " | ".join(str(linha[c]) for c in colunas) + " |"
+               for linha in linhas[:LINHAS_VISIVEIS]])
+        if len(linhas) > LINHAS_VISIVEIS or consulta.get("truncado"):
+            corpo += f"\n\nSão mostradas {min(len(linhas), LINHAS_VISIVEIS)} de {len(linhas)} linhas" + (
+                " (o resultado foi cortado no limite)." if consulta.get("truncado") else ".")
+    resposta.mensagem = (f"{consulta.get('explicacao', 'Consulta ao catálogo.')}\n\n{corpo}\n\n"
+                         f"Consulta executada (somente leitura): `{sql}`\n"
+                         "Os valores estão em centavos de real. A consulta foi escrita por um modelo "
+                         "e só se verificou que é segura, não que responde exatamente à pergunta.")
+    resposta.dataset_id = consulta["dataset_id"]
+    resposta.evidencias = [Evidencia(tipo="catalogo", fonte_id="SQL", texto=sql,
+                                     dataset_id=consulta["dataset_id"])]
+    return {"estado": "ancorada", "linhas": len(linhas), "sql": sql}
 
 
-def anclar_preferencia(respuesta: RespuestaCompra,
-                       observaciones: list[tuple[str, dict]] | None) -> dict | None:
-    """Redacta la confirmación de una preferencia con lo que la herramienta guardó de verdad."""
-    if respuesta.estado != "preferencia":
+def ancorar_preferencia(resposta: RespostaCompra,
+                        observacoes: list[tuple[str, dict]] | None) -> dict | None:
+    """Redige a confirmação de uma preferência com o que a ferramenta salvou de verdade."""
+    if resposta.estado != "preferencia":
         return None
-    guardada = next((dato for nombre, dato in (observaciones or [])
-                     if nombre == "guardar_preferencia" and dato.get("estado") == "ok"), None)
-    if guardada is None:
-        return {"estado": "sin_guardado"}
-    respuesta.mensaje = f"Guardé tu preferencia: {guardada['clave']} = {guardada['valor']}."
-    return {"estado": "anclada", "clave": guardada["clave"], "valor": guardada["valor"]}
+    salva = next((dado for nome, dado in (observacoes or [])
+                  if nome == "salvar_preferencia" and dado.get("estado") == "ok"), None)
+    if salva is None:
+        return {"estado": "sem_salvamento"}
+    resposta.mensagem = f"Salvei a sua preferência: {salva['chave']} = {salva['valor']}."
+    return {"estado": "ancorada", "chave": salva["chave"], "valor": salva["valor"]}
 
 
-def respuesta_local(escenario: Escenario, solicitud) -> RespuestaCompra:
-    if solicitud.faltantes() or not solicitud.producto_id:
-        return RespuestaCompra(estado="aclaracion", dataset_id=escenario.dataset_id, solicitud=solicitud)
-    alternativas = comparar(solicitud, ofertas(escenario, solicitud.producto_id))
-    validas = [a for a in alternativas if a.cumple]
+def resposta_local(cenario: Cenario, solicitacao) -> RespostaCompra:
+    if solicitacao.faltantes() or not solicitacao.produto_id:
+        return RespostaCompra(estado="esclarecimento", dataset_id=cenario.dataset_id,
+                              solicitacao=solicitacao)
+    alternativas = comparar(solicitacao, ofertas(cenario, solicitacao.produto_id))
+    validas = [a for a in alternativas if a.atende]
     from .contracts import Evidencia
-    return RespuestaCompra(
-        estado="recomendacion" if validas else "sin_oferta", dataset_id=escenario.dataset_id,
-        solicitud=solicitud, producto_id=solicitud.producto_id,
-        proveedor_id=validas[0].oferta.proveedor_id if validas else None,
+    return RespostaCompra(
+        estado="recomendacao" if validas else "sem_oferta", dataset_id=cenario.dataset_id,
+        solicitacao=solicitacao, produto_id=solicitacao.produto_id,
+        fornecedor_id=validas[0].oferta.fornecedor_id if validas else None,
         total_centavos=validas[0].total_centavos if validas else None,
         alternativas=alternativas,
-        evidencias=[Evidencia(tipo="catalogo", fuente_id=a.oferta.id,
-                             dataset_id=escenario.dataset_id,
-                             texto=(f"{a.oferta.proveedor_nombre} stock {a.oferta.stock} "
-                                    f"entrega {a.oferta.plazo_dias} días")) for a in alternativas])
+        evidencias=[Evidencia(tipo="catalogo", fonte_id=a.oferta.id,
+                              dataset_id=cenario.dataset_id,
+                              texto=(f"{a.oferta.fornecedor_nome} estoque {a.oferta.estoque} "
+                                     f"entrega {a.oferta.prazo_dias} dias")) for a in alternativas])
 
 
-def mejor_sin_preferencia(respuesta: RespuestaCompra) -> Alternativa | None:
-    """La oferta válida más barata, si la preferencia del usuario hizo ganar a otra más cara."""
-    if respuesta.solicitud.origen_preferido is None or respuesta.estado != "recomendacion":
+def melhor_sem_preferencia(resposta: RespostaCompra) -> Alternativa | None:
+    """A oferta válida mais barata, se a preferência do usuário fez vencer outra mais cara."""
+    if resposta.solicitacao.origem_preferida is None or resposta.estado != "recomendacao":
         return None
-    validas = [a for a in respuesta.alternativas if a.cumple]
-    barata = min(validas, key=lambda a: (a.total_centavos, a.oferta.plazo_dias, a.oferta.proveedor_id))
-    ganadora = validas[0]
-    return barata if barata.total_centavos < ganadora.total_centavos else None
+    validas = [a for a in resposta.alternativas if a.atende]
+    barata = min(validas, key=lambda a: (a.total_centavos, a.oferta.prazo_dias, a.oferta.fornecedor_id))
+    vencedora = validas[0]
+    return barata if barata.total_centavos < vencedora.total_centavos else None

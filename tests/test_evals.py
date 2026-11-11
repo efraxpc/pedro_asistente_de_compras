@@ -1,37 +1,37 @@
 from collections import Counter
 
-from evals.evaluar_flujo import referencias
+from evals.avaliar_fluxo import referencias
 
 
-def test_referencias_congeladas_sin_credenciales():
+def test_referencias_congeladas_sem_credenciais():
     casos = referencias()
     assert len(casos) == 30
     assert len({c["id"] for c in casos}) == 30
     assert Counter(c["grupo"] for c in casos) == {
-        "recomendacion": 14, "sin_oferta": 5, "aclaracion": 4,
-        "catalogo": 3, "cep": 2, "politica_sin_indice": 2}
+        "recomendacao": 14, "sem_oferta": 5, "esclarecimento": 4,
+        "catalogo": 3, "cep": 2, "politica_sem_indice": 2}
 
 
-def test_el_comparador_coincide_con_las_referencias_independientes(tmp_path):
-    """Las referencias se calculan con SQL propio en scripts/crear_casos_eval.py."""
+def test_o_comparador_coincide_com_as_referencias_independentes(tmp_path):
+    """As referências são calculadas com SQL próprio em scripts/criar_casos_eval.py."""
     import json
     import re
     from pathlib import Path
 
-    from pedro.catalog import crear_escenario
-    from pedro.contracts import Solicitud
-    from pedro.verification import respuesta_local
+    from pedro.catalog import criar_cenario
+    from pedro.contracts import Solicitacao
+    from pedro.verification import resposta_local
 
-    escenario = crear_escenario(tmp_path / "catalogos")
+    cenario = criar_cenario(tmp_path / "catalogos")
     casos = json.loads(Path("evals/casos_derivados.json").read_text(encoding="utf-8"))["casos"]
-    comparables = [c for c in casos if c["grupo"] in ("recomendacion", "sin_oferta")]
-    assert len(comparables) == 19
-    for caso in comparables:
-        producto_id = re.search(r"PEC-\d\d-\d{4}", caso["pregunta"]).group()
-        cantidad = int(re.search(r"(\d+) unidades", caso["pregunta"]).group(1))
-        respuesta = respuesta_local(escenario, Solicitud(
-            producto_id=producto_id, cantidad=cantidad, presupuesto_centavos=10_000_000,
-            plazo_max_dias=60))
+    comparaveis = [c for c in casos if c["grupo"] in ("recomendacao", "sem_oferta")]
+    assert len(comparaveis) == 19
+    for caso in comparaveis:
+        produto_id = re.search(r"PEC-\d\d-\d{4}", caso["pergunta"]).group()
+        quantidade = int(re.search(r"(\d+) unidades", caso["pergunta"]).group(1))
+        resposta = resposta_local(cenario, Solicitacao(
+            produto_id=produto_id, quantidade=quantidade, orcamento_centavos=10_000_000,
+            prazo_max_dias=60))
         esperado = caso["esperado"]
-        assert (respuesta.estado, respuesta.proveedor_id, respuesta.total_centavos) == (
-            esperado["estado"], esperado.get("ganador"), esperado.get("total_centavos")), caso["id"]
+        assert (resposta.estado, resposta.fornecedor_id, resposta.total_centavos) == (
+            esperado["estado"], esperado.get("vencedor"), esperado.get("total_centavos")), caso["id"]

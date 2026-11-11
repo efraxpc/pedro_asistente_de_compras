@@ -1,74 +1,74 @@
 from langchain_core.language_models.fake import FakeListLLM
 
-from pedro.catalog import crear_escenario
-from pedro.legacy import crear_react_textual
+from pedro.catalog import criar_cenario
+from pedro.legacy import criar_react_textual
 
-GUION = ["Thought: busco\nAction: buscar_pieza\nAction Input: NEVE-COMP-0001",
-         "Thought: listo\nFinal Answer: el ID es PEC-01-0001",
-         "Thought: uso el historial\nAction: ofertas_de_pieza\nAction Input: PEC-01-0001",
-         "Thought: listo\nFinal Answer: CentroPeças entrega en 2 días"]
-
-
-def test_react_clasico_ejecuta_herramientas_y_guarda_memoria(tmp_path):
-    escenario = crear_escenario(tmp_path / "catalogos")
-    agente, memoria = crear_react_textual(FakeListLLM(responses=GUION), escenario)
-    primero = agente.invoke({"input": "Busca NEVE-COMP-0001"})
-    segundo = agente.invoke({"input": "¿Quién entrega más rápido?"})
-    assert [a.tool for a, _ in primero["intermediate_steps"]] == ["buscar_pieza"]
-    assert "PEC-01-0001" in primero["intermediate_steps"][0][1]
-    accion, observacion = segundo["intermediate_steps"][0]
-    assert accion.tool == "ofertas_de_pieza" and "CentroPeças" in observacion
-    historial = memoria.load_memory_variables({})["chat_history"]
-    assert "Busca NEVE-COMP-0001" in historial and "el ID es PEC-01-0001" in historial
+ROTEIRO = ["Thought: busco\nAction: buscar_peca\nAction Input: GELA-COMP-0001",
+           "Thought: pronto\nFinal Answer: o ID é PEC-01-0001",
+           "Thought: uso o histórico\nAction: ofertas_da_peca\nAction Input: PEC-01-0001",
+           "Thought: pronto\nFinal Answer: CentroPeças entrega em 2 dias"]
 
 
-def test_el_historial_solo_llega_al_modelo_si_el_prompt_lo_incluye(tmp_path):
-    escenario = crear_escenario(tmp_path / "catalogos")
-    con, _ = crear_react_textual(FakeListLLM(responses=GUION), escenario)
-    sin, _ = crear_react_textual(FakeListLLM(responses=GUION), escenario, memoria_en_prompt=False)
-    assert "chat_history" in con.agent.llm_chain.prompt.input_variables
-    assert "chat_history" not in sin.agent.llm_chain.prompt.input_variables
+def test_react_classico_executa_ferramentas_e_salva_memoria(tmp_path):
+    cenario = criar_cenario(tmp_path / "catalogos")
+    agente, memoria = criar_react_textual(FakeListLLM(responses=ROTEIRO), cenario)
+    primeiro = agente.invoke({"input": "Busque GELA-COMP-0001"})
+    segundo = agente.invoke({"input": "Quem entrega mais rápido?"})
+    assert [a.tool for a, _ in primeiro["intermediate_steps"]] == ["buscar_peca"]
+    assert "PEC-01-0001" in primeiro["intermediate_steps"][0][1]
+    acao, observacao = segundo["intermediate_steps"][0]
+    assert acao.tool == "ofertas_da_peca" and "CentroPeças" in observacao
+    historico = memoria.load_memory_variables({})["chat_history"]
+    assert "Busque GELA-COMP-0001" in historico and "o ID é PEC-01-0001" in historico
 
 
-def test_router_por_reglas_y_router_llm_ejecutan_la_cadena_del_destino(tmp_path):
-    from pedro.legacy import RouterCompras, crear_router_llm, ejecutar_ruta
+def test_o_historico_so_chega_ao_modelo_se_o_prompt_o_inclui(tmp_path):
+    cenario = criar_cenario(tmp_path / "catalogos")
+    com, _ = criar_react_textual(FakeListLLM(responses=ROTEIRO), cenario)
+    sem, _ = criar_react_textual(FakeListLLM(responses=ROTEIRO), cenario, memoria_no_prompt=False)
+    assert "chat_history" in com.agent.llm_chain.prompt.input_variables
+    assert "chat_history" not in sem.agent.llm_chain.prompt.input_variables
 
-    escenario = crear_escenario(tmp_path / "catalogos")
-    reglas = RouterCompras()
-    assert ejecutar_ruta(reglas, escenario, "precio de PEC-01-0001")["ruta"] == "comparacion"
-    assert ejecutar_ruta(reglas, escenario, "Busca compresores")["ruta"] == "catalogo"
+
+def test_router_por_regras_e_router_llm_executam_a_cadeia_do_destino(tmp_path):
+    from pedro.legacy import RouterCompras, criar_router_llm, executar_rota
+
+    cenario = criar_cenario(tmp_path / "catalogos")
+    regras = RouterCompras()
+    assert executar_rota(regras, cenario, "preço de PEC-01-0001")["rota"] == "comparacao"
+    assert executar_rota(regras, cenario, "Busque compressores")["rota"] == "catalogo"
 
     def decide(destino):
         return FakeListLLM(responses=[
-            '```json\n{"destination": "' + destino + '", "next_inputs": "pregunta"}\n```'])
+            '```json\n{"destination": "' + destino + '", "next_inputs": "pergunta"}\n```'])
 
-    cep = ejecutar_ruta(crear_router_llm(decide("cep")), escenario, "CEP 01001-000")
-    assert cep["ruta"] == "cep" and cep["resultado"]["modo"] == "simulado"
-    ofertas = ejecutar_ruta(crear_router_llm(decide("comparacion")), escenario,
-                            "¿Cuánto cuesta PEC-01-0001?")
-    assert ofertas["ruta"] == "comparacion" and len(ofertas["resultado"]) == 3
-    ninguna = ejecutar_ruta(crear_router_llm(decide("DEFAULT")), escenario, "Hola")
-    assert ninguna["ruta"] == "aclaracion"
+    cep = executar_rota(criar_router_llm(decide("cep")), cenario, "CEP 01001-000")
+    assert cep["rota"] == "cep" and cep["resultado"]["modo"] == "simulado"
+    ofertas = executar_rota(criar_router_llm(decide("comparacao")), cenario,
+                            "Quanto custa PEC-01-0001?")
+    assert ofertas["rota"] == "comparacao" and len(ofertas["resultado"]) == 3
+    nenhuma = executar_rota(criar_router_llm(decide("DEFAULT")), cenario, "Olá")
+    assert nenhuma["rota"] == "esclarecimento"
 
 
-def test_chatbot_buffer_envia_todo_el_historial_en_cada_turno(tmp_path):
+def test_chatbot_buffer_envia_todo_o_historico_em_cada_turno(tmp_path):
     from langchain_core.runnables import RunnableLambda
 
-    from pedro.legacy import crear_chatbot_buffer
+    from pedro.legacy import criar_chatbot_buffer
 
     prompts = []
 
     def modelo(prompt, **kwargs):
         prompts.append(prompt.to_string())
-        return f"respuesta {len(prompts)}"
+        return f"resposta {len(prompts)}"
 
-    chatbot, memoria = crear_chatbot_buffer(RunnableLambda(modelo))
-    chatbot.invoke({"input": "Hola, soy Ana"})
-    chatbot.invoke({"input": "Que sean 2 unidades"})
-    salida = chatbot.invoke({"input": "¿Cómo me llamo?"})
-    assert salida["response"] == "respuesta 3"
-    assert "Hola, soy Ana" in prompts[2] and "Que sean 2 unidades" in prompts[2]
-    assert "respuesta 1" in prompts[2] and "respuesta 2" in prompts[2]
-    assert "respuesta" not in prompts[0]  # el primer turno aún no tiene historial
-    historial = memoria.load_memory_variables({})["history"]
-    assert historial.count("Usuario:") == 3 and historial.count("Pedro:") == 3
+    chatbot, memoria = criar_chatbot_buffer(RunnableLambda(modelo))
+    chatbot.invoke({"input": "Olá, sou a Ana"})
+    chatbot.invoke({"input": "Que sejam 2 unidades"})
+    saida = chatbot.invoke({"input": "Como eu me chamo?"})
+    assert saida["response"] == "resposta 3"
+    assert "Olá, sou a Ana" in prompts[2] and "Que sejam 2 unidades" in prompts[2]
+    assert "resposta 1" in prompts[2] and "resposta 2" in prompts[2]
+    assert "resposta" not in prompts[0]  # o primeiro turno ainda não tem histórico
+    historico = memoria.load_memory_variables({})["history"]
+    assert historico.count("Usuário:") == 3 and historico.count("Pedro:") == 3

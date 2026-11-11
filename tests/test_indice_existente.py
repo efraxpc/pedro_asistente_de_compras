@@ -1,48 +1,48 @@
-"""El índice guardado en knowledge/politicas/ debe poder cargarse y seguir al día."""
+"""O índice salvo em knowledge/politicas/ deve poder ser carregado e continuar em dia."""
 import shutil
 from pathlib import Path
 
 import pytest
 from langchain_core.embeddings import Embeddings
 
-from pedro.memory import MODELO_RECUERDOS
-from pedro.policy_demo import FRAGMENTO_T24_ESPERADO, fragmentos_demo, huella_corpus
-from pedro.rag import cargar_indice, inspeccionar_indice
+from pedro.memory import MODELO_LEMBRANCAS
+from pedro.policy_demo import FRAGMENTO_T24_ESPERADO, fragmentos_demo, impressao_corpus
+from pedro.rag import carregar_indice, inspecionar_indice
 
-CARPETA = Path(__file__).resolve().parents[1] / "knowledge/politicas"
+PASTA = Path(__file__).resolve().parents[1] / "knowledge/politicas"
 
 
 class EmbeddingsDeclarados(Embeddings):
-    """Solo declara el modelo: cargar el índice no calcula ningún embedding."""
-    model_name = MODELO_RECUERDOS
+    """Só declara o modelo: carregar o índice não calcula nenhum embedding."""
+    model_name = MODELO_LEMBRANCAS
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        raise AssertionError("cargar el índice no debe indexar documentos")
+        raise AssertionError("carregar o índice não deve indexar documentos")
 
     def embed_query(self, text: str) -> list[float]:
-        raise AssertionError("esta prueba no consulta el índice")
+        raise AssertionError("este teste não consulta o índice")
 
 
-def test_el_indice_guardado_se_carga_sin_reconstruirlo():
-    manifiesto = inspeccionar_indice(CARPETA)
-    indice, _ = cargar_indice(CARPETA, EmbeddingsDeclarados(), origen_confiable=True)
-    originales = {d.metadata["id"]: d.page_content for d in fragmentos_demo()}
-    assert indice.index.ntotal == len(manifiesto["documentos"]) == len(originales)
-    assert indice.docstore.search(FRAGMENTO_T24_ESPERADO).page_content == originales[
+def test_o_indice_salvo_e_carregado_sem_reconstrui_lo():
+    manifesto = inspecionar_indice(PASTA)
+    indice, _ = carregar_indice(PASTA, EmbeddingsDeclarados(), origem_confiavel=True)
+    originais = {d.metadata["id"]: d.page_content for d in fragmentos_demo()}
+    assert indice.index.ntotal == len(manifesto["documentos"]) == len(originais)
+    assert indice.docstore.search(FRAGMENTO_T24_ESPERADO).page_content == originais[
         FRAGMENTO_T24_ESPERADO]
 
 
-def test_el_indice_guardado_corresponde_al_corpus_actual():
-    assert inspeccionar_indice(CARPETA)["corpus_sha256"] == huella_corpus(), (
-        "el corpus cambió: ejecute scripts/construir_indice_politicas.py")
+def test_o_indice_salvo_corresponde_ao_corpus_atual():
+    assert inspecionar_indice(PASTA)["corpus_sha256"] == impressao_corpus(), (
+        "o corpus mudou: execute scripts/construir_indice_politicas.py")
 
 
-def test_la_puerta_rechaza_carga_sin_confianza_y_archivos_alterados(tmp_path):
+def test_a_porta_rejeita_carga_sem_confianca_e_arquivos_alterados(tmp_path):
     with pytest.raises(PermissionError):
-        cargar_indice(CARPETA, EmbeddingsDeclarados(), origen_confiable=False)
+        carregar_indice(PASTA, EmbeddingsDeclarados(), origem_confiavel=False)
     copia = tmp_path / "politicas"
-    shutil.copytree(CARPETA, copia)
-    with (copia / "index.pkl").open("ab") as archivo:
-        archivo.write(b"alterado")
-    with pytest.raises(ValueError, match="huella incorrecta"):
-        cargar_indice(copia, EmbeddingsDeclarados(), origen_confiable=True)
+    shutil.copytree(PASTA, copia)
+    with (copia / "index.pkl").open("ab") as arquivo:
+        arquivo.write(b"alterado")
+    with pytest.raises(ValueError, match="impressão digital incorreta"):
+        carregar_indice(copia, EmbeddingsDeclarados(), origem_confiavel=True)

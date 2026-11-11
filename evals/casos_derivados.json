@@ -1,18 +1,18 @@
 {
-  "tipo": "derivados_sinteticos_no_oficiales",
-  "fuente_sha256": "2494d0c5173dc2914e8dfe487f43572dbef51bc6496e6e3d82e714e38333348b",
+  "tipo": "derivados_sinteticos_nao_oficiais",
+  "fonte_sha256": "f84cc1641499e372759fd9cd367ac49605743a409d2c7c62eea4b8685e3b9a2d",
   "casos": [
     {
       "id": "rec-01",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-01-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-01-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "INT-06",
+        "estado": "recomendacao",
+        "vencedor": "INT-06",
         "total_centavos": 320027,
         "total_brl": "R$ 3.200,27",
-        "fuente_ganadora": "PEC-01-0001-INT-06",
-        "herramientas": [
+        "fonte_vencedora": "PEC-01-0001-INT-06",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -20,15 +20,15 @@
     },
     {
       "id": "rec-02",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-02-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-02-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "BR-01",
+        "estado": "recomendacao",
+        "vencedor": "BR-01",
         "total_centavos": 31155,
         "total_brl": "R$ 311,55",
-        "fuente_ganadora": "PEC-02-0001-BR-01",
-        "herramientas": [
+        "fonte_vencedora": "PEC-02-0001-BR-01",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -36,15 +36,15 @@
     },
     {
       "id": "rec-03",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-03-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-03-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "BR-04",
+        "estado": "recomendacao",
+        "vencedor": "BR-04",
         "total_centavos": 254674,
         "total_brl": "R$ 2.546,74",
-        "fuente_ganadora": "PEC-03-0001-BR-04",
-        "herramientas": [
+        "fonte_vencedora": "PEC-03-0001-BR-04",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -52,15 +52,15 @@
     },
     {
       "id": "rec-04",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-04-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-04-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "BR-01",
+        "estado": "recomendacao",
+        "vencedor": "BR-01",
         "total_centavos": 114009,
         "total_brl": "R$ 1.140,09",
-        "fuente_ganadora": "PEC-04-0001-BR-01",
-        "herramientas": [
+        "fonte_vencedora": "PEC-04-0001-BR-01",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -68,15 +68,15 @@
     },
     {
       "id": "rec-05",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-05-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-05-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "BR-01",
+        "estado": "recomendacao",
+        "vencedor": "BR-01",
         "total_centavos": 71545,
         "total_brl": "R$ 715,45",
-        "fuente_ganadora": "PEC-05-0001-BR-01",
-        "herramientas": [
+        "fonte_vencedora": "PEC-05-0001-BR-01",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -84,15 +84,15 @@
     },
     {
       "id": "rec-06",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-07-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-07-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "BR-04",
+        "estado": "recomendacao",
+        "vencedor": "BR-04",
         "total_centavos": 165394,
         "total_brl": "R$ 1.653,94",
-        "fuente_ganadora": "PEC-07-0001-BR-04",
-        "herramientas": [
+        "fonte_vencedora": "PEC-07-0001-BR-04",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -100,15 +100,15 @@
     },
     {
       "id": "rec-07",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-09-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-09-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "BR-01",
+        "estado": "recomendacao",
+        "vencedor": "BR-01",
         "total_centavos": 52331,
         "total_brl": "R$ 523,31",
-        "fuente_ganadora": "PEC-09-0001-BR-01",
-        "herramientas": [
+        "fonte_vencedora": "PEC-09-0001-BR-01",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -116,15 +116,15 @@
     },
     {
       "id": "rec-08",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-10-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-10-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "BR-04",
+        "estado": "recomendacao",
+        "vencedor": "BR-04",
         "total_centavos": 95803,
         "total_brl": "R$ 958,03",
-        "fuente_ganadora": "PEC-10-0001-BR-04",
-        "herramientas": [
+        "fonte_vencedora": "PEC-10-0001-BR-04",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -132,15 +132,15 @@
     },
     {
       "id": "rec-09",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-11-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-11-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "INT-06",
+        "estado": "recomendacao",
+        "vencedor": "INT-06",
         "total_centavos": 61938,
         "total_brl": "R$ 619,38",
-        "fuente_ganadora": "PEC-11-0001-INT-06",
-        "herramientas": [
+        "fonte_vencedora": "PEC-11-0001-INT-06",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -148,15 +148,15 @@
     },
     {
       "id": "rec-10",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-02-0002; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-02-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "INT-02",
+        "estado": "recomendacao",
+        "vencedor": "INT-02",
         "total_centavos": 112777,
         "total_brl": "R$ 1.127,77",
-        "fuente_ganadora": "PEC-02-0002-INT-02",
-        "herramientas": [
+        "fonte_vencedora": "PEC-02-0002-INT-02",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -164,15 +164,15 @@
     },
     {
       "id": "rec-11",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-03-0002; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-03-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "BR-01",
+        "estado": "recomendacao",
+        "vencedor": "BR-01",
         "total_centavos": 79235,
         "total_brl": "R$ 792,35",
-        "fuente_ganadora": "PEC-03-0002-BR-01",
-        "herramientas": [
+        "fonte_vencedora": "PEC-03-0002-BR-01",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -180,15 +180,15 @@
     },
     {
       "id": "rec-12",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-04-0002; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-04-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "INT-06",
+        "estado": "recomendacao",
+        "vencedor": "INT-06",
         "total_centavos": 172100,
         "total_brl": "R$ 1.721,00",
-        "fuente_ganadora": "PEC-04-0002-INT-06",
-        "herramientas": [
+        "fonte_vencedora": "PEC-04-0002-INT-06",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -196,15 +196,15 @@
     },
     {
       "id": "rec-13",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-05-0002; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-05-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "INT-05",
+        "estado": "recomendacao",
+        "vencedor": "INT-05",
         "total_centavos": 117238,
         "total_brl": "R$ 1.172,38",
-        "fuente_ganadora": "PEC-05-0002-INT-05",
-        "herramientas": [
+        "fonte_vencedora": "PEC-05-0002-INT-05",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
@@ -212,163 +212,163 @@
     },
     {
       "id": "rec-14",
-      "grupo": "recomendacion",
-      "pregunta": "Compara 2 unidades de PEC-06-0002; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "grupo": "recomendacao",
+      "pergunta": "Compare 2 unidades de PEC-06-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "recomendacion",
-        "ganador": "BR-04",
+        "estado": "recomendacao",
+        "vencedor": "BR-04",
         "total_centavos": 305946,
         "total_brl": "R$ 3.059,46",
-        "fuente_ganadora": "PEC-06-0002-BR-04",
-        "herramientas": [
+        "fonte_vencedora": "PEC-06-0002-BR-04",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
       }
     },
     {
-      "id": "sin-15",
-      "grupo": "sin_oferta",
-      "pregunta": "Compara 1000 unidades de PEC-01-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "id": "sem-15",
+      "grupo": "sem_oferta",
+      "pergunta": "Compare 1000 unidades de PEC-01-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "sin_oferta",
-        "contiene": "Ninguna oferta",
-        "herramientas": [
+        "estado": "sem_oferta",
+        "contem": "Nenhuma oferta",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
       }
     },
     {
-      "id": "sin-16",
-      "grupo": "sin_oferta",
-      "pregunta": "Compara 1000 unidades de PEC-02-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "id": "sem-16",
+      "grupo": "sem_oferta",
+      "pergunta": "Compare 1000 unidades de PEC-02-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "sin_oferta",
-        "contiene": "Ninguna oferta",
-        "herramientas": [
+        "estado": "sem_oferta",
+        "contem": "Nenhuma oferta",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
       }
     },
     {
-      "id": "sin-17",
-      "grupo": "sin_oferta",
-      "pregunta": "Compara 2 unidades de PEC-06-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "id": "sem-17",
+      "grupo": "sem_oferta",
+      "pergunta": "Compare 2 unidades de PEC-06-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "sin_oferta",
-        "contiene": "Ninguna oferta",
-        "herramientas": [
+        "estado": "sem_oferta",
+        "contem": "Nenhuma oferta",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
       }
     },
     {
-      "id": "sin-18",
-      "grupo": "sin_oferta",
-      "pregunta": "Compara 2 unidades de PEC-08-0001; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "id": "sem-18",
+      "grupo": "sem_oferta",
+      "pergunta": "Compare 2 unidades de PEC-08-0001; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "sin_oferta",
-        "contiene": "Ninguna oferta",
-        "herramientas": [
+        "estado": "sem_oferta",
+        "contem": "Nenhuma oferta",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
       }
     },
     {
-      "id": "sin-19",
-      "grupo": "sin_oferta",
-      "pregunta": "Compara 2 unidades de PEC-01-0002; presupuesto R$ 100000 y plazo máximo 60 días.",
+      "id": "sem-19",
+      "grupo": "sem_oferta",
+      "pergunta": "Compare 2 unidades de PEC-01-0002; orçamento R$ 100000 e prazo máximo 60 dias.",
       "esperado": {
-        "estado": "sin_oferta",
-        "contiene": "Ninguna oferta",
-        "herramientas": [
+        "estado": "sem_oferta",
+        "contem": "Nenhuma oferta",
+        "ferramentas": [
           "consultar_catalogo",
           "comparar_ofertas"
         ]
       }
     },
     {
-      "id": "acl-20",
-      "grupo": "aclaracion",
-      "pregunta": "Quiero PEC-01-0001.",
+      "id": "esc-20",
+      "grupo": "esclarecimento",
+      "pergunta": "Quero PEC-01-0001.",
       "esperado": {
-        "estado": "aclaracion",
-        "contiene": "¿",
-        "herramientas": []
+        "estado": "esclarecimento",
+        "contem": "?",
+        "ferramentas": []
       }
     },
     {
-      "id": "acl-21",
-      "grupo": "aclaracion",
-      "pregunta": "Compara PEC-02-0001 con presupuesto R$ 100000 y plazo 60 días.",
+      "id": "esc-21",
+      "grupo": "esclarecimento",
+      "pergunta": "Compare PEC-02-0001 com orçamento R$ 100000 e prazo 60 dias.",
       "esperado": {
-        "estado": "aclaracion",
-        "contiene": "¿",
-        "herramientas": []
+        "estado": "esclarecimento",
+        "contem": "?",
+        "ferramentas": []
       }
     },
     {
-      "id": "acl-22",
-      "grupo": "aclaracion",
-      "pregunta": "Necesito 2 repuestos con presupuesto R$ 100000 y plazo 60 días. ¿Cuál pieza?",
+      "id": "esc-22",
+      "grupo": "esclarecimento",
+      "pergunta": "Preciso de 2 peças de reposição com orçamento R$ 100000 e prazo 60 dias. Qual peça?",
       "esperado": {
-        "estado": "aclaracion",
-        "contiene": "¿",
-        "herramientas": []
+        "estado": "esclarecimento",
+        "contem": "?",
+        "ferramentas": []
       }
     },
     {
-      "id": "acl-23",
-      "grupo": "aclaracion",
-      "pregunta": "Quiero comparar ofertas, pero aún no sé la pieza ni la cantidad.",
+      "id": "esc-23",
+      "grupo": "esclarecimento",
+      "pergunta": "Quero comparar ofertas, mas ainda não sei a peça nem a quantidade.",
       "esperado": {
-        "estado": "aclaracion",
-        "contiene": "¿",
-        "herramientas": []
+        "estado": "esclarecimento",
+        "contem": "?",
+        "ferramentas": []
       }
     },
     {
       "id": "cat-24",
       "grupo": "catalogo",
-      "pregunta": "lista piezas",
+      "pergunta": "lista peças",
       "esperado": {
         "estado": "catalogo",
-        "contiene": "PEC-01-0001",
-        "herramientas": []
+        "contem": "PEC-01-0001",
+        "ferramentas": []
       }
     },
     {
       "id": "cat-25",
       "grupo": "catalogo",
-      "pregunta": "lista piezas página 2",
+      "pergunta": "lista peças página 2",
       "esperado": {
         "estado": "catalogo",
-        "contiene": "PEC-01-0021",
-        "herramientas": []
+        "contem": "PEC-01-0021",
+        "ferramentas": []
       }
     },
     {
       "id": "cat-26",
       "grupo": "catalogo",
-      "pregunta": "ficha PEC-01-0001",
+      "pergunta": "ficha PEC-01-0001",
       "esperado": {
         "estado": "catalogo",
-        "contiene": "PEC-01-0001",
-        "herramientas": []
+        "contem": "PEC-01-0001",
+        "ferramentas": []
       }
     },
     {
       "id": "cep-27",
       "grupo": "cep",
-      "pregunta": "Consulta el CEP 01001000",
+      "pergunta": "Consulte o CEP 01001000",
       "esperado": {
         "estado": "cep",
-        "contiene": "São Paulo/SP",
-        "herramientas": [
+        "contem": "São Paulo/SP",
+        "ferramentas": [
           "consultar_cep"
         ]
       }
@@ -376,35 +376,35 @@
     {
       "id": "cep-28",
       "grupo": "cep",
-      "pregunta": "¿A qué ciudad corresponde 01001000?",
+      "pergunta": "A qual cidade corresponde 01001000?",
       "esperado": {
         "estado": "cep",
-        "contiene": "São Paulo/SP",
-        "herramientas": [
+        "contem": "São Paulo/SP",
+        "ferramentas": [
           "consultar_cep"
         ]
       }
     },
     {
       "id": "pol-29",
-      "grupo": "politica_sin_indice",
-      "pregunta": "¿Qué dice la política de devoluciones?",
+      "grupo": "politica_sem_indice",
+      "pergunta": "O que diz a política de devoluções?",
       "esperado": {
-        "estado": "sin_evidencia",
-        "contiene": "No puedo confirmar",
-        "herramientas": [
+        "estado": "sem_evidencia",
+        "contem": "Não posso confirmar",
+        "ferramentas": [
           "consultar_politicas"
         ]
       }
     },
     {
       "id": "pol-30",
-      "grupo": "politica_sin_indice",
-      "pregunta": "¿Hay política de cambios?",
+      "grupo": "politica_sem_indice",
+      "pergunta": "Existe política de trocas?",
       "esperado": {
-        "estado": "sin_evidencia",
-        "contiene": "No puedo confirmar",
-        "herramientas": [
+        "estado": "sem_evidencia",
+        "contem": "Não posso confirmar",
+        "ferramentas": [
           "consultar_politicas"
         ]
       }

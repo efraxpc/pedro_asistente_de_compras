@@ -1,4 +1,4 @@
-"""Interfaz local: chat que compara proveedores de piezas ficticias."""
+"""Interface local: chat que compara fornecedores de peças fictícias."""
 import json
 import os
 from pathlib import Path
@@ -6,22 +6,22 @@ from pathlib import Path
 import streamlit as st
 from dotenv import load_dotenv
 
-from pedro.agent import Traza, crear_flujo, es_diagnostico_t24, partes_de
-from pedro.business import brl, describir_motivos, variacion_porcentual
-from pedro.catalog import abrir_escenario, crear_escenario
-from pedro.contracts import Alternativa, Oferta, RespuestaCompra
-from pedro.memory import MODELO_RECUERDOS, Historial, nueva_sesion, sesiones
-from pedro.policy_demo import crear_indice_demo, huella_corpus
-from pedro.precios import aviso_de_precio
-from pedro.verification import mejor_sin_preferencia
+from pedro.agent import Rastro, criar_fluxo, e_diagnostico_t24, partes_de
+from pedro.business import brl, descrever_motivos, variacao_percentual
+from pedro.catalog import abrir_cenario, criar_cenario
+from pedro.contracts import Alternativa, Oferta, RespostaCompra
+from pedro.memory import MODELO_LEMBRANCAS, Historico, nova_sessao, sessoes
+from pedro.policy_demo import PERGUNTA_T24_ORIGINAL, criar_indice_demo, impressao_corpus
+from pedro.precos import aviso_de_preco
+from pedro.verification import melhor_sem_preferencia
 
 load_dotenv()
 BASE = Path(os.getenv("PEDRO_STORAGE", "storage"))
 CATALOGOS = BASE / "catalogos"
 MEMORIA = BASE / "memoria.sqlite3"
 USUARIO = "usuario-demo"
-CONVERSACIONES_VISIBLES = 8
-st.set_page_config(page_title="Pedro · asistente de compras", page_icon=":material/shopping_cart:",
+CONVERSAS_VISIVEIS = 8
+st.set_page_config(page_title="Pedro · assistente de compras", page_icon=":material/shopping_cart:",
                    layout="wide")
 
 
@@ -32,342 +32,344 @@ def modelo_nli():
 
 
 @st.cache_resource(show_spinner=False, max_entries=2)
-def indice_politicas(carpeta: str, huella_contenido: str, modelo: str):
-    from pedro.rag import cargar_indice
-    if modelo == MODELO_RECUERDOS:
+def indice_politicas(pasta: str, impressao_conteudo: str, modelo: str):
+    from pedro.rag import carregar_indice
+    if modelo == MODELO_LEMBRANCAS:
         from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
         embeddings = FastEmbedEmbeddings(model_name=modelo, doc_embed_type="passage")
     else:
         from langchain_openai import OpenAIEmbeddings
         embeddings = OpenAIEmbeddings(model=modelo)
-    return cargar_indice(Path(carpeta), embeddings,
-                         origen_confiable=True)[0]
+    return carregar_indice(Path(pasta), embeddings,
+                           origem_confiavel=True)[0]
 
 
 @st.cache_resource(show_spinner=False, max_entries=1)
-def indice_politicas_demo(huella_contenido: str):
-    return crear_indice_demo()
+def indice_politicas_demo(impressao_conteudo: str):
+    return criar_indice_demo()
 
 
-def nuevo_escenario() -> None:
-    st.session_state.escenario = crear_escenario(CATALOGOS)
-    st.session_state.sesion = nueva_sesion(MEMORIA, USUARIO, st.session_state.escenario.dataset_id)
+def novo_cenario() -> None:
+    st.session_state.cenario = criar_cenario(CATALOGOS)
+    st.session_state.sessao = nova_sessao(MEMORIA, USUARIO, st.session_state.cenario.dataset_id)
 
 
-def nuevo_chat() -> None:
-    st.session_state.sesion = nueva_sesion(MEMORIA, USUARIO, st.session_state.escenario.dataset_id)
+def novo_chat() -> None:
+    st.session_state.sessao = nova_sessao(MEMORIA, USUARIO, st.session_state.cenario.dataset_id)
 
 
 def reabrir(session_id: str, dataset_id: str) -> None:
-    st.session_state.sesion = session_id
+    st.session_state.sessao = session_id
     try:
-        st.session_state.escenario = abrir_escenario(CATALOGOS, dataset_id)
-        st.session_state.error_escenario = None
+        st.session_state.cenario = abrir_cenario(CATALOGOS, dataset_id)
+        st.session_state.erro_cenario = None
     except (FileNotFoundError, ValueError):
-        st.session_state.escenario = None
-        st.session_state.error_escenario = "El escenario de esta conversación ya no está disponible."
+        st.session_state.cenario = None
+        st.session_state.erro_cenario = "O cenário desta conversa não está mais disponível."
 
 
 def sugerir(texto: str) -> None:
     st.session_state.sugerida = texto
 
 
-# --- Presentación de una comparación de proveedores ---------------------------------------
+# --- Apresentação de uma comparação de fornecedores ---------------------------------------
 
-def origen(oferta: Oferta) -> str:
+def origem(oferta: Oferta) -> str:
     return "Nacional" if oferta.nacional else "Internacional"
 
 
 def frente_a_media(oferta: Oferta) -> str:
-    if not oferta.precio_medio_centavos:
+    if not oferta.preco_medio_centavos:
         return "—"
-    puntos = variacion_porcentual(oferta.precio_unitario_centavos, oferta.precio_medio_centavos)
-    return "igual" if puntos == 0 else f"{puntos:+d} %"
+    pontos = variacao_percentual(oferta.preco_unitario_centavos, oferta.preco_medio_centavos)
+    return "igual" if pontos == 0 else f"{pontos:+d} %"
 
 
-def tabla_de_ofertas(alternativas: list[Alternativa]) -> None:
-    """Todas las ofertas comparadas: quién cumple, quién no y por qué."""
+def tabela_de_ofertas(alternativas: list[Alternativa]) -> None:
+    """Todas as ofertas comparadas: quem atende, quem não e por quê."""
     st.dataframe(
-        [{"Proveedor": a.oferta.proveedor_nombre, "Origen": origen(a.oferta),
-          "Total": brl(a.total_centavos), "Cumple": a.cumple,
-          "Motivo de descarte": describir_motivos(a) or "—",
-          "Precio por unidad": brl(a.oferta.precio_unitario_centavos),
-          "Frente a su media": frente_a_media(a.oferta),
-          "Entrega (días)": a.oferta.plazo_dias, "Pedido mínimo": a.oferta.pedido_minimo,
-          "Stock": a.oferta.stock, "Oferta": a.oferta.id} for a in alternativas],
+        [{"Fornecedor": a.oferta.fornecedor_nome, "Origem": origem(a.oferta),
+          "Total": brl(a.total_centavos), "Atende": a.atende,
+          "Motivo de descarte": descrever_motivos(a) or "—",
+          "Preço por unidade": brl(a.oferta.preco_unitario_centavos),
+          "Frente à sua média": frente_a_media(a.oferta),
+          "Entrega (dias)": a.oferta.prazo_dias, "Pedido mínimo": a.oferta.pedido_minimo,
+          "Estoque": a.oferta.estoque, "Oferta": a.oferta.id} for a in alternativas],
         hide_index=True,
         column_config={
-            "Cumple": st.column_config.CheckboxColumn(help="Cumple stock, pedido mínimo, plazo y presupuesto"),
-            "Frente a su media": st.column_config.TextColumn(
-                help="Precio por unidad de hoy frente a la media de los meses anteriores"),
-            "Oferta": st.column_config.TextColumn(help="Identificador de la oferta en el catálogo"),
+            "Atende": st.column_config.CheckboxColumn(help="Atende a estoque, pedido mínimo, prazo e orçamento"),
+            "Frente à sua média": st.column_config.TextColumn(
+                help="Preço por unidade de hoje frente à média dos meses anteriores"),
+            "Oferta": st.column_config.TextColumn(help="Identificador da oferta no catálogo"),
         },
-        alt="Ofertas comparadas, con su total, si cumplen y el motivo de descarte")
+        alt="Ofertas comparadas, com o total, se atendem e o motivo de descarte")
 
 
-def mostrar_comparacion(respuesta: RespuestaCompra, consejo: str | None = None) -> None:
-    """Dibuja una comparación verificada: ganador, aviso de precio y todas las ofertas."""
-    solicitud = respuesta.solicitud
-    if respuesta.estado == "sin_oferta":
-        st.warning(f"Ninguna oferta cumple para {solicitud.cantidad} unidades de "
-                   f"{solicitud.producto_id}. La tabla muestra por qué se descartó cada una.",
-                   title="Sin oferta válida", icon=":material/block:")
+def mostrar_comparacao(resposta: RespostaCompra, conselho: str | None = None) -> None:
+    """Desenha uma comparação verificada: vencedor, aviso de preço e todas as ofertas."""
+    solicitacao = resposta.solicitacao
+    if resposta.estado == "sem_oferta":
+        st.warning(f"Nenhuma oferta atende para {solicitacao.quantidade} unidades de "
+                   f"{solicitacao.produto_id}. A tabela mostra por que cada uma foi descartada.",
+                   title="Sem oferta válida", icon=":material/block:")
     else:
-        ganadora = next(a for a in respuesta.alternativas
-                        if a.oferta.proveedor_id == respuesta.proveedor_id)
+        vencedora = next(a for a in resposta.alternativas
+                         if a.oferta.fornecedor_id == resposta.fornecedor_id)
         with st.container(horizontal=True):
-            st.metric("Proveedor recomendado", ganadora.oferta.proveedor_nombre, border=True,
+            st.metric("Fornecedor recomendado", vencedora.oferta.fornecedor_nome, border=True,
                       height="stretch", icon=":material/storefront:")
-            st.metric(f"Total por {solicitud.cantidad} unidades", brl(ganadora.total_centavos),
+            st.metric(f"Total por {solicitacao.quantidade} unidades", brl(vencedora.total_centavos),
                       border=True, height="stretch", icon=":material/payments:")
-            st.metric("Entrega", f"{ganadora.oferta.plazo_dias} días", border=True,
+            st.metric("Entrega", f"{vencedora.oferta.prazo_dias} dias", border=True,
                       height="stretch", icon=":material/local_shipping:")
-            st.metric("Origen", origen(ganadora.oferta), border=True, height="stretch",
+            st.metric("Origem", origem(vencedora.oferta), border=True, height="stretch",
                       icon=":material/public:")
-        if consejo:
-            st.info(consejo, title="Consejo sobre el precio · redactado por el modelo y verificado",
+        if conselho:
+            st.info(conselho, title="Conselho sobre o preço · redigido pelo modelo e verificado",
                     icon=":material/insights:")
-        elif aviso := aviso_de_precio(respuesta):
-            st.warning(aviso, title="Aviso de precio", icon=":material/trending_up:")
-        if solicitud.origen_preferido:
-            nota = f"Se aplicó tu preferencia por proveedores {solicitud.origen_preferido}es."
-            barata = mejor_sin_preferencia(respuesta)
+        elif aviso := aviso_de_preco(resposta):
+            st.warning(aviso, title="Aviso de preço", icon=":material/trending_up:")
+        if solicitacao.origem_preferida:
+            # «nacional» → «nacionais», «internacional» → «internacionais».
+            nota = ("Foi aplicada a sua preferência por fornecedores "
+                    f"{solicitacao.origem_preferida[:-1]}is.")
+            barata = melhor_sem_preferencia(resposta)
             if barata is not None:
-                nota += (f" Sin ella, la más barata sería {barata.oferta.proveedor_nombre} "
+                nota += (f" Sem ela, a mais barata seria {barata.oferta.fornecedor_nome} "
                          f"por {brl(barata.total_centavos)}.")
             st.info(nota, icon=":material/favorite:")
-    tabla_de_ofertas(respuesta.alternativas)
-    validas = [a for a in respuesta.alternativas if a.cumple and a.oferta.meses_historial]
+    tabela_de_ofertas(resposta.alternativas)
+    validas = [a for a in resposta.alternativas if a.atende and a.oferta.meses_historico]
     if validas:
-        with st.expander("Historial de precios de las ofertas válidas", icon=":material/history:"):
+        with st.expander("Histórico de preços das ofertas válidas", icon=":material/history:"):
             st.dataframe(
-                [{"Proveedor": a.oferta.proveedor_nombre,
-                  "Hoy": brl(a.oferta.precio_unitario_centavos),
-                  "Mes anterior": brl(a.oferta.precio_anterior_centavos or 0),
-                  f"Media de {a.oferta.meses_historial} meses": brl(a.oferta.precio_medio_centavos or 0),
-                  "Frente a su media": frente_a_media(a.oferta),
-                  "Mínimo del periodo": brl(a.oferta.precio_minimo_centavos or 0),
-                  "Máximo del periodo": brl(a.oferta.precio_maximo_centavos or 0)} for a in validas],
-                hide_index=True, alt="Historial del precio por unidad de cada oferta válida")
-            st.caption("El historial informa: no cambia qué oferta gana.")
-    st.caption("Fuentes: " + ", ".join(a.oferta.id for a in respuesta.alternativas))
+                [{"Fornecedor": a.oferta.fornecedor_nome,
+                  "Hoje": brl(a.oferta.preco_unitario_centavos),
+                  "Mês anterior": brl(a.oferta.preco_anterior_centavos or 0),
+                  f"Média de {a.oferta.meses_historico} meses": brl(a.oferta.preco_medio_centavos or 0),
+                  "Frente à sua média": frente_a_media(a.oferta),
+                  "Mínimo do período": brl(a.oferta.preco_minimo_centavos or 0),
+                  "Máximo do período": brl(a.oferta.preco_maximo_centavos or 0)} for a in validas],
+                hide_index=True, alt="Histórico do preço por unidade de cada oferta válida")
+            st.caption("O histórico informa: não muda qual oferta vence.")
+    st.caption("Fontes: " + ", ".join(a.oferta.id for a in resposta.alternativas))
 
 
-def mostrar_mensaje(mensaje) -> None:
-    """Respuesta del asistente: las comparaciones como tarjetas y tabla, el resto como texto."""
-    for parte in partes_de(mensaje):
+def mostrar_mensagem(mensagem) -> None:
+    """Resposta do assistente: as comparações como cartões e tabela, o resto como texto."""
+    for parte in partes_de(mensagem):
         if parte.get("titulo"):
             st.markdown(f"**{parte['titulo']}**")
-        if parte.get("comparacion"):
-            mostrar_comparacion(RespuestaCompra.model_validate(parte["comparacion"]),
-                                parte.get("consejo"))
+        if parte.get("comparacao"):
+            mostrar_comparacao(RespostaCompra.model_validate(parte["comparacao"]),
+                               parte.get("conselho"))
         else:
             st.markdown(parte["texto"])
 
 
-# --- Pasos del agente ----------------------------------------------------------------------
+# --- Passos do agente ----------------------------------------------------------------------
 
-HERRAMIENTAS = {
-    "buscar_productos": "Busqué la pieza en el catálogo",
-    "consultar_catalogo": "Consulté el catálogo",
-    "comparar_ofertas": "Comparé las ofertas de los proveedores",
-    "consultar_politicas": "Busqué en las políticas",
-    "consultar_cep": "Consulté el CEP en ViaCEP",
-    "guardar_preferencia": "Guardé tu preferencia",
+FERRAMENTAS = {
+    "buscar_produtos": "Busquei a peça no catálogo",
+    "consultar_catalogo": "Consultei o catálogo",
+    "comparar_ofertas": "Comparei as ofertas dos fornecedores",
+    "consultar_politicas": "Busquei nas políticas",
+    "consultar_cep": "Consultei o CEP no ViaCEP",
+    "salvar_preferencia": "Salvei a sua preferência",
 }
-ANCLAJES = {"comparacion_anclada": "Tomé las cifras del cálculo de la herramienta",
-            "cep_anclado": "Tomé la ciudad de la respuesta de ViaCEP",
-            "citas_ancladas": "Comprobé las citas contra el texto de la fuente",
-            "catalogo_anclado": "Armé la tabla con las filas de la consulta",
-            "preferencia_anclada": "Confirmé lo que se guardó"}
+ANCORAGENS = {"comparacao_ancorada": "Peguei os números do cálculo da ferramenta",
+              "cep_ancorado": "Peguei a cidade da resposta do ViaCEP",
+              "citacoes_ancoradas": "Conferi as citações com o texto da fonte",
+              "catalogo_ancorado": "Montei a tabela com as linhas da consulta",
+              "preferencia_ancorada": "Confirmei o que foi salvo"}
 
 
-def describir_paso(evento: dict) -> dict | None:
-    """Convierte un evento de la traza en un paso legible; None si no merece mostrarse."""
+def descrever_passo(evento: dict) -> dict | None:
+    """Converte um evento do rastro em um passo legível; None se não merece ser mostrado."""
     tipo = evento["evento"]
-    if tipo == "plan":
-        return {"etiqueta": f"Dividí tu mensaje en {len(evento['peticiones'])} peticiones",
-                "detalle": "\n".join(f"- {p['peticion']}" for p in evento["peticiones"])}
-    if tipo == "interpretacion":
-        lectura = evento.get("modelo") or {}
-        if not lectura.get("es_compra"):
-            return {"etiqueta": "Leí tu mensaje: no es una compra", "detalle": ""}
-        cambios = {k: v for k, v in lectura.items() if k != "es_compra" and v not in (None, [])}
-        return {"etiqueta": "Leí tu mensaje",
-                "detalle": f"Cambios en la solicitud: `{json.dumps(cambios, ensure_ascii=False)}`"
-                if cambios else "Sin cambios en cantidad, presupuesto ni plazo."}
+    if tipo == "plano":
+        return {"rotulo": f"Dividi a sua mensagem em {len(evento['pedidos'])} pedidos",
+                "detalhe": "\n".join(f"- {p['pedido']}" for p in evento["pedidos"])}
+    if tipo == "interpretacao":
+        leitura = evento.get("modelo") or {}
+        if not leitura.get("e_compra"):
+            return {"rotulo": "Li a sua mensagem: não é uma compra", "detalhe": ""}
+        mudancas = {k: v for k, v in leitura.items() if k != "e_compra" and v not in (None, [])}
+        return {"rotulo": "Li a sua mensagem",
+                "detalhe": f"Mudanças na solicitação: `{json.dumps(mudancas, ensure_ascii=False)}`"
+                if mudancas else "Sem mudanças em quantidade, orçamento nem prazo."}
     if tipo == "tool_start":
-        return {"etiqueta": HERRAMIENTAS.get(evento["herramienta"], evento["herramienta"]),
-                "detalle": f"`{evento['herramienta']}` con `{evento['entrada']}`"}
-    if tipo == "verificacion":
-        if evento["errores"]:
-            return {"etiqueta": "La propuesta no pasó la verificación; pedí otra", "estado": "error",
-                    "detalle": "\n".join(f"- {e}" for e in evento["errores"])}
-        return {"etiqueta": "Verifiqué la respuesta", "detalle": "Sin errores."}
-    if tipo in ANCLAJES:
-        return {"etiqueta": ANCLAJES[tipo], "detalle": ""}
-    if tipo == "consejo_precio":
-        if evento.get("fuente") == "consejo verificado":
-            return {"etiqueta": "Redacté un consejo de precio y lo verifiqué", "detalle": ""}
-        return {"etiqueta": "Descarté mi consejo de precio; uso el aviso de plantilla", "estado": "error",
-                "detalle": "\n".join(f"- {e}" for e in evento.get("errores") or [])}
+        return {"rotulo": FERRAMENTAS.get(evento["ferramenta"], evento["ferramenta"]),
+                "detalhe": f"`{evento['ferramenta']}` com `{evento['entrada']}`"}
+    if tipo == "verificacao":
+        if evento["erros"]:
+            return {"rotulo": "A proposta não passou na verificação; pedi outra", "estado": "error",
+                    "detalhe": "\n".join(f"- {e}" for e in evento["erros"])}
+        return {"rotulo": "Verifiquei a resposta", "detalhe": "Sem erros."}
+    if tipo in ANCORAGENS:
+        return {"rotulo": ANCORAGENS[tipo], "detalhe": ""}
+    if tipo == "conselho_preco":
+        if evento.get("fonte") == "conselho verificado":
+            return {"rotulo": "Redigi um conselho de preço e o verifiquei", "detalhe": ""}
+        return {"rotulo": "Descartei o meu conselho de preço; uso o aviso fixo", "estado": "error",
+                "detalhe": "\n".join(f"- {e}" for e in evento.get("erros") or [])}
     return None
 
 
-def mostrar_paso(paso: dict) -> None:
-    with st.status(paso["etiqueta"], type="step", state=paso.get("estado", "complete")):
-        if paso.get("detalle"):
-            st.markdown(paso["detalle"])
+def mostrar_passo(passo: dict) -> None:
+    with st.status(passo["rotulo"], type="step", state=passo.get("estado", "complete")):
+        if passo.get("detalhe"):
+            st.markdown(passo["detalhe"])
 
 
-class PasosEnVivo(list):
-    """Lista de eventos de la traza que dibuja cada paso en cuanto ocurre."""
+class PassosAoVivo(list):
+    """Lista de eventos do rastro que desenha cada passo assim que ele ocorre."""
 
     def __init__(self):
         super().__init__()
-        self.pasos: list[dict] = []
+        self.passos: list[dict] = []
 
     def append(self, evento: dict) -> None:
         super().append(evento)
-        paso = describir_paso(evento)
-        if paso is None:
+        passo = descrever_passo(evento)
+        if passo is None:
             return
-        self.pasos.append(paso)
+        self.passos.append(passo)
         try:
-            mostrar_paso(paso)
-        except Exception:  # un paso que no se puede dibujar no debe romper la respuesta
+            mostrar_passo(passo)
+        except Exception:  # um passo que não pode ser desenhado não deve quebrar a resposta
             pass
 
 
-def preparar_agente(prueba_t24: bool):
-    """Carga el modelo, el NLI y el índice de políticas disponibles para este turno."""
-    llm = clasificador = indice = None
-    if os.getenv("OPENAI_API_KEY") and not prueba_t24:
+def preparar_agente(teste_t24: bool):
+    """Carrega o modelo, o NLI e o índice de políticas disponíveis para este turno."""
+    llm = classificador = indice = None
+    if os.getenv("OPENAI_API_KEY") and not teste_t24:
         from langchain_openai import ChatOpenAI
         llm = ChatOpenAI(model=os.getenv("PEDRO_MODEL", "gpt-4.1-mini"))
         try:
-            clasificador = modelo_nli()
+            classificador = modelo_nli()
         except Exception:
-            st.warning("El modelo NLI no está disponible; las recomendaciones quedarán bloqueadas.")
-    carpeta = Path("knowledge/politicas")
-    if prueba_t24:
+            st.warning("O modelo NLI não está disponível; as recomendações ficarão bloqueadas.")
+    pasta = Path("knowledge/politicas")
+    if teste_t24:
         try:
-            indice = indice_politicas_demo(huella_corpus())
+            indice = indice_politicas_demo(impressao_corpus())
         except Exception as exc:
-            st.warning(f"Prueba T24 no disponible: {type(exc).__name__}")
-    elif (carpeta / "manifest.json").is_file() and llm is not None:
+            st.warning(f"Teste T24 não disponível: {type(exc).__name__}")
+    elif (pasta / "manifest.json").is_file() and llm is not None:
         if os.getenv("PEDRO_TRUST_POLICY_INDEX", "false").lower() != "true":
-            st.warning("Revise la procedencia del índice antes de habilitar su docstore.")
+            st.warning("Revise a procedência do índice antes de habilitar o seu docstore.")
         else:
             try:
-                from pedro.rag import inspeccionar_indice
-                meta = inspeccionar_indice(carpeta)
-                indice = indice_politicas(str(carpeta), json.dumps(meta["sha256"], sort_keys=True),
+                from pedro.rag import inspecionar_indice
+                meta = inspecionar_indice(pasta)
+                indice = indice_politicas(str(pasta), json.dumps(meta["sha256"], sort_keys=True),
                                           meta["embedding_model"])
             except (ValueError, FileNotFoundError, PermissionError, KeyError) as exc:
-                st.warning(f"Índice de políticas no disponible: {type(exc).__name__}")
+                st.warning(f"Índice de políticas não disponível: {type(exc).__name__}")
     if indice is None and llm is not None:
         try:
-            indice = indice_politicas_demo(huella_corpus())
+            indice = indice_politicas_demo(impressao_corpus())
         except Exception as exc:
-            st.warning(f"Políticas ficticias no disponibles: {type(exc).__name__}")
-    return llm, clasificador, indice
+            st.warning(f"Políticas fictícias não disponíveis: {type(exc).__name__}")
+    return llm, classificador, indice
 
 
-# --- Estado inicial y barra lateral --------------------------------------------------------
+# --- Estado inicial e barra lateral --------------------------------------------------------
 
-if "escenario" not in st.session_state:
-    nuevo_escenario()
-if "error_escenario" not in st.session_state:
-    st.session_state.error_escenario = None
-if "pasos" not in st.session_state:
-    st.session_state.pasos = {}  # (sesión, número de mensaje) -> pasos del agente
+if "cenario" not in st.session_state:
+    novo_cenario()
+if "erro_cenario" not in st.session_state:
+    st.session_state.erro_cenario = None
+if "passos" not in st.session_state:
+    st.session_state.passos = {}  # (sessão, número da mensagem) -> passos do agente
 
 with st.sidebar:
     st.title(":material/shopping_cart: Pedro")
-    st.caption("Asistente de compras · datos ficticios")
-    st.button("Nuevo chat", on_click=nuevo_chat, icon=":material/edit_square:", width="stretch")
-    st.subheader("Conversaciones")
-    for sesion in sesiones(MEMORIA, USUARIO)[:CONVERSACIONES_VISIBLES]:
+    st.caption("Assistente de compras · dados fictícios")
+    st.button("Novo chat", on_click=novo_chat, icon=":material/edit_square:", width="stretch")
+    st.subheader("Conversas")
+    for sessao in sessoes(MEMORIA, USUARIO)[:CONVERSAS_VISIVEIS]:
         try:
-            primero = next((m for m in Historial(MEMORIA, USUARIO, sesion["id"]).todos()
-                            if m.type == "human"), None)
+            primeiro = next((m for m in Historico(MEMORIA, USUARIO, sessao["id"]).todos()
+                             if m.type == "human"), None)
         except ValueError:
-            primero = None
-        titulo = str(primero.content)[:34] if primero else "Conversación nueva"
-        actual = sesion["id"] == st.session_state.sesion
-        st.button(titulo, key=f"sesion_{sesion['id']}", on_click=reabrir,
-                  args=(sesion["id"], sesion["dataset_id"]), width="stretch",
-                  type="primary" if actual else "secondary",
-                  icon=":material/chat:" if actual else ":material/chat_bubble_outline:",
-                  help=f"Sesión {sesion['id'][:8]} · escenario {sesion['dataset_id'][:8]}")
+            primeiro = None
+        titulo = str(primeiro.content)[:34] if primeiro else "Conversa nova"
+        atual = sessao["id"] == st.session_state.sessao
+        st.button(titulo, key=f"sessao_{sessao['id']}", on_click=reabrir,
+                  args=(sessao["id"], sessao["dataset_id"]), width="stretch",
+                  type="primary" if atual else "secondary",
+                  icon=":material/chat:" if atual else ":material/chat_bubble_outline:",
+                  help=f"Sessão {sessao['id'][:8]} · cenário {sessao['dataset_id'][:8]}")
 
-escenario = st.session_state.escenario
-if escenario is None:
-    st.warning(st.session_state.error_escenario or "Escenario ausente")
+cenario = st.session_state.cenario
+if cenario is None:
+    st.warning(st.session_state.erro_cenario or "Cenário ausente")
     st.stop()
-con_agente = bool(os.getenv("OPENAI_API_KEY"))
+com_agente = bool(os.getenv("OPENAI_API_KEY"))
 
 st.title("Chat")
 with st.container(horizontal=True):
-    st.badge(f"Escenario {escenario.dataset_id[:8]}", icon=":material/database:", color="gray")
-    if con_agente:
-        st.badge("Agente activo", icon=":material/smart_toy:", color="green")
+    st.badge(f"Cenário {cenario.dataset_id[:8]}", icon=":material/database:", color="gray")
+    if com_agente:
+        st.badge("Agente ativo", icon=":material/smart_toy:", color="green")
     else:
-        st.badge("Modo local, sin modelo", icon=":material/offline_bolt:", color="orange")
-    st.badge("Datos comerciales ficticios", icon=":material/science:", color="gray")
-mensajes = Historial(MEMORIA, USUARIO, st.session_state.sesion).todos()
-# El campo de entrada se fija abajo aunque se declare aquí; así se sabe ya si hay pregunta.
-pregunta = st.chat_input("Pregunta por piezas, ofertas, proveedores o políticas", key="pregunta",
+        st.badge("Modo local, sem modelo", icon=":material/offline_bolt:", color="orange")
+    st.badge("Dados comerciais fictícios", icon=":material/science:", color="gray")
+mensagens = Historico(MEMORIA, USUARIO, st.session_state.sessao).todos()
+# O campo de entrada fica fixo embaixo mesmo declarado aqui; assim já se sabe se há pergunta.
+pergunta = st.chat_input("Pergunte sobre peças, ofertas, fornecedores ou políticas", key="pergunta",
                          submit_mode="disable") or st.session_state.pop("sugerida", None)
-for numero, mensaje in enumerate(mensajes):
-    with st.chat_message("user" if mensaje.type == "human" else "assistant"):
-        if mensaje.type == "human":
-            st.markdown(str(mensaje.content))
+for numero, mensagem in enumerate(mensagens):
+    with st.chat_message("user" if mensagem.type == "human" else "assistant"):
+        if mensagem.type == "human":
+            st.markdown(str(mensagem.content))
             continue
-        pasos = st.session_state.pasos.get((st.session_state.sesion, numero))
-        if pasos:
-            with st.expander(f"Cómo llegué a esta respuesta · {len(pasos)} pasos", type="compact"):
-                for paso in pasos:
-                    mostrar_paso(paso)
-        mostrar_mensaje(mensaje)
-if not mensajes and not pregunta:
-    st.caption("Prueba con una de estas preguntas o escribe la tuya.")
-    sugerencias = ["Compara 5 unidades de PEC-01-0001 con plazo de 7 días",
-                   "Compara 5 unidades de PEC-02-0189", "Lista piezas"]
-    if con_agente:
-        sugerencias += ["¿Se puede mandar en varias cajas?",
-                        "¿A qué ciudad corresponde el CEP 01001000?",
-                        "¿Cuáles son las 5 piezas de mayor potencia?"]
+        passos = st.session_state.passos.get((st.session_state.sessao, numero))
+        if passos:
+            with st.expander(f"Como cheguei a esta resposta · {len(passos)} passos", type="compact"):
+                for passo in passos:
+                    mostrar_passo(passo)
+        mostrar_mensagem(mensagem)
+if not mensagens and not pergunta:
+    st.caption("Experimente uma destas perguntas ou escreva a sua.")
+    sugestoes = ["Compare 5 unidades de PEC-01-0001 com prazo de 7 dias",
+                 "Compare 5 unidades de PEC-02-0189", "Liste as peças"]
+    if com_agente:
+        sugestoes += [PERGUNTA_T24_ORIGINAL,
+                      "A que cidade corresponde o CEP 01001000?",
+                      "Quais são as 5 peças de maior potência?"]
     with st.container(horizontal=True):
-        for texto in sugerencias:
-            st.button(texto, key=f"sugerencia_{texto}", on_click=sugerir, args=(texto,))
-    if not con_agente:
-        st.info("Sin clave de OpenAI puedes listar piezas, comparar ofertas y ejecutar /t24. "
-                "Las políticas, el CEP y las preguntas abiertas necesitan el agente.",
+        for texto in sugestoes:
+            st.button(texto, key=f"sugestao_{texto}", on_click=sugerir, args=(texto,))
+    if not com_agente:
+        st.info("Sem a chave da OpenAI você pode listar peças, comparar ofertas e executar /t24. "
+                "As políticas, o CEP e as perguntas abertas precisam do agente.",
                 title="Modo local", icon=":material/info:")
-if pregunta:
+if pergunta:
     with st.chat_message("user"):
-        st.markdown(pregunta)
+        st.markdown(pergunta)
     with st.chat_message("assistant"):
-        traza = Traza()
-        traza.eventos = PasosEnVivo()
-        salida = None
-        with st.status(":shimmer[Consultando y verificando]", type="compact") as estado:
-            llm, clasificador, indice = preparar_agente(es_diagnostico_t24(pregunta))
-            flujo = crear_flujo(escenario, MEMORIA, llm=llm, clasificador=clasificador,
-                                indice=indice, traza=traza)
+        rastro = Rastro()
+        rastro.eventos = PassosAoVivo()
+        saida = None
+        with st.status(":shimmer[Consultando e verificando]", type="compact") as estado:
+            llm, classificador, indice = preparar_agente(e_diagnostico_t24(pergunta))
+            fluxo = criar_fluxo(cenario, MEMORIA, llm=llm, classificador=classificador,
+                                indice=indice, rastro=rastro)
             try:
-                salida = flujo.invoke({"input": pregunta}, config={"configurable": {
-                    "user_id": USUARIO, "session_id": st.session_state.sesion}})
+                saida = fluxo.invoke({"input": pergunta}, config={"configurable": {
+                    "user_id": USUARIO, "session_id": st.session_state.sessao}})
             except Exception as exc:
-                estado.update(label=f"Consulta no completada: {type(exc).__name__}", state="error")
+                estado.update(label=f"Consulta não concluída: {type(exc).__name__}", state="error")
             else:
-                pasos = traza.eventos.pasos
+                passos = rastro.eventos.passos
                 estado.update(state="complete", label=(
-                    f"Cómo llegué a esta respuesta · {len(pasos)} pasos" if pasos
-                    else "Respondí con las reglas del catálogo, sin llamar al modelo"))
-                if pasos:
-                    st.session_state.pasos[(st.session_state.sesion, len(mensajes) + 1)] = pasos
-        if salida is not None:
-            mostrar_mensaje(salida)
+                    f"Como cheguei a esta resposta · {len(passos)} passos" if passos
+                    else "Respondi com as regras do catálogo, sem chamar o modelo"))
+                if passos:
+                    st.session_state.passos[(st.session_state.sessao, len(mensagens) + 1)] = passos
+        if saida is not None:
+            mostrar_mensagem(saida)

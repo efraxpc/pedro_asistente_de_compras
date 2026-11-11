@@ -4,72 +4,72 @@ from types import SimpleNamespace
 import pytest
 from langchain_core.runnables import RunnableLambda
 
-from pedro.agent import Traza, crear_flujo
-from pedro.catalog import crear_escenario
-from pedro.contracts import Evidencia, RespuestaCompra, Solicitud
-from pedro.memory import Historial, nueva_sesion
-from pedro.planner import (PlanTurno, intenciones_detectadas, planificar_turno, validar_plan)
-from pedro.verification import respuesta_local
+from pedro.agent import Rastro, criar_fluxo
+from pedro.catalog import criar_cenario
+from pedro.contracts import RespostaCompra, Solicitacao
+from pedro.memory import Historico, nova_sessao
+from pedro.planner import (PlanoTurno, intencoes_detectadas, planejar_turno, validar_plano)
+from pedro.verification import resposta_local
 
-MIXTO = "Compara 5 unidades de PEC-01-0001 con plazo de 7 días y confirma el CEP 01001000"
-
-
-def _plan(*pares):
-    return PlanTurno.model_validate({"peticiones": [{"tipo": t, "peticion": p} for t, p in pares]})
+MISTO = "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias e confirme o CEP 01001000"
 
 
-def _modelo(plan: PlanTurno):
-    return RunnableLambda(lambda _: plan.model_dump_json())
+def _plano(*pares):
+    return PlanoTurno.model_validate({"pedidos": [{"tipo": t, "pedido": p} for t, p in pares]})
 
 
-def test_solo_se_planifica_si_hay_senales_de_varias_intenciones():
-    assert intenciones_detectadas(MIXTO) == {"compra", "cep"}
-    assert intenciones_detectadas("Compara 2 unidades de PEC-01-0001") == {"compra"}
-    llamado = []
-    modelo = RunnableLambda(lambda _: llamado.append(1) or "{}")
-    assert planificar_turno("Compara 2 unidades de PEC-01-0001", modelo) is None
-    assert llamado == []
+def _modelo(plano: PlanoTurno):
+    return RunnableLambda(lambda _: plano.model_dump_json())
 
 
-def test_un_plan_valido_devuelve_las_peticiones_en_orden():
-    plan = _plan(("compra", "Compara 5 unidades de PEC-01-0001 con plazo de 7 días"),
-                 ("cep", "Confirma el CEP 01001000"))
-    peticiones = planificar_turno(MIXTO, _modelo(plan))
-    assert [p.tipo for p in peticiones] == ["compra", "cep"]
+def test_so_se_planeja_se_ha_sinais_de_varias_intencoes():
+    assert intencoes_detectadas(MISTO) == {"compra", "cep"}
+    assert intencoes_detectadas("Compare 2 unidades de PEC-01-0001") == {"compra"}
+    chamado = []
+    modelo = RunnableLambda(lambda _: chamado.append(1) or "{}")
+    assert planejar_turno("Compare 2 unidades de PEC-01-0001", modelo) is None
+    assert chamado == []
 
 
-@pytest.mark.parametrize("plan, motivo", [
-    (_plan(("compra", "Compara 9 unidades de PEC-01-0001"), ("cep", "Confirma el CEP 01001000")),
-     "añade datos"),
-    (_plan(("compra", "Compara 5 unidades de PEC-09-0009"), ("cep", "Confirma el CEP 01001000")),
-     "añade datos"),
-    (_plan(("compra", "Compara 5 unidades de PEC-01-0001"), ("compra", "Compara PEC-01-0001")),
-     "repite"),
-    (_plan(("compra", "Compara 5 unidades de PEC-01-0001"), ("politica", "Cuéntame algo")),
-     "no lo parece"),
+def test_um_plano_valido_devolve_os_pedidos_em_ordem():
+    plano = _plano(("compra", "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias"),
+                   ("cep", "Confirme o CEP 01001000"))
+    pedidos = planejar_turno(MISTO, _modelo(plano))
+    assert [p.tipo for p in pedidos] == ["compra", "cep"]
+
+
+@pytest.mark.parametrize("plano, motivo", [
+    (_plano(("compra", "Compare 9 unidades de PEC-01-0001"), ("cep", "Confirme o CEP 01001000")),
+     "acrescenta dados"),
+    (_plano(("compra", "Compare 5 unidades de PEC-09-0009"), ("cep", "Confirme o CEP 01001000")),
+     "acrescenta dados"),
+    (_plano(("compra", "Compare 5 unidades de PEC-01-0001"), ("compra", "Compare PEC-01-0001")),
+     "repete"),
+    (_plano(("compra", "Compare 5 unidades de PEC-01-0001"), ("politica", "Conte-me algo")),
+     "não parece"),
 ])
-def test_un_plan_que_inventa_o_no_encaja_se_descarta(plan, motivo):
+def test_um_plano_que_inventa_ou_nao_se_encaixa_e_descartado(plano, motivo):
     with pytest.raises(ValueError, match=motivo):
-        validar_plan(plan, MIXTO)
-    assert planificar_turno(MIXTO, _modelo(plan)) is None
+        validar_plano(plano, MISTO)
+    assert planejar_turno(MISTO, _modelo(plano)) is None
 
 
-def test_un_plan_ilegible_o_de_una_peticion_equivale_a_no_planificar():
-    assert planificar_turno(MIXTO, RunnableLambda(lambda _: "no es JSON")) is None
-    assert planificar_turno(MIXTO, _modelo(_plan(("compra", "Compara 5 unidades de PEC-01-0001")))) is None
-    assert planificar_turno(MIXTO, None) is None
+def test_um_plano_ilegivel_ou_de_um_pedido_equivale_a_nao_planejar():
+    assert planejar_turno(MISTO, RunnableLambda(lambda _: "não é JSON")) is None
+    assert planejar_turno(MISTO, _modelo(_plano(("compra", "Compare 5 unidades de PEC-01-0001")))) is None
+    assert planejar_turno(MISTO, None) is None
 
 
-def test_el_flujo_responde_cada_peticion_con_su_propia_verificacion(tmp_path, monkeypatch):
+def test_o_fluxo_responde_cada_pedido_com_a_sua_propria_verificacao(tmp_path, monkeypatch):
     import pedro.agent as modulo
 
-    escenario = crear_escenario(tmp_path / "catalogos")
+    cenario = criar_cenario(tmp_path / "catalogos")
     memoria = tmp_path / "memoria.sqlite3"
-    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
-    compra = respuesta_local(escenario, Solicitud(producto_id="PEC-01-0001", cantidad=5, plazo_max_dias=7))
-    cep = RespuestaCompra(estado="cep", dataset_id=escenario.dataset_id, solicitud=Solicitud(cep="01001000"))
-    plan = _plan(("compra", "Compara 5 unidades de PEC-01-0001 con plazo de 7 días"),
-                 ("cep", "Confirma el CEP 01001000"))
+    sessao = nova_sessao(memoria, "ana", cenario.dataset_id)
+    compra = resposta_local(cenario, Solicitacao(produto_id="PEC-01-0001", quantidade=5, prazo_max_dias=7))
+    cep = RespostaCompra(estado="cep", dataset_id=cenario.dataset_id, solicitacao=Solicitacao(cep="01001000"))
+    plano = _plano(("compra", "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias"),
+                   ("cep", "Confirme o CEP 01001000"))
     vistos = []
 
     class Executor:
@@ -83,25 +83,25 @@ def test_el_flujo_responde_cada_peticion_con_su_propia_verificacion(tmp_path, mo
             return {"output": compra.model_dump_json(), "intermediate_steps": []}
 
     class NLI:
-        def clasificar(self, premisa, hipotesis):
+        def classificar(self, premissa, hipotese):
             return "entailment"
 
-    class Vectores:
-        modelo, version = "test", "1"
+    class Vetores:
+        modelo, versao = "test", "1"
 
         def embed(self, texto):
             return [1.0]
 
-    monkeypatch.setattr(modulo, "crear_agente", lambda *args, **kwargs: Executor())
-    monkeypatch.setattr(modulo, "FastEmbedder", Vectores)
-    traza = Traza()
-    flujo = crear_flujo(escenario, memoria, llm=_modelo(plan), clasificador=NLI(), traza=traza)
-    salida = flujo.invoke({"input": MIXTO}, config={"configurable": {
-        "user_id": "ana", "session_id": sesion}}).content
-    assert vistos == ["Compara 5 unidades de PEC-01-0001 con plazo de 7 días", "Confirma el CEP 01001000"]
-    assert "Tu mensaje tenía 2 peticiones" in salida
-    assert "CentroPeças: R$ 7.279,83 para 5 unidades" in salida and "São Paulo/SP" in salida
-    assert [e["evento"] for e in traza.eventos if e["evento"] in ("plan", "verificacion")] == [
-        "plan", "verificacion", "verificacion"]
-    mensajes = Historial(memoria, "ana", sesion).todos()
-    assert [m.type for m in mensajes] == ["human", "ai"] and mensajes[0].content == MIXTO
+    monkeypatch.setattr(modulo, "criar_agente", lambda *args, **kwargs: Executor())
+    monkeypatch.setattr(modulo, "FastEmbedder", Vetores)
+    rastro = Rastro()
+    fluxo = criar_fluxo(cenario, memoria, llm=_modelo(plano), classificador=NLI(), rastro=rastro)
+    saida = fluxo.invoke({"input": MISTO}, config={"configurable": {
+        "user_id": "ana", "session_id": sessao}}).content
+    assert vistos == ["Compare 5 unidades de PEC-01-0001 com prazo de 7 dias", "Confirme o CEP 01001000"]
+    assert "Sua mensagem tinha 2 pedidos" in saida
+    assert "CentroPeças: R$ 7.279,83 para 5 unidades" in saida and "São Paulo/SP" in saida
+    assert [e["evento"] for e in rastro.eventos if e["evento"] in ("plano", "verificacao")] == [
+        "plano", "verificacao", "verificacao"]
+    mensagens = Historico(memoria, "ana", sessao).todos()
+    assert [m.type for m in mensagens] == ["human", "ai"] and mensagens[0].content == MISTO

@@ -1,4 +1,4 @@
-"""APIs clásicas aisladas para las demostraciones del curso."""
+"""APIs clássicas isoladas para as demonstrações do curso."""
 import re
 from typing import Any
 
@@ -7,7 +7,7 @@ from langchain_classic.chains.router.base import RouterChain
 from langchain_classic.memory import ConversationBufferMemory
 from langchain_core.tools import Tool
 
-from .catalog import Escenario, buscar, ofertas
+from .catalog import Cenario, buscar, ofertas
 
 
 class RouterCompras(RouterChain):
@@ -17,81 +17,82 @@ class RouterCompras(RouterChain):
 
     def _call(self, inputs: dict[str, Any], run_manager=None) -> dict[str, Any]:
         texto = inputs["input"].lower()
-        destino = "comparacion" if any(x in texto for x in ("oferta", "precio", "stock")) else "catalogo"
+        destino = ("comparacao" if any(x in texto for x in ("oferta", "preço", "preco", "estoque"))
+                   else "catalogo")
         return {"destination": destino, "next_inputs": {"input": inputs["input"]}}
 
 
 DESTINOS = {
-    "catalogo": "buscar o describir una pieza por nombre, SKU o ID, sin hablar de precios",
-    "comparacion": "precios, costes, ofertas, proveedores, stock o plazos de una pieza",
-    "cep": "confirmar la ciudad o el estado de un código postal brasileño (CEP)",
+    "catalogo": "buscar ou descrever uma peça por nome, SKU ou ID, sem falar de preços",
+    "comparacao": "preços, custos, ofertas, fornecedores, estoque ou prazos de uma peça",
+    "cep": "confirmar a cidade ou o estado de um código postal brasileiro (CEP)",
 }
 
 
-def crear_router_llm(llm) -> RouterChain:
-    """Router dinámico: el modelo elige el destino leyendo la descripción de cada ruta."""
+def criar_router_llm(llm) -> RouterChain:
+    """Router dinâmico: o modelo escolhe o destino lendo a descrição de cada rota."""
     from langchain_classic.chains.router.llm_router import LLMRouterChain, RouterOutputParser
     from langchain_classic.chains.router.multi_prompt_prompt import MULTI_PROMPT_ROUTER_TEMPLATE
     from langchain_core.prompts import PromptTemplate
 
-    destinos = "\n".join(f"{nombre}: {descripcion}" for nombre, descripcion in DESTINOS.items())
-    plantilla = PromptTemplate(template=MULTI_PROMPT_ROUTER_TEMPLATE.format(destinations=destinos),
-                               input_variables=["input"], output_parser=RouterOutputParser())
-    return LLMRouterChain.from_llm(llm, plantilla)
+    destinos = "\n".join(f"{nome}: {descricao}" for nome, descricao in DESTINOS.items())
+    modelo = PromptTemplate(template=MULTI_PROMPT_ROUTER_TEMPLATE.format(destinations=destinos),
+                            input_variables=["input"], output_parser=RouterOutputParser())
+    return LLMRouterChain.from_llm(llm, modelo)
 
 
-def ejecutar_ruta(router: RouterChain, escenario: Escenario, pregunta: str, *,
+def executar_rota(router: RouterChain, cenario: Cenario, pergunta: str, *,
                   cep_simulado: bool = True) -> dict:
-    """Cadena secuencial: decide la ruta y ejecuta la cadena de ese destino."""
+    """Cadeia sequencial: decide a rota e executa a cadeia desse destino."""
     from .integrations import consultar_cep
 
-    ruta = router.invoke({"input": pregunta})["destination"] or "aclaracion"
-    if ruta == "catalogo":
-        return {"ruta": ruta, "resultado": buscar(escenario, pregunta)}
-    if ruta == "comparacion":
-        ids = re.findall(r"PEC-[0-9]{2}-[0-9]{4}", pregunta.upper())
-        return {"ruta": ruta, "resultado": [o.model_dump() for o in ofertas(escenario, ids[0])]
+    rota = router.invoke({"input": pergunta})["destination"] or "esclarecimento"
+    if rota == "catalogo":
+        return {"rota": rota, "resultado": buscar(cenario, pergunta)}
+    if rota == "comparacao":
+        ids = re.findall(r"PEC-[0-9]{2}-[0-9]{4}", pergunta.upper())
+        return {"rota": rota, "resultado": [o.model_dump() for o in ofertas(cenario, ids[0])]
                 if ids else []}
-    if ruta == "cep":
-        codigos = re.findall(r"\b\d{5}-?\d{3}\b", pregunta)
-        return {"ruta": ruta, "resultado": consultar_cep(codigos[0].replace("-", ""),
+    if rota == "cep":
+        codigos = re.findall(r"\b\d{5}-?\d{3}\b", pergunta)
+        return {"rota": rota, "resultado": consultar_cep(codigos[0].replace("-", ""),
                                                          simulado=cep_simulado) if codigos else {}}
-    return {"ruta": "aclaracion", "resultado": "¿Buscas una pieza, sus ofertas o un CEP?"}
+    return {"rota": "esclarecimento", "resultado": "Você procura uma peça, as ofertas dela ou um CEP?"}
 
 
-SUFIJO_CON_MEMORIA = """Conversación previa (úsala para entender a qué pieza se refiere el usuario):
+SUFIXO_COM_MEMORIA = """Conversa anterior (use-a para entender a qual peça o usuário se refere):
 {chat_history}
 
-Empieza.
+Comece.
 
 Question: {input}
 Thought:{agent_scratchpad}"""
 
 
-def crear_react_textual(llm, escenario: Escenario, *, memoria_en_prompt: bool = True):
-    """Agente ReAct clásico (zero-shot) con dos herramientas del catálogo y memoria de buffer.
+def criar_react_textual(llm, cenario: Cenario, *, memoria_no_prompt: bool = True):
+    """Agente ReAct clássico (zero-shot) com duas ferramentas do catálogo e memória de buffer.
 
-    El prompt zero-shot original no incluye el historial: la memoria se guarda pero el modelo
-    no la lee. Con `memoria_en_prompt` se añade `{chat_history}` al sufijo del prompt.
+    O prompt zero-shot original não inclui o histórico: a memória é salva, mas o modelo
+    não a lê. Com `memoria_no_prompt`, `{chat_history}` é acrescentado ao sufixo do prompt.
     """
     memoria = ConversationBufferMemory(memory_key="chat_history", input_key="input", output_key="output")
 
-    def ofertas_de_pieza(texto: str) -> str:
+    def ofertas_da_peca(texto: str) -> str:
         ids = re.findall(r"PEC-[0-9]{2}-[0-9]{4}", texto.upper())
         if not ids:
-            return "Indica un ID con formato PEC-00-0000."
-        return str([{"proveedor": o.proveedor_nombre, "precio_unitario_centavos": o.precio_unitario_centavos,
-                     "stock": o.stock, "plazo_dias": o.plazo_dias} for o in ofertas(escenario, ids[0])])
+            return "Informe um ID com formato PEC-00-0000."
+        return str([{"fornecedor": o.fornecedor_nome, "preco_unitario_centavos": o.preco_unitario_centavos,
+                     "estoque": o.estoque, "prazo_dias": o.prazo_dias} for o in ofertas(cenario, ids[0])])
 
     lista = [
-        Tool(name="buscar_pieza", func=lambda texto: str(buscar(escenario, texto, 5)),
-             description="Busca piezas ficticias por nombre, SKU o ID. Entrada: texto de búsqueda."),
-        Tool(name="ofertas_de_pieza", func=ofertas_de_pieza,
-             description="Devuelve proveedor, precio, stock y plazo de una pieza. Entrada: su ID PEC-00-0000."),
+        Tool(name="buscar_peca", func=lambda texto: str(buscar(cenario, texto, 5)),
+             description="Busca peças fictícias por nome, SKU ou ID. Entrada: texto de busca."),
+        Tool(name="ofertas_da_peca", func=ofertas_da_peca,
+             description="Devolve fornecedor, preço, estoque e prazo de uma peça. Entrada: o ID PEC-00-0000 dela."),
     ]
-    extra = ({"suffix": SUFIJO_CON_MEMORIA,
+    extra = ({"suffix": SUFIXO_COM_MEMORIA,
               "input_variables": ["input", "chat_history", "agent_scratchpad"]}
-             if memoria_en_prompt else {})
+             if memoria_no_prompt else {})
     agente = initialize_agent(lista, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
                               memory=memoria, verbose=False, agent_kwargs=extra,
                               return_intermediate_steps=True, handle_parsing_errors=True,
@@ -99,27 +100,27 @@ def crear_react_textual(llm, escenario: Escenario, *, memoria_en_prompt: bool = 
     return agente, memoria
 
 
-PLANTILLA_CHATBOT = """Eres Pedro, asistente de un catálogo ficticio de repuestos de electrodomésticos.
-Ayuda a concretar una solicitud de compra: pieza, cantidad, presupuesto y plazo. No inventes
-precios ni stock: di que se consultarán en el catálogo. Responde en una o dos frases y recuerda
-lo que el usuario ya dijo.
+MODELO_CHATBOT = """Você é Pedro, assistente de um catálogo fictício de peças de reposição de eletrodomésticos.
+Ajude a definir uma solicitação de compra: peça, quantidade, orçamento e prazo. Não invente
+preços nem estoque: diga que serão consultados no catálogo. Responda em uma ou duas frases e lembre
+o que o usuário já disse.
 
-Conversación hasta ahora:
+Conversa até agora:
 {history}
-Usuario: {input}
+Usuário: {input}
 Pedro:"""
 
 
-def crear_chatbot_buffer(llm):
-    """Chatbot conversacional clásico: ConversationChain con ConversationBufferMemory.
+def criar_chatbot_buffer(llm):
+    """Chatbot conversacional clássico: ConversationChain com ConversationBufferMemory.
 
-    La memoria de buffer guarda la conversación completa y la inserta entera en cada prompt.
+    A memória de buffer guarda a conversa completa e a insere inteira em cada prompt.
     """
     from langchain_classic.chains import ConversationChain
     from langchain_core.prompts import PromptTemplate
 
-    memoria = ConversationBufferMemory(human_prefix="Usuario", ai_prefix="Pedro")
-    cadena = ConversationChain(
+    memoria = ConversationBufferMemory(human_prefix="Usuário", ai_prefix="Pedro")
+    cadeia = ConversationChain(
         llm=llm, memory=memoria,
-        prompt=PromptTemplate(template=PLANTILLA_CHATBOT, input_variables=["history", "input"]))
-    return cadena, memoria
+        prompt=PromptTemplate(template=MODELO_CHATBOT, input_variables=["history", "input"]))
+    return cadeia, memoria

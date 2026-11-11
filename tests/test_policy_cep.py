@@ -2,117 +2,117 @@ from types import SimpleNamespace
 
 from langchain_core.documents import Document
 
-from pedro.catalog import crear_escenario
-from pedro.contracts import Evidencia, RespuestaCompra, Solicitud
+from pedro.catalog import criar_cenario
+from pedro.contracts import Evidencia, RespostaCompra, Solicitacao
 from pedro.nli import verificar_nli
 from pedro.verification import verificar
-from pedro.memory import Historial, nueva_sesion
-from pedro.agent import crear_flujo
+from pedro.memory import Historico, nova_sessao
+from pedro.agent import criar_fluxo
 
 
-def test_cep_exige_observacion_coincidente(tmp_path):
-    escenario = crear_escenario(tmp_path)
-    respuesta = RespuestaCompra(estado="cep", dataset_id=escenario.dataset_id,
-        solicitud=Solicitud(cep="01001000"), cidade="São Paulo", uf="SP", modo_cep="real",
-        evidencias=[Evidencia(tipo="viacep", fuente_id="ViaCEP:01001000", texto="São Paulo/SP")])
-    observacion = ("consultar_cep", {"estado": "ok", "cep": "01001000",
+def test_cep_exige_observacao_coincidente(tmp_path):
+    cenario = criar_cenario(tmp_path)
+    resposta = RespostaCompra(estado="cep", dataset_id=cenario.dataset_id,
+        solicitacao=Solicitacao(cep="01001000"), cidade="São Paulo", uf="SP", modo_cep="real",
+        evidencias=[Evidencia(tipo="viacep", fonte_id="ViaCEP:01001000", texto="São Paulo/SP")])
+    observacao = ("consultar_cep", {"estado": "ok", "cep": "01001000",
                                     "cidade": "São Paulo", "uf": "SP", "modo": "real"})
-    assert verificar(respuesta, escenario, observaciones=[observacion]) == []
-    assert "ubicación no coincide con ViaCEP" in verificar(respuesta, escenario)
-    falso = respuesta.model_copy(update={"uf": "RJ"})
-    assert "ubicación no coincide con ViaCEP" in verificar(falso, escenario,
-                                                            observaciones=[observacion])
+    assert verificar(resposta, cenario, observacoes=[observacao]) == []
+    assert "localização não coincide com o ViaCEP" in verificar(resposta, cenario)
+    falso = resposta.model_copy(update={"uf": "RJ"})
+    assert "localização não coincide com o ViaCEP" in verificar(falso, cenario,
+                                                                observacoes=[observacao])
 
 
-def test_politica_exige_fragmento_y_entailment(tmp_path):
-    escenario = crear_escenario(tmp_path)
-    doc = Document(page_content="La devolución ficticia se admite dentro de 30 días.")
+def test_politica_exige_fragmento_e_entailment(tmp_path):
+    cenario = criar_cenario(tmp_path)
+    doc = Document(page_content="A devolução fictícia é admitida dentro de 30 dias.")
     indice = SimpleNamespace(docstore=SimpleNamespace(search=lambda _id: doc))
-    respuesta = RespuestaCompra(estado="politica", dataset_id=escenario.dataset_id,
-        solicitud=Solicitud(), mensaje="La devolución ficticia se admite dentro de 30 días.",
-        evidencias=[Evidencia(tipo="politica", fuente_id="politica-1", texto=doc.page_content)])
-    assert verificar(respuesta, escenario, indice=indice) == []
-    assert verificar(respuesta, escenario) == ["política sin índice o afirmación"]
-    alterada = respuesta.model_copy(update={"evidencias": [Evidencia(
-        tipo="politica", fuente_id="politica-1", texto="texto inventado")]})
-    assert verificar(alterada, escenario, indice=indice)
+    resposta = RespostaCompra(estado="politica", dataset_id=cenario.dataset_id,
+        solicitacao=Solicitacao(), mensagem="A devolução fictícia é admitida dentro de 30 dias.",
+        evidencias=[Evidencia(tipo="politica", fonte_id="politica-1", texto=doc.page_content)])
+    assert verificar(resposta, cenario, indice=indice) == []
+    assert verificar(resposta, cenario) == ["política sem índice ou afirmação"]
+    alterada = resposta.model_copy(update={"evidencias": [Evidencia(
+        tipo="politica", fonte_id="politica-1", texto="texto inventado")]})
+    assert verificar(alterada, cenario, indice=indice)
 
-    class Etiqueta:
-        def __init__(self, etiqueta):
-            self.etiqueta = etiqueta
-        def clasificar(self, premisa, hipotesis):
-            return self.etiqueta
+    class Rotulo:
+        def __init__(self, rotulo):
+            self.rotulo = rotulo
+        def classificar(self, premissa, hipotese):
+            return self.rotulo
 
-    assert verificar_nli(respuesta, Etiqueta("entailment"))
-    assert not verificar_nli(respuesta, Etiqueta("neutral"))
-    assert not verificar_nli(respuesta, Etiqueta("contradiction"))
+    assert verificar_nli(resposta, Rotulo("entailment"))
+    assert not verificar_nli(resposta, Rotulo("neutral"))
+    assert not verificar_nli(resposta, Rotulo("contradiction"))
 
 
-def test_flujo_publica_cep_solo_tras_observacion(tmp_path, monkeypatch):
+def test_fluxo_publica_cep_somente_apos_observacao(tmp_path, monkeypatch):
     import pedro.agent as modulo
-    escenario = crear_escenario(tmp_path / "catalogos")
+    cenario = criar_cenario(tmp_path / "catalogos")
     memoria = tmp_path / "memoria.sqlite3"
-    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
-    respuesta = RespuestaCompra(estado="cep", dataset_id=escenario.dataset_id,
-        solicitud=Solicitud(cep="01001000"), cidade="São Paulo", uf="SP", modo_cep="real",
-        evidencias=[Evidencia(tipo="viacep", fuente_id="ViaCEP:01001000", texto="São Paulo/SP")])
+    sessao = nova_sessao(memoria, "ana", cenario.dataset_id)
+    resposta = RespostaCompra(estado="cep", dataset_id=cenario.dataset_id,
+        solicitacao=Solicitacao(cep="01001000"), cidade="São Paulo", uf="SP", modo_cep="real",
+        evidencias=[Evidencia(tipo="viacep", fonte_id="ViaCEP:01001000", texto="São Paulo/SP")])
     class Executor:
         def invoke(self, entrada, config):
-            return {"output": respuesta.model_dump_json(), "intermediate_steps": [
+            return {"output": resposta.model_dump_json(), "intermediate_steps": [
                 (SimpleNamespace(tool="consultar_cep"),
                  '{"estado":"ok","cep":"01001000","cidade":"São Paulo","uf":"SP","modo":"real"}')]
             }
-    monkeypatch.setattr(modulo, "crear_agente", lambda *args, **kwargs: Executor())
-    flujo = crear_flujo(escenario, memoria, llm=object())
-    salida = flujo.invoke({"input": "Consulta CEP 01001000"}, config={"configurable": {
-        "user_id": "ana", "session_id": sesion}})
-    assert "São Paulo/SP" in salida.content
-    assert len(Historial(memoria, "ana", sesion).todos()) == 2
+    monkeypatch.setattr(modulo, "criar_agente", lambda *args, **kwargs: Executor())
+    fluxo = criar_fluxo(cenario, memoria, llm=object())
+    saida = fluxo.invoke({"input": "Consulte o CEP 01001000"}, config={"configurable": {
+        "user_id": "ana", "session_id": sessao}})
+    assert "São Paulo/SP" in saida.content
+    assert len(Historico(memoria, "ana", sessao).todos()) == 2
 
 
-def test_cep_se_ancla_a_la_observacion_y_sin_ella_se_rechaza(tmp_path):
-    from pedro.verification import anclar_cep
+def test_cep_e_ancorado_na_observacao_e_sem_ela_e_rejeitado(tmp_path):
+    from pedro.verification import ancorar_cep
 
-    escenario = crear_escenario(tmp_path / "catalogos")
-    observacion = ("consultar_cep", {"estado": "ok", "cep": "01001000", "cidade": "São Paulo",
-                                     "uf": "SP", "modo": "real"})
-    # El modelo se equivoca en lo mecánico: otro dataset, sin evidencia y con la ciudad mal escrita.
-    respuesta = RespuestaCompra(estado="cep", dataset_id="otro", solicitud=Solicitud(cep="01001000"),
-                                cidade="Sao Paulo", uf="SP")
-    assert verificar(respuesta, escenario, observaciones=[observacion]) == ["dataset ajeno"]
-    assert anclar_cep(respuesta, [observacion], escenario.dataset_id)["estado"] == "anclada"
-    assert verificar(respuesta, escenario, observaciones=[observacion]) == []
-    assert (respuesta.cidade, respuesta.modo_cep) == ("São Paulo", "real")
-    assert respuesta.evidencias[0].fuente_id == "ViaCEP:01001000"
+    cenario = criar_cenario(tmp_path / "catalogos")
+    observacao = ("consultar_cep", {"estado": "ok", "cep": "01001000", "cidade": "São Paulo",
+                                    "uf": "SP", "modo": "real"})
+    # O modelo erra no mecânico: outro dataset, sem evidência e com a cidade mal escrita.
+    resposta = RespostaCompra(estado="cep", dataset_id="outro", solicitacao=Solicitacao(cep="01001000"),
+                              cidade="Sao Paulo", uf="SP")
+    assert verificar(resposta, cenario, observacoes=[observacao]) == ["dataset alheio"]
+    assert ancorar_cep(resposta, [observacao], cenario.dataset_id)["estado"] == "ancorada"
+    assert verificar(resposta, cenario, observacoes=[observacao]) == []
+    assert (resposta.cidade, resposta.modo_cep) == ("São Paulo", "real")
+    assert resposta.evidencias[0].fonte_id == "ViaCEP:01001000"
 
-    inventada = RespuestaCompra(estado="cep", dataset_id="otro", solicitud=Solicitud(cep="99999999"),
-                                cidade="Ciudad Inventada", uf="XX", modo_cep="real")
-    sin_dato = ("consultar_cep", {"estado": "no_encontrado", "cep": "99999999"})
-    assert anclar_cep(inventada, [sin_dato], escenario.dataset_id)["estado"] == "sin_observacion_valida"
-    assert verificar(inventada, escenario, observaciones=[sin_dato]) == ["dataset ajeno"]
-    otro_cep = RespuestaCompra(estado="cep", dataset_id=escenario.dataset_id,
-                               solicitud=Solicitud(cep="20040020"), cidade="Rio", uf="RJ", modo_cep="real")
-    assert anclar_cep(otro_cep, [observacion], escenario.dataset_id)["estado"] == "sin_observacion_valida"
-    assert verificar(otro_cep, escenario, observaciones=[observacion]) != []
+    inventada = RespostaCompra(estado="cep", dataset_id="outro", solicitacao=Solicitacao(cep="99999999"),
+                               cidade="Cidade Inventada", uf="XX", modo_cep="real")
+    sem_dado = ("consultar_cep", {"estado": "nao_encontrado", "cep": "99999999"})
+    assert ancorar_cep(inventada, [sem_dado], cenario.dataset_id)["estado"] == "sem_observacao_valida"
+    assert verificar(inventada, cenario, observacoes=[sem_dado]) == ["dataset alheio"]
+    outro_cep = RespostaCompra(estado="cep", dataset_id=cenario.dataset_id,
+                               solicitacao=Solicitacao(cep="20040020"), cidade="Rio", uf="RJ", modo_cep="real")
+    assert ancorar_cep(outro_cep, [observacao], cenario.dataset_id)["estado"] == "sem_observacao_valida"
+    assert verificar(outro_cep, cenario, observacoes=[observacao]) != []
 
 
-def test_flujo_explica_un_cep_inexistente_sin_inventar_ciudad(tmp_path, monkeypatch):
+def test_fluxo_explica_um_cep_inexistente_sem_inventar_cidade(tmp_path, monkeypatch):
     import pedro.agent as modulo
-    escenario = crear_escenario(tmp_path / "catalogos")
+    cenario = criar_cenario(tmp_path / "catalogos")
     memoria = tmp_path / "memoria.sqlite3"
-    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
-    inventada = RespuestaCompra(estado="cep", dataset_id=escenario.dataset_id,
-                                solicitud=Solicitud(cep="99999999"), cidade="Ciudad Inventada",
-                                uf="XX", modo_cep="real")
+    sessao = nova_sessao(memoria, "ana", cenario.dataset_id)
+    inventada = RespostaCompra(estado="cep", dataset_id=cenario.dataset_id,
+                               solicitacao=Solicitacao(cep="99999999"), cidade="Cidade Inventada",
+                               uf="XX", modo_cep="real")
 
     class Executor:
         def invoke(self, entrada, config):
             return {"output": inventada.model_dump_json(), "intermediate_steps": [
-                (SimpleNamespace(tool="consultar_cep"), '{"estado":"no_encontrado","cep":"99999999"}')]}
+                (SimpleNamespace(tool="consultar_cep"), '{"estado":"nao_encontrado","cep":"99999999"}')]}
 
-    monkeypatch.setattr(modulo, "crear_agente", lambda *args, **kwargs: Executor())
-    flujo = crear_flujo(escenario, memoria, llm=object())
-    salida = flujo.invoke({"input": "Consulta CEP 99999999"}, config={"configurable": {
-        "user_id": "ana", "session_id": sesion}})
-    assert salida.content == "ViaCEP no tiene registrado el CEP 99999999."
-    assert "Inventada" not in salida.content
+    monkeypatch.setattr(modulo, "criar_agente", lambda *args, **kwargs: Executor())
+    fluxo = criar_fluxo(cenario, memoria, llm=object())
+    saida = fluxo.invoke({"input": "Consulte o CEP 99999999"}, config={"configurable": {
+        "user_id": "ana", "session_id": sessao}})
+    assert saida.content == "O ViaCEP não tem registro do CEP 99999999."
+    assert "Inventada" not in saida.content

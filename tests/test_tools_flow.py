@@ -1,151 +1,149 @@
-import json
-
-from pedro.agent import Traza, crear_flujo, herramientas
-from pedro.catalog import crear_escenario
-from pedro.memory import Historial, nueva_sesion
-from pedro.query import ejecutar, planear
+from pedro.agent import Rastro, criar_fluxo, ferramentas
+from pedro.catalog import criar_cenario
+from pedro.memory import Historico, nova_sessao
+from pedro.query import executar, planejar
 
 
-def test_sql_plan_y_herramientas(tmp_path):
-    escenario = crear_escenario(tmp_path / "catalogos")
+def test_sql_plano_e_ferramentas(tmp_path):
+    cenario = criar_cenario(tmp_path / "catalogos")
     memoria = tmp_path / "memoria.sqlite3"
-    nueva_sesion(memoria, "ana", escenario.dataset_id)
-    resultado = ejecutar(escenario, "ofertas PEC-01-0001", planear("ofertas PEC-01-0001"))
-    assert len(resultado["filas"]) == 3
+    nova_sessao(memoria, "ana", cenario.dataset_id)
+    resultado = executar(cenario, "ofertas PEC-01-0001", planejar("ofertas PEC-01-0001"))
+    assert len(resultado["linhas"]) == 3
     assert resultado["parametros"] == ["PEC-01-0001", 20]
     assert "?" in resultado["sql"]
-    assert len(herramientas(escenario, memoria, "ana", "hola")) == 6
+    assert len(ferramentas(cenario, memoria, "ana", "olá")) == 6
 
 
-def test_traza_oculta_claves_y_registra_fuentes():
-    traza = Traza()
-    traza.on_tool_start({"name": "consultar_catalogo"}, "sk-abcdefghijklmnop")
-    traza.on_tool_end('{"evidencias":[{"fuente_id":"oferta-1"}]}')
-    assert "sk-" not in traza.eventos[0]["entrada"]
-    assert traza.eventos[0]["ruta"] == "consultar_catalogo"
-    assert traza.eventos[1]["fuentes"] == ["oferta-1"]
+def test_rastro_oculta_chaves_e_registra_fontes():
+    rastro = Rastro()
+    rastro.on_tool_start({"name": "consultar_catalogo"}, "sk-abcdefghijklmnop")
+    rastro.on_tool_end('{"evidencias":[{"fonte_id":"oferta-1"}]}')
+    assert "sk-" not in rastro.eventos[0]["entrada"]
+    assert rastro.eventos[0]["rota"] == "consultar_catalogo"
+    assert rastro.eventos[1]["fontes"] == ["oferta-1"]
 
 
-def test_flujo_local_persiste_solo_publico(tmp_path):
-    escenario = crear_escenario(tmp_path / "catalogos")
+def test_fluxo_local_persiste_so_o_publico(tmp_path):
+    cenario = criar_cenario(tmp_path / "catalogos")
     memoria = tmp_path / "memoria.sqlite3"
-    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
-    flujo = crear_flujo(escenario, memoria)
-    salida = flujo.invoke({"input": "lista piezas"}, config={"configurable": {
-        "user_id": "ana", "session_id": sesion}})
-    assert "PEC-01-0001" in salida.content
-    mensajes = Historial(memoria, "ana", sesion).todos()
-    assert [m.type for m in mensajes] == ["human", "ai"]
-    assert len(mensajes[1].content.splitlines()) == 21
+    sessao = nova_sessao(memoria, "ana", cenario.dataset_id)
+    fluxo = criar_fluxo(cenario, memoria)
+    saida = fluxo.invoke({"input": "lista peças"}, config={"configurable": {
+        "user_id": "ana", "session_id": sessao}})
+    assert "PEC-01-0001" in saida.content
+    mensagens = Historico(memoria, "ana", sessao).todos()
+    assert [m.type for m in mensagens] == ["human", "ai"]
+    assert len(mensagens[1].content.splitlines()) == 21
 
 
-def test_correccion_interna_y_publicacion_final(tmp_path, monkeypatch):
+def test_correcao_interna_e_publicacao_final(tmp_path, monkeypatch):
     import pedro.agent as modulo
-    from pedro.contracts import Solicitud
-    from pedro.verification import respuesta_local
+    from pedro.contracts import Solicitacao
+    from pedro.verification import resposta_local
 
-    escenario = crear_escenario(tmp_path / "catalogos")
+    cenario = criar_cenario(tmp_path / "catalogos")
     memoria = tmp_path / "memoria.sqlite3"
-    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
-    propuesta = respuesta_local(escenario, Solicitud(producto_id="PEC-01-0001", cantidad=1,
-        presupuesto_centavos=10_000_000, plazo_max_dias=60))
-    llamadas = []
+    sessao = nova_sessao(memoria, "ana", cenario.dataset_id)
+    proposta = resposta_local(cenario, Solicitacao(produto_id="PEC-01-0001", quantidade=1,
+        orcamento_centavos=10_000_000, prazo_max_dias=60))
+    chamadas = []
 
     class Executor:
         def invoke(self, entrada, config):
-            llamadas.append(entrada)
-            return {"output": "json inválido" if len(llamadas) == 1 else propuesta.model_dump_json()}
+            chamadas.append(entrada)
+            return {"output": "json inválido" if len(chamadas) == 1 else proposta.model_dump_json()}
 
     class NLI:
-        def clasificar(self, premisa, hipotesis):
+        def classificar(self, premissa, hipotese):
             return "entailment"
 
-    class Vectores:
-        modelo, version = "test", "1"
+    class Vetores:
+        modelo, versao = "test", "1"
         def embed(self, texto):
             return [1.0]
 
-    monkeypatch.setattr(modulo, "crear_agente", lambda *args, **kwargs: Executor())
-    monkeypatch.setattr(modulo, "FastEmbedder", Vectores)
-    flujo = crear_flujo(escenario, memoria, llm=object(), clasificador=NLI())
-    salida = flujo.invoke({"input": "recomienda 1 unidad de PEC-01-0001; presupuesto R$ 100000 y plazo 60 días"}, config={"configurable": {
-        "user_id": "ana", "session_id": sesion}})
-    assert len(llamadas) == 2
-    assert propuesta.proveedor_id in salida.content or propuesta.alternativas[0].oferta.proveedor_nombre in salida.content
-    assert [m.type for m in Historial(memoria, "ana", sesion).todos()] == ["human", "ai"]
+    monkeypatch.setattr(modulo, "criar_agente", lambda *args, **kwargs: Executor())
+    monkeypatch.setattr(modulo, "FastEmbedder", Vetores)
+    fluxo = criar_fluxo(cenario, memoria, llm=object(), classificador=NLI())
+    saida = fluxo.invoke({"input": "recomende 1 unidade de PEC-01-0001; orçamento R$ 100000 e prazo 60 dias"}, config={"configurable": {
+        "user_id": "ana", "session_id": sessao}})
+    assert len(chamadas) == 2
+    assert proposta.fornecedor_id in saida.content or proposta.alternativas[0].oferta.fornecedor_nome in saida.content
+    assert [m.type for m in Historico(memoria, "ana", sessao).todos()] == ["human", "ai"]
 
 
-def test_modelo_no_publica_cantidad_antigua(tmp_path, monkeypatch):
+def test_modelo_nao_publica_quantidade_antiga(tmp_path, monkeypatch):
     import pedro.agent as modulo
-    from pedro.contracts import Solicitud
-    from pedro.verification import respuesta_local
+    from pedro.contracts import Solicitacao
+    from pedro.verification import resposta_local
 
-    escenario = crear_escenario(tmp_path / "catalogos")
+    cenario = criar_cenario(tmp_path / "catalogos")
     memoria = tmp_path / "memoria.sqlite3"
-    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
-    propuesta_antigua = respuesta_local(escenario, Solicitud(
-        producto_id="PEC-01-0001", cantidad=2))
-    llamadas = []
+    sessao = nova_sessao(memoria, "ana", cenario.dataset_id)
+    proposta_antiga = resposta_local(cenario, Solicitacao(
+        produto_id="PEC-01-0001", quantidade=2))
+    chamadas = []
 
     class Executor:
         def invoke(self, entrada, config):
-            llamadas.append(entrada)
-            return {"output": propuesta_antigua.model_dump_json()}
+            chamadas.append(entrada)
+            return {"output": proposta_antiga.model_dump_json()}
 
-    monkeypatch.setattr(modulo, "crear_agente", lambda *args, **kwargs: Executor())
-    flujo = crear_flujo(escenario, memoria, llm=object())
-    salida = flujo.invoke({"input": "Compara 3 unidades de PEC-01-0001"},
-                         config={"configurable": {"user_id": "ana", "session_id": sesion}})
-    assert len(llamadas) == 2
-    assert "No puedo confirmar" in salida.content
+    monkeypatch.setattr(modulo, "criar_agente", lambda *args, **kwargs: Executor())
+    fluxo = criar_fluxo(cenario, memoria, llm=object())
+    saida = fluxo.invoke({"input": "Compare 3 unidades de PEC-01-0001"},
+                         config={"configurable": {"user_id": "ana", "session_id": sessao}})
+    assert len(chamadas) == 2
+    assert "Não posso confirmar" in saida.content
 
 
-def test_traza_registra_cada_verificacion_con_sus_errores(tmp_path, monkeypatch):
+def test_rastro_registra_cada_verificacao_com_os_seus_erros(tmp_path, monkeypatch):
     import pedro.agent as modulo
-    from pedro.contracts import Solicitud
-    from pedro.verification import respuesta_local
+    from pedro.contracts import Solicitacao
+    from pedro.verification import resposta_local
 
-    escenario = crear_escenario(tmp_path / "catalogos")
+    cenario = criar_cenario(tmp_path / "catalogos")
     memoria = tmp_path / "memoria.sqlite3"
-    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
-    propuesta = respuesta_local(escenario, Solicitud(producto_id="PEC-01-0001", cantidad=1))
-    salidas = iter(["json inválido", propuesta.model_dump_json()])
+    sessao = nova_sessao(memoria, "ana", cenario.dataset_id)
+    proposta = resposta_local(cenario, Solicitacao(produto_id="PEC-01-0001", quantidade=1))
+    saidas = iter(["json inválido", proposta.model_dump_json()])
 
     class Executor:
         def invoke(self, entrada, config):
-            return {"output": next(salidas)}
+            return {"output": next(saidas)}
 
     class NLI:
-        def clasificar(self, premisa, hipotesis):
+        def classificar(self, premissa, hipotese):
             return "entailment"
 
-    monkeypatch.setattr(modulo, "crear_agente", lambda *args, **kwargs: Executor())
-    traza = Traza()
-    flujo = crear_flujo(escenario, memoria, llm=object(), clasificador=NLI(), traza=traza)
-    flujo.invoke({"input": "Compara 1 unidad de PEC-01-0001"}, config={"configurable": {
-        "user_id": "ana", "session_id": sesion}})
-    verificaciones = [e for e in traza.eventos if e["evento"] == "verificacion"]
-    assert [(v["intento"], v["estado"], v["errores"]) for v in verificaciones] == [
-        (1, None, ["OutputParserException"]), (2, "recomendacion", [])]
+    monkeypatch.setattr(modulo, "criar_agente", lambda *args, **kwargs: Executor())
+    rastro = Rastro()
+    fluxo = criar_fluxo(cenario, memoria, llm=object(), classificador=NLI(), rastro=rastro)
+    fluxo.invoke({"input": "Compare 1 unidade de PEC-01-0001"}, config={"configurable": {
+        "user_id": "ana", "session_id": sessao}})
+    verificacoes = [e for e in rastro.eventos if e["evento"] == "verificacao"]
+    assert [(v["tentativa"], v["estado"], v["erros"]) for v in verificacoes] == [
+        (1, None, ["OutputParserException"]), (2, "recomendacao", [])]
 
 
-def test_la_respuesta_adjunta_la_comparacion_estructurada_y_se_conserva_en_el_historial(tmp_path):
+def test_a_resposta_anexa_a_comparacao_estruturada_e_ela_se_conserva_no_historico(tmp_path):
     from pedro.agent import partes_de
-    from pedro.contracts import RespuestaCompra
+    from pedro.contracts import RespostaCompra
 
-    escenario = crear_escenario(tmp_path / "catalogos")
+    cenario = criar_cenario(tmp_path / "catalogos")
     memoria = tmp_path / "memoria.sqlite3"
-    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
-    flujo = crear_flujo(escenario, memoria)
-    config = {"configurable": {"user_id": "ana", "session_id": sesion}}
-    salida = flujo.invoke({"input": "Compara 5 unidades de PEC-01-0001"}, config=config)
-    (parte,) = partes_de(salida)
-    comparacion = RespuestaCompra.model_validate(parte["comparacion"])
-    assert comparacion.proveedor_id == "BR-06" and parte["texto"] == salida.content
-    # Tras releer el historial, la interfaz puede volver a dibujar la misma comparación.
-    guardado = Historial(memoria, "ana", sesion).todos()[-1]
-    assert partes_de(guardado) == [parte]
-    # Una respuesta que no es una comparación solo lleva texto.
-    listado = flujo.invoke({"input": "lista piezas"}, config=config)
-    assert partes_de(listado) == [{"titulo": None, "texto": listado.content, "comparacion": None,
-                                   "consejo": None}]
+    sessao = nova_sessao(memoria, "ana", cenario.dataset_id)
+    fluxo = criar_fluxo(cenario, memoria)
+    config = {"configurable": {"user_id": "ana", "session_id": sessao}}
+    saida = fluxo.invoke({"input": "Compare 5 unidades de PEC-01-0001"}, config=config)
+    (parte,) = partes_de(saida)
+    comparacao = RespostaCompra.model_validate(parte["comparacao"])
+    assert comparacao.fornecedor_id == "BR-06" and parte["texto"] == saida.content
+    # Depois de reler o histórico, a interface pode desenhar de novo a mesma comparação.
+    salvo = Historico(memoria, "ana", sessao).todos()[-1]
+    assert partes_de(salvo) == [parte]
+    # Uma resposta que não é uma comparação leva só texto.
+    listagem = fluxo.invoke({"input": "lista peças"}, config=config)
+    assert partes_de(listagem) == [{"titulo": None, "texto": listagem.content, "comparacao": None,
+                                    "conselho": None}]

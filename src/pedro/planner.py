@@ -1,81 +1,83 @@
-"""Planificador de turno: divide un mensaje con varias intenciones en peticiones independientes.
+"""Planejador de turno: divide uma mensagem com várias intenções em pedidos independentes.
 
-Cada petición se resuelve después con el flujo normal de una sola intención, de modo que cada
-parte pasa por su propia verificación.
+Cada pedido é resolvido depois com o fluxo normal de uma única intenção, de modo que cada
+parte passa pela sua própria verificação.
 """
 import re
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
-# Señales baratas de cada intención. Sirven para decidir si vale la pena llamar al planificador.
-SENALES = {
-    "compra": r"\bPEC-[0-9]{2}-[0-9]{4}\b|\b(compara|comparar|cotiza|necesito|quiero|ofertas?|precio)\b",
-    "politica": r"\b(pol[ií]ticas?|garant[ií]a|devoluci[oó]n|devolver|reembolso|compatibilidad|"
-                r"instalar|instalaci[oó]n|varias\s+cajas|env[ií]o\s+parcial|entrega\s+parcial)\b",
+# Sinais baratos de cada intenção. Servem para decidir se vale a pena chamar o planejador.
+SINAIS = {
+    "compra": r"\bPEC-[0-9]{2}-[0-9]{4}\b|\b(compara|compare|comparar|cota|cote|cotar|preciso|quero|"
+              r"ofertas?|pre[cç]o)\b",
+    "politica": r"\b(pol[ií]ticas?|garantia|devolu[cç][aã]o|devolver|reembolso|compatibilidade|"
+                r"instalar|instala[cç][aã]o|v[aá]rias\s+caixas|envio\s+parcial|entrega\s+parcial)\b",
     "cep": r"\bcep\b|\b\d{5}-?\d{3}\b",
-    "preferencia": r"\b(prefiero|recu[eé]rda(?:lo|me)|recuerda\s+que|guarda\s+mi\s+preferencia)\b",
+    "preferencia": r"\b(prefiro|lembre-se|lembr[ae]\s+disso|lembr[ae]\s+que|"
+                   r"(?:guarde|guarda|salve|salva)\s+(?:a\s+)?minha\s+prefer[eê]ncia)\b",
 }
-MAX_PETICIONES = 4
+MAX_PEDIDOS = 4
 
 
-class Peticion(BaseModel):
+class Pedido(BaseModel):
     tipo: Literal["compra", "politica", "cep", "preferencia"]
-    peticion: str = Field(min_length=3, description="Petición completa y autónoma, con sus datos")
+    pedido: str = Field(min_length=3, description="Pedido completo e autônomo, com os seus dados")
 
 
-class PlanTurno(BaseModel):
-    """Plan observable de un turno: una petición por intención, en el orden del mensaje."""
-    peticiones: list[Peticion] = Field(min_length=1, max_length=MAX_PETICIONES)
+class PlanoTurno(BaseModel):
+    """Plano observável de um turno: um pedido por intenção, na ordem da mensagem."""
+    pedidos: list[Pedido] = Field(min_length=1, max_length=MAX_PEDIDOS)
 
 
-def intenciones_detectadas(texto: str) -> set[str]:
-    return {nombre for nombre, patron in SENALES.items() if re.search(patron, texto, re.I)}
+def intencoes_detectadas(texto: str) -> set[str]:
+    return {nome for nome, padrao in SINAIS.items() if re.search(padrao, texto, re.I)}
 
 
-def _datos(texto: str) -> set[str]:
-    """Identificadores y cifras de un texto, para comprobar que el plan no añade ninguno."""
+def _dados(texto: str) -> set[str]:
+    """Identificadores e números de um texto, para comprovar que o plano não acrescenta nenhum."""
     return set(re.findall(r"PEC-[0-9]{2}-[0-9]{4}|\d+(?:[.,]\d+)*", texto.upper()))
 
 
-def validar_plan(plan: PlanTurno, original: str) -> list[Peticion]:
-    """Acepta el plan solo si cada petición es coherente con el mensaje del usuario.
+def validar_plano(plano: PlanoTurno, original: str) -> list[Pedido]:
+    """Aceita o plano somente se cada pedido for coerente com a mensagem do usuário.
 
-    Reglas: un tipo no se repite, cada petición muestra la señal de su tipo y no contiene
-    ningún identificador ni cifra que el usuario no escribiera.
+    Regras: um tipo não se repete, cada pedido mostra o sinal do seu tipo e não contém
+    nenhum identificador nem número que o usuário não tenha escrito.
     """
-    tipos = [p.tipo for p in plan.peticiones]
+    tipos = [p.tipo for p in plano.pedidos]
     if len(set(tipos)) != len(tipos):
-        raise ValueError("el plan repite un tipo de petición")
-    permitidos = _datos(original)
-    for peticion in plan.peticiones:
-        if not re.search(SENALES[peticion.tipo], peticion.peticion, re.I):
-            raise ValueError(f"la petición de {peticion.tipo} no lo parece")
-        if _datos(peticion.peticion) - permitidos:
-            raise ValueError("el plan añade datos que el usuario no escribió")
-    return plan.peticiones
+        raise ValueError("o plano repete um tipo de pedido")
+    permitidos = _dados(original)
+    for pedido in plano.pedidos:
+        if not re.search(SINAIS[pedido.tipo], pedido.pedido, re.I):
+            raise ValueError(f"o pedido de {pedido.tipo} não parece ser desse tipo")
+        if _dados(pedido.pedido) - permitidos:
+            raise ValueError("o plano acrescenta dados que o usuário não escreveu")
+    return plano.pedidos
 
 
-def crear_planificador(modelo):
-    """Cadena que propone un `PlanTurno`. No ejecuta nada."""
+def criar_planejador(modelo):
+    """Cadeia que propõe um `PlanoTurno`. Não executa nada."""
     from langchain_core.output_parsers import PydanticOutputParser
 
-    from .prompts import PLANTILLA_PLAN
+    from .prompts import MODELO_PLANO
 
-    parser = PydanticOutputParser(pydantic_object=PlanTurno)
-    return PLANTILLA_PLAN.partial(formato=parser.get_format_instructions()) | modelo | parser
+    parser = PydanticOutputParser(pydantic_object=PlanoTurno)
+    return MODELO_PLANO.partial(formato=parser.get_format_instructions()) | modelo | parser
 
 
-def planificar_turno(mensaje: str, modelo) -> list[Peticion] | None:
-    """Devuelve las peticiones de un mensaje mixto, o None si debe tratarse como una sola.
+def planejar_turno(mensagem: str, modelo) -> list[Pedido] | None:
+    """Devolve os pedidos de uma mensagem mista, ou None se ela deve ser tratada como uma só.
 
-    Solo se consulta al modelo cuando el mensaje muestra señales de dos o más intenciones; un
-    plan inválido, ilegible o de una sola petición equivale a no planificar.
+    O modelo só é consultado quando a mensagem mostra sinais de duas ou mais intenções; um
+    plano inválido, ilegível ou de um único pedido equivale a não planejar.
     """
-    if modelo is None or len(intenciones_detectadas(mensaje)) < 2:
+    if modelo is None or len(intencoes_detectadas(mensagem)) < 2:
         return None
     try:
-        peticiones = validar_plan(crear_planificador(modelo).invoke({"mensaje": mensaje}), mensaje)
+        pedidos = validar_plano(criar_planejador(modelo).invoke({"mensagem": mensagem}), mensagem)
     except Exception:
         return None
-    return peticiones if len(peticiones) > 1 else None
+    return pedidos if len(pedidos) > 1 else None

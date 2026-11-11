@@ -11,18 +11,22 @@ from pathlib import Path
 
 AS_OF = date(2026, 11, 7)
 CATEGORIES = [
-    ("neveras", "Neveras", "compresor termostato evaporador condensador placa sensor puerta sello ventilador filtro"),
-    ("congeladores", "Congeladores", "compresor termostato evaporador condensador placa sensor bisagra sello ventilador filtro"),
-    ("freezers", "Freezers", "compresor termostato evaporador condensador placa sensor puerta sello ventilador cajon"),
-    ("secadoras", "Secadoras de ropa", "motor correa tambor resistencia termostato filtro polea sensor placa puerta"),
-    ("fogoes", "Fogões", "quemador valvula termopar perilla rejilla encendedor horno placa bisagra sello"),
-    ("hornos", "Hornos", "resistencia termostato ventilador bisagra puerta sello bandeja sensor placa perilla"),
-    ("cooktops", "Cooktops", "quemador valvula encendedor perilla vidrio placa sensor bobina cable rejilla"),
-    ("lavaloucas", "Lavalouças", "bomba filtro brazo aspersor motor valvula manguera sensor placa sello"),
-    ("microondas", "Forno micro-ondas", "magnetron transformador plato motor puerta fusible placa sensor diodo capacitor"),
-    ("ar_condicionados", "Ar condicionados", "compresor evaporador condensador ventilador filtro sensor placa control valvula tubo"),
-    ("lavadoras", "Máquinas de lavar", "motor bomba tambor correa valvula manguera sensor placa sello filtro"),
+    ("geladeiras", "Geladeiras", "compressor termostato evaporador condensador placa sensor porta vedacao ventilador filtro"),
+    ("congeladores", "Congeladores", "compressor termostato evaporador condensador placa sensor dobradica vedacao ventilador filtro"),
+    ("freezers", "Freezers", "compressor termostato evaporador condensador placa sensor porta vedacao ventilador gaveta"),
+    ("secadoras", "Secadoras de roupa", "motor correia tambor resistencia termostato filtro polia sensor placa porta"),
+    ("fogoes", "Fogões", "queimador valvula termopar botao grade acendedor forno placa dobradica vedacao"),
+    ("fornos", "Fornos", "resistencia termostato ventilador dobradica porta vedacao bandeja sensor placa botao"),
+    ("cooktops", "Cooktops", "queimador valvula acendedor botao vidro placa sensor bobina cabo grade"),
+    ("lavaloucas", "Lava-louças", "bomba filtro braco aspersor motor valvula mangueira sensor placa vedacao"),
+    ("microondas", "Fornos micro-ondas", "magnetron transformador prato motor porta fusivel placa sensor diodo capacitor"),
+    ("ar_condicionados", "Ar-condicionados", "compressor evaporador condensador ventilador filtro sensor placa controle valvula tubo"),
+    ("lavadoras", "Máquinas de lavar", "motor bomba tambor correia valvula mangueira sensor placa vedacao filtro"),
 ]
+# A coluna family fica sem acentos (facilita buscas e SQL); o nome exibido leva a grafia correta.
+DISPLAY = {"vedacao": "Vedação", "dobradica": "Dobradiça", "resistencia": "Resistência",
+           "valvula": "Válvula", "botao": "Botão", "braco": "Braço", "fusivel": "Fusível",
+           "magnetron": "Magnétron"}
 SUPPLIERS = [
     ("BR-01", "Brava Peças", "BR", "BRL"),
     ("BR-02", "Sul Componentes", "BR", "BRL"),
@@ -90,7 +94,7 @@ def generate(output: Path, *, pieces_per_category: int = 240, seed: int = 202611
         raise ValueError("pieces_per_category must be positive")
     rng = random.Random(seed)
     output.parent.mkdir(parents=True, exist_ok=True)
-    fd, temporary = tempfile.mkstemp(prefix=".piezas-", suffix=".sqlite3", dir=output.parent)
+    fd, temporary = tempfile.mkstemp(prefix=".pecas-", suffix=".sqlite3", dir=output.parent)
     os.close(fd)
     counts = {"categories": len(CATEGORIES), "parts": 0, "offers": 0, "compatibility": 0,
               "price_history": 0}
@@ -99,7 +103,7 @@ def generate(output: Path, *, pieces_per_category: int = 240, seed: int = 202611
             db.executescript(SCHEMA)
             db.executemany("INSERT INTO metadata VALUES (?,?)", [
                 ("source", "100% synthetic; no real inventory, prices, suppliers or compatibility"),
-                ("generator", "scripts/generar_catalogo_piezas.py"),
+                ("generator", "scripts/gerar_catalogo_pecas.py"),
                 ("seed", str(seed)), ("as_of", AS_OF.isoformat()),
                 ("price_note", "All BRL conversions and shipping charges are fictional estimates"),
             ])
@@ -117,13 +121,13 @@ def generate(output: Path, *, pieces_per_category: int = 240, seed: int = 202611
                     family = choices[(number - 1) % len(choices)]
                     sku = f"{slug[:4].upper()}-{family[:4].upper()}-{number:04d}"
                     voltage = rng.choice([110, 127, 220, 240]) if family in {
-                        "compresor", "motor", "resistencia", "placa", "ventilador", "bomba", "magnetron"} else None
+                        "compressor", "motor", "resistencia", "placa", "ventilador", "bomba", "magnetron"} else None
                     power = rng.randrange(80, 2600, 20) if voltage is not None else None
                     specs = {"connector": rng.choice(["2 pinos", "3 pinos", "terminal", "sem conector"]),
                              "installation": "técnico qualificado", "packaging": "caixa individual",
                              "series": f"S{rng.randint(1, 9)}"}
                     db.execute("INSERT INTO parts VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (
-                        part_id, sku, category_id, family, f"{family.title()} para {category_name} {sku}",
+                        part_id, sku, category_id, family, f"{DISPLAY.get(family, family.title())} para {category_name} {sku}",
                         f"Peça fictícia de reposição para {category_name.lower()}; confira o modelo compatível.",
                         rng.choice(BRANDS) + " Components", rng.choice(["OEM", "compatível", "remanufaturada"]),
                         rng.choice(MATERIALS), rng.choice(["preto", "branco", "prata", "natural"]),
@@ -177,7 +181,7 @@ def generate(output: Path, *, pieces_per_category: int = 240, seed: int = 202611
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path,
-                        default=Path("datasets/piezas_electrodomesticos.sqlite3"))
+                        default=Path("datasets/pecas_eletrodomesticos.sqlite3"))
     parser.add_argument("--pieces-per-category", type=int, default=240)
     parser.add_argument("--seed", type=int, default=20261107)
     args = parser.parse_args()

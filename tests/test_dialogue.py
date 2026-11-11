@@ -1,207 +1,207 @@
 import pytest
 
-from pedro.agent import crear_flujo
-from pedro.catalog import crear_escenario
+from pedro.agent import criar_fluxo
+from pedro.catalog import criar_cenario
 from pedro.dialogue import EstadoCompra, interpretar_compra
-from pedro.memory import leer_borrador, nueva_sesion
+from pedro.memory import ler_rascunho, nova_sessao
 
 
 @pytest.fixture
 def contexto(tmp_path):
-    escenario = crear_escenario(tmp_path / "catalogos")
+    cenario = criar_cenario(tmp_path / "catalogos")
     memoria = tmp_path / "memoria.sqlite3"
-    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
-    flujo = crear_flujo(escenario, memoria)
+    sessao = nova_sessao(memoria, "ana", cenario.dataset_id)
+    fluxo = criar_fluxo(cenario, memoria)
 
-    def preguntar(texto, session_id=sesion, user_id="ana"):
-        return str(flujo.invoke({"input": texto}, config={"configurable": {
+    def perguntar(texto, session_id=sessao, user_id="ana"):
+        return str(fluxo.invoke({"input": texto}, config={"configurable": {
             "user_id": user_id, "session_id": session_id}}).content)
 
-    return escenario, memoria, sesion, preguntar
+    return cenario, memoria, sessao, perguntar
 
 
-def test_pide_solo_cantidad_y_compara_sin_limites(contexto):
-    escenario, memoria, sesion, preguntar = contexto
-    pregunta = preguntar("Compara PEC-01-0001")
-    assert "¿Cuántas unidades" in pregunta
-    assert "presupuesto_centavos" not in pregunta
-    respuesta = preguntar("2, por favor")
-    assert "Fuentes:" in respuesta
-    assert "PEC-01-0001" in leer_borrador(memoria, "ana", sesion)["solicitud"]["producto_id"]
-    solicitud = EstadoCompra.model_validate(leer_borrador(memoria, "ana", sesion)).solicitud
-    assert solicitud.cantidad == 2
-    assert solicitud.presupuesto_centavos is None
-    assert solicitud.plazo_max_dias is None
-    assert respuesta != preguntar("ahora 3 unidades")
-    assert leer_borrador(memoria, "ana", sesion)["solicitud"]["cantidad"] == 3
-    preguntar("cambia la cantidad a dos")
-    assert leer_borrador(memoria, "ana", sesion)["solicitud"]["cantidad"] == 2
+def test_pede_so_quantidade_e_compara_sem_limites(contexto):
+    cenario, memoria, sessao, perguntar = contexto
+    pergunta = perguntar("Compare PEC-01-0001")
+    assert "De quantas unidades" in pergunta
+    assert "orcamento_centavos" not in pergunta
+    resposta = perguntar("2, por favor")
+    assert "Fontes:" in resposta
+    assert "PEC-01-0001" in ler_rascunho(memoria, "ana", sessao)["solicitacao"]["produto_id"]
+    solicitacao = EstadoCompra.model_validate(ler_rascunho(memoria, "ana", sessao)).solicitacao
+    assert solicitacao.quantidade == 2
+    assert solicitacao.orcamento_centavos is None
+    assert solicitacao.prazo_max_dias is None
+    assert resposta != perguntar("agora 3 unidades")
+    assert ler_rascunho(memoria, "ana", sessao)["solicitacao"]["quantidade"] == 3
+    perguntar("muda a quantidade para dois")
+    assert ler_rascunho(memoria, "ana", sessao)["solicitacao"]["quantidade"] == 2
 
 
-def test_correccion_conserva_filtros_explicitos_y_permita_quitarlos(contexto):
-    _, memoria, sesion, preguntar = contexto
-    respuesta = preguntar("Compara 2 unidades de PEC-01-0001 con presupuesto R$ 1.000,00 y plazo 7 días")
-    assert "Fuentes:" in respuesta
-    preguntar("Ahora 3 unidades")
-    solicitud = EstadoCompra.model_validate(leer_borrador(memoria, "ana", sesion)).solicitud
-    assert (solicitud.cantidad, solicitud.presupuesto_centavos, solicitud.plazo_max_dias) == (3, 100000, 7)
-    preguntar("Sin presupuesto y sin plazo")
-    solicitud = EstadoCompra.model_validate(leer_borrador(memoria, "ana", sesion)).solicitud
-    assert solicitud.presupuesto_centavos is None
-    assert solicitud.plazo_max_dias is None
+def test_correcao_conserva_filtros_explicitos_e_permite_remove_los(contexto):
+    _, memoria, sessao, perguntar = contexto
+    resposta = perguntar("Compare 2 unidades de PEC-01-0001 com orçamento R$ 1.000,00 e prazo 7 dias")
+    assert "Fontes:" in resposta
+    perguntar("Agora 3 unidades")
+    solicitacao = EstadoCompra.model_validate(ler_rascunho(memoria, "ana", sessao)).solicitacao
+    assert (solicitacao.quantidade, solicitacao.orcamento_centavos, solicitacao.prazo_max_dias) == (3, 100000, 7)
+    perguntar("Sem orçamento e sem prazo")
+    solicitacao = EstadoCompra.model_validate(ler_rascunho(memoria, "ana", sessao)).solicitacao
+    assert solicitacao.orcamento_centavos is None
+    assert solicitacao.prazo_max_dias is None
 
 
-def test_borrador_aislado_por_sesion_y_usuario(contexto):
-    escenario, memoria, sesion, preguntar = contexto
-    preguntar("Compara PEC-01-0001")
-    otra = nueva_sesion(memoria, "ana", escenario.dataset_id)
-    assert "¿Qué pieza" in preguntar("Compara", otra)
-    assert leer_borrador(memoria, "ana", otra)["solicitud"]["producto_id"] is None
-    with pytest.raises(ValueError, match="sesión ajena"):
-        leer_borrador(memoria, "otra", sesion)
+def test_rascunho_isolado_por_sessao_e_usuario(contexto):
+    cenario, memoria, sessao, perguntar = contexto
+    perguntar("Compare PEC-01-0001")
+    outra = nova_sessao(memoria, "ana", cenario.dataset_id)
+    assert "De qual peça" in perguntar("Compare", outra)
+    assert ler_rascunho(memoria, "ana", outra)["solicitacao"]["produto_id"] is None
+    with pytest.raises(ValueError, match="sessão alheia"):
+        ler_rascunho(memoria, "outra", sessao)
 
 
-def test_cep_no_reutiliza_borrador_de_compra(contexto):
-    escenario, memoria, sesion, preguntar = contexto
-    preguntar("Compara PEC-01-0001")
-    previo = EstadoCompra.model_validate(leer_borrador(memoria, "ana", sesion))
-    assert interpretar_compra(escenario, previo, "Consulta el CEP 01001000") is None
+def test_cep_nao_reutiliza_rascunho_de_compra(contexto):
+    cenario, memoria, sessao, perguntar = contexto
+    perguntar("Compare PEC-01-0001")
+    previo = EstadoCompra.model_validate(ler_rascunho(memoria, "ana", sessao))
+    assert interpretar_compra(cenario, previo, "Consulte o CEP 01001000") is None
 
 
-@pytest.mark.parametrize("mensaje, cantidad", [
-    ("Ahora que sean 3 y mantén el plazo", 3),
-    ("Mejor 4", 4),
-    ("cambia a 5", 5),
-    ("que sean seis", 6),
-    ("ahora media docena", 6),
+@pytest.mark.parametrize("mensagem, quantidade", [
+    ("Agora que sejam 3 e mantenha o prazo", 3),
+    ("Melhor 4", 4),
+    ("muda para 5", 5),
+    ("que sejam seis", 6),
+    ("agora meia dúzia", 6),
 ])
-def test_cambio_de_cantidad_dicho_de_pasada_conserva_el_plazo(contexto, mensaje, cantidad):
-    escenario, _, _, _ = contexto
-    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001 con plazo 7 días")
-    estado, aclaracion = interpretar_compra(escenario, previo, mensaje)
-    assert aclaracion is None
-    assert (estado.solicitud.cantidad, estado.solicitud.plazo_max_dias) == (cantidad, 7)
+def test_mudanca_de_quantidade_dita_de_passagem_conserva_o_prazo(contexto, mensagem, quantidade):
+    cenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(cenario, None, "Preciso de 2 unidades de PEC-01-0001 com prazo de 7 dias")
+    estado, esclarecimento = interpretar_compra(cenario, previo, mensagem)
+    assert esclarecimento is None
+    assert (estado.solicitacao.quantidade, estado.solicitacao.prazo_max_dias) == (quantidade, 7)
 
 
-def test_cambiar_el_plazo_no_se_confunde_con_la_cantidad(contexto):
-    escenario, _, _, _ = contexto
-    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001")
-    estado, _ = interpretar_compra(escenario, previo, "mejor 10 días de plazo")
-    assert (estado.solicitud.cantidad, estado.solicitud.plazo_max_dias) == (2, 10)
+def test_mudar_o_prazo_nao_se_confunde_com_a_quantidade(contexto):
+    cenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(cenario, None, "Preciso de 2 unidades de PEC-01-0001")
+    estado, _ = interpretar_compra(cenario, previo, "melhor 10 dias de prazo")
+    assert (estado.solicitacao.quantidade, estado.solicitacao.prazo_max_dias) == (2, 10)
 
 
-@pytest.mark.parametrize("mensaje", [
-    "¿Cómo se comprueba la compatibilidad eléctrica antes de instalar una pieza?",
-    "¿Qué cubre la garantía de una pieza?",
-    "Prefiero proveedores nacionales, recuérdalo",
-    "¿A qué ciudad corresponde el CEP 01001000?",
+@pytest.mark.parametrize("mensagem", [
+    "Como se verifica a compatibilidade elétrica antes de instalar uma peça?",
+    "O que a garantia de uma peça cobre?",
+    "Prefiro fornecedores nacionais, lembre-se disso",
+    "A que cidade corresponde o CEP 01001000?",
 ])
-def test_preguntas_que_no_son_compra_no_tocan_el_borrador(contexto, mensaje):
-    escenario, _, _, _ = contexto
-    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001")
-    assert interpretar_compra(escenario, previo, mensaje) is None
+def test_perguntas_que_nao_sao_compra_nao_tocam_o_rascunho(contexto, mensagem):
+    cenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(cenario, None, "Preciso de 2 unidades de PEC-01-0001")
+    assert interpretar_compra(cenario, previo, mensagem) is None
 
 
-def test_preferencia_se_confirma_solo_si_la_herramienta_la_guardo(tmp_path):
-    from pedro.contracts import RespuestaCompra, Solicitud
-    from pedro.verification import anclar_preferencia, verificar
+def test_preferencia_so_e_confirmada_se_a_ferramenta_a_salvou(tmp_path):
+    from pedro.contracts import RespostaCompra, Solicitacao
+    from pedro.verification import ancorar_preferencia, verificar
 
-    escenario = crear_escenario(tmp_path / "catalogos")
-    respuesta = RespuestaCompra(estado="preferencia", dataset_id=escenario.dataset_id,
-                                solicitud=Solicitud(), mensaje="Hecho, y además te recomiendo BR-06.")
-    guardada = ("guardar_preferencia", {"estado": "ok", "clave": "proveedor", "valor": "nacionales"})
-    assert verificar(respuesta, escenario, observaciones=[]) == ["preferencia no guardada"]
-    assert anclar_preferencia(respuesta, [guardada])["estado"] == "anclada"
-    assert respuesta.mensaje == "Guardé tu preferencia: proveedor = nacionales."
-    assert verificar(respuesta, escenario, observaciones=[guardada]) == []
-    rechazada = ("guardar_preferencia", {"estado": "invalido", "error": "sin petición explícita"})
-    assert verificar(respuesta, escenario, observaciones=[rechazada]) == ["preferencia no guardada"]
+    cenario = criar_cenario(tmp_path / "catalogos")
+    resposta = RespostaCompra(estado="preferencia", dataset_id=cenario.dataset_id,
+                              solicitacao=Solicitacao(), mensagem="Feito, e além disso recomendo o BR-06.")
+    salva = ("salvar_preferencia", {"estado": "ok", "chave": "fornecedor", "valor": "nacionais"})
+    assert verificar(resposta, cenario, observacoes=[]) == ["preferência não salva"]
+    assert ancorar_preferencia(resposta, [salva])["estado"] == "ancorada"
+    assert resposta.mensagem == "Salvei a sua preferência: fornecedor = nacionais."
+    assert verificar(resposta, cenario, observacoes=[salva]) == []
+    rejeitada = ("salvar_preferencia", {"estado": "invalido", "erro": "sem pedido explícito"})
+    assert verificar(resposta, cenario, observacoes=[rejeitada]) == ["preferência não salva"]
 
 
-def _interprete(**cambio):
+def _interprete(**mudanca):
     import json
 
     from langchain_core.runnables import RunnableLambda
 
-    from pedro.dialogue import crear_interprete
+    from pedro.dialogue import criar_interprete
 
     vistos = []
 
     def modelo(prompt):
         vistos.append(prompt.to_messages()[-1].content)
-        return json.dumps(cambio)
+        return json.dumps(mudanca)
 
-    return crear_interprete(RunnableLambda(modelo)), vistos
+    return criar_interprete(RunnableLambda(modelo)), vistos
 
 
-def test_el_modelo_entiende_un_cambio_que_las_reglas_no_ven(contexto):
+def test_o_modelo_entende_uma_mudanca_que_as_regras_nao_veem(contexto):
     from pedro.dialogue import interpretar_turno
 
-    escenario, _, _, _ = contexto
-    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001 con plazo 7 días")
-    assert interpretar_compra(escenario, previo, "Súbelo a media docena") is None
-    interprete, vistos = _interprete(es_compra=True, cantidad=6)
-    (estado, aclaracion), informe = interpretar_turno(escenario, previo, "Súbelo a media docena", interprete)
-    assert aclaracion is None and informe["fuente"] == "modelo"
-    assert (estado.solicitud.producto_id, estado.solicitud.cantidad,
-            estado.solicitud.plazo_max_dias) == ("PEC-01-0001", 6, 7)
-    assert '"cantidad":2' in vistos[0] and "Súbelo a media docena" in vistos[0]
+    cenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(cenario, None, "Preciso de 2 unidades de PEC-01-0001 com prazo de 7 dias")
+    assert interpretar_compra(cenario, previo, "Suba para meia dúzia") is None
+    interprete, vistos = _interprete(e_compra=True, quantidade=6)
+    (estado, esclarecimento), relatorio = interpretar_turno(cenario, previo, "Suba para meia dúzia", interprete)
+    assert esclarecimento is None and relatorio["fonte"] == "modelo"
+    assert (estado.solicitacao.produto_id, estado.solicitacao.quantidade,
+            estado.solicitacao.prazo_max_dias) == ("PEC-01-0001", 6, 7)
+    assert '"quantidade":2' in vistos[0] and "Suba para meia dúzia" in vistos[0]
 
 
-def test_el_modelo_quita_un_limite_y_conserva_el_resto(contexto):
+def test_o_modelo_remove_um_limite_e_conserva_o_resto(contexto):
     from pedro.dialogue import interpretar_turno
 
-    escenario, _, _, _ = contexto
-    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001 con plazo 7 días")
-    interprete, _ = _interprete(es_compra=True, presupuesto_centavos=500000, quitar=["plazo"])
-    (estado, _), _ = interpretar_turno(escenario, previo, "Olvida el plazo; tope de 5 mil", interprete)
-    assert (estado.solicitud.cantidad, estado.solicitud.presupuesto_centavos,
-            estado.solicitud.plazo_max_dias) == (2, 500000, None)
+    cenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(cenario, None, "Preciso de 2 unidades de PEC-01-0001 com prazo de 7 dias")
+    interprete, _ = _interprete(e_compra=True, orcamento_centavos=500000, remover=["prazo"])
+    (estado, _), _ = interpretar_turno(cenario, previo, "Esqueça o prazo; teto de 5 mil", interprete)
+    assert (estado.solicitacao.quantidade, estado.solicitacao.orcamento_centavos,
+            estado.solicitacao.prazo_max_dias) == (2, 500000, None)
 
 
-def test_si_el_modelo_dice_que_no_es_compra_el_borrador_no_se_toca(contexto):
+def test_se_o_modelo_diz_que_nao_e_compra_o_rascunho_nao_e_tocado(contexto):
     from pedro.dialogue import interpretar_turno
 
-    escenario, _, _, _ = contexto
-    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001")
-    interprete, _ = _interprete(es_compra=False)
-    resultado, informe = interpretar_turno(escenario, previo, "Gracias, eso es todo", interprete)
-    assert resultado is None and informe["modelo"] == {"es_compra": False, "quitar": []}
+    cenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(cenario, None, "Preciso de 2 unidades de PEC-01-0001")
+    interprete, _ = _interprete(e_compra=False)
+    resultado, relatorio = interpretar_turno(cenario, previo, "Obrigado, isso é tudo", interprete)
+    assert resultado is None and relatorio["modelo"] == {"e_compra": False, "remover": []}
 
 
-def test_sin_modelo_o_con_salida_ilegible_valen_las_reglas(contexto):
+def test_sem_modelo_ou_com_saida_ilegivel_valem_as_regras(contexto):
     from langchain_core.runnables import RunnableLambda
 
-    from pedro.dialogue import crear_interprete, interpretar_turno
+    from pedro.dialogue import criar_interprete, interpretar_turno
 
-    escenario, _, _, _ = contexto
-    previo, _ = interpretar_compra(escenario, None, "Necesito 2 unidades de PEC-01-0001")
-    reglas = interpretar_compra(escenario, previo, "Ahora 3 unidades")
-    assert interpretar_turno(escenario, previo, "Ahora 3 unidades", None) == (reglas, {"fuente": "reglas"})
-    roto = crear_interprete(RunnableLambda(lambda _: "no es JSON"))
-    resultado, informe = interpretar_turno(escenario, previo, "Ahora 3 unidades", roto)
-    assert resultado == reglas and informe["fuente"] == "reglas"
+    cenario, _, _, _ = contexto
+    previo, _ = interpretar_compra(cenario, None, "Preciso de 2 unidades de PEC-01-0001")
+    regras = interpretar_compra(cenario, previo, "Agora 3 unidades")
+    assert interpretar_turno(cenario, previo, "Agora 3 unidades", None) == (regras, {"fonte": "regras"})
+    quebrado = criar_interprete(RunnableLambda(lambda _: "não é JSON"))
+    resultado, relatorio = interpretar_turno(cenario, previo, "Agora 3 unidades", quebrado)
+    assert resultado == regras and relatorio["fonte"] == "regras"
 
 
-def test_la_pieza_la_resuelven_las_reglas_aunque_haya_modelo(contexto):
+def test_a_peca_e_resolvida_pelas_regras_mesmo_havendo_modelo(contexto):
     from pedro.dialogue import interpretar_turno
 
-    escenario, _, _, _ = contexto
-    interprete, _ = _interprete(es_compra=True, cantidad=2)
-    (estado, aclaracion), _ = interpretar_turno(escenario, None, "Compara 2 unidades de PEC-99-9999", interprete)
-    assert estado.esperando == "producto" and "No encontré PEC-99-9999" in aclaracion
-    sin_pieza, informe = interpretar_turno(escenario, None, "Hola", interprete)
-    assert sin_pieza is None and informe == {"fuente": "reglas"}
+    cenario, _, _, _ = contexto
+    interprete, _ = _interprete(e_compra=True, quantidade=2)
+    (estado, esclarecimento), _ = interpretar_turno(cenario, None, "Compare 2 unidades de PEC-99-9999", interprete)
+    assert estado.esperando == "produto" and "Não encontrei PEC-99-9999" in esclarecimento
+    sem_peca, relatorio = interpretar_turno(cenario, None, "Olá", interprete)
+    assert sem_peca is None and relatorio == {"fonte": "regras"}
 
 
-def test_la_preferencia_guardada_cambia_la_recomendacion_del_chat(contexto):
-    from pedro.memory import guardar_preferencia
+def test_a_preferencia_salva_muda_a_recomendacao_do_chat(contexto):
+    from pedro.memory import salvar_preferencia
 
-    _, memoria, _, preguntar = contexto
-    antes = preguntar("Necesito 5 unidades de PEC-01-0001")
-    assert antes.startswith("CentroPeças") and "preferencia" not in antes
-    guardar_preferencia(memoria, "ana", "proveedor", "internacionales", explicita=True)
-    despues = preguntar("Vuelve a comparar 5 unidades de PEC-01-0001")
-    assert despues.startswith("Atlantic Repair Parts")
-    assert "Se aplicó tu preferencia por proveedores internacionales." in despues
-    assert "Sin ella, la más barata sería CentroPeças" in despues
+    _, memoria, _, perguntar = contexto
+    antes = perguntar("Preciso de 5 unidades de PEC-01-0001")
+    assert antes.startswith("CentroPeças") and "preferência" not in antes
+    salvar_preferencia(memoria, "ana", "fornecedor", "internacionais", explicita=True)
+    depois = perguntar("Compare de novo 5 unidades de PEC-01-0001")
+    assert depois.startswith("Atlantic Repair Parts")
+    assert "Foi aplicada a sua preferência por fornecedores internacionais." in depois
+    assert "Sem ela, a mais barata seria CentroPeças" in depois

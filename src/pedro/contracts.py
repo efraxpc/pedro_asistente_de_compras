@@ -1,94 +1,94 @@
-"""Contratos públicos. Ausencias siempre son null, nunca cero implícito."""
+"""Contratos públicos. Ausências são sempre null, nunca zero implícito."""
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
 
-class Solicitud(BaseModel):
-    producto_id: str | None = None
-    producto: str | None = None
-    cantidad: int | None = Field(default=None, gt=0)
-    presupuesto_centavos: int | None = Field(default=None, ge=0)
-    plazo_max_dias: int | None = Field(default=None, ge=0)
+class Solicitacao(BaseModel):
+    produto_id: str | None = None
+    produto: str | None = None
+    quantidade: int | None = Field(default=None, gt=0)
+    orcamento_centavos: int | None = Field(default=None, ge=0)
+    prazo_max_dias: int | None = Field(default=None, ge=0)
     cep: str | None = None
-    # Preferencia guardada del usuario; la fija el sistema, no el mensaje ni el modelo.
-    origen_preferido: Literal["nacional", "internacional"] | None = None
+    # Preferência salva do usuário; quem a define é o sistema, não a mensagem nem o modelo.
+    origem_preferida: Literal["nacional", "internacional"] | None = None
 
     @model_validator(mode="after")
-    def validar_producto(self):
-        if self.producto is not None and not self.producto.strip():
-            raise ValueError("producto vacío")
+    def validar_produto(self):
+        if self.produto is not None and not self.produto.strip():
+            raise ValueError("produto vazio")
         return self
 
     def faltantes(self) -> list[str]:
-        faltan = []
-        if not (self.producto_id or self.producto):
-            faltan.append("producto")
-        if self.cantidad is None:
-            faltan.append("cantidad")
-        return faltan
+        faltam = []
+        if not (self.produto_id or self.produto):
+            faltam.append("produto")
+        if self.quantidade is None:
+            faltam.append("quantidade")
+        return faltam
 
 
-class Extraccion(BaseModel):
-    intencion: Literal["consultar", "comparar", "politica", "cep", "preferencia", "otro"]
-    solicitud: Solicitud
+class Extracao(BaseModel):
+    intencao: Literal["consultar", "comparar", "politica", "cep", "preferencia", "outro"]
+    solicitacao: Solicitacao
     faltantes: list[str]
 
 
-class ExtraccionRazonada(BaseModel):
-    """Extracción con chain-of-thought visible: el razonamiento se escribe antes que los datos."""
-    razonamiento: list[str] = Field(description="Pasos breves: qué dice el texto sobre producto, "
-                                                "cantidad, presupuesto y plazo, y qué no dice")
-    intencion: Literal["consultar", "comparar", "politica", "cep", "preferencia", "otro"]
-    solicitud: Solicitud
+class ExtracaoRaciocinada(BaseModel):
+    """Extração com chain-of-thought visível: o raciocínio é escrito antes dos dados."""
+    raciocinio: list[str] = Field(description="Passos breves: o que o texto diz sobre produto, "
+                                              "quantidade, orçamento e prazo, e o que não diz")
+    intencao: Literal["consultar", "comparar", "politica", "cep", "preferencia", "outro"]
+    solicitacao: Solicitacao
     faltantes: list[str]
 
 
 class Oferta(BaseModel):
     dataset_id: str
     id: str
-    producto_id: str
-    proveedor_id: str
-    proveedor_nombre: str
-    precio_unitario_centavos: int = Field(ge=0)
-    flete_centavos: int = Field(ge=0)
-    stock: int = Field(ge=0)
-    plazo_dias: int = Field(ge=0)
+    produto_id: str
+    fornecedor_id: str
+    fornecedor_nome: str
+    preco_unitario_centavos: int = Field(ge=0)
+    frete_centavos: int = Field(ge=0)
+    estoque: int = Field(ge=0)
+    prazo_dias: int = Field(ge=0)
     pedido_minimo: int = Field(default=1, ge=1)
     nacional: bool = True
-    # Historial del precio unitario: observaciones mensuales anteriores a la vigente.
-    meses_historial: int = Field(default=0, ge=0)
-    precio_anterior_centavos: int | None = Field(default=None, ge=0)
-    precio_medio_centavos: int | None = Field(default=None, ge=0)
-    precio_minimo_centavos: int | None = Field(default=None, ge=0)
-    precio_maximo_centavos: int | None = Field(default=None, ge=0)
+    # Histórico do preço unitário: observações mensais anteriores à vigente.
+    meses_historico: int = Field(default=0, ge=0)
+    preco_anterior_centavos: int | None = Field(default=None, ge=0)
+    preco_medio_centavos: int | None = Field(default=None, ge=0)
+    preco_minimo_centavos: int | None = Field(default=None, ge=0)
+    preco_maximo_centavos: int | None = Field(default=None, ge=0)
 
 
 class Alternativa(BaseModel):
     oferta: Oferta
     total_centavos: int
-    cumple: bool
-    motivos: list[Literal["stock", "pedido_minimo", "plazo", "presupuesto"]] = Field(default_factory=list)
+    atende: bool
+    motivos: list[Literal["estoque", "pedido_minimo", "prazo", "orcamento"]] = Field(default_factory=list)
 
 
 class Evidencia(BaseModel):
     tipo: Literal["catalogo", "politica", "viacep", "memoria"]
-    fuente_id: str
+    fonte_id: str
     texto: str
     dataset_id: str | None = None
 
 
-class RespuestaCompra(BaseModel):
-    estado: Literal["aclaracion", "recomendacion", "sin_oferta", "sin_evidencia", "cep", "politica",
+class RespostaCompra(BaseModel):
+    estado: Literal["esclarecimento", "recomendacao", "sem_oferta", "sem_evidencia", "cep", "politica",
                     "preferencia", "catalogo"]
     dataset_id: str
-    solicitud: Solicitud
-    producto_id: str | None = None
-    proveedor_id: str | None = None
+    solicitacao: Solicitacao
+    produto_id: str | None = None
+    fornecedor_id: str | None = None
     total_centavos: int | None = None
     alternativas: list[Alternativa] = Field(default_factory=list)
     evidencias: list[Evidencia] = Field(default_factory=list)
-    mensaje: str = ""
+    mensagem: str = ""
     cidade: str | None = None
     uf: str | None = None
     modo_cep: Literal["real", "simulado"] | None = None

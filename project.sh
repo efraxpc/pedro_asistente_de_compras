@@ -51,7 +51,7 @@ clear_state() {
 
 validate_port() {
     if [[ ! "$PORT" =~ ^[0-9]+$ ]] || (( 10#$PORT < 1 || 10#$PORT > 65535 )); then
-        printf 'PEDRO_PORT debe estar entre 1 y 65535.\n' >&2
+        printf 'PEDRO_PORT deve estar entre 1 e 65535.\n' >&2
         return 1
     fi
 }
@@ -60,12 +60,12 @@ start() {
     local pid attempt
     validate_port
     if pid="$(running_pid)"; then
-        printf 'Pedro ya está activo en http://localhost:%s (PID %s).\n' "$(running_port "$pid")" "$pid"
+        printf 'Pedro já está ativo em http://localhost:%s (PID %s).\n' "$(running_port "$pid")" "$pid"
         return 0
     fi
     clear_state
     [[ -x "$STREAMLIT" ]] || {
-        printf 'Falta .venv/bin/streamlit. Ejecute: uv sync --python 3.13 --all-extras --locked\n' >&2
+        printf 'Falta .venv/bin/streamlit. Execute: uv sync --python 3.13 --all-extras --locked\n' >&2
         return 1
     }
     mkdir -p "$RUN_DIR"
@@ -89,16 +89,16 @@ PY
     for ((attempt = 0; attempt < 30; attempt++)); do
         if ! managed_process "$pid"; then
             clear_state
-            printf 'Pedro no inició. Revise %s\n' "$LOG_FILE" >&2
+            printf 'Pedro não iniciou. Verifique %s\n' "$LOG_FILE" >&2
             return 1
         fi
         if curl -fsS --max-time 1 "http://127.0.0.1:$PORT/_stcore/health" > /dev/null 2>&1; then
-            printf 'Pedro activo en http://localhost:%s (PID %s).\n' "$PORT" "$pid"
+            printf 'Pedro ativo em http://localhost:%s (PID %s).\n' "$PORT" "$pid"
             return 0
         fi
         sleep 0.5
     done
-    printf 'Pedro no respondió a tiempo. Revise %s\n' "$LOG_FILE" >&2
+    printf 'Pedro não respondeu a tempo. Verifique %s\n' "$LOG_FILE" >&2
     stop > /dev/null
     return 1
 }
@@ -107,14 +107,14 @@ stop() {
     local pid attempt
     if ! pid="$(running_pid)"; then
         clear_state
-        printf 'Pedro no está activo.\n'
+        printf 'Pedro não está ativo.\n'
         return 0
     fi
     kill "$pid"
     for ((attempt = 0; attempt < 20; attempt++)); do
         if ! managed_process "$pid"; then
             clear_state
-            printf 'Pedro detenido (PID %s).\n' "$pid"
+            printf 'Pedro parado (PID %s).\n' "$pid"
             return 0
         fi
         sleep 0.25
@@ -123,15 +123,15 @@ stop() {
         kill -KILL "$pid"
     fi
     clear_state
-    printf 'Pedro detenido (PID %s).\n' "$pid"
+    printf 'Pedro parado (PID %s).\n' "$pid"
 }
 
 status() {
     local pid
     if pid="$(running_pid)"; then
-        printf 'Pedro activo en http://localhost:%s (PID %s).\n' "$(running_port "$pid")" "$pid"
+        printf 'Pedro ativo em http://localhost:%s (PID %s).\n' "$(running_port "$pid")" "$pid"
     else
-        printf 'Pedro no está activo.\n'
+        printf 'Pedro não está ativo.\n'
     fi
 }
 

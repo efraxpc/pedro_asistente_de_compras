@@ -1,232 +1,233 @@
-"""Plantillas reutilizables (PTCF) y ejemplos de acciones observables.
+"""Modelos de prompt reutilizáveis (PTCF) e exemplos de ações observáveis.
 
-Los ejemplos son ajenos a los casos de evaluación.
+Os exemplos são alheios aos casos de avaliação.
 """
 from langchain_core.prompts import (ChatPromptTemplate, FewShotChatMessagePromptTemplate,
                                     MessagesPlaceholder)
 
-EJEMPLOS_ACCIONES = """
-Ejemplo A — «Necesito un filtro para lavadora; el plazo no está indicado».
-Plan observable: buscar candidatos por nombre; si hay varios, pedir ID; pedir cantidad
-si falta. Presupuesto y plazo son opcionales. Salida: aclaracion, sin inventar ceros.
+EXEMPLOS_ACOES = """
+Exemplo A — «Preciso de um filtro para lavadora; o prazo não foi indicado».
+Plano observável: buscar candidatos pelo nome; se houver vários, pedir o ID; pedir a quantidade
+se faltar. Orçamento e prazo são opcionais. Saída: esclarecimento, sem inventar zeros.
 
-Ejemplo B — «Compara 3 unidades de PEC-10-0123 hasta R$ 900 en 12 días».
-Plan observable: consultar catálogo de PEC-10-0123; llamar comparar_ofertas con
-cantidad=3, presupuesto_centavos=90000 y plazo_max_dias=12 si el usuario indicó esos límites; citar cada oferta.
-Salida: recomendacion solo si una oferta cumple; de lo contrario sin_oferta.
+Exemplo B — «Compare 3 unidades de PEC-10-0123 até R$ 900 em 12 dias».
+Plano observável: consultar o catálogo de PEC-10-0123; chamar comparar_ofertas com
+quantidade=3, orcamento_centavos=90000 e prazo_max_dias=12 se o usuário indicou esses limites; citar cada oferta.
+Saída: recomendacao somente se uma oferta atende; caso contrário, sem_oferta.
 
-Ejemplo C — «¿Qué dice la política sobre piezas dañadas?».
-Plan observable: consultar_politicas; citar fuente_id y fragmento exacto.
-Salida: politica solo si el fragmento respalda la afirmación; sin_evidencia si no hay cobertura.
+Exemplo C — «O que a política diz sobre peças danificadas?».
+Plano observável: consultar_politicas; citar fonte_id e o fragmento exato.
+Saída: politica somente se o fragmento sustenta a afirmação; sem_evidencia se não houver cobertura.
 
-Ejemplo D — «¿Se puede mandar en varias cajas?».
-Plan observable: tratar como pregunta de entrega; llamar consultar_politicas con la pregunta
-original. La herramienta puede reformular «varias cajas» como «envío parcial» y devuelve
-fragmentos antes/después. Citar la regla recuperada; no pedir ID de pieza ni cantidad.
+Exemplo D — «Posso receber em várias caixas?».
+Plano observável: tratar como pergunta de entrega; chamar consultar_politicas com a pergunta
+original. A ferramenta pode reformular «várias caixas» como «envio parcial» e devolve
+fragmentos antes/depois. Citar a regra recuperada; não pedir ID de peça nem quantidade.
 
-Ejemplo F — «¿Cuáles son las 5 piezas de mayor potencia?».
-Plan observable: llamar consultar_catalogo con la pregunta literal. Salida: catalogo. La tabla
-de resultados la pone el sistema a partir de la consulta ejecutada.
+Exemplo F — «Quais são as 5 peças de maior potência?».
+Plano observável: chamar consultar_catalogo com a pergunta literal. Saída: catalogo. A tabela
+de resultados é montada pelo sistema a partir da consulta executada.
 
-Ejemplo E — «Prefiero proveedores nacionales, recuérdalo».
-Plan observable: llamar guardar_preferencia con clave=proveedor, valor=nacionales y la cita
-literal del usuario. Salida: preferencia. No comparar ofertas ni pedir datos en ese turno.
+Exemplo E — «Prefiro fornecedores nacionais, lembre-se disso».
+Plano observável: chamar salvar_preferencia com chave=fornecedor, valor=nacionais e a citação
+literal do usuário. Saída: preferencia. Não comparar ofertas nem pedir dados nesse turno.
 """
 
-# Interpreta una solicitud de compra. Variables: texto (solicitud) y formato (parser).
-PLANTILLA_EXTRACCION = ChatPromptTemplate.from_messages([
-    ("system", "Persona: Pedro. Tarea: extraer intención y solicitud de compra ficticia. "
-     "Contexto: ninguna cifra ausente se infiere como cero. Formato: JSON válido. {formato}"),
+# Interpreta uma solicitação de compra. Variáveis: texto (solicitação) e formato (parser).
+MODELO_EXTRACAO = ChatPromptTemplate.from_messages([
+    ("system", "Persona: Pedro. Tarefa: extrair intenção e solicitação de compra fictícia. "
+     "Contexto: nenhum número ausente é inferido como zero. Formato: JSON válido. {formato}"),
     ("human", "{texto}"),
 ])
 
-# Ejemplos few-shot de extracción. Cubren los errores típicos: cantidades en palabras, importes
-# abreviados, correcciones dentro de la frase y datos ausentes (null, nunca cero ni uno).
-EJEMPLOS_EXTRACCION = [
-    {"texto": "Quiero una decena de PEC-09-0009 por hasta R$ 2,5 mil",
-     "razonamiento": ["«una decena» son 10 unidades", "«R$ 2,5 mil» son 250000 centavos",
-                      "no menciona plazo: queda null"],
-     "solicitud": {"producto_id": "PEC-09-0009", "cantidad": 10, "presupuesto_centavos": 250000},
+# Exemplos few-shot de extração. Cobrem os erros típicos: quantidades por extenso, valores
+# abreviados, correções dentro da frase e dados ausentes (null, nunca zero nem um).
+EXEMPLOS_EXTRACAO = [
+    {"texto": "Quero uma dezena de PEC-09-0009 por até R$ 2,5 mil",
+     "raciocinio": ["«uma dezena» são 10 unidades", "«R$ 2,5 mil» são 250000 centavos",
+                    "não menciona prazo: fica null"],
+     "solicitacao": {"produto_id": "PEC-09-0009", "quantidade": 10, "orcamento_centavos": 250000},
      "faltantes": []},
-    {"texto": "Compara PEC-09-0010 en 5 días",
-     "razonamiento": ["no dice cuántas unidades: cantidad queda null, no 1", "plazo máximo 5 días",
-                      "no menciona presupuesto: queda null"],
-     "solicitud": {"producto_id": "PEC-09-0010", "plazo_max_dias": 5},
-     "faltantes": ["cantidad"]},
-    {"texto": "Tres PEC-09-0011... perdón, cuatro. Sin tope de dinero, en tres semanas",
-     "razonamiento": ["se corrige: valen 4 unidades, no 3", "«sin tope de dinero»: presupuesto null",
-                      "«tres semanas» son 21 días"],
-     "solicitud": {"producto_id": "PEC-09-0011", "cantidad": 4, "plazo_max_dias": 21},
+    {"texto": "Compare PEC-09-0010 em 5 dias",
+     "raciocinio": ["não diz quantas unidades: quantidade fica null, não 1", "prazo máximo de 5 dias",
+                    "não menciona orçamento: fica null"],
+     "solicitacao": {"produto_id": "PEC-09-0010", "prazo_max_dias": 5},
+     "faltantes": ["quantidade"]},
+    {"texto": "Três PEC-09-0011... desculpe, quatro. Sem teto de dinheiro, em três semanas",
+     "raciocinio": ["corrige-se: valem 4 unidades, não 3", "«sem teto de dinheiro»: orçamento null",
+                    "«três semanas» são 21 dias"],
+     "solicitacao": {"produto_id": "PEC-09-0011", "quantidade": 4, "prazo_max_dias": 21},
      "faltantes": []},
 ]
 
 
-def _ejemplos_como_mensajes(con_razonamiento: bool) -> FewShotChatMessagePromptTemplate:
+def _exemplos_como_mensagens(com_raciocinio: bool) -> FewShotChatMessagePromptTemplate:
     import json
 
-    filas = []
-    for ejemplo in EJEMPLOS_EXTRACCION:
-        salida = {"intencion": "comparar", "solicitud": ejemplo["solicitud"],
-                  "faltantes": ejemplo["faltantes"]}
-        if con_razonamiento:
-            salida = {"razonamiento": ejemplo["razonamiento"], **salida}
-        filas.append({"texto": ejemplo["texto"],
-                      "salida": json.dumps(salida, ensure_ascii=False)})
+    linhas = []
+    for exemplo in EXEMPLOS_EXTRACAO:
+        saida = {"intencao": "comparar", "solicitacao": exemplo["solicitacao"],
+                 "faltantes": exemplo["faltantes"]}
+        if com_raciocinio:
+            saida = {"raciocinio": exemplo["raciocinio"], **saida}
+        linhas.append({"texto": exemplo["texto"],
+                       "saida": json.dumps(saida, ensure_ascii=False)})
     return FewShotChatMessagePromptTemplate(
-        examples=filas,
-        example_prompt=ChatPromptTemplate.from_messages([("human", "{texto}"), ("ai", "{salida}")]))
+        examples=linhas,
+        example_prompt=ChatPromptTemplate.from_messages([("human", "{texto}"), ("ai", "{saida}")]))
 
 
-_SISTEMA_EXTRACCION = ("Persona: Pedro. Tarea: extraer intención y solicitud de compra ficticia. "
-                       "Contexto: ninguna cifra ausente se infiere como cero. Formato: JSON válido. "
-                       "{formato}")
+_SISTEMA_EXTRACAO = ("Persona: Pedro. Tarefa: extrair intenção e solicitação de compra fictícia. "
+                     "Contexto: nenhum número ausente é inferido como zero. Formato: JSON válido. "
+                     "{formato}")
 
-# Misma tarea con ejemplos resueltos (few-shot).
-PLANTILLA_EXTRACCION_FEWSHOT = ChatPromptTemplate.from_messages([
-    ("system", _SISTEMA_EXTRACCION), _ejemplos_como_mensajes(False), ("human", "{texto}")])
+# Mesma tarefa com exemplos resolvidos (few-shot).
+MODELO_EXTRACAO_FEWSHOT = ChatPromptTemplate.from_messages([
+    ("system", _SISTEMA_EXTRACAO), _exemplos_como_mensagens(False), ("human", "{texto}")])
 
-# Few-shot con chain-of-thought visible: cada ejemplo razona antes de dar los datos.
-PLANTILLA_EXTRACCION_COT = ChatPromptTemplate.from_messages([
-    ("system", _SISTEMA_EXTRACCION + " Razona paso a paso en el campo razonamiento antes de "
-     "rellenar los datos."),
-    _ejemplos_como_mensajes(True), ("human", "{texto}")])
+# Few-shot com chain-of-thought visível: cada exemplo raciocina antes de dar os dados.
+MODELO_EXTRACAO_COT = ChatPromptTemplate.from_messages([
+    ("system", _SISTEMA_EXTRACAO + " Raciocine passo a passo no campo raciocinio antes de "
+     "preencher os dados."),
+    _exemplos_como_mensagens(True), ("human", "{texto}")])
 
-# Repara una salida que no cumple el esquema. Variables: texto, salida, error y formato.
-PLANTILLA_REPARACION = ChatPromptTemplate.from_messages([
-    ("system", "Persona: revisor de formato de Pedro. Tarea: corregir una salida que no cumple "
-     "el esquema. Contexto: usa solo la solicitud original; lo que la solicitud no diga queda "
-     "null, nunca cero ni un valor supuesto. Formato: solo JSON válido. {formato}"),
-    ("human", "Solicitud original: {texto}\nSalida inválida: {salida}\nError de validación: {error}"),
+# Repara uma saída que não cumpre o esquema. Variáveis: texto, saida, erro e formato.
+MODELO_REPARO = ChatPromptTemplate.from_messages([
+    ("system", "Persona: revisor de formato do Pedro. Tarefa: corrigir uma saída que não cumpre "
+     "o esquema. Contexto: use somente a solicitação original; o que a solicitação não disser fica "
+     "null, nunca zero nem um valor suposto. Formato: somente JSON válido. {formato}"),
+    ("human", "Solicitação original: {texto}\nSaída inválida: {saida}\nErro de validação: {erro}"),
 ])
 
-# Text-to-SQL: convierte una pregunta en un SELECT. Variables: esquema, max_filas, formato,
-# pregunta y error (vacío salvo en el intento de corrección).
-PLANTILLA_SQL = ChatPromptTemplate.from_messages([
-    ("system", "Persona: analista de datos del catálogo ficticio de Pedro. "
-     "Tarea: escribir UNA consulta SELECT de SQLite que responda la pregunta. "
-     "Contexto: solo existen estas tablas y columnas:\n{esquema}\n"
-     "Los importes están en centavos de real (estimated_brl_cents, shipping_brl_cents). "
-     "suppliers.domestic vale 1 si el proveedor es nacional. Hay stock si stock_qty > 0. "
-     "price_history guarda un precio por oferta y mes (observed_on, AAAA-MM-DD); offers.id es como "
+# Text-to-SQL: converte uma pergunta em um SELECT. Variáveis: esquema, max_linhas, formato,
+# pergunta e erro (vazio, exceto na tentativa de correção).
+MODELO_SQL = ChatPromptTemplate.from_messages([
+    ("system", "Persona: analista de dados do catálogo fictício do Pedro. "
+     "Tarefa: escrever UMA consulta SELECT de SQLite que responda à pergunta. "
+     "Contexto: só existem estas tabelas e colunas:\n{esquema}\n"
+     "Os valores estão em centavos de real (estimated_brl_cents, shipping_brl_cents). "
+     "suppliers.domestic vale 1 se o fornecedor é nacional. Há estoque se stock_qty > 0. "
+     "price_history guarda um preço por oferta e mês (observed_on, AAAA-MM-DD); offers.id é como "
      "PEC-01-0001-BR-06. "
-     "Formatos de los valores: parts.id y offers.part_id son como PEC-01-0001; parts.sku es como "
-     "NEVE-COMP-0001; suppliers.id es como BR-06. "
-     "Reglas: solo lectura; una sola sentencia; sin comentarios; no uses tablas ni columnas "
-     "que no estén en la lista; no uses SELECT *, nombra las columnas; no añadas filtros que la "
-     "pregunta no pida; añade siempre LIMIT con {max_filas} filas como máximo. "
-     "Si la pregunta pide modificar datos, escribe un SELECT que muestre los datos afectados, "
-     "nunca una modificación. Formato: {formato}"),
-    ("human", "Pregunta: {pregunta}\n{error}"),
+     "Formatos dos valores: parts.id e offers.part_id são como PEC-01-0001; parts.sku é como "
+     "GELA-COMP-0001; suppliers.id é como BR-06. "
+     "Regras: somente leitura; uma única instrução; sem comentários; não use tabelas nem colunas "
+     "que não estejam na lista; não use SELECT *, nomeie as colunas; não acrescente filtros que a "
+     "pergunta não peça; acrescente sempre LIMIT com no máximo {max_linhas} linhas. "
+     "Se a pergunta pedir para modificar dados, escreva um SELECT que mostre os dados afetados, "
+     "nunca uma modificação. Formato: {formato}"),
+    ("human", "Pergunta: {pergunta}\n{erro}"),
 ])
 
-# Ejemplos few-shot para leer qué cambia un mensaje en la solicitud en curso.
-EJEMPLOS_CAMBIO = [
-    ("ninguna", "Compara 2 unidades de PEC-09-0009 hasta R$ 2,5 mil en 5 días",
-     {"es_compra": True, "cantidad": 2, "presupuesto_centavos": 250000, "plazo_max_dias": 5}),
-    ('{{"producto_id":"PEC-09-0009","cantidad":2,"plazo_max_dias":5}}', "Ahora que sean 4 y mantén el plazo",
-     {"es_compra": True, "cantidad": 4}),
-    ('{{"producto_id":"PEC-09-0009","cantidad":4,"plazo_max_dias":5}}',
-     "Mejor sin límite de plazo, pero no puedo pasar de mil reales",
-     {"es_compra": True, "presupuesto_centavos": 100000, "quitar": ["plazo"]}),
-    ('{{"producto_id":"PEC-09-0009","cantidad":4}}', "Súbelo a media docena",
-     {"es_compra": True, "cantidad": 6}),
-    ('{{"producto_id":"PEC-09-0009","cantidad":4}}',
-     "¿La garantía cubre el daño al instalar una pieza?", {"es_compra": False}),
-    ('{{"producto_id":"PEC-09-0009","cantidad":4}}', "¿A qué ciudad corresponde el CEP 20040020?",
-     {"es_compra": False}),
-    ("ninguna", "Compara PEC-09-0010", {"es_compra": True}),
+# Exemplos few-shot para ler o que uma mensagem muda na solicitação em andamento.
+EXEMPLOS_MUDANCA = [
+    ("nenhuma", "Compare 2 unidades de PEC-09-0009 até R$ 2,5 mil em 5 dias",
+     {"e_compra": True, "quantidade": 2, "orcamento_centavos": 250000, "prazo_max_dias": 5}),
+    ('{{"produto_id":"PEC-09-0009","quantidade":2,"prazo_max_dias":5}}', "Agora que sejam 4 e mantenha o prazo",
+     {"e_compra": True, "quantidade": 4}),
+    ('{{"produto_id":"PEC-09-0009","quantidade":4,"prazo_max_dias":5}}',
+     "Melhor sem limite de prazo, mas não posso passar de mil reais",
+     {"e_compra": True, "orcamento_centavos": 100000, "remover": ["prazo"]}),
+    ('{{"produto_id":"PEC-09-0009","quantidade":4}}', "Suba para meia dúzia",
+     {"e_compra": True, "quantidade": 6}),
+    ('{{"produto_id":"PEC-09-0009","quantidade":4}}',
+     "A garantia cobre o dano ao instalar uma peça?", {"e_compra": False}),
+    ('{{"produto_id":"PEC-09-0009","quantidade":4}}', "A que cidade corresponde o CEP 20040020?",
+     {"e_compra": False}),
+    ("nenhuma", "Compare PEC-09-0010", {"e_compra": True}),
 ]
 
 
-def _ejemplos_de_cambio() -> list[tuple[str, str]]:
+def _exemplos_de_mudanca() -> list[tuple[str, str]]:
     import json
 
-    mensajes: list[tuple[str, str]] = []
-    for contexto, texto, salida in EJEMPLOS_CAMBIO:
-        mensajes.append(("human", f"Solicitud en curso: {contexto}\nMensaje: {texto}"))
-        mensajes.append(("ai", json.dumps(salida, ensure_ascii=False).replace("{", "{{").replace("}", "}}")))
-    return mensajes
+    mensagens: list[tuple[str, str]] = []
+    for contexto, texto, saida in EXEMPLOS_MUDANCA:
+        mensagens.append(("human", f"Solicitação em andamento: {contexto}\nMensagem: {texto}"))
+        mensagens.append(("ai", json.dumps(saida, ensure_ascii=False).replace("{", "{{").replace("}", "}}")))
+    return mensagens
 
 
-# Intérprete de turno. Variables: contexto (solicitud en curso), texto y formato.
-PLANTILLA_CAMBIO = ChatPromptTemplate.from_messages([
-    ("system", "Persona: intérprete de Pedro. Tarea: decir qué cambia el mensaje del usuario en su "
-     "solicitud de compra. Contexto: es_compra es true si pide comparar o comprar una pieza o "
-     "modifica la solicitud en curso; una pregunta sobre políticas, garantía, instalación, envíos, "
-     "un CEP, una preferencia o un saludo no lo es. Extrae solo lo que dice el mensaje: un dato no "
-     "mencionado es null, nunca cero ni uno; no repitas los datos de la solicitud en curso. "
-     "Convierte las cantidades en palabras a números, el dinero a centavos de real y los plazos a "
-     "días. Usa quitar solo si el usuario elimina un límite de forma explícita. Formato: {formato}"),
-    *_ejemplos_de_cambio(),
-    ("human", "Solicitud en curso: {contexto}\nMensaje: {texto}"),
-])
-
-# Consejo de compra sobre el precio. Variables: hechos y formato.
-PLANTILLA_CONSEJO = ChatPromptTemplate.from_messages([
-    ("system", "Persona: asesor de compras de Pedro. Tarea: escribir un consejo de una o dos frases "
-     "para quien va a comprar, a partir de los hechos sobre los precios. Contexto: la oferta "
-     "recomendada ya está decidida y no la cambias; solo ayudas a juzgar si el precio es bueno hoy "
-     "y si hay una alternativa que valga la pena mirar. Usa únicamente los hechos: copia las "
-     "cifras tal cual, nombra a los proveedores por su nombre, no predigas precios futuros y no "
-     "inventes motivos. Limítate a enunciar y comparar los hechos: no añadas valoraciones ni "
-     "conclusiones propias («buena oportunidad», «conviene», «vale la pena», «mucho más caro»). "
+# Intérprete de turno. Variáveis: contexto (solicitação em andamento), texto e formato.
+MODELO_MUDANCA = ChatPromptTemplate.from_messages([
+    ("system", "Persona: intérprete do Pedro. Tarefa: dizer o que a mensagem do usuário muda na sua "
+     "solicitação de compra. Contexto: e_compra é true se ele pede para comparar ou comprar uma peça "
+     "ou modifica a solicitação em andamento; uma pergunta sobre políticas, garantia, instalação, "
+     "envios, um CEP, uma preferência ou uma saudação não é. Extraia somente o que a mensagem diz: "
+     "um dado não mencionado é null, nunca zero nem um; não repita os dados da solicitação em "
+     "andamento. Converta as quantidades por extenso em números, o dinheiro em centavos de real e "
+     "os prazos em dias. Use remover somente se o usuário eliminar um limite de forma explícita. "
      "Formato: {formato}"),
-    ("human", "- La oferta recomendada es la de Norte Reposição, con un total de R$ 900,00 y entrega "
-              "en 4 días.\n- El precio de Norte Reposição está 18 % por encima de su media de 5 meses y "
-              "es el más alto del periodo.\n- El precio de EuroSpare Components está 7 % por debajo de "
-              "su media de 5 meses.\n- La oferta de EuroSpare Components también cumple: cuesta "
-              "R$ 27,00 más que la recomendada (3 % más) y entrega en 9 días."),
-    ("ai", '{{"consejo": "El precio de Norte Reposição está 18 % por encima de su media de 5 meses y '
-           'es el más alto del periodo. EuroSpare Components cuesta 3 % más que la recomendada y su '
-           'precio está 7 % por debajo de su media de 5 meses."}}'),
-    ("human", "- La oferta recomendada es la de Brava Peças, con un total de R$ 311,55 y entrega en "
-              "8 días.\n- El precio de Brava Peças está 12 % por debajo de su media de 5 meses y es "
-              "el más bajo del periodo."),
-    ("ai", '{{"consejo": "El precio de Brava Peças está 12 % por debajo de su media de 5 meses y es '
-           'el más bajo del periodo."}}'),
-    ("human", "{hechos}"),
+    *_exemplos_de_mudanca(),
+    ("human", "Solicitação em andamento: {contexto}\nMensagem: {texto}"),
 ])
 
-# Planificador de turno: separa un mensaje con varias intenciones. Variables: mensaje y formato.
-PLANTILLA_PLAN = ChatPromptTemplate.from_messages([
-    ("system", "Persona: planificador de Pedro. Tarea: dividir el mensaje del usuario en peticiones "
-     "independientes, una por intención. Tipos: compra (comparar o cotizar una pieza), politica "
-     "(garantía, devoluciones, entrega, compatibilidad), cep (ciudad de un código postal) y "
-     "preferencia (algo que el usuario pide recordar). "
-     "Contexto: cada petición se responderá por separado, así que debe entenderse sola: copia en "
-     "ella los identificadores, cantidades, límites y códigos que le correspondan, con las mismas "
-     "palabras del usuario. No añadas datos, no respondas y no inventes peticiones. Si el mensaje "
-     "tiene una sola intención, devuelve una sola petición. Conserva el orden del mensaje. "
-     "Ejemplo: «Compara 2 unidades de PEC-10-0123 en 5 días y dime si la garantía cubre la "
-     "instalación» → compra: «Compara 2 unidades de PEC-10-0123 en 5 días»; politica: «¿La "
-     "garantía cubre la instalación?». Formato: {formato}"),
-    ("human", "{mensaje}"),
+# Conselho de compra sobre o preço. Variáveis: fatos e formato.
+MODELO_CONSELHO = ChatPromptTemplate.from_messages([
+    ("system", "Persona: consultor de compras do Pedro. Tarefa: escrever um conselho de uma ou duas "
+     "frases para quem vai comprar, a partir dos fatos sobre os preços. Contexto: a oferta "
+     "recomendada já está decidida e você não a muda; só ajuda a julgar se o preço está bom hoje "
+     "e se há uma alternativa que valha a pena olhar. Use unicamente os fatos: copie os "
+     "números tal como estão, chame os fornecedores pelo nome, não preveja preços futuros e não "
+     "invente motivos. Limite-se a enunciar e comparar os fatos: não acrescente avaliações nem "
+     "conclusões próprias («boa oportunidade», «convém», «vale a pena», «muito mais caro»). "
+     "Formato: {formato}"),
+    ("human", "- A oferta recomendada é a de Norte Reposição, com um total de R$ 900,00 e entrega "
+              "em 4 dias.\n- O preço de Norte Reposição está 18 % acima da sua média de 5 meses e "
+              "é o mais alto do período.\n- O preço de EuroSpare Components está 7 % abaixo da "
+              "sua média de 5 meses.\n- A oferta de EuroSpare Components também atende: custa "
+              "R$ 27,00 a mais que a recomendada (3 % a mais) e entrega em 9 dias."),
+    ("ai", '{{"conselho": "O preço de Norte Reposição está 18 % acima da sua média de 5 meses e '
+           'é o mais alto do período. EuroSpare Components custa 3 % a mais que a recomendada e o seu '
+           'preço está 7 % abaixo da sua média de 5 meses."}}'),
+    ("human", "- A oferta recomendada é a de Brava Peças, com um total de R$ 311,55 e entrega em "
+              "8 dias.\n- O preço de Brava Peças está 12 % abaixo da sua média de 5 meses e é "
+              "o mais baixo do período."),
+    ("ai", '{{"conselho": "O preço de Brava Peças está 12 % abaixo da sua média de 5 meses e é '
+           'o mais baixo do período."}}'),
+    ("human", "{fatos}"),
 ])
 
-# System message del agente final. Variables: dataset_id, ejemplos, formato, input,
-# chat_history (opcional) y agent_scratchpad.
-PLANTILLA_AGENTE = ChatPromptTemplate.from_messages([
-    ("system", "Persona: Pedro, asistente de compras ficticias. "
-     "Tarea: en compras, aclara solo producto y cantidad cuando falten; presupuesto y plazo son filtros opcionales. "
-     "Las preguntas sobre políticas, entrega o envíos en varias cajas no requieren ID de pieza ni cantidad: "
-     "llama consultar_politicas y responde con la fuente recuperada. "
-     "Consulta herramientas y compara ofertas del dataset {dataset_id}. "
-     "Contexto: los mensajes anteriores y recuerdos son históricos; la solicitud actual prevalece. "
-     "Formato: JSON RespuestaCompra válido. No inventes datos ni fuentes. "
-     "Plan visible: usa buscar_productos para resolver ID, consultar_catalogo para ofertas y "
-     "comparar_ofertas para todos los importes. Una política sin fragmento implica sin_evidencia. "
-     "Para políticas usa estado=politica solo con fragmento y fuente_id del índice; "
-     "en mensaje resume la regla en una o dos frases usando solo lo que dice el fragmento, y en cada "
-     "evidencia copia la frase del fragmento que la respalda; "
-     "si el metadato origen es ficticio_demo, indica que la política es ficticia. "
-     "Para preguntas abiertas sobre el catálogo (cuántas piezas, cuáles, el mayor o el menor, por "
-     "categoría o proveedor) llama consultar_catalogo con la pregunta literal del usuario y usa "
-     "estado=catalogo; no escribas tú las cifras. "
-     "Si el usuario declara una preferencia y pide recordarla, llama guardar_preferencia con su cita "
-     "literal y usa estado=preferencia; no compares ofertas en ese turno. "
-     "para CEP usa estado=cep con cidade, uf, modo_cep y evidencia ViaCEP. "
-     "Si dos piezas coinciden, pide el ID. Ejemplos de acciones observables: "
-     "{ejemplos} {formato}"),
+# Planejador de turno: separa uma mensagem com várias intenções. Variáveis: mensagem e formato.
+MODELO_PLANO = ChatPromptTemplate.from_messages([
+    ("system", "Persona: planejador do Pedro. Tarefa: dividir a mensagem do usuário em pedidos "
+     "independentes, um por intenção. Tipos: compra (comparar ou cotar uma peça), politica "
+     "(garantia, devoluções, entrega, compatibilidade), cep (cidade de um código postal) e "
+     "preferencia (algo que o usuário pede para lembrar). "
+     "Contexto: cada pedido será respondido separadamente, então deve ser entendido sozinho: copie "
+     "nele os identificadores, quantidades, limites e códigos que lhe correspondam, com as mesmas "
+     "palavras do usuário. Não acrescente dados, não responda e não invente pedidos. Se a mensagem "
+     "tiver uma única intenção, devolva um único pedido. Conserve a ordem da mensagem. "
+     "Exemplo: «Compare 2 unidades de PEC-10-0123 em 5 dias e me diga se a garantia cobre a "
+     "instalação» → compra: «Compare 2 unidades de PEC-10-0123 em 5 dias»; politica: «A "
+     "garantia cobre a instalação?». Formato: {formato}"),
+    ("human", "{mensagem}"),
+])
+
+# System message do agente final. Variáveis: dataset_id, exemplos, formato, input,
+# chat_history (opcional) e agent_scratchpad.
+MODELO_AGENTE = ChatPromptTemplate.from_messages([
+    ("system", "Persona: Pedro, assistente de compras fictícias. "
+     "Tarefa: em compras, esclareça somente produto e quantidade quando faltarem; orçamento e prazo são filtros opcionais. "
+     "As perguntas sobre políticas, entrega ou envios em várias caixas não exigem ID de peça nem quantidade: "
+     "chame consultar_politicas e responda com a fonte recuperada. "
+     "Consulte ferramentas e compare ofertas do dataset {dataset_id}. "
+     "Contexto: as mensagens anteriores e as lembranças são históricas; a solicitação atual prevalece. "
+     "Formato: JSON RespostaCompra válido. Não invente dados nem fontes. "
+     "Plano visível: use buscar_produtos para resolver o ID, consultar_catalogo para ofertas e "
+     "comparar_ofertas para todos os valores. Uma política sem fragmento implica sem_evidencia. "
+     "Para políticas use estado=politica somente com fragmento e fonte_id do índice; "
+     "em mensagem resuma a regra em uma ou duas frases usando somente o que o fragmento diz, e em cada "
+     "evidência copie a frase do fragmento que a sustenta; "
+     "se o metadado origem for ficticio_demo, indique que a política é fictícia. "
+     "Para perguntas abertas sobre o catálogo (quantas peças, quais, o maior ou o menor, por "
+     "categoria ou fornecedor) chame consultar_catalogo com a pergunta literal do usuário e use "
+     "estado=catalogo; não escreva você os números. "
+     "Se o usuário declarar uma preferência e pedir para lembrá-la, chame salvar_preferencia com a "
+     "citação literal dele e use estado=preferencia; não compare ofertas nesse turno. "
+     "Para CEP use estado=cep com cidade, uf, modo_cep e evidência ViaCEP. "
+     "Se duas peças coincidirem, peça o ID. Exemplos de ações observáveis: "
+     "{exemplos} {formato}"),
     MessagesPlaceholder("chat_history", optional=True),
     ("human", "{input}"), MessagesPlaceholder("agent_scratchpad")
 ])

@@ -1,47 +1,47 @@
-"""Text-to-query: el modelo compila un plan, nunca SQL libre."""
+"""Text-to-query: o modelo compila um plano, nunca SQL livre."""
 import re
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from .catalog import Escenario, conectar
+from .catalog import Cenario, conectar
 
 
-class PlanConsulta(BaseModel):
-    objetivo: Literal["pieza", "ofertas"]
-    producto_id: str = Field(pattern=r"^PEC-[0-9]{2}-[0-9]{4}$")
+class PlanoConsulta(BaseModel):
+    objetivo: Literal["peca", "ofertas"]
+    produto_id: str = Field(pattern=r"^PEC-[0-9]{2}-[0-9]{4}$")
     limite: int = Field(default=20, ge=1, le=50)
 
 
 SQL = {
-    "pieza": "SELECT id,sku,name,description FROM parts WHERE id=? LIMIT ?",
-    "ofertas": "SELECT o.id,o.part_id,o.supplier_id,s.name AS proveedor,"
+    "peca": "SELECT id,sku,name,description FROM parts WHERE id=? LIMIT ?",
+    "ofertas": "SELECT o.id,o.part_id,o.supplier_id,s.name AS fornecedor,"
                "o.estimated_brl_cents,o.shipping_brl_cents,o.stock_qty,o.lead_days "
                "FROM offers o JOIN suppliers s ON s.id=o.supplier_id "
                "WHERE o.part_id=? ORDER BY o.supplier_id LIMIT ?",
 }
 
 
-def planear(pregunta: str) -> PlanConsulta:
-    ids = set(re.findall(r"\bPEC-[0-9]{2}-[0-9]{4}\b", pregunta.upper()))
+def planejar(pergunta: str) -> PlanoConsulta:
+    ids = set(re.findall(r"\bPEC-[0-9]{2}-[0-9]{4}\b", pergunta.upper()))
     if len(ids) != 1:
-        raise ValueError("se requiere un único ID de pieza")
-    objetivo = "ofertas" if re.search(r"oferta|precio|stock|proveedor|plazo", pregunta, re.I) else "pieza"
-    return PlanConsulta(objetivo=objetivo, producto_id=ids.pop())
+        raise ValueError("é necessário um único ID de peça")
+    objetivo = "ofertas" if re.search(r"oferta|pre[cç]o|estoque|fornecedor|prazo", pergunta, re.I) else "peca"
+    return PlanoConsulta(objetivo=objetivo, produto_id=ids.pop())
 
 
-def ejecutar(escenario: Escenario, pregunta: str, plan: PlanConsulta) -> dict:
-    sql = SQL[plan.objetivo]
-    parametros = [plan.producto_id, plan.limite]
-    with conectar(escenario) as db:
-        filas = [dict(f) for f in db.execute(sql, parametros)]
-    return {"pregunta": pregunta, "plan": plan.model_dump(), "sql": sql,
-            "parametros": parametros, "filas": filas, "dataset_id": escenario.dataset_id}
+def executar(cenario: Cenario, pergunta: str, plano: PlanoConsulta) -> dict:
+    sql = SQL[plano.objetivo]
+    parametros = [plano.produto_id, plano.limite]
+    with conectar(cenario) as db:
+        linhas = [dict(linha) for linha in db.execute(sql, parametros)]
+    return {"pergunta": pergunta, "plano": plano.model_dump(), "sql": sql,
+            "parametros": parametros, "linhas": linhas, "dataset_id": cenario.dataset_id}
 
 
-# --- Text-to-SQL con modelo: el LLM escribe el SELECT y el motor decide si lo ejecuta. ---
+# --- Text-to-SQL com modelo: o LLM escreve o SELECT e o motor decide se o executa. ---
 
-# Tablas y columnas que una consulta generada puede leer. Lo que no está aquí no existe.
+# Tabelas e colunas que uma consulta gerada pode ler. O que não está aqui não existe.
 ESQUEMA_PERMITIDO: dict[str, tuple[str, ...]] = {
     "parts": ("id", "sku", "category_id", "family", "name", "description", "manufacturer",
               "part_kind", "material", "color", "voltage_v", "power_w", "weight_g",
@@ -53,120 +53,120 @@ ESQUEMA_PERMITIDO: dict[str, tuple[str, ...]] = {
     "compatibility": ("part_id", "brand", "model_code", "year_from", "year_to"),
     "price_history": ("offer_id", "observed_on", "estimated_brl_cents"),
 }
-FUNCIONES_PERMITIDAS = {"count", "sum", "avg", "min", "max", "round", "lower", "upper", "length",
-                        "substr", "coalesce", "abs", "like", "total"}
-MAX_FILAS = 50
-MAX_PASOS = 2_000_000
+FUNCOES_PERMITIDAS = {"count", "sum", "avg", "min", "max", "round", "lower", "upper", "length",
+                      "substr", "coalesce", "abs", "like", "total"}
+MAX_LINHAS = 50
+MAX_PASSOS = 2_000_000
 
 
 class ConsultaSQL(BaseModel):
-    """Lo que debe devolver el modelo: una sola consulta de lectura y su explicación."""
-    sql: str = Field(description="Un único SELECT de SQLite, sin punto y coma final")
-    explicacion: str = Field(description="Una frase: qué responde la consulta")
+    """O que o modelo deve devolver: uma única consulta de leitura e a sua explicação."""
+    sql: str = Field(description="Um único SELECT de SQLite, sem ponto e vírgula final")
+    explicacao: str = Field(description="Uma frase: o que a consulta responde")
 
 
-class ConsultaRechazada(ValueError):
-    """La consulta generada no pasó la validación o el motor no la autorizó."""
+class ConsultaRejeitada(ValueError):
+    """A consulta gerada não passou na validação ou o motor não a autorizou."""
 
 
-def describir_esquema() -> str:
-    return "\n".join(f"- {tabla}({', '.join(columnas)})"
-                     for tabla, columnas in ESQUEMA_PERMITIDO.items())
+def descrever_esquema() -> str:
+    return "\n".join(f"- {tabela}({', '.join(colunas)})"
+                     for tabela, colunas in ESQUEMA_PERMITIDO.items())
 
 
 def validar_sql(sql: str) -> str:
-    """Comprobación de forma antes de tocar la base: una sola sentencia y que sea SELECT."""
-    limpio = sql.strip().rstrip(";").strip()
-    if not limpio:
-        raise ConsultaRechazada("consulta vacía")
-    if ";" in limpio:
-        raise ConsultaRechazada("solo se admite una sentencia")
-    if not re.match(r"(?is)^select\b", limpio):
-        raise ConsultaRechazada("solo se admiten consultas SELECT")
-    if re.search(r"--|/\*", limpio):
-        raise ConsultaRechazada("no se admiten comentarios")
-    return limpio
+    """Verificação de forma antes de tocar na base: uma única instrução e que seja SELECT."""
+    limpo = sql.strip().rstrip(";").strip()
+    if not limpo:
+        raise ConsultaRejeitada("consulta vazia")
+    if ";" in limpo:
+        raise ConsultaRejeitada("só é admitida uma instrução")
+    if not re.match(r"(?is)^select\b", limpo):
+        raise ConsultaRejeitada("só são admitidas consultas SELECT")
+    if re.search(r"--|/\*", limpo):
+        raise ConsultaRejeitada("não são admitidos comentários")
+    return limpo
 
 
-def consultar_sql(escenario: Escenario, sql: str) -> dict:
-    """Valida y ejecuta un SELECT generado, con el motor como árbitro.
+def consultar_sql(cenario: Cenario, sql: str) -> dict:
+    """Valida e executa um SELECT gerado, com o motor como árbitro.
 
-    Tres barreras: la forma (una sentencia SELECT), el autorizador de SQLite (solo las tablas,
-    columnas y funciones permitidas; cualquier otra acción se deniega) y los límites (base en
-    solo lectura, 50 filas como máximo y tope de pasos de ejecución).
+    Três barreiras: a forma (uma instrução SELECT), o autorizador do SQLite (só as tabelas,
+    colunas e funções permitidas; qualquer outra ação é negada) e os limites (base em
+    somente leitura, 50 linhas no máximo e teto de passos de execução).
     """
     import sqlite3
 
-    limpio = validar_sql(sql)
-    denegado: list[str] = []
+    limpo = validar_sql(sql)
+    negado: list[str] = []
 
-    def autorizar(accion, arg1, arg2, _base, _origen):
-        if accion == sqlite3.SQLITE_SELECT:
+    def autorizar(acao, arg1, arg2, _base, _origem):
+        if acao == sqlite3.SQLITE_SELECT:
             return sqlite3.SQLITE_OK
-        if accion == sqlite3.SQLITE_READ:
+        if acao == sqlite3.SQLITE_READ:
             if arg1 in ESQUEMA_PERMITIDO and (not arg2 or arg2 in ESQUEMA_PERMITIDO[arg1]):
                 return sqlite3.SQLITE_OK
-            denegado.append(f"lectura de {arg1}.{arg2 or '*'}")
+            negado.append(f"leitura de {arg1}.{arg2 or '*'}")
             return sqlite3.SQLITE_DENY
-        if accion == sqlite3.SQLITE_FUNCTION and str(arg2).lower() in FUNCIONES_PERMITIDAS:
+        if acao == sqlite3.SQLITE_FUNCTION and str(arg2).lower() in FUNCOES_PERMITIDAS:
             return sqlite3.SQLITE_OK
-        denegado.append(f"acción {accion} sobre {arg1 or arg2}")
+        negado.append(f"ação {acao} sobre {arg1 or arg2}")
         return sqlite3.SQLITE_DENY
 
-    pasos = [0]
+    passos = [0]
 
-    def vigilar() -> int:
-        pasos[0] += 10_000
-        return 1 if pasos[0] > MAX_PASOS else 0
+    def vigiar() -> int:
+        passos[0] += 10_000
+        return 1 if passos[0] > MAX_PASSOS else 0
 
-    with conectar(escenario) as db:
+    with conectar(cenario) as db:
         db.set_authorizer(autorizar)
-        db.set_progress_handler(vigilar, 10_000)
+        db.set_progress_handler(vigiar, 10_000)
         try:
-            cursor = db.execute(limpio)
-            filas = [dict(f) for f in cursor.fetchmany(MAX_FILAS + 1)]
+            cursor = db.execute(limpo)
+            linhas = [dict(linha) for linha in cursor.fetchmany(MAX_LINHAS + 1)]
         except sqlite3.Error as exc:
-            motivo = "; ".join(denegado) or str(exc)
-            raise ConsultaRechazada(f"el motor no autorizó la consulta: {motivo}") from exc
+            motivo = "; ".join(negado) or str(exc)
+            raise ConsultaRejeitada(f"o motor não autorizou a consulta: {motivo}") from exc
         finally:
             db.set_authorizer(None)
             db.set_progress_handler(None, 0)
-    return {"sql": limpio, "filas": filas[:MAX_FILAS], "truncado": len(filas) > MAX_FILAS,
-            "dataset_id": escenario.dataset_id}
+    return {"sql": limpo, "linhas": linhas[:MAX_LINHAS], "truncado": len(linhas) > MAX_LINHAS,
+            "dataset_id": cenario.dataset_id}
 
 
-def crear_generador_sql(modelo):
-    """Cadena que convierte una pregunta en una `ConsultaSQL`. No ejecuta nada."""
+def criar_gerador_sql(modelo):
+    """Cadeia que converte uma pergunta em uma `ConsultaSQL`. Não executa nada."""
     from langchain_core.output_parsers import PydanticOutputParser
 
-    from .prompts import PLANTILLA_SQL
+    from .prompts import MODELO_SQL
 
     parser = PydanticOutputParser(pydantic_object=ConsultaSQL)
-    return (PLANTILLA_SQL.partial(esquema=describir_esquema(), max_filas=str(MAX_FILAS),
-                                  formato=parser.get_format_instructions()) | modelo | parser)
+    return (MODELO_SQL.partial(esquema=descrever_esquema(), max_linhas=str(MAX_LINHAS),
+                               formato=parser.get_format_instructions()) | modelo | parser)
 
 
-def responder_sql(escenario: Escenario, pregunta: str, generador) -> dict:
-    """Text-to-SQL completo: generar, validar, ejecutar y, si falla, corregir una vez."""
-    intentos = []
-    error = ""
+def responder_sql(cenario: Cenario, pergunta: str, gerador) -> dict:
+    """Text-to-SQL completo: gerar, validar, executar e, se falhar, corrigir uma vez."""
+    tentativas = []
+    erro = ""
     for _ in range(2):
         try:
-            consulta: ConsultaSQL = generador.invoke({"pregunta": pregunta, "error": error})
-        except Exception as exc:  # salida ilegible del modelo
-            intentos.append({"sql": None, "error": type(exc).__name__})
-            error = "La respuesta anterior no era el JSON pedido."
+            consulta: ConsultaSQL = gerador.invoke({"pergunta": pergunta, "erro": erro})
+        except Exception as exc:  # saída ilegível do modelo
+            tentativas.append({"sql": None, "erro": type(exc).__name__})
+            erro = "A resposta anterior não era o JSON pedido."
             continue
         try:
-            resultado = consultar_sql(escenario, consulta.sql)
-        except ConsultaRechazada as exc:
-            intentos.append({"sql": consulta.sql, "error": str(exc)})
-            error = f"La consulta anterior fue rechazada: {exc}. Consulta rechazada: {consulta.sql}"
+            resultado = consultar_sql(cenario, consulta.sql)
+        except ConsultaRejeitada as exc:
+            tentativas.append({"sql": consulta.sql, "erro": str(exc)})
+            erro = f"A consulta anterior foi rejeitada: {exc}. Consulta rejeitada: {consulta.sql}"
             continue
-        intentos.append({"sql": resultado["sql"], "error": None})
-        # Una consulta válida puede estar mal planteada: cero filas se señala, no se da por bueno.
-        estado = "ok" if resultado["filas"] else "sin_filas"
-        return {"pregunta": pregunta, "estado": estado, "explicacion": consulta.explicacion,
-                "intentos": intentos, **resultado}
-    return {"pregunta": pregunta, "estado": "rechazada", "intentos": intentos, "filas": [],
-            "dataset_id": escenario.dataset_id}
+        tentativas.append({"sql": resultado["sql"], "erro": None})
+        # Uma consulta válida pode estar mal formulada: zero linhas é sinalizado, não dado como bom.
+        estado = "ok" if resultado["linhas"] else "sem_linhas"
+        return {"pergunta": pergunta, "estado": estado, "explicacao": consulta.explicacao,
+                "tentativas": tentativas, **resultado}
+    return {"pergunta": pergunta, "estado": "rejeitada", "tentativas": tentativas, "linhas": [],
+            "dataset_id": cenario.dataset_id}

@@ -1,52 +1,52 @@
-"""Clasificación NLI local triclase con revisión fijada."""
+"""Classificação NLI local de três classes com revisão fixada."""
 from typing import Protocol
 
-from .contracts import RespuestaCompra
+from .contracts import RespostaCompra
 
 MODELO = "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"
-REVISION = "8adb042d524ecd5c26d3e3ba0e3fbcf7e2d0864c"
+REVISAO = "8adb042d524ecd5c26d3e3ba0e3fbcf7e2d0864c"
 
 
-class Clasificador(Protocol):
-    def clasificar(self, premisa: str, hipotesis: str) -> str: ...
+class Classificador(Protocol):
+    def classificar(self, premissa: str, hipotese: str) -> str: ...
 
 
 class ModeloNLI:
     def __init__(self):
         from transformers import pipeline
         self._pipe = pipeline("text-classification", model=MODELO, tokenizer=MODELO,
-                              revision=REVISION, top_k=None)
+                              revision=REVISAO, top_k=None)
 
-    def clasificar(self, premisa: str, hipotesis: str) -> str:
-        etiquetas = self._pipe({"text": premisa, "text_pair": hipotesis})
-        if etiquetas and isinstance(etiquetas[0], list):
-            etiquetas = etiquetas[0]
-        ganadora = max(etiquetas, key=lambda x: x["score"])["label"].lower()
-        return ganadora if ganadora in {"entailment", "neutral", "contradiction"} else "neutral"
+    def classificar(self, premissa: str, hipotese: str) -> str:
+        rotulos = self._pipe({"text": premissa, "text_pair": hipotese})
+        if rotulos and isinstance(rotulos[0], list):
+            rotulos = rotulos[0]
+        vencedor = max(rotulos, key=lambda x: x["score"])["label"].lower()
+        return vencedor if vencedor in {"entailment", "neutral", "contradiction"} else "neutral"
 
 
-def verificar_nli(respuesta: RespuestaCompra, clasificador: Clasificador) -> bool:
-    if respuesta.estado == "politica":
-        premisa = "\n".join(e.texto for e in respuesta.evidencias if e.tipo == "politica")
-        if not premisa or not respuesta.mensaje:
+def verificar_nli(resposta: RespostaCompra, classificador: Classificador) -> bool:
+    if resposta.estado == "politica":
+        premissa = "\n".join(e.texto for e in resposta.evidencias if e.tipo == "politica")
+        if not premissa or not resposta.mensagem:
             return False
         try:
-            return clasificador.clasificar(premisa, respuesta.mensaje) == "entailment"
+            return classificador.classificar(premissa, resposta.mensagem) == "entailment"
         except Exception:
             return False
-    if respuesta.estado != "recomendacion":
+    if resposta.estado != "recomendacao":
         return True
-    ganadora = next((a for a in respuesta.alternativas
-                     if a.oferta.proveedor_id == respuesta.proveedor_id), None)
-    if ganadora is None:
+    vencedora = next((a for a in resposta.alternativas
+                      if a.oferta.fornecedor_id == resposta.fornecedor_id), None)
+    if vencedora is None:
         return False
-    fuentes = [e.texto for e in respuesta.evidencias if e.tipo == "catalogo"
-               and e.dataset_id == respuesta.dataset_id and e.fuente_id == ganadora.oferta.id]
-    if not fuentes:
+    fontes = [e.texto for e in resposta.evidencias if e.tipo == "catalogo"
+              and e.dataset_id == resposta.dataset_id and e.fonte_id == vencedora.oferta.id]
+    if not fontes:
         return False
-    hipotesis = (f"{ganadora.oferta.proveedor_nombre} tiene stock {ganadora.oferta.stock} "
-                 f"y entrega en {ganadora.oferta.plazo_dias} días")
+    hipotese = (f"{vencedora.oferta.fornecedor_nome} tem estoque {vencedora.oferta.estoque} "
+                f"e entrega em {vencedora.oferta.prazo_dias} dias")
     try:
-        return clasificador.clasificar("\n".join(fuentes), hipotesis) == "entailment"
+        return classificador.classificar("\n".join(fontes), hipotese) == "entailment"
     except Exception:
         return False

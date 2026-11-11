@@ -1,89 +1,90 @@
-"""Reglas exactas en centavos: un flete, sin dividir pedidos y respetando el pedido mínimo."""
+"""Regras exatas em centavos: um frete, sem dividir pedidos e respeitando o pedido mínimo."""
 from fractions import Fraction
 from typing import Literal
 
-from .contracts import Alternativa, Oferta, Solicitud
+from .contracts import Alternativa, Oferta, Solicitacao
 
 
 def brl(centavos: int) -> str:
     return f"R$ {centavos // 100:,}".replace(",", ".") + f",{centavos % 100:02d}"
 
 
-ETIQUETAS_MOTIVO = {"stock": "stock", "pedido_minimo": "pedido mínimo", "plazo": "plazo",
-                    "presupuesto": "presupuesto"}
+ROTULOS_MOTIVO = {"estoque": "estoque", "pedido_minimo": "pedido mínimo", "prazo": "prazo",
+                  "orcamento": "orçamento"}
 
 
-def describir_motivos(alternativa: Alternativa) -> str:
-    """Motivos de descarte en texto, con el dato que los explica cuando ayuda."""
+def descrever_motivos(alternativa: Alternativa) -> str:
+    """Motivos de descarte em texto, com o dado que os explica quando ajuda."""
     partes = []
     for motivo in alternativa.motivos:
         if motivo == "pedido_minimo":
             partes.append(f"pedido mínimo ({alternativa.oferta.pedido_minimo} unidades)")
         else:
-            partes.append(ETIQUETAS_MOTIVO[motivo])
+            partes.append(ROTULOS_MOTIVO[motivo])
     return ", ".join(partes)
 
 
-def variacion_porcentual(actual: int, referencia: int) -> int:
-    """Variación de `actual` respecto a `referencia`, en puntos porcentuales enteros."""
-    return round(Fraction(100 * (actual - referencia), referencia))
+def variacao_percentual(atual: int, referencia: int) -> int:
+    """Variação de `atual` em relação a `referencia`, em pontos percentuais inteiros."""
+    return round(Fraction(100 * (atual - referencia), referencia))
 
 
-def describir_precio(oferta: Oferta) -> str | None:
-    """Sitúa el precio unitario vigente en su historial. No cambia la recomendación."""
-    if not oferta.meses_historial or not oferta.precio_medio_centavos or not oferta.precio_anterior_centavos:
+def descrever_preco(oferta: Oferta) -> str | None:
+    """Situa o preço unitário vigente no seu histórico. Não muda a recomendação."""
+    if not oferta.meses_historico or not oferta.preco_medio_centavos or not oferta.preco_anterior_centavos:
         return None
-    actual = oferta.precio_unitario_centavos
+    atual = oferta.preco_unitario_centavos
 
-    def cambio(referencia: int) -> str:
-        puntos = variacion_porcentual(actual, referencia)
-        return "igual" if puntos == 0 else f"{puntos:+d} %"
+    def mudanca(referencia: int) -> str:
+        pontos = variacao_percentual(atual, referencia)
+        return "igual" if pontos == 0 else f"{pontos:+d} %"
 
-    texto = (f"{oferta.proveedor_nombre}: hoy {brl(actual)} por unidad; mes anterior "
-             f"{brl(oferta.precio_anterior_centavos)} ({cambio(oferta.precio_anterior_centavos)}); "
-             f"media de {oferta.meses_historial} meses {brl(oferta.precio_medio_centavos)} "
-             f"({cambio(oferta.precio_medio_centavos)})")
-    if actual == oferta.precio_minimo_centavos:
-        texto += "; es su precio más bajo del periodo"
-    elif actual == oferta.precio_maximo_centavos:
-        texto += "; es su precio más alto del periodo"
+    texto = (f"{oferta.fornecedor_nome}: hoje {brl(atual)} por unidade; mês anterior "
+             f"{brl(oferta.preco_anterior_centavos)} ({mudanca(oferta.preco_anterior_centavos)}); "
+             f"média de {oferta.meses_historico} meses {brl(oferta.preco_medio_centavos)} "
+             f"({mudanca(oferta.preco_medio_centavos)})")
+    if atual == oferta.preco_minimo_centavos:
+        texto += "; é o seu preço mais baixo do período"
+    elif atual == oferta.preco_maximo_centavos:
+        texto += "; é o seu preço mais alto do período"
     return texto + "."
 
 
-def origen_preferido(preferencias: dict[str, str]) -> Literal["nacional", "internacional"] | None:
-    """Traduce la preferencia guardada sobre proveedores a un criterio de comparación."""
-    valor = " ".join(v for k, v in preferencias.items() if "proveedor" in k.lower()).lower()
-    if "internacional" in valor or "extranjer" in valor or "importad" in valor:
+def origem_preferida(preferencias: dict[str, str]) -> Literal["nacional", "internacional"] | None:
+    """Traduz a preferência salva sobre fornecedores em um critério de comparação."""
+    valor = " ".join(v for k, v in preferencias.items() if "fornecedor" in k.lower()).lower()
+    # Radicais: em português o plural muda a terminação (nacional → nacionais, local → locais).
+    if "internacion" in valor or "estrangeir" in valor or "importad" in valor:
         return "internacional"
-    if "nacional" in valor or "local" in valor or "brasil" in valor:
+    if "nacion" in valor or "loca" in valor or "brasil" in valor:
         return "nacional"
     return None
 
 
-def comparar(solicitud: Solicitud, ofertas: list[Oferta]) -> list[Alternativa]:
-    """Evalúa cada oferta y las ordena: primero las que cumplen; entre ellas, las del origen
-    que prefiere el usuario; después, por total, plazo y proveedor."""
-    if solicitud.faltantes():
-        raise ValueError("faltan: " + ", ".join(solicitud.faltantes()))
-    assert solicitud.cantidad is not None
+def comparar(solicitacao: Solicitacao, ofertas: list[Oferta]) -> list[Alternativa]:
+    """Avalia cada oferta e as ordena: primeiro as que atendem; entre elas, as da origem
+    que o usuário prefere; depois, por total, prazo e fornecedor."""
+    if solicitacao.faltantes():
+        raise ValueError("faltam: " + ", ".join(solicitacao.faltantes()))
+    assert solicitacao.quantidade is not None
     resultado = []
     for oferta in ofertas:
-        total = solicitud.cantidad * oferta.precio_unitario_centavos + oferta.flete_centavos
-        motivos: list[Literal["stock", "pedido_minimo", "plazo", "presupuesto"]] = []
-        if oferta.stock < solicitud.cantidad:
-            motivos.append("stock")
-        if solicitud.cantidad < oferta.pedido_minimo:
+        total = solicitacao.quantidade * oferta.preco_unitario_centavos + oferta.frete_centavos
+        motivos: list[Literal["estoque", "pedido_minimo", "prazo", "orcamento"]] = []
+        if oferta.estoque < solicitacao.quantidade:
+            motivos.append("estoque")
+        if solicitacao.quantidade < oferta.pedido_minimo:
             motivos.append("pedido_minimo")
-        if solicitud.plazo_max_dias is not None and oferta.plazo_dias > solicitud.plazo_max_dias:
-            motivos.append("plazo")
-        if solicitud.presupuesto_centavos is not None and total > solicitud.presupuesto_centavos:
-            motivos.append("presupuesto")
+        if solicitacao.prazo_max_dias is not None and oferta.prazo_dias > solicitacao.prazo_max_dias:
+            motivos.append("prazo")
+        if solicitacao.orcamento_centavos is not None and total > solicitacao.orcamento_centavos:
+            motivos.append("orcamento")
         resultado.append(Alternativa(oferta=oferta, total_centavos=total,
-                                     cumple=not motivos, motivos=motivos))
-    preferido = solicitud.origen_preferido
+                                     atende=not motivos, motivos=motivos))
+    preferida = solicitacao.origem_preferida
 
-    def fuera_de_preferencia(alternativa: Alternativa) -> bool:
-        return preferido is not None and alternativa.oferta.nacional != (preferido == "nacional")
+    def fora_da_preferencia(alternativa: Alternativa) -> bool:
+        return preferida is not None and alternativa.oferta.nacional != (preferida == "nacional")
 
-    return sorted(resultado, key=lambda a: (not a.cumple, fuera_de_preferencia(a), a.total_centavos,
-                                             a.oferta.plazo_dias, a.oferta.proveedor_id))
+    return sorted(resultado, key=lambda a: (not a.atende, fora_da_preferencia(a), a.total_centavos,
+                                             a.oferta.prazo_dias, a.oferta.fornecedor_id))
