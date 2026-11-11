@@ -1199,7 +1199,7 @@ Las dos trazas se conservan. Las pruebas automáticas ya pasaban antes: el fallo
 
 > ¿El alumno estructuró herramientas del agente diferenciando funciones hardcoded de funciones semánticas?
 
-**Respuesta corta.** Sí. El agente tiene seis herramientas: cinco de lógica fija (*hardcoded*) y una semántica. La regla de reparto es clara: **todo lo que es un número o una regla lo hace código fijo; lo semántico se reserva para buscar por significado en las políticas.**
+**Respuesta corta.** Sí. El agente tiene seis herramientas: cuatro de lógica fija (*hardcoded*), una semántica y una mixta. La regla de reparto es clara: **todo lo que es un número o una regla lo hace código fijo; lo semántico se reserva para buscar por significado en las políticas.**
 
 ### 1. El criterio
 
@@ -1213,7 +1213,7 @@ Las dos trazas se conservan. Las pruebas automáticas ya pasaban antes: el fallo
 | Herramienta | Tipo | Lógica | Entradas | Salida | Errores que devuelve |
 |---|---|---|---|---|---|
 | `buscar_productos` | Hardcoded | SQL de lectura | `texto` | Candidatos (ID, SKU, nombre, categoría) | Lista vacía si no hay coincidencias |
-| `consultar_catalogo` | Hardcoded | Text-to-query: plan validado → `SELECT` con parámetros | `pregunta` | Plan, SQL, parámetros y filas | Error si la pregunta no trae exactamente un ID |
+| `consultar_catalogo` | Hardcoded con un ID; **semántica** en preguntas abiertas | Con ID: plan validado → `SELECT` con parámetros. Sin ID: el modelo escribe el `SELECT` y el motor lo autoriza | `pregunta` | Modo, SQL y filas | Consulta rechazada o sin filas |
 | `comparar_ofertas` | Hardcoded | Cálculo en centavos enteros con desempate fijo | `producto_id`, `cantidad`, `presupuesto_centavos`, `plazo_max_dias` | Todas las ofertas, con «cumple» o el motivo de descarte | Rechaza una cantidad no positiva |
 | `consultar_politicas` | **Semántica** | Búsqueda por similitud en FAISS, con reformulación de la consulta | `pregunta` | Fragmentos con fuente y distancia; estado | `sin_evidencia` o `indisponible` |
 | `consultar_cep` | Hardcoded | Llamada a una API externa | `cep` | Ciudad, UF y modo | `no_encontrado`, `invalido`, `indisponible` |
@@ -1228,7 +1228,7 @@ El catálogo se genera del código: nombre, descripción y entradas salen de las
 - **Lo semántico nunca decide un número.** La herramienta semántica devuelve fragmentos de texto con su fuente; los importes vienen siempre de herramientas hardcoded.
 - **El LLM es el que elige.** Las herramientas no se llaman entre sí; el agente decide cuál usar leyendo su descripción.
 
-Además del agente, hay una función semántica de otro tipo: el generador de text-to-SQL (R21) usa un LLM dentro de la propia función. No está entre las herramientas del agente, pero ilustra el otro sentido de «semántica»: una función cuyo interior es un modelo.
+Hay una función semántica de otro tipo dentro de `consultar_catalogo`: en preguntas abiertas, el generador de text-to-SQL (R21) usa un LLM dentro de la propia herramienta. Ilustra el otro sentido de «semántica»: una función cuyo interior es un modelo. Aun así no decide ningún número: las cifras salen de la base y la tabla la arma el sistema.
 
 ### Evidencia
 
@@ -1241,8 +1241,8 @@ Además del agente, hay una función semántica de otro tipo: el generador de te
 ### Pendientes y limitaciones
 
 - No hay herramientas asíncronas: todas se ejecutan una tras otra.
-- Solo una herramienta del agente es semántica.
-- `consultar_catalogo` acepta únicamente preguntas con un ID de pieza; las preguntas abiertas sobre el catálogo las cubre el text-to-SQL de R21, que no está conectado al agente.
+- Solo `consultar_politicas` es semántica por completo.
+- `consultar_catalogo` tiene dos modos: plan con plantillas si la pregunta trae un ID y text-to-SQL validado si no lo trae (R21). El segundo usa un modelo dentro de la herramienta.
 
 ## R20 — Integración con APIs internas o externas
 
@@ -1298,7 +1298,7 @@ Además del agente, hay una función semántica de otro tipo: el generador de te
 
 > ¿El alumno implementó el patrón text-to-query para consultar datos estructurados?
 
-**Respuesta corta.** Sí, en dos versiones. La herramienta del agente usa un plan con plantillas fijas. Además hay un **text-to-SQL completo**: el modelo escribe el `SELECT`, el motor de SQLite decide si lo deja ejecutar y se devuelven las filas. Con el modelo real respondió bien 5 de 5 preguntas (3 de 5 antes de mejorar el prompt) y las 7 consultas hostiles fueron rechazadas.
+**Respuesta corta.** Sí, en dos versiones, las dos dentro de la herramienta `consultar_catalogo` del agente. Con un ID de pieza usa un plan con plantillas fijas. Para preguntas abiertas hay un **text-to-SQL completo**: el modelo escribe el `SELECT`, el motor de SQLite decide si lo deja ejecutar y el chat publica la tabla de resultados. Con el modelo real respondió bien 5 de 5 preguntas (3 de 5 antes de mejorar el prompt) y las 7 consultas hostiles fueron rechazadas.
 
 ### 1. Las dos versiones
 
@@ -1307,7 +1307,7 @@ Además del agente, hay una función semántica de otro tipo: el generador de te
 | Quién escribe el SQL | El código: dos plantillas fijas | El LLM |
 | Qué preguntas admite | Ficha u ofertas de **una** pieza con su ID | Cualquier pregunta de lectura sobre el esquema permitido |
 | Riesgo | Ninguno: no hay SQL libre | El SQL es libre, así que se valida |
-| Dónde se usa | Herramienta `consultar_catalogo` del agente | Módulo [query.py](../src/pedro/query.py), con script y notebook |
+| Dónde se usa | `consultar_catalogo`, cuando la pregunta trae un ID | `consultar_catalogo`, cuando no lo trae; también como módulo en [query.py](../src/pedro/query.py) |
 
 ### 2. El recorrido completo
 
@@ -1374,7 +1374,27 @@ Cuando el motor rechaza una consulta, el error vuelve al modelo para **un** inte
 
 Dos casos límite, tras la mejora: ante «Borra todas las ofertas del proveedor BR-06» el modelo escribió un `SELECT` que muestra esas ofertas, y no se borró nada; ante «Muéstrame la página web de cada proveedor» devolvió los nombres con la web vacía, porque esa columna no es legible.
 
-**Decisión técnica.** El agente conserva la versión de plantillas porque sus respuestas deben poder verificarse contra una oferta concreta. El text-to-SQL con modelo responde preguntas abiertas, pero su resultado no se puede comprobar del mismo modo: como se vio, una consulta puede ser válida y estar mal planteada. Por eso no está conectado al chat.
+### 5. En el chat
+
+El text-to-SQL está conectado al agente. Ante una pregunta abierta, el modelo llama a `consultar_catalogo` y responde con un tipo de respuesta propio, `catalogo`. La respuesta que ve el usuario **no la redacta el modelo**: el sistema arma la tabla con las filas que devolvió la consulta, y añade la consulta ejecutada y un aviso.
+
+Ejemplo real, «¿Cuáles son las 5 piezas de mayor potencia y cuántos vatios tienen?»:
+
+```text
+La consulta lista las 5 piezas con mayor potencia en vatios del catálogo.
+
+| name                                         | power_w |
+| Compresor para Congeladores CONG-COMP-0051   | 2580    |
+| Placa para Máquinas de lavar LAVA-PLAC-0148  | 2580    |
+| …                                            | …       |
+
+Consulta ejecutada (solo lectura): SELECT name, power_w FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5
+La consulta la escribió un modelo y solo se comprobó que es segura, no que responda exactamente a la pregunta.
+```
+
+Una prueba comprueba que, si el modelo intenta escribir una cifra propia en su mensaje, esa cifra no llega al usuario.
+
+**Decisión técnica.** Las compras siguen yendo por la versión de plantillas y por `comparar_ofertas`, porque una recomendación debe poder verificarse contra una oferta concreta. El text-to-SQL responde lo que antes el agente no podía responder —preguntas abiertas—, pero su resultado no se puede comprobar del mismo modo: como se vio, una consulta puede ser válida y estar mal planteada. Por eso la respuesta muestra siempre la consulta ejecutada y lo dice.
 
 ### Evidencia
 
@@ -1382,12 +1402,13 @@ Dos casos límite, tras la mejora: ante «Borra todas las ofertas del proveedor 
 |---|---|---|
 | Siete preguntas con el SQL generado, los intentos, las filas y las consultas hostiles | [trazas/fase4_sql_llm.json](trazas/fase4_sql_llm.json); [scripts/demostrar_fase4.py](../scripts/demostrar_fase4.py) | **Ejecución real remota** (`gpt-4.1-mini`, temperatura 0); ejecución local en solo lectura |
 | La misma ejecución antes de mejorar el prompt | [trazas/fase4_sql_llm_antes.json](trazas/fase4_sql_llm_antes.json) | Ejecución real remota |
+| El agente respondiendo dos preguntas abiertas en el chat con la tabla de la consulta | [trazas/fase4_sql_llm.json](trazas/fase4_sql_llm.json), `r21_text_to_sql_en_el_chat` | **Ejecución real remota** |
 | Plan con plantillas y text-to-SQL con corrección, sin credenciales | [notebooks/04_rag_text_to_query.ipynb](../notebooks/04_rag_text_to_query.ipynb), primera celda y §«R21» | Ejecución local; el generador es un **doble** |
 | Once consultas rechazadas, límite de filas, corrección con el error, dos rechazos sin datos y aviso de cero filas | [tests/test_text_to_sql.py](../tests/test_text_to_sql.py); [tests/test_tools_flow.py](../tests/test_tools_flow.py) | Pruebas automáticas |
 
 ### Pendientes y limitaciones
 
-- **El text-to-SQL con modelo no está conectado al agente**; se demuestra por separado.
+- En el chat, una pregunta abierta que contiene un ID de pieza o palabras como «ofertas» se trata como una compra y no llega al text-to-SQL.
 - Cinco preguntas son pocas: 5 de 5 no garantiza que el modelo acierte siempre. La corrección de una consulta válida pero equivocada sigue dependiendo de que alguien revise el resultado.
 - Las respuestas correctas se comprobaron a mano contra la base.
 - No se admiten consultas con `WITH`.
@@ -1551,6 +1572,10 @@ Al probar con el modelo real, la verificación exacta rechazaba respuestas corre
 | `anclar_citas` | El texto literal del fragmento de política recuperado | La cita queda como estaba y se rechaza |
 | `anclar_cep` | Ciudad, estado y evidencia de ViaCEP | No rellena y se rechaza |
 | `anclar_preferencia` | La confirmación con lo que se guardó de verdad | No se confirma |
+| `anclar_recomendacion` | Ganador, total, alternativas y evidencias, con el cálculo de `comparar_ofertas` para esa misma solicitud | No toca nada y la verificación exacta decide |
+| `anclar_catalogo` | La tabla de resultados y la consulta SQL ejecutada | No se publica |
+
+El anclaje de la recomendación se añadió al final: en una ejecución real el modelo copió mal el ganador dos veces seguidas y una compra válida no se publicó. Transcribir tres ofertas con sus importes es una tarea mecánica, y el sistema ya tenía el resultado.
 
 El anclaje no relaja la verificación: solo evita rechazar lo que ya era cierto. Una cita inventada, un CEP sin respuesta de la API o una preferencia no guardada siguen bloqueados.
 

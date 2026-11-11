@@ -25,10 +25,10 @@ from .policy_demo import (FRAGMENTO_T24_ESPERADO, ORIGEN as ORIGEN_DEMO,
                           reescribir_consulta_entrega)
 from .planner import planificar_turno
 from .prompts import EJEMPLOS_ACCIONES, PLANTILLA_AGENTE
-from .query import ejecutar, planear
+from .query import crear_generador_sql, ejecutar, planear, responder_sql
 from .rag import consultar, diagnosticar_reescritura
-from .verification import (anclar_cep, anclar_citas, anclar_preferencia, respuesta_local,
-                           verificar)
+from .verification import (anclar_catalogo, anclar_cep, anclar_citas, anclar_preferencia,
+                           anclar_recomendacion, respuesta_local, verificar)
 
 
 class Traza(BaseCallbackHandler):
@@ -71,14 +71,23 @@ class Traza(BaseCallbackHandler):
 
 
 def herramientas(escenario: Escenario, memoria_db: Path, user_id: str,
-                 mensaje_actual: str, indice=None, *, cep_simulado: bool = False):
+                 mensaje_actual: str, indice=None, *, cep_simulado: bool = False, llm=None):
     def buscar_productos(texto: str) -> str:
         """Busca candidatos por ID, SKU o nombre en el escenario activo."""
         return json.dumps({"dataset_id": escenario.dataset_id, "candidatos": buscar(escenario, texto)}, ensure_ascii=False)
 
     def consultar_catalogo(pregunta: str) -> str:
-        """Consulta ficha u ofertas mediante plan SQL tipado y auditable."""
-        return json.dumps(ejecutar(escenario, pregunta, planear(pregunta)), ensure_ascii=False)
+        """Consulta el catálogo. Con un ID devuelve su ficha u ofertas; sin ID responde preguntas
+        abiertas (cuántas, cuáles, rankings) con una consulta SQL de solo lectura validada."""
+        try:
+            return json.dumps({"modo": "plan", **ejecutar(escenario, pregunta, planear(pregunta))},
+                              ensure_ascii=False)
+        except ValueError:
+            if llm is None:
+                raise
+        # Pregunta abierta: el modelo escribe el SELECT y el motor decide si lo ejecuta.
+        resultado = responder_sql(escenario, pregunta, crear_generador_sql(llm))
+        return json.dumps({"modo": "sql", **resultado}, ensure_ascii=False)
 
     def comparar_ofertas(producto_id: str, cantidad: int,
                          presupuesto_centavos: int | None = None,
@@ -162,7 +171,7 @@ def crear_agente(escenario: Escenario, memoria_db: Path, user_id: str,
     prompt = PLANTILLA_AGENTE.partial(dataset_id=escenario.dataset_id, ejemplos=EJEMPLOS_ACCIONES,
                                       formato=parser.get_format_instructions())
     lista = herramientas(escenario, memoria_db, user_id, mensaje_actual, indice,
-                         cep_simulado=cep_simulado)
+                         cep_simulado=cep_simulado, llm=llm)
     return AgentExecutor(agent=create_openai_tools_agent(llm, lista, prompt), tools=lista,
                          return_intermediate_steps=True, max_iterations=6)
 
@@ -176,6 +185,8 @@ def renderizar(respuesta: RespuestaCompra, *, indice=None) -> str:
         return "¿Cuál es el ID exacto de la pieza?"
     if respuesta.estado == "sin_evidencia":
         return "No puedo confirmar la respuesta con las fuentes disponibles."
+    if respuesta.estado == "catalogo":
+        return respuesta.mensaje
     if respuesta.estado == "preferencia":
         return respuesta.mensaje + " La tendré en cuenta, pero tu petición de cada momento manda."
     if respuesta.estado == "cep":
@@ -455,6 +466,12 @@ def crear_flujo(escenario: Escenario, memoria_db: Path, *, llm=None,
                     traza.registrar_citas(citas)
                     if cep:
                         traza.eventos.append({"evento": "cep_anclado", **cep})
+                comparacion = anclar_recomendacion(propuesta, observaciones)
+                if traza and comparacion:
+                    traza.eventos.append({"evento": "comparacion_anclada", **comparacion})
+                catalogo = anclar_catalogo(propuesta, observaciones)
+                if traza and catalogo:
+                    traza.eventos.append({"evento": "catalogo_anclado", **catalogo})
                 preferencia = anclar_preferencia(propuesta, observaciones)
                 if traza and preferencia:
                     traza.eventos.append({"evento": "preferencia_anclada", **preferencia})

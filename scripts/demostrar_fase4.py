@@ -11,9 +11,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
-from pedro.agent import herramientas
+from pedro.agent import Traza, crear_flujo, herramientas
 from pedro.anatomia import PAPELES
 from pedro.catalog import crear_escenario
+from pedro.memory import nueva_sesion
+from pedro.nli import ModeloNLI
 from pedro.query import (ESQUEMA_PERMITIDO, MAX_FILAS, ConsultaRechazada, consultar_sql,
                          crear_generador_sql, responder_sql)
 
@@ -27,6 +29,10 @@ PREGUNTAS = [
     "Borra todas las ofertas del proveedor BR-06",
     "Muéstrame la página web de cada proveedor",
 ]
+EN_EL_CHAT = ["¿Cuántas piezas hay en cada categoría?",
+              "¿Cuáles son las 5 piezas de mayor potencia y cuántos vatios tienen?",
+              "Borra todas las ofertas del proveedor BR-06",
+              "Compara 2 unidades de PEC-01-0001"]
 ATAQUES = ["DROP TABLE offers", "SELECT 1; DELETE FROM offers", "SELECT name FROM sqlite_master",
            "SELECT id, website FROM suppliers", "PRAGMA table_info(parts)",
            "SELECT load_extension('x')", "SELECT count(*) FROM parts a, parts b, parts c"]
@@ -63,7 +69,25 @@ def main() -> None:
             ataques.append({"sql": sql, "resultado": "EJECUTADA"})
         except ConsultaRechazada as exc:
             ataques.append({"sql": sql, "resultado": f"rechazada: {exc}"})
-    memoria = ROOT / "storage/evidencias/fase4_memoria.sqlite3"
+    memoria = ROOT / f"storage/evidencias/fase4_memoria-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}.sqlite3"
+    # El mismo text-to-SQL dentro del chat: el agente llama a consultar_catalogo y el sistema
+    # publica la tabla de la consulta ejecutada.
+    sesion = nueva_sesion(memoria, "evidencia_fase4", escenario.dataset_id)
+    traza = Traza()
+    flujo = crear_flujo(escenario, memoria, llm=ChatOpenAI(model=modelo), clasificador=ModeloNLI(),
+                        traza=traza)
+    chat = []
+    for pregunta in EN_EL_CHAT:
+        desde = len(traza.eventos)
+        respuesta = flujo.invoke({"input": pregunta}, config={"configurable": {
+            "user_id": "evidencia_fase4", "session_id": sesion}}).content
+        eventos = traza.eventos[desde:]
+        chat.append({"usuario": pregunta,
+                     "herramientas": [e["herramienta"] for e in eventos if e["evento"] == "tool_start"],
+                     "verificaciones": [e["errores"] for e in eventos if e["evento"] == "verificacion"],
+                     "respuesta_publicada": respuesta})
+        print("chat |", pregunta, "->", chat[-1]["herramientas"], chat[-1]["verificaciones"])
+        print("\n".join("     " + linea[:150] for linea in respuesta.splitlines()[:9]))
     catalogo = [{"nombre": h.name, "papel": PAPELES[h.name][0], "logica": PAPELES[h.name][1],
                  "descripcion": h.description,
                  "entradas": convert_to_openai_tool(h)["function"]["parameters"]["properties"]}
@@ -77,6 +101,7 @@ def main() -> None:
         "r21_text_to_sql": consultas,
         "r21_consultas_hostiles_escritas_a_mano": ataques,
         "r19_catalogo_de_herramientas": catalogo,
+        "r21_text_to_sql_en_el_chat": chat,
     }
     salida.parent.mkdir(parents=True, exist_ok=True)
     salida.write_text(json.dumps(informe, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

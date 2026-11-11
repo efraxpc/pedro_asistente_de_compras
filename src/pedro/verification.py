@@ -17,6 +17,15 @@ def verificar(respuesta: RespuestaCompra, escenario: Escenario, *, indice=None,
         return [] if respuesta.solicitud.faltantes() or ambiguo else ["aclaración injustificada"]
     if respuesta.estado == "sin_evidencia":
         return []
+    if respuesta.estado == "catalogo":
+        consultas = [dato for nombre, dato in (observaciones or [])
+                     if nombre == "consultar_catalogo" and dato.get("modo") == "sql"]
+        if not consultas:
+            return ["consulta al catálogo no observada"]
+        ultima = consultas[-1]
+        if ultima.get("dataset_id") != escenario.dataset_id:
+            return ["dataset ajeno"]
+        return [] if ultima.get("estado") in ("ok", "sin_filas") else ["consulta rechazada"]
     if respuesta.estado == "preferencia":
         guardada = any(nombre == "guardar_preferencia" and dato.get("estado") == "ok"
                        for nombre, dato in (observaciones or []))
@@ -171,6 +180,79 @@ def anclar_cep(respuesta: RespuestaCompra, observaciones: list[tuple[str, dict]]
     # Una respuesta de CEP no usa datos del catálogo: el escenario lo fija el sistema.
     respuesta.dataset_id = dataset_id
     return {"estado": "anclada", "cep": dato["cep"]}
+
+
+CAMPOS_SOLICITUD = ("producto_id", "cantidad", "presupuesto_centavos", "plazo_max_dias")
+
+
+def anclar_recomendacion(respuesta: RespuestaCompra,
+                         observaciones: list[tuple[str, dict]] | None) -> dict | None:
+    """Sustituye las cifras de una comparación por las que calculó `comparar_ofertas`.
+
+    El modelo decide que la respuesta es la comparación de una solicitud; el ganador, el total,
+    las alternativas y las evidencias los pone el sistema con el resultado de la herramienta
+    para esa misma solicitud. Si la herramienta no se llamó con esa solicitud, no se toca nada
+    y la verificación exacta decide.
+    """
+    if respuesta.estado not in ("recomendacion", "sin_oferta"):
+        return None
+    pedido = tuple(getattr(respuesta.solicitud, campo) for campo in CAMPOS_SOLICITUD)
+    for nombre, dato in reversed(observaciones or []):
+        if nombre != "comparar_ofertas":
+            continue
+        try:
+            calculada = RespuestaCompra.model_validate(dato)
+        except ValueError:
+            continue
+        if tuple(getattr(calculada.solicitud, campo) for campo in CAMPOS_SOLICITUD) != pedido:
+            continue
+        cambios = [campo for campo in ("estado", "proveedor_id", "total_centavos", "alternativas")
+                   if getattr(respuesta, campo) != getattr(calculada, campo)]
+        for campo in ("estado", "dataset_id", "producto_id", "proveedor_id", "total_centavos",
+                      "alternativas", "evidencias"):
+            setattr(respuesta, campo, getattr(calculada, campo))
+        return {"estado": "anclada", "campos_corregidos": cambios}
+    return {"estado": "sin_calculo_para_esa_solicitud"}
+
+
+FILAS_VISIBLES = 10
+
+
+def anclar_catalogo(respuesta: RespuestaCompra,
+                    observaciones: list[tuple[str, dict]] | None) -> dict | None:
+    """Redacta una respuesta de catálogo con las filas que devolvió la consulta SQL.
+
+    El modelo decide que la respuesta es una consulta al catálogo; la tabla, el recuento y la
+    consulta ejecutada los pone el sistema. Ningún número lo escribe el modelo.
+    """
+    if respuesta.estado != "catalogo":
+        return None
+    consulta = next((dato for nombre, dato in reversed(observaciones or [])
+                     if nombre == "consultar_catalogo" and dato.get("modo") == "sql"), None)
+    if consulta is None or consulta.get("estado") not in ("ok", "sin_filas"):
+        return {"estado": "sin_consulta_valida"}
+    from .contracts import Evidencia
+    sql = consulta["intentos"][-1]["sql"]
+    filas = consulta.get("filas", [])
+    if not filas:
+        cuerpo = "La consulta no devolvió ninguna fila; puede que esté mal planteada."
+    else:
+        columnas = list(filas[0])
+        cuerpo = "\n".join(
+            ["| " + " | ".join(columnas) + " |", "|" + "---|" * len(columnas)]
+            + ["| " + " | ".join(str(fila[c]) for c in columnas) + " |"
+               for fila in filas[:FILAS_VISIBLES]])
+        if len(filas) > FILAS_VISIBLES or consulta.get("truncado"):
+            cuerpo += f"\n\nSe muestran {min(len(filas), FILAS_VISIBLES)} de {len(filas)} filas" + (
+                " (el resultado se cortó en el límite)." if consulta.get("truncado") else ".")
+    respuesta.mensaje = (f"{consulta.get('explicacion', 'Consulta al catálogo.')}\n\n{cuerpo}\n\n"
+                         f"Consulta ejecutada (solo lectura): `{sql}`\n"
+                         "Los importes están en centavos de real. La consulta la escribió un modelo "
+                         "y solo se comprobó que es segura, no que responda exactamente a la pregunta.")
+    respuesta.dataset_id = consulta["dataset_id"]
+    respuesta.evidencias = [Evidencia(tipo="catalogo", fuente_id="SQL", texto=sql,
+                                      dataset_id=consulta["dataset_id"])]
+    return {"estado": "anclada", "filas": len(filas), "sql": sql}
 
 
 def anclar_preferencia(respuesta: RespuestaCompra,

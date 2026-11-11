@@ -24,6 +24,10 @@ Plan observable: tratar como pregunta de entrega; llamar consultar_politicas con
 original. La herramienta puede reformular «varias cajas» como «envío parcial» y devuelve
 fragmentos antes/después. Citar la regla recuperada; no pedir ID de pieza ni cantidad.
 
+Ejemplo F — «¿Cuáles son las 5 piezas de mayor potencia?».
+Plan observable: llamar consultar_catalogo con la pregunta literal. Salida: catalogo. La tabla
+de resultados la pone el sistema a partir de la consulta ejecutada.
+
 Ejemplo E — «Prefiero proveedores nacionales, recuérdalo».
 Plan observable: llamar guardar_preferencia con clave=proveedor, valor=nacionales y la cita
 literal del usuario. Salida: preferencia. No comparar ofertas ni pedir datos en ese turno.
@@ -145,6 +149,9 @@ PLANTILLA_AGENTE = ChatPromptTemplate.from_messages([
      "en mensaje resume la regla en una o dos frases usando solo lo que dice el fragmento, y en cada "
      "evidencia copia la frase del fragmento que la respalda; "
      "si el metadato origen es ficticio_demo, indica que la política es ficticia. "
+     "Para preguntas abiertas sobre el catálogo (cuántas piezas, cuáles, el mayor o el menor, por "
+     "categoría o proveedor) llama consultar_catalogo con la pregunta literal del usuario y usa "
+     "estado=catalogo; no escribas tú las cifras. "
      "Si el usuario declara una preferencia y pide recordarla, llama guardar_preferencia con su cita "
      "literal y usa estado=preferencia; no compares ofertas en ese turno. "
      "para CEP usa estado=cep con cidade, uf, modo_cep y evidencia ViaCEP. "

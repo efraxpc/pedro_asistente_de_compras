@@ -15,7 +15,7 @@ MODELO_LLM_POR_DEFECTO = "gpt-4.1-mini"
 # Papel de cada herramienta en la anatomía y tipo de lógica que ejecuta.
 PAPELES = {
     "buscar_productos": ("sensor", "determinista (SQL de lectura)"),
-    "consultar_catalogo": ("sensor", "text-to-query"),
+    "consultar_catalogo": ("sensor", "text-to-query (plan con ID; SQL validado para preguntas abiertas)"),
     "consultar_politicas": ("sensor", "semántica (FAISS)"),
     "consultar_cep": ("sensor", "API externa (ViaCEP)"),
     "comparar_ofertas": ("cálculo", "determinista (centavos enteros)"),

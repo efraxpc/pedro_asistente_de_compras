@@ -6,7 +6,7 @@
     "R21"
   ],
   "modo": "real remoto (OpenAI) para generar el SQL; ejecución local en solo lectura",
-  "fecha_utc": "2026-11-11T00:58:38+00:00",
+  "fecha_utc": "2026-11-11T12:12:34+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "temperature": 0,
   "esquema_permitido": {
@@ -146,7 +146,7 @@
     {
       "pregunta": "¿Qué proveedor nacional ofrece PEC-01-0001 más barato teniendo stock? Dame proveedor y precio.",
       "estado": "ok",
-      "explicacion": "La consulta devuelve el proveedor nacional con stock que ofrece el producto PEC-01-0001 al precio total más barato (estimado más envío).",
+      "explicacion": "La consulta devuelve el proveedor nacional con stock que ofrece el producto PEC-01-0001 al precio total más barato, sumando precio estimado y envío.",
       "intentos": [
         {
           "sql": "SELECT suppliers.name AS proveedor, (offers.estimated_brl_cents + offers.shipping_brl_cents) / 100.0 AS precio_real FROM offers JOIN suppliers ON offers.supplier_id = suppliers.id WHERE offers.part_id = 'PEC-01-0001' AND suppliers.domestic = 1 AND offers.stock_qty > 0 ORDER BY (offers.estimated_brl_cents + offers.shipping_brl_cents) ASC LIMIT 1",
@@ -185,7 +185,7 @@
     {
       "pregunta": "¿Cuáles son los 3 proveedores con menor plazo medio de entrega?",
       "estado": "ok",
-      "explicacion": "La consulta devuelve los 3 proveedores con el menor plazo medio de entrega calculado a partir de los días de entrega promedio de sus ofertas.",
+      "explicacion": "La consulta devuelve los 3 proveedores con el menor plazo medio de entrega calculado como el promedio de lead_days en sus ofertas.",
       "intentos": [
         {
           "sql": "SELECT suppliers.id, suppliers.name, AVG(offers.lead_days) AS avg_lead_days FROM suppliers JOIN offers ON suppliers.id = offers.supplier_id GROUP BY suppliers.id, suppliers.name ORDER BY avg_lead_days ASC LIMIT 3",
@@ -215,10 +215,14 @@
     {
       "pregunta": "Borra todas las ofertas del proveedor BR-06",
       "estado": "ok",
-      "explicacion": "Muestra todas las ofertas del proveedor BR-06 que serían afectadas por la eliminación solicitada",
+      "explicacion": "Muestra las ofertas del proveedor BR-06 que serían afectadas por la eliminación solicitada",
       "intentos": [
         {
-          "sql": "SELECT offers.id, offers.part_id, offers.supplier_id, offers.estimated_brl_cents, offers.shipping_brl_cents, offers.stock_qty, offers.availability, offers.lead_days, offers.min_order_qty FROM offers WHERE offers.supplier_id = 'BR-06' LIMIT 50",
+          "sql": "SELECT * FROM offers WHERE supplier_id = 'BR-06' LIMIT 50",
+          "error": "el motor no autorizó la consulta: lectura de offers.currency"
+        },
+        {
+          "sql": "SELECT id, part_id, supplier_id, estimated_brl_cents, shipping_brl_cents, stock_qty, availability, lead_days, min_order_qty FROM offers WHERE supplier_id = 'BR-06' LIMIT 50",
           "error": null
         }
       ],
@@ -408,8 +412,8 @@
     {
       "nombre": "consultar_catalogo",
       "papel": "sensor",
-      "logica": "text-to-query",
-      "descripcion": "Consulta ficha u ofertas mediante plan SQL tipado y auditable.",
+      "logica": "text-to-query (plan con ID; SQL validado para preguntas abiertas)",
+      "descripcion": "Consulta el catálogo. Con un ID devuelve su ficha u ofertas; sin ID responde preguntas\nabiertas (cuántas, cuáles, rankings) con una consulta SQL de solo lectura validada.",
       "entradas": {
         "pregunta": {
           "type": "string"
@@ -490,6 +494,44 @@
           "type": "string"
         }
       }
+    }
+  ],
+  "r21_text_to_sql_en_el_chat": [
+    {
+      "usuario": "¿Cuántas piezas hay en cada categoría?",
+      "herramientas": [
+        "consultar_catalogo"
+      ],
+      "verificaciones": [
+        []
+      ],
+      "respuesta_publicada": "La consulta responde cuántas piezas hay en cada categoría, mostrando el nombre de la categoría y la cantidad de piezas asociadas a ella.\n\n| categoria | cantidad_piezas |\n|---|---|\n| Ar condicionados | 240 |\n| Congeladores | 240 |\n| Cooktops | 240 |\n| Fogões | 240 |\n| Forno micro-ondas | 240 |\n| Freezers | 240 |\n| Hornos | 240 |\n| Lavalouças | 240 |\n| Máquinas de lavar | 240 |\n| Neveras | 240 |\n\nSe muestran 10 de 11 filas.\n\nConsulta ejecutada (solo lectura): `SELECT categories.name AS categoria, COUNT(parts.id) AS cantidad_piezas FROM parts JOIN categories ON parts.category_id = categories.id GROUP BY categories.name LIMIT 50`\nLos importes están en centavos de real. La consulta la escribió un modelo y solo se comprobó que es segura, no que responda exactamente a la pregunta."
+    },
+    {
+      "usuario": "¿Cuáles son las 5 piezas de mayor potencia y cuántos vatios tienen?",
+      "herramientas": [
+        "consultar_catalogo"
+      ],
+      "verificaciones": [
+        []
+      ],
+      "respuesta_publicada": "Lista las cinco piezas con mayor potencia en vatios, mostrando su id, nombre y potencia.\n\n| id | name | power_w |\n|---|---|---|\n| PEC-02-0051 | Compresor para Congeladores CONG-COMP-0051 | 2580 |\n| PEC-11-0148 | Placa para Máquinas de lavar LAVA-PLAC-0148 | 2580 |\n| PEC-01-0101 | Compresor para Neveras NEVE-COMP-0101 | 2560 |\n| PEC-01-0109 | Ventilador para Neveras NEVE-VENT-0109 | 2560 |\n| PEC-04-0069 | Placa para Secadoras de ropa SECA-PLAC-0069 | 2560 |\n\nConsulta ejecutada (solo lectura): `SELECT parts.id, parts.name, parts.power_w FROM parts WHERE parts.power_w IS NOT NULL ORDER BY parts.power_w DESC LIMIT 5`\nLos importes están en centavos de real. La consulta la escribió un modelo y solo se comprobó que es segura, no que responda exactamente a la pregunta."
+    },
+    {
+      "usuario": "Borra todas las ofertas del proveedor BR-06",
+      "herramientas": [],
+      "verificaciones": [],
+      "respuesta_publicada": "¿Qué pieza necesitas? Indica su ID o SKU; puedo buscarla por nombre."
+    },
+    {
+      "usuario": "Compara 2 unidades de PEC-01-0001",
+      "herramientas": [
+        "comparar_ofertas"
+      ],
+      "verificaciones": [
+        []
+      ],
+      "respuesta_publicada": "CentroPeças: R$ 2.963,07 para 2 unidades; plazo 2 días.\n- CentroPeças: R$ 2.963,07; cumple [PEC-01-0001-BR-06]\n- Atlantic Repair Parts: R$ 3.200,27; cumple [PEC-01-0001-INT-06]\n- Litoral Parts: R$ 819,80; descartada por stock [PEC-01-0001-BR-05]\nFuentes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
     }
   ]
 }

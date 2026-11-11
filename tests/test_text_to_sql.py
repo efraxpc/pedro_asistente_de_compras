@@ -74,3 +74,68 @@ def test_dos_rechazos_no_devuelven_datos(escenario):
 def test_una_consulta_valida_sin_filas_se_senala(escenario):
     generador, _ = _generador("SELECT id FROM parts WHERE sku = 'PEC-01-0001'")
     assert responder_sql(escenario, "¿Existe PEC-01-0001?", generador)["estado"] == "sin_filas"
+
+
+def _flujo_catalogo(tmp_path, monkeypatch, observacion):
+    from types import SimpleNamespace
+
+    import pedro.agent as modulo
+    from pedro.agent import crear_flujo
+    from pedro.contracts import RespuestaCompra, Solicitud
+    from pedro.memory import nueva_sesion
+
+    escenario = crear_escenario(tmp_path / "catalogos")
+    memoria = tmp_path / "memoria.sqlite3"
+    sesion = nueva_sesion(memoria, "ana", escenario.dataset_id)
+    # El modelo intenta colar una cifra propia en el mensaje; no debe llegar al usuario.
+    propuesta = RespuestaCompra(estado="catalogo", dataset_id="otro", solicitud=Solicitud(),
+                                mensaje="Hay 999 categorías.")
+    dato = observacion(escenario)
+
+    class Executor:
+        def invoke(self, entrada, config):
+            return {"output": propuesta.model_dump_json(), "intermediate_steps": [
+                (SimpleNamespace(tool="consultar_catalogo"), json.dumps(dato))] if dato else []}
+
+    monkeypatch.setattr(modulo, "crear_agente", lambda *args, **kwargs: Executor())
+    flujo = crear_flujo(escenario, memoria, llm=object())
+    return flujo.invoke({"input": "¿Cuántos proveedores nacionales hay?"}, config={"configurable": {
+        "user_id": "ana", "session_id": sesion}}).content
+
+
+def test_el_chat_publica_la_tabla_de_la_consulta_y_no_las_cifras_del_modelo(tmp_path, monkeypatch):
+    def observacion(escenario):
+        generador, _ = _generador("SELECT count(*) AS nacionales FROM suppliers WHERE domestic = 1")
+        return {"modo": "sql", **responder_sql(escenario, "¿Cuántos proveedores nacionales hay?", generador)}
+
+    texto = _flujo_catalogo(tmp_path, monkeypatch, observacion)
+    assert "| nacionales |" in texto and "| 6 |" in texto
+    assert "999" not in texto
+    assert "SELECT count(*) AS nacionales FROM suppliers WHERE domestic = 1" in texto
+    assert "solo se comprobó que es segura" in texto
+
+
+def test_el_chat_no_publica_catalogo_sin_consulta_o_con_consulta_rechazada(tmp_path, monkeypatch):
+    sin_consulta = _flujo_catalogo(tmp_path / "a", monkeypatch, lambda escenario: None)
+    assert "999" not in sin_consulta and sin_consulta.startswith("No puedo confirmar")
+
+    def rechazada(escenario):
+        generador, _ = _generador("DELETE FROM offers", "DROP TABLE offers")
+        return {"modo": "sql", **responder_sql(escenario, "Borra las ofertas", generador)}
+
+    texto = _flujo_catalogo(tmp_path / "b", monkeypatch, rechazada)
+    assert "999" not in texto and texto.startswith("No puedo confirmar")
+
+
+def test_la_herramienta_usa_el_plan_con_id_y_sql_solo_en_preguntas_abiertas(tmp_path):
+    from pedro.agent import herramientas
+
+    escenario = crear_escenario(tmp_path / "catalogos")
+    modelo = RunnableLambda(lambda _: json.dumps(
+        {"sql": "SELECT count(*) AS n FROM parts", "explicacion": "total de piezas"}))
+    herramienta = next(h for h in herramientas(escenario, tmp_path / "m.sqlite3", "ana", "", llm=modelo)
+                       if h.name == "consultar_catalogo")
+    con_id = json.loads(herramienta.invoke({"pregunta": "ofertas PEC-01-0001"}))
+    assert con_id["modo"] == "plan" and len(con_id["filas"]) == 3
+    abierta = json.loads(herramienta.invoke({"pregunta": "¿Cuántas piezas hay?"}))
+    assert abierta["modo"] == "sql" and abierta["filas"] == [{"n": 2640}]

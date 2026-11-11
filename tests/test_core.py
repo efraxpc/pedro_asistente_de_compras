@@ -68,3 +68,31 @@ def test_verificador_rechaza_omisiones_y_dataset(escenario):
     assert verificar(respuesta.model_copy(update={"dataset_id": "ajeno"}), escenario) == ["dataset ajeno"]
     assert "ganador o total incorrecto" in verificar(respuesta.model_copy(update={
         "total_centavos": respuesta.total_centavos + 1}), escenario)
+
+
+def test_la_comparacion_se_ancla_al_calculo_de_la_herramienta(tmp_path):
+    from pedro.catalog import crear_escenario
+    from pedro.contracts import Solicitud
+    from pedro.verification import anclar_recomendacion, respuesta_local, verificar
+
+    escenario = crear_escenario(tmp_path / "catalogos")
+    solicitud = Solicitud(producto_id="PEC-01-0001", cantidad=2)
+    calculada = respuesta_local(escenario, solicitud)
+    observacion = ("comparar_ofertas", calculada.model_dump(mode="json"))
+
+    # El modelo copia mal el ganador y el total.
+    propuesta = calculada.model_copy(deep=True)
+    propuesta.proveedor_id, propuesta.total_centavos = "INT-06", 1
+    assert "ganador o total incorrecto" in verificar(propuesta, escenario)
+    informe = anclar_recomendacion(propuesta, [observacion])
+    assert informe == {"estado": "anclada", "campos_corregidos": ["proveedor_id", "total_centavos"]}
+    assert verificar(propuesta, escenario) == []
+    assert (propuesta.proveedor_id, propuesta.total_centavos) == (
+        calculada.proveedor_id, calculada.total_centavos)
+
+    # Sin un cálculo para esa misma solicitud no se corrige nada y la verificación lo rechaza.
+    otra = calculada.model_copy(deep=True)
+    otra.solicitud.cantidad, otra.proveedor_id = 3, "INT-06"
+    assert anclar_recomendacion(otra, [observacion]) == {"estado": "sin_calculo_para_esa_solicitud"}
+    assert verificar(otra, escenario) != []
+    assert anclar_recomendacion(propuesta, []) == {"estado": "sin_calculo_para_esa_solicitud"}

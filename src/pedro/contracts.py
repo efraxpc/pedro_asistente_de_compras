@@ -70,7 +70,7 @@ class Evidencia(BaseModel):
 
 class RespuestaCompra(BaseModel):
     estado: Literal["aclaracion", "recomendacion", "sin_oferta", "sin_evidencia", "cep", "politica",
-                    "preferencia"]
+                    "preferencia", "catalogo"]
     dataset_id: str
     solicitud: Solicitud
     producto_id: str | None = None
