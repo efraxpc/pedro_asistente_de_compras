@@ -4,7 +4,7 @@ Cotejada el 2026-11-10 contra la guía integrada [guide/Fases_Temas_Tareas_Rubri
 
 La columna «ID previo» conserva el identificador provisional de la matriz anterior para rastrear la evidencia. La fila provisional R4.6 (búsqueda semántica opcional de piezas) no corresponde a ninguna rúbrica oficial y se retira de la matriz; R1.1, R1.2, R2.1, R3.1 y R3.3 pasan a la sección de infraestructura de soporte.
 
-El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubricas_proyecto.svg) aún usan los IDs provisionales; actualizarlos es un pendiente de documentación.
+El diagrama [rubricas_proyecto.mmd](rubricas_proyecto.mmd) y su [vista SVG](rubricas_proyecto.svg) resumen las 29 rúbricas por fase: qué pide cada una, cómo se cumple y en qué archivo.
 
 ## Fase 1 — Chain ejecutable y arquitectura (R01–R06)
 
@@ -89,7 +89,6 @@ Las 29 rúbricas tienen respuesta redactada y ejecución guardada. Lo que queda 
 3. **R01**: sustituir la escala genérica de madurez por la de la clase 1 cuando esté disponible.
 4. **R22–R23**: confirmar con el profesor si la actividad entrega un índice FAISS; hoy se usa uno propio guardado en knowledge/politicas/.
 5. **R29**: los 30 casos son derivados, no los oficiales; si el curso entrega casos, hay que repetir la evaluación.
-6. Actualizar el diagrama rubricas_proyecto.mmd/svg a los IDs oficiales.
 
 ## Comparación de proveedores (núcleo del asistente)
 

@@ -1,121 +1,79 @@
-%% Mapa de implementación y evidencia. IDs provisionales: falta cotejar infnet_agentes.pdf.
-%% R4.6 es la fila provisional adicional de la matriz de 30 IDs; no se afirma que sea oficial.
-flowchart TB
-    USUARIO([Usuario]) --> UI
+%% Las 29 rúbricas (R01–R29) de la guía integrada y cómo las cumple Pedro.
+%% Cada caja: código · qué pide la rúbrica / cómo se cumple / dónde está.
+%% Detalle y evidencias: docs/respuestas_rubricas.md. Los códigos son las etiquetas de la guía.
+flowchart LR
+    NUCLEO(["Pedro: asistente de compras<br/>Núcleo: comparar proveedores<br/>stock · pedido mínimo · plazo · presupuesto · origen · historial de precios"])
 
-    subgraph DATOS["Datos y contratos"]
+    subgraph F1["Fase 1 · Chain ejecutable y arquitectura"]
         direction TB
-        GEN["R1.1 · LOCAL<br/>Generador y SQLite sintético<br/>scripts/generar_catalogo_piezas.py<br/>datasets/piezas_electrodomesticos.sqlite3"]
-        ESC["R1.2 · LOCAL<br/>Escenarios UUID y manifiesto<br/>src/pedro/catalog.py · tests/test_core.py"]
-        DB[("Catálogo del escenario<br/>storage/catalogos/")]
-        CONTRATO["R1.3 · LOCAL<br/>Solicitud y RespuestaCompra Pydantic<br/>src/pedro/contracts.py · tests/test_core.py"]
-        GEN --> ESC --> DB
+        R01["R01 · Anatomía y tipo de agente<br/>Agente híbrido: reglas fijas + modelo<br/>src/pedro/anatomia.py"]
+        R02["R02 · Planificación y memoria aumentada<br/>Planificador de turno con plan validado<br/>src/pedro/planner.py"]
+        R03["R03 · Plantillas de prompt reutilizables<br/>9 plantillas con nombre<br/>src/pedro/prompts.py"]
+        R04["R04 · Parser con salida JSON<br/>Pydantic + comprobación de JSON completo<br/>src/pedro/chains.py"]
+        R05["R05 · invoke, batch, stream y @chain<br/>Cadena con reparación escrita con @chain<br/>src/pedro/chains.py"]
+        R06["R06 · LCEL: declarativo vs. imperativo<br/>La misma cadena en los dos estilos<br/>src/pedro/chains.py · laboratorio.py"]
+        R01 --> R02 --> R03 --> R04 --> R05 --> R06
     end
 
-    subgraph CONVERSACION["Contexto por usuario y sesión"]
+    subgraph F2["Fase 2 · Agente con herramientas y ReAct"]
         direction TB
-        MEM["R3.1–R3.3 · LOCAL<br/>Sesiones, 12 mensajes, preferencias explícitas<br/>src/pedro/memory.py · tests/test_memory_nli.py"]
-        EPIS["R3.4 · REAL LOCAL<br/>FastEmbed y recuperación de episodios<br/>src/pedro/memory.py · notebooks/03_memoria_chatbot.ipynb"]
-        BORRADOR["R3.5 · PARCIAL<br/>Corrección y precedencia de la petición<br/>src/pedro/dialogue.py · tests/test_dialogue.py"]
-        MEM --> EPIS
-        MEM --> BORRADOR
+        R07["R07 · Comparar orquestadores<br/>LangChain clásico frente a LangGraph<br/>src/pedro/orquestadores.py"]
+        R08["R08 · ReAct con initialize_agent<br/>Agente ReAct con herramientas y memoria<br/>src/pedro/legacy.py"]
+        R09["R09 · Chains secuenciales, paralelas y Router<br/>RunnableParallel y RouterChain<br/>src/pedro/chains.py · legacy.py"]
+        R10["R10 · API externa por function calling<br/>ViaCEP como herramienta consultar_cep<br/>src/pedro/integrations.py"]
+        R11["R11 · PTCF, few-shot y chain-of-thought<br/>Extracción razonada y consejo de precio<br/>src/pedro/prompts.py · precios.py"]
+        R12["R12 · Confiabilidad<br/>Parsers con errores, fallbacks y callbacks (Traza)<br/>src/pedro/laboratorio.py · agent.py"]
+        R07 --> R08 --> R09 --> R10 --> R11 --> R12
     end
 
-    subgraph EJECUCION["Flujo de la aplicación"]
+    subgraph F3["Fase 3 · Chatbot con memoria"]
         direction TB
-        UI["R5.5 · PARCIAL<br/>Streamlit: Chat, catálogo y comparación<br/>app.py · prueba con Agent API"]
-        FLUJO["R5.1 · PARCIAL<br/>create_openai_tools_agent + AgentExecutor<br/>src/pedro/agent.py"]
-        LOCAL["Comparación sin clave<br/>respuesta_local + verificación exacta<br/>src/pedro/verification.py"]
-        HERR["R4.1 · LOCAL<br/>Seis herramientas tipadas<br/>src/pedro/agent.py · tests/test_tools_flow.py"]
-        SQL["R4.2 · LOCAL<br/>PlanConsulta → SELECT parametrizado<br/>src/pedro/query.py · tests/test_tools_flow.py"]
-        CALC["R2.1 · LOCAL<br/>Centavos, stock, límites y desempates<br/>src/pedro/business.py · tests/test_core.py"]
-        CEP["R2.4 · REAL PUNTUAL<br/>ViaCEP real y doble offline<br/>src/pedro/integrations.py · docs/evidencias.md"]
-        RAG["R4.3 · PARCIAL<br/>Puerta de procedencia y confianza FAISS<br/>src/pedro/rag.py · tests/test_rag_integrations.py"]
-        UI --> FLUJO
-        FLUJO --> HERR
-        FLUJO --> LOCAL
-        HERR --> SQL
-        HERR --> CALC
-        HERR --> CEP
-        HERR --> RAG
-        HERR --> DB
-        SQL --> DB
-        LOCAL --> CALC
+        R13["R13 · Memoria corto y largo plazo (CoALA)<br/>Mensajes, borradores, preferencias y episodios<br/>src/pedro/memory.py"]
+        R14["R14 · Ventana + búsqueda vectorial<br/>12 mensajes y episodios con FastEmbed<br/>src/pedro/memory.py"]
+        R15["R15 · Comparar herramientas de memoria<br/>Memoria propia frente a LangMem<br/>src/pedro/orquestadores.py"]
+        R16["R16 · ConversationBufferMemory<br/>Chatbot clásico con ConversationChain<br/>src/pedro/legacy.py"]
+        R17["R17 · Intención y entidades<br/>Reglas para el ID + intérprete few-shot<br/>src/pedro/dialogue.py"]
+        R18["R18 · Contexto y descomposición<br/>Cambios de cantidad y turnos con varias intenciones<br/>src/pedro/dialogue.py · planner.py"]
+        R13 --> R14 --> R15 --> R16 --> R17 --> R18
     end
 
-    subgraph PUBLICACION["Respuesta pública"]
+    subgraph F4["Fase 4 · SQL, APIs y RAG"]
         direction TB
-        VER["R5.2 · LOCAL<br/>Todas las ofertas, ganador y evidencias<br/>src/pedro/verification.py · tests/test_core.py"]
-        NLI["R5.3 · REAL LOCAL<br/>NLI triclase fijado; recomendación y política<br/>src/pedro/nli.py · docs/evidencias.md"]
-        SALIDA["Respuesta verificada e historial<br/>src/pedro/agent.py · src/pedro/memory.py"]
-        VER --> NLI --> SALIDA
-        VER -->|otros estados| SALIDA
+        R19["R19 · Herramientas fijas vs. semánticas<br/>comparar_ofertas (fija) y consultar_catalogo (semántica)<br/>src/pedro/agent.py"]
+        R20["R20 · APIs internas y externas<br/>SQLite interno y ViaCEP externo<br/>src/pedro/catalog.py · integrations.py"]
+        R21["R21 · Text-to-query<br/>Plan Pydantic a SELECT y text-to-SQL con lista blanca<br/>src/pedro/query.py"]
+        R22["R22 · RAG sobre índice FAISS existente<br/>Índice guardado con manifiesto y hashes<br/>src/pedro/rag.py · knowledge/politicas/"]
+        R23["R23 · Fallo de recuperación corregido<br/>Diagnóstico T24: entrega parcial<br/>scripts/diagnosticar_t24.py"]
+        R19 --> R20 --> R21 --> R22 --> R23
     end
 
-    CONTRATO --> FLUJO
-    MEM --> FLUJO
-    BORRADOR --> FLUJO
-    EPIS --> FLUJO
-    FLUJO --> VER
-    LOCAL --> VER
-    SALIDA --> UI
-
-    subgraph DEMOS["Material didáctico y control de ejecución"]
+    subgraph F5["Fase 5 · Agente final verificado y evaluado"]
         direction TB
-        EXTR["R1.4–R1.5 · DOBLE<br/>@chain, LCEL, invoke, batch y stream<br/>src/pedro/chains.py · notebooks/01_chain_mvp.ipynb"]
-        REACT["R2.2 · DOBLE<br/>ReAct clásico y ConversationBufferMemory<br/>src/pedro/legacy.py · notebooks/02_react_herramientas.ipynb"]
-        ROUTER["R2.3 · LOCAL DIDÁCTICO<br/>Secuencia, paralelo y RouterChain<br/>src/pedro/chains.py · src/pedro/legacy.py"]
-        PROMPT["R2.5 · PARCIAL<br/>PTCF, parser y reparación controlada<br/>src/pedro/prompts.py · src/pedro/agent.py"]
-        TRAZA["R2.6 · IMPLEMENTADO<br/>BaseCallbackHandler; prueba remota pendiente<br/>src/pedro/agent.py · tests/test_tools_flow.py"]
-        COALA["R3.6 · PARCIAL<br/>CoALA, Mem0 y Letta: comparación documental<br/>notebooks/03_memoria_chatbot.ipynb · docs/comparaciones.md"]
-        REPARA["R5.4 · LOCAL CON DOBLE<br/>Un reintento y solo respuesta final<br/>src/pedro/agent.py · tests/test_tools_flow.py"]
-        EVAL["R5.5 · PARCIAL<br/>30 casos derivados; LangSmith remoto pendiente<br/>evals/casos_derivados.json · evals/evaluar_flujo.py"]
-        DOC["R5.6 · PARCIAL<br/>Matriz, informe PDF y guion<br/>docs/matriz.md · docs/informe.pdf · docs/guion_video.md"]
+        R24["R24 · Verificación factual y coherencia<br/>Fuente exacta + NLI; el sistema pone los datos<br/>src/pedro/verification.py · nli.py"]
+        R25["R25 · Un agente, 2 o más tipos de herramienta<br/>SQL, RAG y API en el mismo agente<br/>src/pedro/agent.py"]
+        R26["R26 · create_openai_tools_agent + AgentExecutor<br/>Seis herramientas y una pasada de corrección<br/>src/pedro/agent.py"]
+        R27["R27 · RunnableWithMessageHistory<br/>Guarda solo la respuesta pública<br/>src/pedro/agent.py · memory.py"]
+        R28["R28 · Integración en Streamlit<br/>Chat con pasos del agente y tarjetas de comparación<br/>app.py"]
+        R29["R29 · Evaluación con LangSmith<br/>6 evaluadores de calidad y trayectoria<br/>evals/evaluar_flujo.py"]
+        R24 --> R25 --> R26 --> R27 --> R28 --> R29
     end
 
-    EXTR -.-> FLUJO
-    REACT -.-> FLUJO
-    ROUTER -.-> FLUJO
-    PROMPT -.-> FLUJO
-    TRAZA -.-> FLUJO
-    COALA -.-> MEM
-    REPARA -.-> FLUJO
-    EVAL -.-> FLUJO
-    DOC -.-> EVAL
+    NUCLEO --> F1
+    F1 -->|la cadena pasa a ser un agente| F2
+    F2 -->|el agente recuerda| F3
+    F3 -->|el agente consulta datos| F4
+    F4 -->|todo junto, verificado y medido| F5
 
-    subgraph PENDIENTES["Dependencias y pruebas pendientes"]
-        direction TB
-        EXTR_REAL["R1.6 · PENDIENTE<br/>Extracción con modelo real<br/>OPENAI_API_KEY"]
-        RAG_PRUEBA["R4.4–R4.5 · PENDIENTE EXTERNO<br/>Reescritura top-k y consulta sin cobertura<br/>índice FAISS autorizado"]
-        SEM["R4.6 · PENDIENTE PROVISIONAL<br/>Búsqueda semántica opcional de piezas"]
-        OFICIAL["Cotejo oficial pendiente<br/>infnet_agentes.pdf, páginas 1–8"]
-        REMOTO["R5.1 / R5.5 · PENDIENTE REAL<br/>Chat OpenAI y evaluación LangSmith<br/>credenciales y trazas remotas"]
-        ENTREGA["R5.6 · PENDIENTE EXTERNO<br/>Vídeo con webcam y enlace Drive verificado"]
-    end
+    EVID[("Evidencias<br/>docs/respuestas_rubricas.md<br/>docs/trazas/*.json · docs/matriz.md")]
+    F5 --> EVID
 
-    EXTR_REAL -.-> EXTR
-    RAG_PRUEBA -.-> RAG
-    SEM -.-> DB
-    OFICIAL -.-> DOC
-    REMOTO -.-> EVAL
-    ENTREGA -.-> DOC
-
-    subgraph LEYENDA["Estado de la evidencia"]
-        direction TB
-        L1["LOCAL: código probado en este repositorio"]
-        L2["REAL: integración o modelo ejecutado localmente"]
-        L3["DOBLE: demostración o prueba guionada"]
-        L4["PARCIAL: implementado sin toda la evidencia exigida"]
-        L5["PENDIENTE: falta insumo o ejecución"]
-    end
-
-    classDef local fill:#dcfce7,stroke:#166534,color:#12351f
-    classDef real fill:#dbeafe,stroke:#1d4ed8,color:#102f63
-    classDef doble fill:#ede9fe,stroke:#6d28d9,color:#321260
-    classDef parcial fill:#fef3c7,stroke:#b45309,color:#56310a
-    classDef pendiente fill:#fee2e2,stroke:#b91c1c,color:#681515
-    class GEN,ESC,CONTRATO,MEM,HERR,SQL,CALC,VER,ROUTER,L1 local
-    class EPIS,CEP,NLI,L2 real
-    class EXTR,REACT,REPARA,L3 doble
-    class BORRADOR,UI,FLUJO,RAG,PROMPT,TRAZA,COALA,EVAL,DOC,L4 parcial
-    class EXTR_REAL,RAG_PRUEBA,SEM,OFICIAL,REMOTO,ENTREGA,L5 pendiente
+    classDef fase1 fill:#E8F0FE,stroke:#1F5FBF,color:#10233F
+    classDef fase2 fill:#E6F4EA,stroke:#2E7D32,color:#10301A
+    classDef fase3 fill:#FFF4E5,stroke:#B26A00,color:#3A2500
+    classDef fase4 fill:#F3E8FD,stroke:#6A1B9A,color:#2A0A3D
+    classDef fase5 fill:#FDECEA,stroke:#B3261E,color:#3B0D0A
+    class R01,R02,R03,R04,R05,R06 fase1
+    class R07,R08,R09,R10,R11,R12 fase2
+    class R13,R14,R15,R16,R17,R18 fase3
+    class R19,R20,R21,R22,R23 fase4
+    class R24,R25,R26,R27,R28,R29 fase5
