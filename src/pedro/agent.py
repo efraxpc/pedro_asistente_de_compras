@@ -14,7 +14,7 @@ from langchain_core.tools import StructuredTool
 from .business import brl, descrever_motivos, descrever_preco, origem_preferida
 from .catalog import Cenario, buscar, ficha, listar
 from .contracts import Evidencia, RespostaCompra, Solicitacao
-from .dialogue import EstadoCompra, criar_interprete, interpretar_turno
+from .dialogue import EstadoCompra, criar_interprete, interpretar_turno, pergunta_sobre_comparacao
 from .integrations import consultar_cep
 from .memory import (FastEmbedder, Historico, dataset_sessao, ler_rascunho, preferencias,
                      recuperar, salvar_episodio, salvar_preferencia, salvar_rascunho,
@@ -25,6 +25,7 @@ from .policy_demo import (FRAGMENTO_T24_ESPERADO, ORIGEM as ORIGEM_DEMO,
                           reescrever_consulta_entrega)
 from .planner import planejar_turno
 from .precos import aconselhar, aviso_de_preco, criar_conselheiro
+from .resposta_direta import criar_respondedor, e_pergunta, responder
 from .prompts import EXEMPLOS_ACOES, MODELO_AGENTE
 from .query import criar_gerador_sql, executar, planejar, responder_sql
 from .rag import consultar, diagnosticar_reescrita
@@ -405,8 +406,14 @@ def consulta_direta(cenario: Cenario, pergunta: str) -> str | None:
 CHAVE_PARTES = "partes"
 
 
+def _com_direta(texto: str, direta: dict | None) -> str:
+    """Põe a resposta à pergunta do usuário antes da comparação completa."""
+    return texto if direta is None else f"{direta['texto']}\n\n{texto}"
+
+
 def mensagem_publica(texto: str, resposta: RespostaCompra | None = None,
-                     conselho: str | None = None, titulo: str | None = None) -> AIMessage:
+                     conselho: str | None = None, titulo: str | None = None,
+                     direta: dict | None = None) -> AIMessage:
     """Resposta pública de um pedido.
 
     O texto é a resposta completa e é a única coisa que o modelo lê em turnos posteriores.
@@ -414,7 +421,8 @@ def mensagem_publica(texto: str, resposta: RespostaCompra | None = None,
     estruturada já verificada: a interface a usa para desenhar cartões e tabela em vez de
     texto. São os mesmos dados do texto, não informação adicional.
     """
-    parte: dict = {"titulo": titulo, "texto": texto, "comparacao": None, "conselho": conselho}
+    parte: dict = {"titulo": titulo, "texto": texto, "comparacao": None, "conselho": conselho,
+                   "direta": direta}
     if resposta is not None and resposta.estado in ("recomendacao", "sem_oferta"):
         parte["comparacao"] = resposta.model_dump(mode="json")
     return AIMessage(content=texto, additional_kwargs={CHAVE_PARTES: [parte]})
@@ -493,7 +501,41 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
                 erros = verificar(proposta, cenario)
                 if erros:
                     return AIMessage(content="Não posso confirmar uma recomendação com as evidências disponíveis.")
-                return mensagem_publica(renderizar(proposta), proposta)
+                direta = responder(proposta, pergunta, None, None) if e_pergunta(pergunta) else None
+                return mensagem_publica(_com_direta(renderizar(proposta), direta), proposta,
+                                        direta=direta)
+            sem_mudancas = previo is not None and (
+                solicitacao_atual.model_dump(exclude={"origem_preferida"})
+                == previo.solicitacao.model_dump(exclude={"origem_preferida"}))
+            if sem_mudancas and pergunta_sobre_comparacao(previo, pergunta):
+                # Pergunta sobre as ofertas já comparadas: o sistema refaz o cálculo (não depende
+                # de o modelo voltar a chamar a ferramenta) e o modelo só redige a frase.
+                proposta = resposta_local(cenario, solicitacao_atual)
+                erros = verificar(proposta, cenario)
+                if not erros and proposta.estado == "recomendacao" and (
+                        classificador is None or not verificar_nli(proposta, classificador)):
+                    erros = ["NLI sem entailment"]
+                if rastro:
+                    rastro.eventos.append({"evento": "comparacao_reutilizada",
+                                           "fontes": [a.oferta.id for a in proposta.alternativas]})
+                    rastro.registrar_verificacao(1, proposta.estado, erros)
+                if not erros:
+                    try:
+                        respondedor = criar_respondedor(llm)
+                    except Exception:
+                        respondedor = None
+                    direta = responder(proposta, pergunta, respondedor, classificador)
+                    if rastro:
+                        rastro.eventos.append({"evento": "resposta_direta", **{
+                            chave: direta.get(chave) for chave in
+                            ("fonte", "texto", "rejeitada", "erros")}})
+                    texto = _com_direta(renderizar(proposta), direta)
+                    try:
+                        salvar_episodio(memoria_db, usuario, sessao, pergunta + " | " + texto,
+                                        FastEmbedder())
+                    except Exception:
+                        pass
+                    return mensagem_publica(texto, proposta, direta=direta)
         if llm is None:
             return AIMessage(content="Posso comparar peças aqui. Indique um ID ou SKU e a quantidade; para políticas ou CEP configure OPENAI_API_KEY.")
         lembrancas = []
@@ -587,6 +629,18 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
                                 chave: preco.get(chave) for chave in
                                 ("fonte", "texto", "conselho_rejeitado", "erros")}})
                     texto = renderizar(proposta, indice=indice, conselho=conselho)
+                    direta = None
+                    if proposta.estado in ("recomendacao", "sem_oferta") and e_pergunta(pergunta):
+                        try:
+                            respondedor = criar_respondedor(llm)
+                        except Exception:
+                            respondedor = None
+                        direta = responder(proposta, pergunta, respondedor, classificador)
+                        texto = _com_direta(texto, direta)
+                        if rastro:
+                            rastro.eventos.append({"evento": "resposta_direta", **{
+                                chave: direta.get(chave) for chave in
+                                ("fonte", "texto", "rejeitada", "erros")}})
                     if proposta.estado == "politica":
                         fontes_publicadas = {e.fonte_id for e in proposta.evidencias
                                              if e.tipo == "politica"}
@@ -602,7 +656,7 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
                                             FastEmbedder())
                         except Exception:
                             pass
-                    return mensagem_publica(texto, proposta, conselho)
+                    return mensagem_publica(texto, proposta, conselho, direta=direta)
             except Exception as exc:
                 erros = [type(exc).__name__]
                 if rastro:

@@ -135,6 +135,11 @@ EXEMPLOS_MUDANCA = [
     ('{{"produto_id":"PEC-09-0009","quantidade":4}}', "A que cidade corresponde o CEP 20040020?",
      {"e_compra": False}),
     ("nenhuma", "Compare PEC-09-0010", {"e_compra": True}),
+    # Perguntas sobre a comparação em andamento: continuam sendo a mesma compra, sem mudanças.
+    ('{{"produto_id":"PEC-09-0009","quantidade":4,"prazo_max_dias":5}}', "qual é a mais barata?",
+     {"e_compra": True}),
+    ('{{"produto_id":"PEC-09-0009","quantidade":4,"prazo_max_dias":5}}',
+     "por que não o outro fornecedor?", {"e_compra": True}),
 ]
 
 
@@ -152,8 +157,10 @@ def _exemplos_de_mudanca() -> list[tuple[str, str]]:
 MODELO_MUDANCA = ChatPromptTemplate.from_messages([
     ("system", "Persona: intérprete do Pedro. Tarefa: dizer o que a mensagem do usuário muda na sua "
      "solicitação de compra. Contexto: e_compra é true se ele pede para comparar ou comprar uma peça "
-     "ou modifica a solicitação em andamento; uma pergunta sobre políticas, garantia, instalação, "
-     "envios, um CEP, uma preferência ou uma saudação não é. Extraia somente o que a mensagem diz: "
+     "ou modifica a solicitação em andamento, e também se pergunta algo sobre as ofertas dessa "
+     "solicitação (qual é a mais barata, qual chega antes, por que não um fornecedor, quanto "
+     "custa outra oferta): nesse caso nada muda. Uma pergunta sobre políticas, garantia, instalação, "
+     "envios, um CEP, uma preferência, uma saudação ou um agradecimento não é. Extraia somente o que a mensagem diz: "
      "um dado não mencionado é null, nunca zero nem um; não repita os dados da solicitação em "
      "andamento. Converta as quantidades por extenso em números, o dinheiro em centavos de real e "
      "os prazos em dias. Use remover somente se o usuário eliminar um limite de forma explícita. "
@@ -186,6 +193,31 @@ MODELO_CONSELHO = ChatPromptTemplate.from_messages([
     ("ai", '{{"conselho": "O preço de Brava Peças está 12 % abaixo da sua média de 5 meses e é '
            'o mais baixo do período."}}'),
     ("human", "{fatos}"),
+])
+
+# Resposta direta a uma pergunta sobre a comparação. Variáveis: fatos, pergunta e formato.
+MODELO_RESPOSTA_DIRETA = ChatPromptTemplate.from_messages([
+    ("system", "Persona: Pedro, assistente de compras. Tarefa: responder em uma ou duas frases à "
+     "pergunta do usuário sobre a comparação de ofertas. Contexto: a comparação já está calculada "
+     "e verificada, e a recomendação não muda; os fatos são a sua única fonte. Responda exatamente "
+     "o que foi perguntado. Se a oferta de que o usuário fala foi descartada, diga por quê e diga "
+     "qual é a que atende. Copie os números tal como estão nos fatos, chame os fornecedores pelo "
+     "nome, não invente dados nem motivos e não acrescente avaliações próprias. "
+     "Formato: {formato}"),
+    ("human", "Fatos:\n- O pedido é de 3 unidades de PEC-09-0001, com prazo máximo de 10 dias.\n"
+              "- A oferta de Norte Reposição é nacional, custa R$ 900,00 no total, entrega em 4 dias, "
+              "tem estoque de 20 unidades e pedido mínimo de 1; atende às restrições.\n"
+              "- A oferta de EuroSpare Components é internacional, custa R$ 640,00 no total, entrega "
+              "em 30 dias, tem estoque de 8 unidades e pedido mínimo de 1; foi descartada porque o prazo de entrega passa do máximo pedido.\n"
+              "- A oferta recomendada é a de Norte Reposição.\n"
+              "- Entre as ofertas que atendem, a mais barata é a de Norte Reposição.\n"
+              "- A oferta de menor total entre todas é a de EuroSpare Components.\n"
+              "- A entrega mais rápida entre todas é a de Norte Reposição.\n\n"
+              "Pergunta: qual é a mais barata?"),
+    ("ai", '{{"resposta": "A oferta de menor total é a de EuroSpare Components, por R$ 640,00, mas foi '
+           'descartada porque o prazo de entrega passa do máximo pedido. Entre as que atendem, a mais barata é a de Norte Reposição, '
+           'por R$ 900,00."}}'),
+    ("human", "Fatos:\n{fatos}\n\nPergunta: {pergunta}"),
 ])
 
 # Planejador de turno: separa uma mensagem com várias intenções. Variáveis: mensagem e formato.

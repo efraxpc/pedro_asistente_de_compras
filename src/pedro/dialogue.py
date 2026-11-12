@@ -84,15 +84,38 @@ def _candidatos(cenario: Cenario, texto: str) -> list[dict]:
     return min(resultados, key=len) if resultados else []
 
 
+# Perguntas que não são uma compra: CEP, políticas e preferências vão para o agente.
+_NAO_E_COMPRA = re.compile(
+    r"\b(cep|pol[ií]ticas?|devolu[cç][aã]o|devolver|garantia|reembolso|compatibilidade|"
+    r"instalar|instala[cç][aã]o|prefer[eê]ncia|prefiro|lembra|lembre|guarda|guarde|"
+    r"salva|salve)\b", re.I)
+# Vocabulário de uma pergunta sobre as ofertas já comparadas.
+_SOBRE_OFERTAS = re.compile(
+    r"\b(barat\w*|em conta|car[oa]s?|cust\w*|pre[cç]os?|valor\w*|total|r[aá]pid\w*|cheg\w*|"
+    r"entreg\w*|prazos?|demor\w*|fornecedor\w*|ofertas?|estoque|nacion\w*|internacion\w*|"
+    r"importad\w*|descart\w*|por\s?qu[eê]|qual|quais|quanto|melhor|pior|alguma|outra)\b", re.I)
+_OUTRO_ASSUNTO = re.compile(r"\b(parcial|parciais|caixas?|pacotes?|envios?|remessas?)\b", re.I)
+
+
+def pergunta_sobre_comparacao(previo: "EstadoCompra | None", mensagem: str) -> bool:
+    """Indica se a mensagem pergunta algo sobre a comparação em andamento, sem mudá-la.
+
+    Exemplos: «a mais barata?», «qual chega antes?», «por que não a outra?». Exige uma
+    solicitação completa em andamento e exclui políticas, CEP, preferências e envios.
+    """
+    if previo is None or previo.esperando is not None or previo.solicitacao.faltantes():
+        return False
+    if "?" not in mensagem or _NAO_E_COMPRA.search(mensagem) or _OUTRO_ASSUNTO.search(mensagem):
+        return False
+    return bool(_SOBRE_OFERTAS.search(mensagem))
+
+
 def interpretar_compra(cenario: Cenario, previo: EstadoCompra | None,
                        mensagem: str) -> tuple[EstadoCompra, str | None] | None:
     """Devolve um rascunho e, se faltar uma decisão, uma pergunta concreta."""
     texto = mensagem.strip()
     # Perguntas que não são uma compra: CEP, políticas e preferências vão para o agente.
-    if re.search(r"\b(cep|pol[ií]ticas?|devolu[cç][aã]o|devolver|garantia|reembolso|compatibilidade|"
-                 r"instalar|instala[cç][aã]o|prefer[eê]ncia|prefiro|lembra|lembre|guarda|guarde|"
-                 r"salva|salve)\b",
-                 texto, re.I):
+    if _NAO_E_COMPRA.search(texto):
         return None
     ids = re.findall(r"\bPEC-[0-9]{2}-[0-9]{4}\b", texto.upper())
     intencao = bool(re.search(r"\b(quero|preciso|compara|compare|comparar|recomenda|recomende|"
@@ -195,7 +218,10 @@ def interpretar_turno(cenario: Cenario, previo: EstadoCompra | None, mensagem: s
     """
     regras = interpretar_compra(cenario, previo, mensagem)
     em_andamento = previo is not None and previo.solicitacao.produto_id is not None
+    sobre_a_comparacao = previo is not None and pergunta_sobre_comparacao(previo, mensagem)
     if interprete is None or (regras is None and not em_andamento):
+        if regras is None and sobre_a_comparacao and previo is not None:
+            return (previo, None), {"fonte": "regras", "regras": "pergunta sobre a comparação em andamento"}
         return regras, {"fonte": "regras"}
     contexto = (previo.solicitacao.model_dump_json(exclude_none=True) if em_andamento and previo
                 else "nenhuma")
@@ -206,6 +232,10 @@ def interpretar_turno(cenario: Cenario, previo: EstadoCompra | None, mensagem: s
     relatorio = {"fonte": "modelo", "modelo": mudanca.model_dump(exclude_none=True),
                  "regras": None if regras is None else regras[0].solicitacao.model_dump(exclude_none=True)}
     if not mudanca.e_compra:
+        if sobre_a_comparacao and previo is not None:
+            # O modelo não viu uma compra, mas a pergunta é sobre as ofertas já comparadas.
+            relatorio["regras"] = "pergunta sobre a comparação em andamento"
+            return (previo, None), relatorio
         return None, relatorio
     if regras is not None and regras[0].esperando == "produto":
         return regras, relatorio  # falta decidir a peça: isso quem pergunta são as regras

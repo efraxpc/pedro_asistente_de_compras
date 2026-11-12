@@ -1,7 +1,7 @@
 {
   "rubrica": "R17",
   "modo": "real remoto (OpenAI) para o intérprete; regras locais",
-  "data_utc": "2026-11-11T17:17:32+00:00",
+  "data_utc": "2026-11-12T00:57:08+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "temperature": 0,
   "nota": "Catorze mensagens escolhidas por serem difíceis e rotuladas à mão. Cada resultado é None (não é compra) ou (quantidade, orçamento em centavos, prazo em dias).",

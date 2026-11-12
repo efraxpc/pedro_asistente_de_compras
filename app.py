@@ -105,9 +105,15 @@ def tabela_de_ofertas(alternativas: list[Alternativa]) -> None:
         alt="Ofertas comparadas, com o total, se atendem e o motivo de descarte")
 
 
-def mostrar_comparacao(resposta: RespostaCompra, conselho: str | None = None) -> None:
-    """Desenha uma comparação verificada: vencedor, aviso de preço e todas as ofertas."""
+def mostrar_comparacao(resposta: RespostaCompra, conselho: str | None = None,
+                       direta: dict | None = None) -> None:
+    """Desenha uma comparação verificada: resposta à pergunta, vencedor, aviso de preço e ofertas."""
     solicitacao = resposta.solicitacao
+    if direta:
+        verificada = direta.get("fonte") == "resposta verificada"
+        st.success(direta["texto"], icon=":material/chat:",
+                   title="Resposta à sua pergunta · redigida pelo modelo e verificada" if verificada
+                   else "Resposta à sua pergunta · resumo calculado pelo sistema")
     if resposta.estado == "sem_oferta":
         st.warning(f"Nenhuma oferta atende para {solicitacao.quantidade} unidades de "
                    f"{solicitacao.produto_id}. A tabela mostra por que cada uma foi descartada.",
@@ -162,7 +168,7 @@ def mostrar_mensagem(mensagem) -> None:
             st.markdown(f"**{parte['titulo']}**")
         if parte.get("comparacao"):
             mostrar_comparacao(RespostaCompra.model_validate(parte["comparacao"]),
-                               parte.get("conselho"))
+                               parte.get("conselho"), parte.get("direta"))
         else:
             st.markdown(parte["texto"])
 
@@ -212,6 +218,13 @@ def descrever_passo(evento: dict) -> dict | None:
         if evento.get("fonte") == "conselho verificado":
             return {"rotulo": "Redigi um conselho de preço e o verifiquei", "detalhe": ""}
         return {"rotulo": "Descartei o meu conselho de preço; uso o aviso fixo", "estado": "error",
+                "detalhe": "\n".join(f"- {e}" for e in evento.get("erros") or [])}
+    if tipo == "comparacao_reutilizada":
+        return {"rotulo": "Refiz o cálculo da comparação em andamento, sem chamar o modelo", "detalhe": ""}
+    if tipo == "resposta_direta":
+        if evento.get("fonte") == "resposta verificada":
+            return {"rotulo": "Respondi à sua pergunta e verifiquei a frase", "detalhe": ""}
+        return {"rotulo": "Descartei a minha frase; uso o resumo calculado", "estado": "error",
                 "detalhe": "\n".join(f"- {e}" for e in evento.get("erros") or [])}
     return None
 
