@@ -12,15 +12,19 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 ROOT = Path(__file__).resolve().parents[1]
-# Sem argumentos gera o relatório; com `<origem.md> <destino.pdf> [título]` gera outro documento.
+# Sem argumentos gera o relatório; com `<origem.md> <destino.pdf> [título] [largura da página
+# em cm] [escala da letra]` gera outro documento (por exemplo, uma página estreita para leitura).
 ORIGEM = Path(sys.argv[1]).resolve() if len(sys.argv) > 2 else ROOT / "docs/relatorio.md"
 DESTINO = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else ROOT / "docs/relatorio.pdf"
 TITULO = sys.argv[3] if len(sys.argv) > 3 else "Relatório técnico — Pedro"
+LARGURA_CM = float(sys.argv[4]) if len(sys.argv) > 4 else None
+ESCALA = float(sys.argv[5]) if len(sys.argv) > 5 else 1.0
 FONTE = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
 NEGRITO = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
 if FONTE.is_file() and NEGRITO.is_file():
@@ -32,7 +36,9 @@ else:
     font, font_negrito = "Helvetica", "Helvetica-Bold"
 
 AZUL = colors.HexColor("#283963")
-LARGURA = A4[0] - 96
+PAGINA = A4 if LARGURA_CM is None else (LARGURA_CM * cm, A4[1])
+MARGEM = 48 if LARGURA_CM is None else 30
+LARGURA = PAGINA[0] - 2 * MARGEM
 estilos = {
     "titulo": ParagraphStyle("titulo", fontName=font_negrito, fontSize=17, leading=22,
                              textColor=AZUL, spaceAfter=10),
@@ -48,6 +54,10 @@ estilos = {
     "cabecalho": ParagraphStyle("cabecalho", fontName=font_negrito, fontSize=7.6, leading=10.5,
                                textColor=colors.white),
 }
+if ESCALA != 1.0:
+    for estilo in estilos.values():
+        estilo.fontSize *= ESCALA
+        estilo.leading *= ESCALA
 
 
 def marcar(texto: str) -> str:
@@ -101,7 +111,7 @@ for bloco in ORIGEM.read_text(encoding="utf-8").split("\n\n"):
     else:
         elementos.append(Paragraph(marcar(" ".join(linhas)), estilos["texto"]))
 
-SimpleDocTemplate(str(DESTINO), pagesize=A4, leftMargin=48, rightMargin=48, topMargin=48,
-                  bottomMargin=48, title=TITULO,
+SimpleDocTemplate(str(DESTINO), pagesize=PAGINA, leftMargin=MARGEM, rightMargin=MARGEM,
+                  topMargin=MARGEM, bottomMargin=MARGEM, title=TITULO,
                   author="Projeto Pedro (Infnet)").build(elementos)
 print(DESTINO)
