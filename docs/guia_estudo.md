@@ -21,7 +21,7 @@ O Pedro é um assistente de compras de peças de eletrodomésticos. Todos os dad
 | `src/pedro/` | Toda a lógica reutilizável |
 | `scripts/demonstrar_*.py` | Demonstrações com o modelo real; salvam um JSON em `docs/rastros/` |
 | `notebooks/` | Cinco notebooks didáticos, um por fase, com duplos de teste |
-| `tests/` | 143 testes automáticos |
+| `tests/` | 153 testes automáticos |
 | `evals/` | Casos de avaliação e o avaliador do LangSmith |
 | `knowledge/` | Corpus fictício de políticas e o índice FAISS salvo |
 | `datasets/` | Catálogo SQLite sintético |
@@ -58,7 +58,7 @@ O Pedro é um assistente de compras de peças de eletrodomésticos. Todos os dad
 ### R03 — Modelos de prompt reutilizáveis
 
 - **O conceito:** `PromptTemplate` e `ChatPromptTemplate` são prompts com variáveis, escritos uma vez e usados muitas vezes.
-- **No Pedro:** nove modelos com nome, por exemplo `MODELO_EXTRACAO` e `MODELO_AGENTE`.
+- **No Pedro:** dez modelos com nome, por exemplo `MODELO_EXTRACAO` e `MODELO_AGENTE`.
 - **Onde está:** `src/pedro/prompts.py`.
 - **Ver funcionando:** notebook 01, seção R03; `tests/test_prompts.py`.
 - **Para lembrar:** o prompt é código: tem nome, variáveis e teste.
@@ -285,7 +285,7 @@ O Pedro é um assistente de compras de peças de eletrodomésticos. Todos os dad
 |---|---|---|
 | R01 | Agente híbrido: regras e modelo | `src/pedro/anatomia.py` |
 | R02 | Plano validado para mensagens com várias intenções | `src/pedro/planner.py` |
-| R03 | Nove modelos de prompt com nome | `src/pedro/prompts.py` |
+| R03 | Dez modelos de prompt com nome | `src/pedro/prompts.py` |
 | R04 | Parser Pydantic e checagem de JSON completo | `src/pedro/chains.py` |
 | R05 | invoke, batch, stream e @chain | `src/pedro/chains.py` |
 | R06 | A mesma cadeia em LCEL e em código imperativo | `src/pedro/laboratorio.py` |

@@ -115,6 +115,44 @@ Foi aplicada a sua preferência por fornecedores nacionais. Sem ela, a mais bara
 Fontes: PEC-11-0001-BR-04, PEC-11-0001-INT-06, PEC-11-0001-BR-06
 ```
 
+## Perguntas sobre a comparação: a resposta direta
+
+**O problema.** Depois de uma comparação, o usuário pergunta «a mais barata?» ou «qual é a mais em conta?». Antes, o chat mostrava de novo o mesmo painel, sem nenhuma frase que respondesse à pergunta. Às vezes terminava em «Não posso confirmar uma recomendação…»: o modelo respondia a partir do histórico, sem chamar a ferramenta de novo, e a verificação rejeitava a resposta.
+
+**O que o usuário vê agora.** Um quadro verde acima dos cartões, com uma ou duas frases que respondem à pergunta. O título diz de onde veio o texto: «Resposta à sua pergunta · redigida pelo modelo e verificada» ou «Resposta à sua pergunta · resumo calculado pelo sistema». A comparação completa continua embaixo, igual.
+
+A correção tem três partes:
+
+| Parte | O que faz | Onde |
+|---|---|---|
+| 1. Reconhecer a pergunta | Uma regra (`pergunta_sobre_comparacao`) reconhece uma pergunta sobre a comparação em andamento: exige uma solicitação completa em andamento, um «?» e vocabulário de comparação (barata, prazo, fornecedor, por que…), e exclui políticas, CEP, preferências e envios. `interpretar_turno` a usa para deixar a solicitação como está. O prompt do intérprete (`MODELO_MUDANCA`) ganhou dois exemplos few-shot para esse caso | [dialogue.py](../src/pedro/dialogue.py); [prompts.py](../src/pedro/prompts.py) |
+| 2. Recalcular sem depender do modelo | Para essa pergunta, o **sistema** refaz a comparação (`resposta_local`), em vez de esperar que o modelo chame a ferramenta de novo. O resultado passa pela verificação exata e pelo NLI, e o rastro registra o evento `comparacao_reutilizada` | `resolver`, em [agent.py](../src/pedro/agent.py) |
+| 3. Responder à pergunta | `fatos_da_comparacao` monta os fatos. O modelo escreve uma ou duas frases (`criar_respondedor`; prompt `MODELO_RESPOSTA_DIRETA`: PTCF com um exemplo few-shot e saída Pydantic `RespostaDireta`). `verificar_resposta_direta` só publica a frase se os números dela estão nos fatos, se ela nomeia um fornecedor comparado e se o NLI devolve *entailment*. Se não, publica-se o `resumo_fixo`, calculado pelo sistema | [resposta_direta.py](../src/pedro/resposta_direta.py) |
+
+É o mesmo padrão do conselho de preço: o modelo redige, o sistema verifica, e atrás há sempre um texto fixo. A resposta direta **nunca muda a recomendação nem os números**. Ela só roda quando a mensagem do usuário é uma pergunta (`e_pergunta`). O texto é também a primeira linha da mensagem pública (`_com_direta`) e viaja em `additional_kwargs["partes"][0]["direta"]`, de onde a interface o desenha (`mostrar_comparacao`, em [app.py](../app.py)).
+
+**Medição com o modelo real** (`gpt-4.1-mini`) e o NLI real local, em 2026-11-11: uma comparação («Compare 5 unidades de PEC-01-0001 com prazo de 7 dias») e seis perguntas sobre ela ([rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json); [scripts/demonstrar_pergunta.py](../scripts/demonstrar_pergunta.py)). Nas seis perguntas o modelo não chamou nenhuma ferramenta, e a recomendação ficou igual: CentroPeças, R$ 7.279,83.
+
+| Pergunta | O que foi publicado | Fonte |
+|---|---|---|
+| a mais barata? | «A oferta de menor total entre todas é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por falta de estoque e prazo de entrega fora do limite. A mais barata que atende é a de CentroPeças, por R$ 7.279,83.» | Resposta verificada |
+| qual é a mais em conta? | «A oferta mais em conta é a de Litoral Parts, com custo total de R$ 1.930,40, mas foi descartada […]. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83.» | Resposta verificada |
+| qual chega mais rápido? | «A entrega mais rápida entre todas é a da CentroPeças, que entrega em 2 dias.» | Resposta verificada |
+| por que não a Litoral Parts? | O resumo fixo: «A mais barata que atende às suas restrições é a de CentroPeças, por R$ 7.279,83, com entrega em 2 dias. A de menor total é a de Litoral Parts, por R$ 1.930,40, mas foi descartada porque não tem estoque suficiente e porque o prazo de entrega passa do máximo pedido.» | Resumo fixo |
+| e a Atlantic, quanto custa? | «A oferta da Atlantic Repair Parts custa R$ 7.344,92 no total, mas foi descartada porque o prazo de entrega passa do máximo pedido de 7 dias.» | Resposta verificada |
+| alguma é internacional? | «Sim, a oferta da Atlantic Repair Parts é internacional, mas foi descartada porque o prazo de entrega passa do máximo pedido.» | Resposta verificada |
+| **Total** | **6 perguntas respondidas** | **5 respostas verificadas, 1 resumo fixo** |
+
+Limites:
+
+- **A regra é de vocabulário.** Uma pergunta sem nenhuma daquelas palavras continua indo para o agente.
+- **O NLI rejeitou uma frase verdadeira.** Em «por que não a Litoral Parts?» o modelo escreveu «A oferta de Litoral Parts foi descartada porque não tem estoque suficiente e o prazo de entrega passa do máximo pedido de 7 dias.» A frase é verdadeira, e o NLI a marcou como *contradiction*. Falhou para o lado seguro: foi publicado o resumo fixo.
+- **O resumo fixo não se adapta à pergunta.** Ele diz sempre a mesma coisa: a mais barata que atende e a de menor total.
+- **Uma única execução**, com seis perguntas sobre uma peça.
+- **As outras demonstrações não foram refeitas.** Depois desta mudança só foram executados este script e o de R17. As demais demonstrações com o modelo real e a avaliação no LangSmith não foram reexecutadas: os rastros salvos delas são anteriores.
+
+Os testes estão em [tests/test_resposta_direta.py](../tests/test_resposta_direta.py) (10 testes, com duplos).
+
 ## A descoberta que mudou a comparação
 
 Durante quase todo o projeto a comparação ignorou o pedido mínimo, embora o dado estivesse no catálogo. O exemplo usado em todas as demonstrações estava errado como recomendação de compra:
@@ -248,7 +286,7 @@ Não se busca o nível 5 porque o problema — recomendar uma oferta verificada 
 |---|---|---|
 | Anatomia lida dos objetos reais do agente: modelo, executor, system message PTCF, seis ferramentas com seu papel e lógica, memória, base de conhecimento e porta de publicação | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomia do agente»; [anatomia.py](../src/pedro/anatomia.py) | Execução real local (sem modelo) |
 | Agente híbrido em ação: «lista peças» e «Compare PEC-01-0001» são resolvidas por regra, sem passar pelo agente (na segunda, o intérprete de turno lê a mensagem); a pergunta de CEP passa pelo agente, que recebe seis ferramentas e executa `consultar_cep` | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · agente híbrido» | Execução com **duplo de teste**: modelo roteirizado e ViaCEP simulado; o fluxo, o executor, a ferramenta e a verificação são os reais |
-| A anatomia descrita coincide com o agente construído | [tests/test_anatomia.py](../tests/test_anatomia.py) | Teste automático (143/143 testes na suíte) |
+| A anatomia descrita coincide com o agente construído | [tests/test_anatomia.py](../tests/test_anatomia.py) | Teste automático (153/153 testes na suíte) |
 | Explicação de componentes, classificação e maturidade | Esta seção; [arquitetura.mmd](arquitetura.mmd) | Documentação |
 
 ### Pendências e limitações
@@ -337,7 +375,7 @@ Regras de planejamento:
 
 > O aluno construiu modelos de prompt reutilizáveis com PromptTemplate ou ChatPromptTemplate?
 
-**Resposta curta.** Sim. Há dois `ChatPromptTemplate` com nome próprio em [prompts.py](../src/pedro/prompts.py): um para interpretar solicitações de compra e outro para o agente final. O primeiro é reutilizado em duas cadeias diferentes e foi executado com o modelo real sobre três solicitações do domínio.
+**Resposta curta.** Sim. Há dez `ChatPromptTemplate` com nome próprio (`MODELO_*`) em [prompts.py](../src/pedro/prompts.py). Os dois principais são o que interpreta solicitações de compra e o do agente final. O primeiro é reutilizado em duas cadeias diferentes e foi executado com o modelo real sobre três solicitações do domínio.
 
 ### 1. Os modelos de prompt
 
@@ -348,11 +386,13 @@ Regras de planejamento:
 
 Os dois têm a mesma forma: uma mensagem de sistema fixa com lacunas e uma mensagem humana com a solicitação. Os exemplos few-shot estão no mesmo arquivo e entram no modelo de prompt do agente como mais uma variável.
 
+Os outros oito seguem a mesma forma e estão no mesmo arquivo: `MODELO_EXTRACAO_FEWSHOT` e `MODELO_EXTRACAO_COT` (variantes da extração, R11), `MODELO_REPARO` (R04), `MODELO_SQL` (R21), `MODELO_MUDANCA` (intérprete de turno, R17), `MODELO_CONSELHO` (conselho de preço), `MODELO_PLANO` (planejador, R02) e `MODELO_RESPOSTA_DIRETA`. Este último é o mais novo: responde a uma pergunta sobre a comparação, com as variáveis `fatos`, `pergunta` e `formato` (ver «Perguntas sobre a comparação: a resposta direta»).
+
 ### 2. O que os torna reutilizáveis
 
 - **Variáveis em vez de texto fixo.** A solicitação, o cenário e os exemplos são injetados; o texto do modelo de prompt não muda.
 - **`partial` para o que não muda por turno.** As instruções de formato saem do parser Pydantic e são fixadas uma vez; fica livre só `texto`.
-- **Um único arquivo.** Os dois modelos de prompt e os exemplos vivem em `prompts.py`; o resto do código os importa.
+- **Um único arquivo.** Os modelos de prompt e os exemplos vivem em `prompts.py`; o resto do código os importa.
 - **Um objeto, várias cadeias.** O mesmo `PROMPT` alimenta a versão declarativa e a imperativa, então uma mudança de redação é feita em um só lugar.
 
 **Decisão técnica.** Foi escolhido `ChatPromptTemplate` e não `PromptTemplate` porque o modelo é de chat e o modelo de prompt precisa separar papéis: as regras vão na mensagem de sistema e a solicitação do usuário na mensagem humana. Essa separação evita que o texto do usuário se misture com as instruções. Coincide com a orientação dada em aula de focar em `ChatPromptTemplate` como padrão atual. Não foi acrescentado um `PromptTemplate` de texto puro só para exibi-lo: a rubrica pede um ou outro e nenhum ponto do fluxo usa um modelo de texto.
@@ -1317,6 +1357,8 @@ O chat interpreta cada turno com duas peças (`interpretar_turno`, em [dialogue.
 
 O modelo só é consultado quando pode ajudar: se as regras veem uma compra ou se há uma solicitação em andamento. Uma saudação sem compra pendente não custa nenhuma chamada.
 
+Uma regra nova, `pergunta_sobre_comparacao`, cobre as perguntas sobre a comparação em andamento («a mais barata?», «por que não o outro fornecedor?»): a solicitação fica como está e o sistema refaz a comparação. O prompt do intérprete ganhou dois exemplos few-shot para esse caso. A medição abaixo foi refeita depois dessa mudança, com o mesmo resultado. O detalhe está em «Perguntas sobre a comparação: a resposta direta», no núcleo.
+
 Medição com o modelo real sobre catorze mensagens difíceis, com o resultado correto fixado à mão:
 
 | Mensagem (com uma solicitação em andamento de 2 unidades e prazo 7) | Só regras | Regras e modelo |
@@ -1805,9 +1847,9 @@ Um modelo de inferência em linguagem natural classifica a relação entre a evi
 | Entrega em 5 dias | Entrega em 10 dias | *contradiction* |
 | Entrega em 5 dias | A peça é azul | *neutral* (não diz nada) |
 
-Só *entailment* permite publicar. O modelo é `mDeBERTa-v3-base-mnli-xnli`, local, com a revisão fixada. É aplicado em três lugares: nas recomendações (a evidência sustenta o estoque e o prazo do vencedor?), nas políticas (o fragmento sustenta o resumo?) e no **conselho de preço** (os fatos sobre os preços sustentam o que o modelo aconselha?).
+Só *entailment* permite publicar. O modelo é `mDeBERTa-v3-base-mnli-xnli`, local, com a revisão fixada. É aplicado em quatro lugares: nas recomendações (a evidência sustenta o estoque e o prazo do vencedor?), nas políticas (o fragmento sustenta o resumo?), no **conselho de preço** (os fatos sobre os preços sustentam o que o modelo aconselha?) e na **resposta direta** a uma pergunta sobre a comparação (os fatos da comparação sustentam a frase do modelo?).
 
-Ele ajuda mais nos dois últimos, porque ali se verifica texto livre. No conselho de preço isso foi medido. Com o primeiro prompt (execução da versão anterior, em espanhol), o NLI rejeitou 10 de 15 conselhos, quase todos por acrescentar avaliações que os fatos não diziam. Com o prompt ajustado, na execução em português, o NLI não rejeitou nenhum dos 15; um conselho foi barrado antes, pela checagem de números (ver «O aviso de preço»).
+Ele ajuda mais nos três últimos, porque ali se verifica texto livre. No conselho de preço isso foi medido. Com o primeiro prompt (execução da versão anterior, em espanhol), o NLI rejeitou 10 de 15 conselhos, quase todos por acrescentar avaliações que os fatos não diziam. Com o prompt ajustado, na execução em português, o NLI não rejeitou nenhum dos 15; um conselho foi barrado antes, pela checagem de números (ver «O aviso de preço»).
 
 ### 4. Ancoragem: o modelo decide, o sistema põe os dados
 
@@ -1828,7 +1870,7 @@ A ancoragem não afrouxa a verificação: só evita rejeitar o que já era verda
 ### 5. O que acontece quando falha
 
 1. **Uma correção.** O erro volta ao modelo e ele propõe outra resposta.
-2. **Degradação.** Nas políticas, se as citações são válidas mas o resumo não passa no NLI, publicam-se só as citações literais.
+2. **Degradação.** Nas políticas, se as citações são válidas mas o resumo não passa no NLI, publicam-se só as citações literais. No conselho de preço e na resposta direta, se a frase do modelo não passa, publica-se o texto fixo calculado pelo sistema (o aviso fixo ou o `resumo_fixo`).
 3. **Não se publica.** Se nada passa, o usuário lê «Não posso confirmar…». Nunca uma resposta sem verificar.
 
 ### 6. Resultados medidos
@@ -1841,6 +1883,7 @@ A ancoragem não afrouxa a verificação: só evita rejeitar o que já era verda
 | Uma primeira proposta com o vencedor ou o total incorreto foi rejeitada e a segunda foi correta | Primeira execução da conversa de R18 (versão anterior, em espanhol); motivou a ancoragem da comparação |
 | Uma política cujo resumo não passou no NLI foi corrigida e a segunda proposta passou | [citacoes_ancoradas.md](citacoes_ancoradas.md) |
 | Com o primeiro prompt, o NLI rejeitou 10 de 15 conselhos de preço com avaliações sem respaldo (versão anterior, em espanhol). Com o prompt ajustado, em português: 14 de 15 publicados; o NLI não rejeitou nenhum e 1 caiu na checagem de números | [rastros/precios_consejo_llm_antes.json](rastros/precios_consejo_llm_antes.json) e [rastros/precos_conselho_llm.json](rastros/precos_conselho_llm.json) |
+| Resposta direta a seis perguntas sobre uma comparação: 5 frases do modelo publicadas depois da checagem de números, de fornecedor e do NLI; 1 rejeitada pelo NLI (*contradiction*, sobre uma frase verdadeira), com o resumo fixo publicado no lugar | [rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json) |
 
 ### Evidência
 
@@ -1850,13 +1893,14 @@ A ancoragem não afrouxa a verificação: só evita rejeitar o que já era verda
 | Oito propostas verificadas sem erros em uma conversa | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json) | Execução real remota |
 | Ancoragem de citações e de CEP, antes e depois | [citacoes_ancoradas.md](citacoes_ancoradas.md); [rastros/r10_viacep_llm_antes.json](rastros/r10_viacep_llm_antes.json) (versão anterior, em espanhol) | Execução real remota |
 | Três pares NLI com suas três classes | [evidencias.md](evidencias.md), linha R5.3 | Execução real local |
+| A porta da resposta direta: números, fornecedor, NLI e resumo fixo | [rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json); [tests/test_resposta_direta.py](../tests/test_resposta_direta.py) | **Execução real remota** (`gpt-4.1-mini`), NLI real local; testes automáticos |
 | Cada checagem exata, as três classes NLI, as ancoragens e a degradação | [tests/test_core.py](../tests/test_core.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_policy_cep.py](../tests/test_policy_cep.py); [tests/test_citacoes_ancoradas.py](../tests/test_citacoes_ancoradas.py) | Testes automáticos |
 
 ### Pendências e limitações
 
 - **Verifica contra a regra de negócio, não a regra.** Enquanto a comparação ignorou o pedido mínimo, a verificação aprovou recomendações que um fornecedor não aceitaria.
 - **Verifica que a resposta seja verdadeira, não que seja pertinente.** Em um experimento com memória contaminada, uma pergunta de CEP recebeu uma resposta de compra verificada, mas fora do assunto.
-- O NLI não é exato. Na execução anterior do conselho de preço, em espanhol, ele rejeitou como *contradiction* um conselho que era verdadeiro (esse rastro foi substituído pelo novo; só está no histórico do git). Na execução em português o NLI não rejeitou nenhum conselho: o mesmo caso foi barrado antes, pela checagem de números, porque o modelo escreveu «mais de 200 %» e os fatos dizem 203 % e 233 %. Falha para o lado seguro, mas falha. Sua exatidão geral não foi medida.
+- O NLI não é exato. Na execução anterior do conselho de preço, em espanhol, ele rejeitou como *contradiction* um conselho que era verdadeiro (esse rastro foi substituído pelo novo; só está no histórico do git). Na execução em português o NLI não rejeitou nenhum conselho: o mesmo caso foi barrado antes, pela checagem de números, porque o modelo escreveu «mais de 200 %» e os fatos dizem 203 % e 233 %. Falha para o lado seguro, mas falha. Na resposta direta, o NLI rejeitou como *contradiction* uma de seis frases, e ela era verdadeira ([rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json)). Sua exatidão geral não foi medida.
 - O modelo NLI aceita 512 tokens: com várias citações longas a premissa é truncada.
 - O limiar de 80 % para ancorar citações foi fixado por critério, sem calibração.
 
@@ -2055,6 +2099,7 @@ Na barra lateral: novo chat (mesma base de dados, conversa nova) e a lista de co
 | Elemento | O que mostra |
 |---|---|
 | **Passos do agente** | «Como cheguei a esta resposta»: li a sua mensagem, comparei as ofertas dos fornecedores, peguei os números do cálculo da ferramenta, verifiquei a resposta, redigi um conselho de preço e o verifiquei. Saem do `Rastro` do turno, ao vivo |
+| **Resposta à sua pergunta** | Quadro verde acima dos cartões, só quando a mensagem é uma pergunta sobre a comparação. O título diz se o texto foi «redigido pelo modelo e verificado» ou se é o «resumo calculado pelo sistema» |
 | **Quatro cartões** | Fornecedor recomendado, total, entrega e origem |
 | **Conselho ou aviso de preço** | Quadro azul se o conselho do modelo passou na verificação; amarelo se foi usado o aviso fixo |
 | **Tabela de ofertas** | Todas as ofertas, com a descartada e seu motivo (estoque, pedido mínimo, prazo ou orçamento) |

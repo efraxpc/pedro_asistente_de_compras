@@ -1,6 +1,6 @@
 # Relatório técnico — Pedro, assistente de compras
 
-**Curso:** Agentes Cognitivos com LangChain (Infnet). **Atualizado:** 2026-11-11. **Modelo:** gpt-4.1-mini. **Testes automáticos:** 143, todos passando.
+**Curso:** Agentes Cognitivos com LangChain (Infnet). **Atualizado:** 2026-11-11. **Modelo:** gpt-4.1-mini. **Testes automáticos:** 153, todos passando.
 
 Este relatório explica como o projeto responde às 29 rubricas do guia integrado (R01–R29). Cada rubrica tem aqui um resumo; a resposta completa, com suas tabelas e seus limites, está em docs/respostas_rubricas.md. As execuções com o modelo real estão salvas em docs/rastros/ e o registro do que foi executado, em docs/evidencias.md.
 
@@ -55,6 +55,12 @@ Quando o preço de hoje se afasta pelo menos 10 % da sua média, é acrescentado
 
 Com o modelo e o NLI reais, sobre quinze peças: na versão anterior em espanhol, passaram na verificação 5 conselhos com o primeiro prompt (docs/rastros/precios_consejo_llm_antes.json) e 14 com o prompt ajustado. Na reexecução em português passaram de novo 14 de 15 (docs/rastros/precos_conselho_llm.json); o que ficou de fora citava um número que não estava nos fatos. Com o primeiro prompt, o modelo acrescentava avaliações («una buena oportunidad», citação da execução em espanhol) imitando um exemplo few-shot, e o NLI as rejeitava. É aqui, ao verificar texto livre, que o modelo NLI faz um trabalho que o cálculo exato não consegue fazer.
 
+### Perguntas sobre a comparação
+
+Depois de uma comparação, o usuário pergunta «a mais barata?» ou «qual chega mais rápido?». Antes, o chat repetia o mesmo painel sem responder, e às vezes terminava em «Não posso confirmar…». Agora uma regra reconhece essa pergunta e deixa a solicitação como está; o sistema refaz a comparação e a verifica, sem depender de o modelo chamar a ferramenta de novo; e o modelo escreve uma ou duas frases que respondem à pergunta (src/pedro/resposta_direta.py). A frase só é publicada se os seus números estão nos fatos, se nomeia um fornecedor comparado e se o NLI a sustenta; se não, publica-se um resumo fixo calculado pelo sistema. A interface mostra a resposta em um quadro verde acima dos cartões. A recomendação e os números nunca mudam.
+
+Com o modelo e o NLI reais, uma comparação e seis perguntas (docs/rastros/pergunta_direta_llm.json): as seis foram respondidas, 5 com a frase do modelo verificada e 1 com o resumo fixo. Nessa última o NLI rejeitou uma frase que era verdadeira. Limites: a regra é de vocabulário; o resumo fixo não se adapta à pergunta; depois desta mudança só foram refeitas esta demonstração e a de R17, então os demais rastros e a avaliação no LangSmith são anteriores a ela.
+
 ## 4. Arquitetura
 
 Um turno segue sempre o mesmo percurso: interpretar a mensagem, decidir o caminho, consultar, verificar e responder.
@@ -75,7 +81,7 @@ A interface é Streamlit (app.py) e tem só o chat; toda a lógica fica em src/p
 |---|---|---|
 | R01 | Anatomia, tipo e maturidade do agente | Agente híbrido; maturidade nível 4 demonstrada |
 | R02 | Planejamento e memória aumentada | Cinco passos observáveis e planejador de turno |
-| R03 | Modelos de prompt reutilizáveis | Nove ChatPromptTemplate com nome próprio |
+| R03 | Modelos de prompt reutilizáveis | Dez ChatPromptTemplate com nome próprio |
 | R04 | Saída estruturada em JSON | Laboratório de oito saídas quebradas |
 | R05 | invoke, batch, stream e @chain | Os três medidos com o modelo real |
 | R06 | LCEL e justificativa | Os dois estilos comparados pelo que o rastro deixa ver |
@@ -90,7 +96,7 @@ Uma solicitação é dividida em cinco passos com saída observável: extrair, c
 
 ### R03 — Modelos de prompt reutilizáveis
 
-Os modelos de prompt estão reunidos em src/pedro/prompts.py, todos ChatPromptTemplate: extração (em três variantes), reparo, text-to-SQL, planejador, intérprete, conselho de preço e agente. O de extração é reutilizado na cadeia declarativa e na imperativa, e foi executado com o modelo real sobre três solicitações do domínio. Escolheu-se ChatPromptTemplate porque separa as regras (mensagem de sistema) do que o usuário escreve (mensagem humana).
+Os modelos de prompt estão reunidos em src/pedro/prompts.py, todos ChatPromptTemplate: extração (em três variantes), reparo, text-to-SQL, planejador, intérprete, conselho de preço, resposta direta e agente. São dez. O de extração é reutilizado na cadeia declarativa e na imperativa, e foi executado com o modelo real sobre três solicitações do domínio. Escolheu-se ChatPromptTemplate porque separa as regras (mensagem de sistema) do que o usuário escreve (mensagem humana).
 
 ### R04 — Saída estruturada em JSON
 
@@ -168,7 +174,7 @@ Um chatbot com ConversationChain e ConversationBufferMemory lembrou em quatro tu
 
 ### R17 — Intenção e entidades
 
-O chat reconhece seis intenções e cinco entidades. As regras identificam a peça e um intérprete few-shot decide se a mensagem é uma compra e o que ela muda. Em catorze mensagens difíceis, as regras sozinhas acertaram 8 e com o modelo 14: ele entende «Suba para meia dúzia», «Esqueça o prazo» ou «Dobre a quantidade». Quando falta a peça ou a quantidade, pergunta em vez de inventar.
+O chat reconhece seis intenções e cinco entidades. As regras identificam a peça e um intérprete few-shot decide se a mensagem é uma compra e o que ela muda. Em catorze mensagens difíceis, as regras sozinhas acertaram 8 e com o modelo 14: ele entende «Suba para meia dúzia», «Esqueça o prazo» ou «Dobre a quantidade». Uma regra nova reconhece as perguntas sobre a comparação em andamento («a mais barata?») e deixa a solicitação como está; o intérprete ganhou dois exemplos few-shot para esse caso, e a medição refeita deu o mesmo resultado. Quando falta a peça ou a quantidade, pergunta em vez de inventar.
 
 ### R18 — Conversa real
 
@@ -219,7 +225,7 @@ Esta pergunta foi medida de novo na migração. A tradução literal da pergunta
 
 ### R24 — Verificação
 
-Nenhuma resposta é mostrada sem passar por duas portas dentro do fluxo. A verificação exata recalcula a resposta com os dados do cenário: total, estoque, pedido mínimo, orçamento, prazo, vencedor, identificadores e procedência. O modelo NLI classifica a relação entre evidência e afirmação em três classes, e só entailment permite publicar. Um passo anterior de ancoragem preenche com dados das ferramentas as citações, o CEP, as preferências, os números da comparação e as tabelas do catálogo. Se a verificação falha há uma correção; se falha de novo, não se publica. Limite importante: a verificação confere contra a regra de negócio, não confere a regra; enquanto a comparação ignorou o pedido mínimo, aprovou recomendações que um fornecedor não aceitaria.
+Nenhuma resposta é mostrada sem passar por duas portas dentro do fluxo. A verificação exata recalcula a resposta com os dados do cenário: total, estoque, pedido mínimo, orçamento, prazo, vencedor, identificadores e procedência. O modelo NLI classifica a relação entre evidência e afirmação em três classes, e só entailment permite publicar. Um passo anterior de ancoragem preenche com dados das ferramentas as citações, o CEP, as preferências, os números da comparação e as tabelas do catálogo. Se a verificação falha há uma correção; se falha de novo, não se publica. O conselho de preço e a resposta direta a uma pergunta sobre a comparação passam por uma porta própria (números exatos, fornecedor e NLI); se falham, publica-se o texto fixo do sistema. Limite importante: a verificação confere contra a regra de negócio, não confere a regra; enquanto a comparação ignorou o pedido mínimo, aprovou recomendações que um fornecedor não aceitaria.
 
 ### R25 e R26 — Agente único e executor
 
