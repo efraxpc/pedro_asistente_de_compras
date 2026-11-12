@@ -24,7 +24,8 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parents[1]
 PAGINA = ROOT / "docs/tour/tour_rubricas.html"
 PAUSA = 0.7  # segundos de silêncio depois de cada passo
-RITMO = 1.1  # a voz sai um pouco lenta; 1.1 a deixa em ritmo de conversa
+# Fator de velocidade por serviço: a voz da OpenAI sai um pouco lenta; a da ElevenLabs fica como vem.
+RITMO = {"OpenAI": 1.1, "ElevenLabs": 1.0}
 ESTILO = ("Habla en español latinoamericano neutro, como una profesora cercana que explica con "
           "claridad a un estudiante. Tono cálido y natural, ritmo de conversación normal, sin sonar a locutor.")
 
@@ -97,6 +98,7 @@ def main() -> None:
     opcoes = argumentos.parse_args()
     load_dotenv(ROOT / ".env")
     nome_voz, narrar = escolher_voz()
+    ritmo = RITMO[nome_voz.split()[0]]
     chromium = opcoes.chromium
     if chromium is None:
         instalados = sorted(Path.home().glob(".cache/ms-playwright/chromium-*/chrome-linux*/chrome"))
@@ -111,7 +113,7 @@ def main() -> None:
                 bruto, pronto = pasta / f"{i + 1:02d}_{n}.mp3", pasta / f"{i + 1:02d}_{n}.wav"
                 narrar(texto, bruto)
                 subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(bruto), "-af",
-                                f"atempo={RITMO},loudnorm=I=-16:TP=-1.5:LRA=11,apad=pad_dur={PAUSA}", "-ar", "44100", "-ac", "1", str(pronto)], check=True)
+                                f"atempo={ritmo},loudnorm=I=-16:TP=-1.5:LRA=11,apad=pad_dur={PAUSA}", "-ar", "44100", "-ac", "1", str(pronto)], check=True)
                 quadros.append((pasta / f"{i + 1:02d}_{n}.png", duracao(pronto)))
                 audios.append(pronto)
                 caracteres += len(texto)
