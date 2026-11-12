@@ -34,7 +34,8 @@ def main() -> None:
 
     modelo = os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
     cenario = criar_cenario(ROOT / "storage/evidencias/r10_catalogos")
-    memoria = ROOT / "storage/evidencias/r10_memoria.sqlite3"
+    # Memória nova a cada execução: as lembranças de execuções anteriores mudam o resultado.
+    memoria = ROOT / f"storage/evidencias/r10_memoria-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}.sqlite3"
     ferramenta = next(f for f in ferramentas(cenario, memoria, "evidencia_r10", "")
                       if f.name == "consultar_cep")
     sessao = nova_sessao(memoria, "evidencia_r10", cenario.dataset_id)

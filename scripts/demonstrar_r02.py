@@ -38,7 +38,8 @@ def main() -> None:
 
     modelo = os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
     cenario = criar_cenario(ROOT / "storage/evidencias/r02_catalogos")
-    memoria = ROOT / "storage/evidencias/r02_memoria.sqlite3"
+    # Memória nova a cada execução: as lembranças de execuções anteriores mudam o resultado.
+    memoria = ROOT / f"storage/evidencias/r02_memoria-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}.sqlite3"
     llm, nli, indice = ChatOpenAI(model=modelo), ModeloNLI(), criar_indice_demo()
 
     def conversar(turnos: list[str]) -> list[dict]:

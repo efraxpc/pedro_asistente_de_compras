@@ -62,7 +62,9 @@ def main() -> None:
     segundos_carga = time.perf_counter() - inicio
 
     cenario = criar_cenario(ROOT / "storage/evidencias/r22_catalogos")
-    memoria = ROOT / "storage/evidencias/r22_memoria.sqlite3"
+    # Memória nova a cada execução: as lembranças de execuções anteriores mudavam o resultado.
+    marca = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+    memoria = ROOT / f"storage/evidencias/r22_memoria-{marca}.sqlite3"
     ferramenta = next(f for f in ferramentas(cenario, memoria, "evidencia_r22", "", indice)
                       if f.name == "consultar_politicas")
     direta = json.loads(ferramenta.invoke({"pergunta": PERGUNTAS[0]}))
@@ -83,6 +85,8 @@ def main() -> None:
             "ferramentas": [e["ferramenta"] for e in eventos if e["evento"] == "tool_start"],
             "citacoes_ancoradas": [c for e in eventos if e["evento"] == "citacoes_ancoradas"
                                    for c in e["citacoes"]],
+            "verificacoes": [{"tentativa": e["tentativa"], "estado": e["estado"], "erros": e["erros"]}
+                             for e in eventos if e["evento"] == "verificacao"],
             "resposta_publicada": resposta})
 
     relatorio = {
