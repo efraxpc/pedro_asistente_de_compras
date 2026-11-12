@@ -27,7 +27,7 @@ def _gerador(*consultas):
 def test_consulta_de_leitura_permitida_devolve_linhas(cenario):
     resultado = consultar_sql(cenario, "SELECT c.name, count(*) AS pecas FROM parts p "
                                        "JOIN categories c ON c.id = p.category_id GROUP BY c.name")
-    assert len(resultado["linhas"]) == 11 and sum(f["pecas"] for f in resultado["linhas"]) == 2640
+    assert len(resultado["linhas"]) == 18 and sum(f["pecas"] for f in resultado["linhas"]) == 4320
     assert resultado["dataset_id"] == cenario.dataset_id
 
 
@@ -47,7 +47,7 @@ def test_consulta_de_leitura_permitida_devolve_linhas(cenario):
 def test_consultas_hostis_ou_fora_do_esquema_sao_rejeitadas(cenario, sql, motivo):
     with pytest.raises(ConsultaRejeitada, match=motivo):
         consultar_sql(cenario, sql)
-    assert consultar_sql(cenario, "SELECT count(*) AS n FROM offers")["linhas"] == [{"n": 7920}]
+    assert consultar_sql(cenario, "SELECT count(*) AS n FROM offers")["linhas"] == [{"n": 12960}]
 
 
 def test_o_resultado_e_cortado_no_limite_de_linhas(cenario):
@@ -68,7 +68,7 @@ def test_duas_rejeicoes_nao_devolvem_dados(cenario):
     gerador, _ = _gerador("DELETE FROM offers", "DROP TABLE offers")
     resultado = responder_sql(cenario, "Apague as ofertas", gerador)
     assert resultado["estado"] == "rejeitada" and resultado["linhas"] == []
-    assert consultar_sql(cenario, "SELECT count(*) AS n FROM offers")["linhas"] == [{"n": 7920}]
+    assert consultar_sql(cenario, "SELECT count(*) AS n FROM offers")["linhas"] == [{"n": 12960}]
 
 
 def test_uma_consulta_valida_sem_linhas_e_sinalizada(cenario):
@@ -138,7 +138,7 @@ def test_a_ferramenta_usa_o_plano_com_id_e_sql_somente_em_perguntas_abertas(tmp_
     com_id = json.loads(ferramenta.invoke({"pergunta": "ofertas PEC-01-0001"}))
     assert com_id["modo"] == "plano" and len(com_id["linhas"]) == 3
     aberta = json.loads(ferramenta.invoke({"pergunta": "Quantas peças existem?"}))
-    assert aberta["modo"] == "sql" and aberta["linhas"] == [{"n": 2640}]
+    assert aberta["modo"] == "sql" and aberta["linhas"] == [{"n": 4320}]
 
 
 def test_o_historico_de_precos_pode_ser_consultado_por_sql(cenario):

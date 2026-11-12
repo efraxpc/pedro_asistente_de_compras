@@ -11,7 +11,7 @@ def test_anatomia_reflete_o_agente_construido(tmp_path):
         "agente": "create_openai_tools_agent", "executor": "AgentExecutor",
         "max_iteracoes": 6, "historico": "RunnableWithMessageHistory"}
     assert anatomia["base_conhecimento"]["dataset_id"] == cenario.dataset_id
-    assert anatomia["base_conhecimento"]["pecas"] == 2640
+    assert anatomia["base_conhecimento"]["pecas"] == 4320
 
 
 def test_inventario_langchain_sai_dos_imports_do_codigo():

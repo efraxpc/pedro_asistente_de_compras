@@ -72,11 +72,15 @@ def test_a_frase_do_modelo_so_e_publicada_se_passar_na_porta(comparacao):
     ("A garantia cobre a instalação?", False),
     ("Posso receber em várias caixas?", False),
     ("Obrigado, isso é tudo", False),
+    ("Quais categorias de peças existem?", False),
+    ("Qual é a peça de maior potência?", False),
+    ("Olá, tudo bem?", False),
 ])
 def test_reconhece_perguntas_sobre_a_comparacao_em_andamento(mensagem, esperado):
     em_andamento = EstadoCompra(solicitacao=Solicitacao(produto_id="PEC-01-0001", quantidade=5))
-    assert pergunta_sobre_comparacao(em_andamento, mensagem) is esperado
-    assert pergunta_sobre_comparacao(None, mensagem) is False
+    fornecedores = ("CentroPeças", "Litoral Parts", "Atlantic Repair Parts")
+    assert pergunta_sobre_comparacao(em_andamento, mensagem, fornecedores) is esperado
+    assert pergunta_sobre_comparacao(None, mensagem, fornecedores) is False
     incompleta = EstadoCompra(solicitacao=Solicitacao(produto_id="PEC-01-0001"), esperando="quantidade")
     assert pergunta_sobre_comparacao(incompleta, mensagem) is False
 

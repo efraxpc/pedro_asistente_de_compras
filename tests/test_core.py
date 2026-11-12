@@ -18,8 +18,8 @@ def cenario(tmp_path):
 def test_fonte_semente_e_cenario(cenario, tmp_path):
     meta = json.loads((cenario.caminho.parent / "manifest.json").read_text())
     assert meta["semente"] == 20261107
-    assert meta["contagens"] == {"parts": 2640, "offers": 7920,
-                                 "compatibility": 7920, "price_history": 47520}
+    assert meta["contagens"] == {"parts": 4320, "offers": 12960,
+                                 "compatibility": 12960, "price_history": 77760}
     assert abrir_cenario(tmp_path, cenario.dataset_id) == cenario
     with sqlite3.connect(cenario.caminho) as db:
         assert db.execute("SELECT count(*) FROM offers WHERE part_id='PEC-01-0001'").fetchone()[0] == 3

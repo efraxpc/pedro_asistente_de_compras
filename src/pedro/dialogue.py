@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from .catalog import Cenario, buscar, ficha
+from .catalog import Cenario, buscar, ficha, ofertas
 from .contracts import Solicitacao
 
 PALAVRAS_IGNORADAS = {"agora", "busco", "procuro", "comparar", "compara", "compare", "comprar",
@@ -93,21 +93,39 @@ _NAO_E_COMPRA = re.compile(
 _SOBRE_OFERTAS = re.compile(
     r"\b(barat\w*|em conta|car[oa]s?|cust\w*|pre[cç]os?|valor\w*|total|r[aá]pid\w*|cheg\w*|"
     r"entreg\w*|prazos?|demor\w*|fornecedor\w*|ofertas?|estoque|nacion\w*|internacion\w*|"
-    r"importad\w*|descart\w*|por\s?qu[eê]|qual|quais|quanto|melhor|pior|alguma|outra)\b", re.I)
-_OUTRO_ASSUNTO = re.compile(r"\b(parcial|parciais|caixas?|pacotes?|envios?|remessas?)\b", re.I)
+    r"importad\w*|descart\w*|recomend\w*)\b", re.I)
+# Outros assuntos com vocabulário parecido: envios parciais e perguntas sobre o catálogo inteiro.
+_OUTRO_ASSUNTO = re.compile(
+    r"\b(parcial|parciais|caixas?|pacotes?|envios?|remessas?|categorias?|cat[aá]logo|pe[cç]as?|"
+    r"pot[eê]ncia|voltagem|modelos?)\b", re.I)
 
 
-def pergunta_sobre_comparacao(previo: "EstadoCompra | None", mensagem: str) -> bool:
+def pergunta_sobre_comparacao(previo: "EstadoCompra | None", mensagem: str,
+                              fornecedores: tuple[str, ...] = ()) -> bool:
     """Indica se a mensagem pergunta algo sobre a comparação em andamento, sem mudá-la.
 
-    Exemplos: «a mais barata?», «qual chega antes?», «por que não a outra?». Exige uma
-    solicitação completa em andamento e exclui políticas, CEP, preferências e envios.
+    Exemplos: «a mais barata?», «qual chega antes?», «por que não a Litoral Parts?». Exige uma
+    solicitação completa em andamento, um «?» e que a pergunta fale de preço, prazo, estoque ou
+    origem, ou nomeie um dos fornecedores comparados. Exclui políticas, CEP, preferências,
+    envios e perguntas sobre o catálogo inteiro.
     """
     if previo is None or previo.esperando is not None or previo.solicitacao.faltantes():
         return False
     if "?" not in mensagem or _NAO_E_COMPRA.search(mensagem) or _OUTRO_ASSUNTO.search(mensagem):
         return False
-    return bool(_SOBRE_OFERTAS.search(mensagem))
+    texto = mensagem.casefold()
+    nomeia = any(palavra in texto for nome in fornecedores
+                 for palavra in nome.casefold().split() if len(palavra) >= 5)
+    return nomeia or bool(_SOBRE_OFERTAS.search(mensagem))
+
+
+def sobre_a_comparacao_em_andamento(cenario: Cenario, previo: "EstadoCompra | None",
+                                    mensagem: str) -> bool:
+    """`pergunta_sobre_comparacao` com os fornecedores das ofertas da peça em andamento."""
+    if previo is None or previo.solicitacao.produto_id is None:
+        return False
+    nomes = tuple(o.fornecedor_nome for o in ofertas(cenario, previo.solicitacao.produto_id))
+    return pergunta_sobre_comparacao(previo, mensagem, nomes)
 
 
 def interpretar_compra(cenario: Cenario, previo: EstadoCompra | None,
@@ -218,7 +236,7 @@ def interpretar_turno(cenario: Cenario, previo: EstadoCompra | None, mensagem: s
     """
     regras = interpretar_compra(cenario, previo, mensagem)
     em_andamento = previo is not None and previo.solicitacao.produto_id is not None
-    sobre_a_comparacao = previo is not None and pergunta_sobre_comparacao(previo, mensagem)
+    sobre_a_comparacao = sobre_a_comparacao_em_andamento(cenario, previo, mensagem)
     if interprete is None or (regras is None and not em_andamento):
         if regras is None and sobre_a_comparacao and previo is not None:
             return (previo, None), {"fonte": "regras", "regras": "pergunta sobre a comparação em andamento"}

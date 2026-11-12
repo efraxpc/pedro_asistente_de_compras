@@ -1,6 +1,6 @@
 {
   "tipo": "derivados_sinteticos_nao_oficiais",
-  "fonte_sha256": "f84cc1641499e372759fd9cd367ac49605743a409d2c7c62eea4b8685e3b9a2d",
+  "fonte_sha256": "1ae39b2ff4d4a2859e84ffaefb41780ba547659547a8c0a39b7a9aca190336c4",
   "casos": [
     {
       "id": "rec-01",

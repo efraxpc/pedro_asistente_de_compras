@@ -23,10 +23,22 @@ CATEGORIES = [
     ("ar_condicionados", "Ar-condicionados", "compressor evaporador condensador ventilador filtro sensor placa controle valvula tubo"),
     ("lavadoras", "Máquinas de lavar", "motor bomba tambor correia valvula mangueira sensor placa vedacao filtro"),
 ]
+# Categorias acrescentadas depois (IDs PEC-12 em diante). São geradas com um gerador aleatório
+# próprio, depois das originais, para que as peças PEC-01 a PEC-11 conservem preços e ofertas.
+EXTRA_CATEGORIES = [
+    ("aspiradores", "Aspiradores de pó", "motor filtro mangueira escova bocal saco rodizio cabo interruptor correia"),
+    ("liquidificadores", "Liquidificadores", "motor copo lamina tampa acoplamento botao vedacao base cabo fusivel"),
+    ("cafeteiras", "Cafeteiras", "resistencia jarra filtro bomba valvula reservatorio placa termostato vedacao suporte"),
+    ("purificadores", "Purificadores de água", "filtro bomba torneira valvula reservatorio placa sensor mangueira compressor vedacao"),
+    ("ventiladores", "Ventiladores", "motor helice grade capacitor botao base cabo bucha eixo interruptor"),
+    ("ferros", "Ferros de passar", "resistencia termostato base reservatorio cabo botao valvula vedacao fusivel placa"),
+    ("fritadeiras", "Fritadeiras elétricas", "resistencia ventilador cesto termostato placa botao motor sensor gaveta cabo"),
+]
 # A coluna family fica sem acentos (facilita buscas e SQL); o nome exibido leva a grafia correta.
 DISPLAY = {"vedacao": "Vedação", "dobradica": "Dobradiça", "resistencia": "Resistência",
            "valvula": "Válvula", "botao": "Botão", "braco": "Braço", "fusivel": "Fusível",
-           "magnetron": "Magnétron"}
+           "magnetron": "Magnétron", "lamina": "Lâmina", "helice": "Hélice", "rodizio": "Rodízio",
+           "reservatorio": "Reservatório"}
 SUPPLIERS = [
     ("BR-01", "Brava Peças", "BR", "BRL"),
     ("BR-02", "Sul Componentes", "BR", "BRL"),
@@ -96,7 +108,8 @@ def generate(output: Path, *, pieces_per_category: int = 240, seed: int = 202611
     output.parent.mkdir(parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(prefix=".pecas-", suffix=".sqlite3", dir=output.parent)
     os.close(fd)
-    counts = {"categories": len(CATEGORIES), "parts": 0, "offers": 0, "compatibility": 0,
+    todas = CATEGORIES + EXTRA_CATEGORIES
+    counts = {"categories": len(todas), "parts": 0, "offers": 0, "compatibility": 0,
               "price_history": 0}
     try:
         with sqlite3.connect(temporary) as db:
@@ -108,13 +121,16 @@ def generate(output: Path, *, pieces_per_category: int = 240, seed: int = 202611
                 ("price_note", "All BRL conversions and shipping charges are fictional estimates"),
             ])
             db.executemany("INSERT INTO categories VALUES (?,?,?)",
-                           [(i, slug, name) for i, (slug, name, _) in enumerate(CATEGORIES, 1)])
+                           [(i, slug, name) for i, (slug, name, _) in enumerate(todas, 1)])
             db.executemany("INSERT INTO suppliers VALUES (?,?,?,?,?,?)", [
                 (sid, name, country, int(country == "BR"), currency,
                  f"https://{sid.lower()}.example") for sid, name, country, currency in SUPPLIERS])
             domestic = [s for s in SUPPLIERS if s[2] == "BR"]
             international = [s for s in SUPPLIERS if s[2] != "BR"]
-            for category_id, (slug, category_name, families) in enumerate(CATEGORIES, 1):
+            for category_id, (slug, category_name, families) in enumerate(todas, 1):
+                if category_id == len(CATEGORIES) + 1:
+                    # A partir daqui, outro gerador: as categorias originais já consumiram o seu.
+                    rng = random.Random(seed + 1)
                 choices = families.split()
                 for number in range(1, pieces_per_category + 1):
                     part_id = f"PEC-{category_id:02d}-{number:04d}"

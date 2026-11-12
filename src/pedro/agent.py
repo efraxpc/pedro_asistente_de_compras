@@ -14,7 +14,8 @@ from langchain_core.tools import StructuredTool
 from .business import brl, descrever_motivos, descrever_preco, origem_preferida
 from .catalog import Cenario, buscar, ficha, listar
 from .contracts import Evidencia, RespostaCompra, Solicitacao
-from .dialogue import EstadoCompra, criar_interprete, interpretar_turno, pergunta_sobre_comparacao
+from .dialogue import (EstadoCompra, criar_interprete, interpretar_turno,
+                       sobre_a_comparacao_em_andamento)
 from .integrations import consultar_cep
 from .memory import (FastEmbedder, Historico, dataset_sessao, ler_rascunho, preferencias,
                      recuperar, salvar_episodio, salvar_preferencia, salvar_rascunho,
@@ -507,7 +508,7 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
             sem_mudancas = previo is not None and (
                 solicitacao_atual.model_dump(exclude={"origem_preferida"})
                 == previo.solicitacao.model_dump(exclude={"origem_preferida"}))
-            if sem_mudancas and pergunta_sobre_comparacao(previo, pergunta):
+            if sem_mudancas and sobre_a_comparacao_em_andamento(cenario, previo, pergunta):
                 # Pergunta sobre as ofertas já comparadas: o sistema refaz o cálculo (não depende
                 # de o modelo voltar a chamar a ferramenta) e o modelo só redige a frase.
                 proposta = resposta_local(cenario, solicitacao_atual)
