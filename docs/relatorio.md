@@ -204,7 +204,7 @@ A ferramenta de catálogo tem dois modos. Com um ID de peça usa modelos fixos d
 
 ### R22 — Índice FAISS existente
 
-O índice é construído uma vez, fora do agente, e salvo com um manifesto. O agente só o carrega, em 0,03 s. Como o seu armazenamento é um arquivo pickle, a carga exige um manifesto completo, impressões digitais que coincidam e confiança explícita; foi testado que ele rejeita um arquivo alterado. O índice é próprio: a atividade não entregou nenhum.
+O índice é construído uma vez, fora do agente, e salvo com um manifesto. O agente só o carrega, em 0,02 s. Como o seu armazenamento é um arquivo pickle, a carga exige um manifesto completo, impressões digitais que coincidam e confiança explícita; foi testado que ele rejeita um arquivo alterado. O índice é próprio: a atividade não entregou nenhum.
 
 ### R23 — Falha de recuperação
 

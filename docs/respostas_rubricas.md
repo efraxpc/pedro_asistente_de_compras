@@ -1721,7 +1721,7 @@ Um teste confere que, se o modelo tentar escrever um número próprio na mensage
 | **Indexar** | Uma vez, fora do agente | [construir_indice_politicas.py](../scripts/construir_indice_politicas.py): divide o corpus em fragmentos, calcula embeddings, salva `index.faiss`, `index.pkl` e `manifest.json` |
 | **Recuperar** | A cada pergunta | `carregar_indice` em [rag.py](../src/pedro/rag.py) abre o que está salvo; a ferramenta `consultar_politicas` busca nele |
 
-O índice tem 75 fragmentos, 384 dimensões e métrica L2, com o modelo de embeddings `paraphrase-multilingual-MiniLM-L12-v2`. Carregar levou 0,03 s, porque nenhum embedding é calculado.
+O índice tem 75 fragmentos, 384 dimensões e métrica L2, com o modelo de embeddings `paraphrase-multilingual-MiniLM-L12-v2`. Carregar levou 0,02 s, porque nenhum embedding é calculado.
 
 ### 2. A porta antes de carregar
 
@@ -1739,10 +1739,12 @@ Depois de carregar, comparam-se de novo dimensão, contagem, métrica, identific
 
 | Pergunta | O que fez | Resposta publicada |
 |---|---|---|
-| «Como se verifica a compatibilidade elétrica antes de instalar uma peça?» | O LLM chamou `consultar_politicas` duas vezes. O rastro registra quatro citações, nesta ordem: `FIC-DEV-01-S06-C01` literal (cobertura 1,0), `FIC-DEV-01-S02-C01` rejeitada (cobertura 0,71), `FIC-DEV-01-S06-C01` literal (1,0) e `FIC-DEV-01-S02-C01` literal (1,0). O resumo do modelo foi publicado | Resumo do modelo com as fontes `FIC-DEV-01-S06-C01` e `FIC-DEV-01-S02-C01`: conferir marca, modelo, voltagem e dimensões com a ficha técnica; uma peça incompatível pode ser devolvida em 30 dias se mantiver as condições originais |
+| «Como se verifica a compatibilidade elétrica antes de instalar uma peça?» | O LLM chamou `consultar_politicas` duas vezes. O rastro registra duas citações, as duas de `FIC-DEV-01-S06-C01` e literais (cobertura 1,0). As duas verificações (estado `politica`) deram o erro `NLI sem entailment`: o resumo do modelo não passou. Foi publicada só a citação literal | Citação literal com a fonte `FIC-DEV-01-S06-C01`: «Antes de selecionar uma peça, o usuário deve conferir marca, modelo, voltagem e dimensões com a ficha técnica fictícia.» |
 | «Posso receber em várias caixas?» | Rota de entrega: reformula a consulta e recupera `FIC-ENT-01-S05-C01` | Regra de entrega parcial com a fonte |
 
 Na primeira pergunta, o top-4 da ferramenta foi `FIC-DEV-01-S02-C01`, `FIC-DEV-01-S06-C01`, `FIC-GAR-01-S06-C01` e `FIC-GAR-01-S05-C01`. A seção 3 de `garantia.md` («Compatibilidade antes da instalação») não entrou no top-4.
+
+O script usa uma memória nova a cada execução. Antes usava um arquivo fixo, e as lembranças acumuladas de execuções anteriores mudavam o resultado.
 
 **Decisão técnica.** Foi mantido o modelo de embeddings local (FastEmbed) em vez de um da OpenAI para que carregar e consultar o índice não dependa de credenciais nem de um serviço externo. O modelo fica escrito no manifesto e a carga é negada se o modelo usado para consultar for outro, porque os vetores não seriam comparáveis.
 
@@ -1760,6 +1762,7 @@ Na primeira pergunta, o top-4 da ferramenta foi `FIC-DEV-01-S02-C01`, `FIC-DEV-0
 - **O índice é próprio.** O guia fala do «índice FAISS preexistente exigido pela atividade», mas o enunciado original não está neste workspace e nenhum índice do curso foi recebido. Foi construído um a partir do corpus fictício e salvo como artefato. Se o professor entregar um índice, basta substituir a pasta: o carregador e os testes são os mesmos.
 - O app só usa este índice se `PEDRO_TRUST_POLICY_INDEX=true` estiver no `.env`. Sem essa variável, avisa e usa o índice de demonstração em memória, com o mesmo conteúdo.
 - O corpus são três políticas fictícias; não há políticas reais.
+- **A resposta à pergunta de compatibilidade elétrica variou.** Nas três execuções em português deste script, a recuperação foi a mesma. O que variou foi se o resumo do modelo passou no NLI: só a citação literal na primeira, resumo do modelo com duas fontes na segunda, e de novo só a citação literal no rastro salvo. As duas primeiras só estão no histórico do git (commits `c92ba32` e `9adb27e`). O detalhe está em [citacoes_ancoradas.md](citacoes_ancoradas.md), seção 4.
 
 ## R23 — Diagnóstico e correção de uma falha real de recuperação
 
