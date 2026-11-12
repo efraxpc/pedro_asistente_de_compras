@@ -23,10 +23,10 @@ Pedro es un asistente de compras de piezas de electrodomésticos. Todos los dato
 | `src/pedro/` | Toda la lógica reutilizable |
 | `scripts/demonstrar_*.py` | Demostraciones con el modelo real; guardan un JSON en `docs/rastros/` |
 | `notebooks/` | Cinco notebooks didácticos, uno por fase, con dobles de prueba |
-| `tests/` | 153 pruebas automáticas |
+| `tests/` | 156 pruebas automáticas |
 | `evals/` | Casos de evaluación y el evaluador de LangSmith |
 | `knowledge/` | Corpus ficticio de políticas y el índice FAISS guardado |
-| `datasets/` | Catálogo SQLite sintético |
+| `datasets/` | Catálogo SQLite sintético: 18 categorías, 4.320 piezas, 12.960 ofertas |
 | `docs/` | Respuestas a las rúbricas, informe, matriz, evidencias y trazas |
 
 ## 3. Las cinco fases

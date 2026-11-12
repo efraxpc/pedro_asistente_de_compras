@@ -1,6 +1,6 @@
 # Relatório técnico — Pedro, assistente de compras
 
-**Curso:** Agentes Cognitivos com LangChain (Infnet). **Atualizado:** 2026-11-11. **Modelo:** gpt-4.1-mini. **Testes automáticos:** 153, todos passando.
+**Curso:** Agentes Cognitivos com LangChain (Infnet). **Atualizado:** 2026-11-11. **Modelo:** gpt-4.1-mini. **Testes automáticos:** 156, todos passando.
 
 Este relatório explica como o projeto responde às 29 rubricas do guia integrado (R01–R29). Cada rubrica tem aqui um resumo; a resposta completa, com suas tabelas e seus limites, está em docs/respostas_rubricas.md. As execuções com o modelo real estão salvas em docs/rastros/ e o registro do que foi executado, em docs/evidencias.md.
 
@@ -18,7 +18,7 @@ Pedro é um assistente que ajuda a comprar peças de reposição de eletrodomés
 
 Um comprador precisa de uma peça, em certa quantidade, às vezes com um orçamento e um prazo. Vários fornecedores a oferecem com preço, frete, estoque, prazo e pedido mínimo diferentes. O assistente deve dizer qual convém e por que as outras não.
 
-O catálogo é uma base SQLite sintética e reproduzível (semente 20261107): 2.640 peças, 7.920 ofertas, 7.920 compatibilidades e 47.520 preços históricos. Cada conversa trabalha sobre um cenário isolado: uma cópia da base com um identificador próprio e um manifesto com a sua impressão digital. O assistente só lê: não compra nem paga.
+O catálogo é uma base SQLite sintética e reproduzível (semente 20261107): 18 categorias de eletrodomésticos, 4.320 peças, 12.960 ofertas de 12 fornecedores, 12.960 compatibilidades e 77.760 preços históricos. Em 2026-11-11 ele foi ampliado de 11 para 18 categorias (antes eram 2.640 peças): entraram aspiradores de pó, liquidificadores, cafeteiras, purificadores de água, ventiladores, ferros de passar e fritadeiras elétricas, com IDs PEC-12 a PEC-18. As categorias novas são geradas depois das originais, com um gerador aleatório próprio. Por isso as peças PEC-01 a PEC-11 conservam IDs, preços, ofertas, estoque, prazos e histórico, conferidos tabela a tabela com a base anterior. Cada conversa trabalha sobre um cenário isolado: uma cópia da base com um identificador próprio e um manifesto com a sua impressão digital. O assistente só lê: não compra nem paga.
 
 ## 3. O núcleo: comparar fornecedores
 
@@ -37,7 +37,7 @@ O total é quantidade vezes preço unitário mais frete, sempre em centavos inte
 
 ### A descoberta que mudou a comparação
 
-Durante quase todo o projeto a comparação ignorou o pedido mínimo, embora o dado estivesse no catálogo. O exemplo de todas as demonstrações, 2 unidades de PEC-01-0001, recomendava a CentroPeças por R$ 2.963,07, e esse fornecedor exige 5 unidades. Há 1.151 ofertas com estoque e pedido mínimo maior que 2. Nenhum teste nem métrica detectou o problema: a referência da avaliação tinha a mesma lacuna, então o agente e a referência concordavam. Ele foi encontrado ao revisar quais dados do fornecedor a comparação usava. Com a correção, mudaram 5 dos 14 casos de recomendação da avaliação. Hoje as demonstrações usam 5 unidades de PEC-01-0001: CentroPeças, R$ 7.279,83.
+Durante quase todo o projeto a comparação ignorou o pedido mínimo, embora o dado estivesse no catálogo. O exemplo de todas as demonstrações, 2 unidades de PEC-01-0001, recomendava a CentroPeças por R$ 2.963,07, e esse fornecedor exige 5 unidades. Há 1.837 ofertas com estoque e pedido mínimo maior que 2 (1.151 antes da ampliação do catálogo). Nenhum teste nem métrica detectou o problema: a referência da avaliação tinha a mesma lacuna, então o agente e a referência concordavam. Ele foi encontrado ao revisar quais dados do fornecedor a comparação usava. Com a correção, mudaram 5 dos 14 casos de recomendação da avaliação. Hoje as demonstrações usam 5 unidades de PEC-01-0001: CentroPeças, R$ 7.279,83.
 
 ### Histórico e aviso de preço
 
@@ -57,9 +57,9 @@ Com o modelo e o NLI reais, sobre quinze peças: na versão anterior em espanhol
 
 ### Perguntas sobre a comparação
 
-Depois de uma comparação, o usuário pergunta «a mais barata?» ou «qual chega mais rápido?». Antes, o chat repetia o mesmo painel sem responder, e às vezes terminava em «Não posso confirmar…». Agora uma regra reconhece essa pergunta e deixa a solicitação como está; o sistema refaz a comparação e a verifica, sem depender de o modelo chamar a ferramenta de novo; e o modelo escreve uma ou duas frases que respondem à pergunta (src/pedro/resposta_direta.py). A frase só é publicada se os seus números estão nos fatos, se nomeia um fornecedor comparado e se o NLI a sustenta; se não, publica-se um resumo fixo calculado pelo sistema. A interface mostra a resposta em um quadro verde acima dos cartões. A recomendação e os números nunca mudam.
+Depois de uma comparação, o usuário pergunta «a mais barata?» ou «qual chega mais rápido?». Antes, o chat repetia o mesmo painel sem responder, e às vezes terminava em «Não posso confirmar…». Agora uma regra reconhece essa pergunta e deixa a solicitação como está. A regra exige que a pergunta fale de preço, prazo, estoque ou origem, ou nomeie um dos fornecedores comparados, e exclui perguntas sobre o catálogo inteiro: na primeira versão, «Quais categorias de peças existem?» recebia o resumo da comparação; agora vai para o agente. Depois, o sistema refaz a comparação e a verifica, sem depender de o modelo chamar a ferramenta de novo; e o modelo escreve uma ou duas frases que respondem à pergunta (src/pedro/resposta_direta.py). A frase só é publicada se os seus números estão nos fatos, se nomeia um fornecedor comparado e se o NLI a sustenta; se não, publica-se um resumo fixo calculado pelo sistema. A interface mostra a resposta em um quadro verde acima dos cartões. A recomendação e os números nunca mudam.
 
-Com o modelo e o NLI reais, uma comparação e seis perguntas (docs/rastros/pergunta_direta_llm.json): as seis foram respondidas, 5 com a frase do modelo verificada e 1 com o resumo fixo. Nessa última o NLI rejeitou uma frase que era verdadeira. Limites: a regra é de vocabulário; o resumo fixo não se adapta à pergunta; depois desta mudança só foram refeitas esta demonstração e a de R17, então os demais rastros e a avaliação no LangSmith são anteriores a ela.
+Com o modelo e o NLI reais, uma comparação e seis perguntas (docs/rastros/pergunta_direta_llm.json): as seis foram respondidas com a frase do modelo verificada, e o resumo fixo não foi usado. Na execução anterior do mesmo script, que só está no histórico do git (commit 4e0f6db), foram 5 frases verificadas e 1 resumo fixo: o NLI rejeitou uma frase que era verdadeira. Limites: a regra é de vocabulário; o resumo fixo não se adapta à pergunta; depois desta mudança só foram refeitas esta demonstração, a de R17 e a do aviso de preço, então os demais rastros e a avaliação no LangSmith são anteriores a ela.
 
 ## 4. Arquitetura
 
@@ -289,6 +289,7 @@ Estas falhas só apareceram ao executar com o modelo real. Os testes automático
 - **Comparações conceituais.** LlamaIndex, AutoGen, Semantic Kernel, Langflow, Mem0 e Letta não foram executados.
 - **Sem credenciais** o chat interpreta só com regras, que são frágeis diante de formas de falar não previstas.
 - **A comparação não divide um pedido entre fornecedores** nem calcula o frete conforme o destino.
+- **O catálogo ampliado quase não foi medido.** A avaliação no LangSmith e as demonstrações com o modelo real não foram refeitas depois da ampliação, salvo a do aviso de preço e a da resposta direta. As categorias novas usam os mesmos 12 fornecedores, e os nomes das peças saem de uma lista fixa de famílias.
 
 ## 12. Melhorias futuras
 

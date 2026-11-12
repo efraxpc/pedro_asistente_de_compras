@@ -212,6 +212,22 @@ fornecedores são idênticos; mudam só nomes, famílias e SKUs.
 | categorias: Hornos, Secadoras de ropa, Lavalouças, Forno micro-ondas, Ar condicionados | Fornos, Secadoras de roupa, Lava-louças, Fornos micro-ondas, Ar-condicionados |
 | `PEC-02-0189` | `Ventilador para Congeladores CONG-VENT-0189` (igual) |
 
+Em 2026-11-11 o catálogo foi ampliado com sete categorias, que já nasceram em português (não
+têm nome anterior em espanhol). As peças PEC-01 a PEC-11 não mudaram.
+
+| ID | Categoria (`slug`) | Prefixo do SKU |
+|---|---|---|
+| PEC-12 | Aspiradores de pó (`aspiradores`) | `ASPI` |
+| PEC-13 | Liquidificadores (`liquidificadores`) | `LIQU` |
+| PEC-14 | Cafeteiras (`cafeteiras`) | `CAFE` |
+| PEC-15 | Purificadores de água (`purificadores`) | `PURI` |
+| PEC-16 | Ventiladores (`ventiladores`) | `VENT` |
+| PEC-17 | Ferros de passar (`ferros`) | `FERR` |
+| PEC-18 | Fritadeiras elétricas (`fritadeiras`) | `FRIT` |
+
+Famílias novas: bocal, escova, interruptor, rodizio, saco, acoplamento, base, copo, lamina, tampa,
+jarra, reservatorio, suporte, torneira, bucha, eixo, helice, cesto.
+
 ## Fonte de verdade para o resto
 
 Os nomes que não aparecem aqui (chaves de dicionários, eventos do rastro, textos de erro) estão definidos no código já traduzido de `src/pedro/` e `app.py`: leia o módulo antes de escrever um teste, script ou documento que os use.

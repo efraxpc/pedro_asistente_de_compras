@@ -12,6 +12,19 @@ Todos os dados do projeto (catálogo, fornecedores, estoque, preços e política
 
 Pedro é um assistente de compras. Todo o resto — memória, políticas, CEP, verificação — existe para que a comparação de fornecedores seja correta e confiável. Esta seção descreve essa comparação; as rubricas a citam.
 
+## O catálogo
+
+O catálogo é uma base SQLite sintética: 18 categorias de eletrodomésticos, 4.320 peças (240 por categoria), 12.960 ofertas de 12 fornecedores, 12.960 compatibilidades e 77.760 preços históricos. É gerado por [gerar_catalogo_pecas.py](../scripts/gerar_catalogo_pecas.py) com a semente 20261107.
+
+Em 2026-11-11 o catálogo foi ampliado de 11 para 18 categorias. As sete novas são aspiradores de pó, liquidificadores, cafeteiras, purificadores de água, ventiladores, ferros de passar e fritadeiras elétricas (IDs PEC-12 a PEC-18). Elas são geradas **depois** das onze originais, com um gerador aleatório próprio (semente + 1). Por isso as peças PEC-01 a PEC-11 não mudaram: IDs, preços, ofertas, estoque, prazos e histórico foram conferidos tabela a tabela com a base anterior e são idênticos. Os exemplos deste documento continuam valendo.
+
+Limites da ampliação:
+
+- As categorias novas usam os mesmos 12 fornecedores.
+- Os nomes das peças continuam saindo de uma lista fixa de famílias (58 no total).
+- A avaliação no LangSmith e as demonstrações com o modelo real não foram refeitas sobre o catálogo ampliado. Só foram refeitas a do aviso de preço e a da resposta direta. Os rastros que citam 2.640 peças registram a execução daquele momento.
+- Verificação informal com o modelo real, sem rastro salvo: «Compare 2 unidades de PEC-12-0001» → Pacific Appliance Supply, R$ 548,94 para 2 unidades, prazo de 28 dias.
+
 ## O que se compara
 
 Para uma peça e uma quantidade, cada oferta de cada fornecedor é avaliada com quatro regras ([business.py](../src/pedro/business.py)):
@@ -69,8 +82,8 @@ Histórico de preços (informativo; não muda a recomendação):
 - CentroPeças: hoje R$ 425,59 por unidade; mês anterior R$ 402,59 (+6 %); média de 5 meses R$ 384,95 (+11 %).
 - Atlantic Repair Parts: hoje R$ 363,35 por unidade; mês anterior R$ 375,20 (-3 %); média de 5 meses R$ 404,40 (-10 %); é o seu preço mais baixo do período.
 Conselho sobre o preço (redigido pelo modelo e verificado): O preço de CentroPeças está 11 % acima da sua
-média de 5 meses. Atlantic Repair Parts custa 1 % a mais que a recomendada e o seu preço está 10 % abaixo
-da sua média de 5 meses, sendo o mais baixo do período.
+média de 5 meses. Atlantic Repair Parts custa 1 % a mais que CentroPeças, está 10 % abaixo da sua média
+de 5 meses e é o mais baixo do período.
 Fontes: PEC-02-0189-BR-06, PEC-02-0189-INT-06, PEC-02-0189-BR-03
 ```
 
@@ -88,7 +101,7 @@ Sem modelo, no lugar do conselho aparece o aviso fixo: «Aviso de preço: O pre�
 - **O que mudou.** Os exemplos foram reescritos para só enunciar e comparar fatos, e foi acrescentada a instrução de não avaliar.
 - **A verificação não é perfeita.** A única rejeição da execução atual foi de um conselho verdadeiro (PEC-01-0020). Ele dizia que as alternativas «custam mais de 200 % a mais que a recomendada», e os fatos diziam 203 % e 233 % a mais. Quem rejeitou foi a verificação exata, não o NLI: o número 200 não está nos fatos. O erro foi para o lado seguro: foi publicado o aviso fixo.
 
-O aviso dispara em 1.049 das 2.563 peças que têm uma recomendação para 5 unidades: quatro em cada dez.
+O aviso dispara em 1.687 das 4.192 peças que têm uma recomendação para 5 unidades: quatro em cada dez. A contagem é sobre o catálogo ampliado; antes da ampliação eram 1.049 de 2.563, a mesma proporção.
 
 **Decisão técnica.** O conselho do modelo contribui com a redação — une em uma frase o que o aviso fixo diz em separado — mas não traz nenhum dado. Por isso a falha dele não custa nada: atrás sempre está o aviso fixo, que diz o mesmo com menos graça. Foi descartado que o modelo decidisse se avisa ou não: essa decisão é um limiar, e um limiar é código.
 
@@ -125,33 +138,35 @@ A correção tem três partes:
 
 | Parte | O que faz | Onde |
 |---|---|---|
-| 1. Reconhecer a pergunta | Uma regra (`pergunta_sobre_comparacao`) reconhece uma pergunta sobre a comparação em andamento: exige uma solicitação completa em andamento, um «?» e vocabulário de comparação (barata, prazo, fornecedor, por que…), e exclui políticas, CEP, preferências e envios. `interpretar_turno` a usa para deixar a solicitação como está. O prompt do intérprete (`MODELO_MUDANCA`) ganhou dois exemplos few-shot para esse caso | [dialogue.py](../src/pedro/dialogue.py); [prompts.py](../src/pedro/prompts.py) |
+| 1. Reconhecer a pergunta | Uma regra (`pergunta_sobre_comparacao`) reconhece uma pergunta sobre a comparação em andamento: exige uma solicitação completa em andamento, um «?» e que a pergunta fale de preço, prazo, estoque ou origem, **ou** nomeie um dos fornecedores comparados (`sobre_a_comparacao_em_andamento` busca esses nomes nas ofertas da peça). Exclui políticas, CEP, preferências, envios e perguntas sobre o catálogo inteiro (categorias, catálogo, peças, potência, voltagem, modelos). `interpretar_turno` a usa para deixar a solicitação como está. O prompt do intérprete (`MODELO_MUDANCA`) ganhou dois exemplos few-shot para esse caso | [dialogue.py](../src/pedro/dialogue.py); [prompts.py](../src/pedro/prompts.py) |
 | 2. Recalcular sem depender do modelo | Para essa pergunta, o **sistema** refaz a comparação (`resposta_local`), em vez de esperar que o modelo chame a ferramenta de novo. O resultado passa pela verificação exata e pelo NLI, e o rastro registra o evento `comparacao_reutilizada` | `resolver`, em [agent.py](../src/pedro/agent.py) |
 | 3. Responder à pergunta | `fatos_da_comparacao` monta os fatos. O modelo escreve uma ou duas frases (`criar_respondedor`; prompt `MODELO_RESPOSTA_DIRETA`: PTCF com um exemplo few-shot e saída Pydantic `RespostaDireta`). `verificar_resposta_direta` só publica a frase se os números dela estão nos fatos, se ela nomeia um fornecedor comparado e se o NLI devolve *entailment*. Se não, publica-se o `resumo_fixo`, calculado pelo sistema | [resposta_direta.py](../src/pedro/resposta_direta.py) |
 
 É o mesmo padrão do conselho de preço: o modelo redige, o sistema verifica, e atrás há sempre um texto fixo. A resposta direta **nunca muda a recomendação nem os números**. Ela só roda quando a mensagem do usuário é uma pergunta (`e_pergunta`). O texto é também a primeira linha da mensagem pública (`_com_direta`) e viaja em `additional_kwargs["partes"][0]["direta"]`, de onde a interface o desenha (`mostrar_comparacao`, em [app.py](../app.py)).
 
-**Medição com o modelo real** (`gpt-4.1-mini`) e o NLI real local, em 2026-11-11: uma comparação («Compare 5 unidades de PEC-01-0001 com prazo de 7 dias») e seis perguntas sobre ela ([rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json); [scripts/demonstrar_pergunta.py](../scripts/demonstrar_pergunta.py)). Nas seis perguntas o modelo não chamou nenhuma ferramenta, e a recomendação ficou igual: CentroPeças, R$ 7.279,83.
+**A regra ficou mais estrita.** Na primeira versão bastava um «?» e uma palavra como «por que» ou «qual». Com isso, «Quais categorias de peças existem?», feita depois de uma comparação, recebia o resumo da comparação. Agora essa pergunta vai para o agente, que a responde com o catálogo.
+
+**Medição com o modelo real** (`gpt-4.1-mini`) e o NLI real local, em 2026-11-11, refeita depois de ajustar a regra: uma comparação («Compare 5 unidades de PEC-01-0001 com prazo de 7 dias») e seis perguntas sobre ela ([rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json); [scripts/demonstrar_pergunta.py](../scripts/demonstrar_pergunta.py)). Nas seis perguntas o modelo não chamou nenhuma ferramenta, e a recomendação ficou igual: CentroPeças, R$ 7.279,83.
 
 | Pergunta | O que foi publicado | Fonte |
 |---|---|---|
-| a mais barata? | «A oferta de menor total entre todas é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por falta de estoque e prazo de entrega fora do limite. A mais barata que atende é a de CentroPeças, por R$ 7.279,83.» | Resposta verificada |
-| qual é a mais em conta? | «A oferta mais em conta é a de Litoral Parts, com custo total de R$ 1.930,40, mas foi descartada […]. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83.» | Resposta verificada |
-| qual chega mais rápido? | «A entrega mais rápida entre todas é a da CentroPeças, que entrega em 2 dias.» | Resposta verificada |
-| por que não a Litoral Parts? | O resumo fixo: «A mais barata que atende às suas restrições é a de CentroPeças, por R$ 7.279,83, com entrega em 2 dias. A de menor total é a de Litoral Parts, por R$ 1.930,40, mas foi descartada porque não tem estoque suficiente e porque o prazo de entrega passa do máximo pedido.» | Resumo fixo |
-| e a Atlantic, quanto custa? | «A oferta da Atlantic Repair Parts custa R$ 7.344,92 no total, mas foi descartada porque o prazo de entrega passa do máximo pedido de 7 dias.» | Resposta verificada |
-| alguma é internacional? | «Sim, a oferta da Atlantic Repair Parts é internacional, mas foi descartada porque o prazo de entrega passa do máximo pedido.» | Resposta verificada |
-| **Total** | **6 perguntas respondidas** | **5 respostas verificadas, 1 resumo fixo** |
+| a mais barata? | «A oferta de menor total é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por não ter estoque suficiente e por ter prazo de entrega maior que o máximo pedido. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83.» | Resposta verificada |
+| qual é a mais em conta? | «A oferta mais em conta entre todas é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por não ter estoque suficiente e por exceder o prazo máximo de entrega. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83.» | Resposta verificada |
+| qual chega mais rápido? | «A oferta que chega mais rápido é a de CentroPeças, com entrega em 2 dias.» | Resposta verificada |
+| por que não a Litoral Parts? | «A oferta de Litoral Parts foi descartada porque não tem estoque suficiente e o prazo de entrega de 12 dias ultrapassa o máximo pedido de 7 dias; a oferta que atende é a de CentroPeças.» | Resposta verificada |
+| e a Atlantic, quanto custa? | «A oferta da Atlantic Repair Parts custa R$ 7.344,92 no total, mas foi descartada porque o prazo de entrega de 35 dias passa do máximo pedido de 7 dias.» | Resposta verificada |
+| alguma é internacional? | «Sim, a oferta de Atlantic Repair Parts é internacional, mas foi descartada porque o prazo de entrega passa do máximo pedido.» | Resposta verificada |
+| **Total** | **6 perguntas respondidas** | **6 respostas verificadas, 0 resumos fixos** |
 
 Limites:
 
-- **A regra é de vocabulário.** Uma pergunta sem nenhuma daquelas palavras continua indo para o agente.
-- **O NLI rejeitou uma frase verdadeira.** Em «por que não a Litoral Parts?» o modelo escreveu «A oferta de Litoral Parts foi descartada porque não tem estoque suficiente e o prazo de entrega passa do máximo pedido de 7 dias.» A frase é verdadeira, e o NLI a marcou como *contradiction*. Falhou para o lado seguro: foi publicado o resumo fixo.
-- **O resumo fixo não se adapta à pergunta.** Ele diz sempre a mesma coisa: a mais barata que atende e a de menor total.
+- **A regra é de vocabulário.** Uma pergunta que não fala de preço, prazo, estoque ou origem e não nomeia um fornecedor comparado continua indo para o agente.
+- **O NLI não é exato.** Nesta execução ele aceitou as seis frases. Na execução anterior do mesmo script o resultado foi 5 respostas verificadas e 1 resumo fixo: em «por que não a Litoral Parts?» o NLI marcou como *contradiction* uma frase verdadeira, e foi publicado o resumo fixo. Esse rastro foi substituído pelo novo e só está no histórico do git (commit 4e0f6db).
+- **O resumo fixo não se adapta à pergunta.** Ele diz sempre a mesma coisa: a mais barata que atende e a de menor total. Nesta execução ele não foi usado.
 - **Uma única execução**, com seis perguntas sobre uma peça.
-- **As outras demonstrações não foram refeitas.** Depois desta mudança só foram executados este script e o de R17. As demais demonstrações com o modelo real e a avaliação no LangSmith não foram reexecutadas: os rastros salvos delas são anteriores.
+- **As outras demonstrações não foram refeitas.** Depois desta mudança só foram executados este script e o de R17; depois do ajuste da regra e da ampliação do catálogo, só este script e o do aviso de preço. As demais demonstrações com o modelo real e a avaliação no LangSmith não foram reexecutadas: os rastros salvos delas são anteriores.
 
-Os testes estão em [tests/test_resposta_direta.py](../tests/test_resposta_direta.py) (10 testes, com duplos).
+Os testes estão em [tests/test_resposta_direta.py](../tests/test_resposta_direta.py) (13 testes, com duplos).
 
 ## A descoberta que mudou a comparação
 
@@ -163,7 +178,7 @@ Durante quase todo o projeto a comparação ignorou o pedido mínimo, embora o d
 | Atlantic Repair Parts | Descartada por prazo | Descartada por prazo |
 | Resultado | Uma recomendação que o fornecedor não aceitaria | «Nenhuma oferta atende»; com 5 unidades sim: CentroPeças, R$ 7.279,83 |
 
-No catálogo há 1.151 ofertas com estoque cujo pedido mínimo é maior que 2. O erro não foi encontrado por nenhum teste nem por nenhuma métrica: todos conferiam que o agente coincidia com uma referência que tinha a mesma lacuna. Ele foi encontrado ao revisar quais dados do fornecedor a comparação usava e quais não. Ao corrigir:
+No catálogo há 1.837 ofertas com estoque cujo pedido mínimo é maior que 2 (1.151 antes da ampliação do catálogo). O erro não foi encontrado por nenhum teste nem por nenhuma métrica: todos conferiam que o agente coincidia com uma referência que tinha a mesma lacuna. Ele foi encontrado ao revisar quais dados do fornecedor a comparação usava e quais não. Ao corrigir:
 
 - 5 dos 14 casos de recomendação da avaliação mudaram: 2 de vencedor e 3 passaram a «nenhuma oferta». Os casos foram regenerados com uma regra de referência independente do agente, que inclui o pedido mínimo.
 - A preferência «fornecedores nacionais», que antes só era salva, agora muda a recomendação.
@@ -202,7 +217,7 @@ Em aula, a anatomia geral de um agente foi descrita com quatro elementos — amb
 | **Sensores** (ferramentas que percebem o ambiente) | `buscar_produtos` (candidatos por ID, SKU ou nome), `consultar_catalogo` (text-to-query sobre SQLite), `consultar_politicas` (recuperação FAISS com fontes) e `consultar_cep` (API externa ViaCEP). | `ferramentas` em [agent.py](../src/pedro/agent.py); [query.py](../src/pedro/query.py); [rag.py](../src/pedro/rag.py); [integrations.py](../src/pedro/integrations.py) |
 | **Ferramentas** (que calculam ou agem) | `comparar_ofertas` (cálculo exato em centavos com descartes) e `salvar_preferencia` (única escrita: uma preferência citada explicitamente pelo usuário). | `ferramentas` em [agent.py](../src/pedro/agent.py); [business.py](../src/pedro/business.py) |
 | **Memória** | Curto prazo: janela das últimas 12 mensagens e rascunho de compra por sessão. Longo prazo: preferências explícitas por usuário e episódios vetoriais FastEmbed (384 dimensões) recuperáveis entre sessões. Tudo em SQLite, isolado por `user_id`. | [memory.py](../src/pedro/memory.py); [dialogue.py](../src/pedro/dialogue.py) |
-| **Base de conhecimento** | Dados estruturados: catálogo SQLite (2640 peças, 7920 ofertas). Dados documentais: políticas indexadas em FAISS com metadados e filtro por tema. | [catalog.py](../src/pedro/catalog.py); [policy_demo.py](../src/pedro/policy_demo.py); [knowledge/politicas_demo/](../knowledge/politicas_demo/) |
+| **Base de conhecimento** | Dados estruturados: catálogo SQLite (4320 peças, 12960 ofertas). Dados documentais: políticas indexadas em FAISS com metadados e filtro por tema. | [catalog.py](../src/pedro/catalog.py); [policy_demo.py](../src/pedro/policy_demo.py); [knowledge/politicas_demo/](../knowledge/politicas_demo/) |
 | **Orquestrador** | LangChain: `create_openai_tools_agent` + `AgentExecutor` (máximo de 6 iterações) envolvidos em `RunnableWithMessageHistory`. | `criar_agente` e `criar_fluxo` em [agent.py](../src/pedro/agent.py) |
 | **Porta de publicação** | Verificação exata (total, estoque, orçamento, prazo, IDs, procedência) e NLI local triclasse. Só se mostra o que passa pelas duas. | [verification.py](../src/pedro/verification.py); [nli.py](../src/pedro/nli.py) |
 | **Interface** | Streamlit com um chat sobre o mesmo agente, memória e verificador. | [app.py](../app.py) |
@@ -286,7 +301,7 @@ Não se busca o nível 5 porque o problema — recomendar uma oferta verificada 
 |---|---|---|
 | Anatomia lida dos objetos reais do agente: modelo, executor, system message PTCF, seis ferramentas com seu papel e lógica, memória, base de conhecimento e porta de publicação | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomia do agente»; [anatomia.py](../src/pedro/anatomia.py) | Execução real local (sem modelo) |
 | Agente híbrido em ação: «lista peças» e «Compare PEC-01-0001» são resolvidas por regra, sem passar pelo agente (na segunda, o intérprete de turno lê a mensagem); a pergunta de CEP passa pelo agente, que recebe seis ferramentas e executa `consultar_cep` | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · agente híbrido» | Execução com **duplo de teste**: modelo roteirizado e ViaCEP simulado; o fluxo, o executor, a ferramenta e a verificação são os reais |
-| A anatomia descrita coincide com o agente construído | [tests/test_anatomia.py](../tests/test_anatomia.py) | Teste automático (153/153 testes na suíte) |
+| A anatomia descrita coincide com o agente construído | [tests/test_anatomia.py](../tests/test_anatomia.py) | Teste automático (156/156 testes na suíte) |
 | Explicação de componentes, classificação e maturidade | Esta seção; [arquitetura.mmd](arquitetura.mmd) | Documentação |
 
 ### Pendências e limitações
@@ -1357,7 +1372,7 @@ O chat interpreta cada turno com duas peças (`interpretar_turno`, em [dialogue.
 
 O modelo só é consultado quando pode ajudar: se as regras veem uma compra ou se há uma solicitação em andamento. Uma saudação sem compra pendente não custa nenhuma chamada.
 
-Uma regra nova, `pergunta_sobre_comparacao`, cobre as perguntas sobre a comparação em andamento («a mais barata?», «por que não o outro fornecedor?»): a solicitação fica como está e o sistema refaz a comparação. O prompt do intérprete ganhou dois exemplos few-shot para esse caso. A medição abaixo foi refeita depois dessa mudança, com o mesmo resultado. O detalhe está em «Perguntas sobre a comparação: a resposta direta», no núcleo.
+Uma regra nova, `pergunta_sobre_comparacao`, cobre as perguntas sobre a comparação em andamento («a mais barata?», «por que não o outro fornecedor?»): a solicitação fica como está e o sistema refaz a comparação. O prompt do intérprete ganhou dois exemplos few-shot para esse caso. A medição abaixo foi refeita depois dessa mudança, com o mesmo resultado. Mais tarde a regra ficou mais estrita: exige que a pergunta fale de preço, prazo, estoque ou origem, ou nomeie um fornecedor comparado, e exclui perguntas sobre o catálogo inteiro. A medição não foi refeita depois desse ajuste. O detalhe está em «Perguntas sobre a comparação: a resposta direta», no núcleo.
 
 Medição com o modelo real sobre catorze mensagens difíceis, com o resultado correto fixado à mão:
 
@@ -1883,7 +1898,7 @@ A ancoragem não afrouxa a verificação: só evita rejeitar o que já era verda
 | Uma primeira proposta com o vencedor ou o total incorreto foi rejeitada e a segunda foi correta | Primeira execução da conversa de R18 (versão anterior, em espanhol); motivou a ancoragem da comparação |
 | Uma política cujo resumo não passou no NLI foi corrigida e a segunda proposta passou | [citacoes_ancoradas.md](citacoes_ancoradas.md) |
 | Com o primeiro prompt, o NLI rejeitou 10 de 15 conselhos de preço com avaliações sem respaldo (versão anterior, em espanhol). Com o prompt ajustado, em português: 14 de 15 publicados; o NLI não rejeitou nenhum e 1 caiu na checagem de números | [rastros/precios_consejo_llm_antes.json](rastros/precios_consejo_llm_antes.json) e [rastros/precos_conselho_llm.json](rastros/precos_conselho_llm.json) |
-| Resposta direta a seis perguntas sobre uma comparação: 5 frases do modelo publicadas depois da checagem de números, de fornecedor e do NLI; 1 rejeitada pelo NLI (*contradiction*, sobre uma frase verdadeira), com o resumo fixo publicado no lugar | [rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json) |
+| Resposta direta a seis perguntas sobre uma comparação: as 6 frases do modelo publicadas depois da checagem de números, de fornecedor e do NLI. Na execução anterior do mesmo script (só no histórico do git, commit 4e0f6db) foram 5, e 1 foi rejeitada pelo NLI (*contradiction*, sobre uma frase verdadeira), com o resumo fixo publicado no lugar | [rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json) |
 
 ### Evidência
 
@@ -1900,7 +1915,7 @@ A ancoragem não afrouxa a verificação: só evita rejeitar o que já era verda
 
 - **Verifica contra a regra de negócio, não a regra.** Enquanto a comparação ignorou o pedido mínimo, a verificação aprovou recomendações que um fornecedor não aceitaria.
 - **Verifica que a resposta seja verdadeira, não que seja pertinente.** Em um experimento com memória contaminada, uma pergunta de CEP recebeu uma resposta de compra verificada, mas fora do assunto.
-- O NLI não é exato. Na execução anterior do conselho de preço, em espanhol, ele rejeitou como *contradiction* um conselho que era verdadeiro (esse rastro foi substituído pelo novo; só está no histórico do git). Na execução em português o NLI não rejeitou nenhum conselho: o mesmo caso foi barrado antes, pela checagem de números, porque o modelo escreveu «mais de 200 %» e os fatos dizem 203 % e 233 %. Falha para o lado seguro, mas falha. Na resposta direta, o NLI rejeitou como *contradiction* uma de seis frases, e ela era verdadeira ([rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json)). Sua exatidão geral não foi medida.
+- O NLI não é exato. Na execução anterior do conselho de preço, em espanhol, ele rejeitou como *contradiction* um conselho que era verdadeiro (esse rastro foi substituído pelo novo; só está no histórico do git). Na execução em português o NLI não rejeitou nenhum conselho: o mesmo caso foi barrado antes, pela checagem de números, porque o modelo escreveu «mais de 200 %» e os fatos dizem 203 % e 233 %. Falha para o lado seguro, mas falha. Na resposta direta, o NLI aceitou as seis frases da execução atual ([rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json)); na execução anterior do mesmo script, que só está no histórico do git (commit 4e0f6db), ele rejeitou como *contradiction* uma de seis frases, e ela era verdadeira. Sua exatidão geral não foi medida.
 - O modelo NLI aceita 512 tokens: com várias citações longas a premissa é truncada.
 - O limiar de 80 % para ancorar citações foi fixado por critério, sem calibração.
 
@@ -2305,7 +2320,8 @@ O script confere se o modelo responde antes de começar, cria o conjunto de caso
 ### Pendências e limitações
 
 - **Os 30 casos são derivados e sintéticos, não os casos oficiais** do enunciado.
-- **Os casos foram regenerados quando a regra de negócio mudou**, ao corrigir o pedido mínimo: a referência anterior estava incorreta. Depois foram regenerados em português na migração, sem mudar produtos, quantidades, limites, fornecedores esperados nem totais. Nunca foram alterados para melhorar um número.
+- **Os casos foram regenerados quando a regra de negócio mudou**, ao corrigir o pedido mínimo: a referência anterior estava incorreta. Depois foram regenerados em português na migração, sem mudar produtos, quantidades, limites, fornecedores esperados nem totais. Foram regenerados uma terceira vez depois da ampliação do catálogo, porque o avaliador confere a impressão digital da base: os 30 casos são idênticos e só mudou o `fonte_sha256`. Nunca foram alterados para melhorar um número.
+- **A avaliação não foi refeita sobre o catálogo ampliado.** O experimento vigente rodou com o catálogo de 2.640 peças e os mesmos 30 casos. As peças desses casos (PEC-01 a PEC-11) não mudaram com a ampliação.
 - A avaliação não cobre a preferência de origem: o usuário de avaliação não tem preferências salvas.
 - **A referência de trajetória ficou defasada** em relação ao agente final, que às vezes usa um caminho mais curto. Seria preciso revisá-la com os casos oficiais.
 - **Uma execução por configuração.** O modelo não é determinístico. Antes das melhorias, a trajetória completa de `gpt-4.1-mini` foi de 25 e 24 de 30 nas duas execuções salvas comparáveis (primeiro experimento e memória nova); com a regra corrigida, foi de 16, 23 e 26 de 30. As diferenças de um ou dois casos não são conclusivas.
