@@ -20,9 +20,13 @@ os resultados da avaliação, as limitações e como reproduzir.
 O vídeo mostra o agente funcionando: uma comparação de fornecedores,
 a memória entre mensagens, a consulta a uma API externa e as políticas.
 
-Link do vídeo:
+Link do vídeo (YouTube):
 
 https://www.youtube.com/watch?v=SpeCHaVVK58
+
+Caso o vídeo não abra no YouTube, ele também está no Google Drive da Infnet:
+
+https://drive.google.com/file/d/1nt-cUSmVtYK_p4XGprDvhlTowE2eXwaw/view?usp=drive_link
 
 
 3. CÓDIGO (REPOSITÓRIO GITHUB)
