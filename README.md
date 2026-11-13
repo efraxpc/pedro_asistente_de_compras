@@ -33,6 +33,8 @@ cp .env.example .env
 
 Abra o arquivo `.env` e preencha `OPENAI_API_KEY=` com a sua chave da OpenAI. As outras linhas são opcionais.
 
+**Importante:** o projeto não traz nenhuma chave. Quem for rodar o agente (por exemplo, o professor) precisa usar a sua própria chave da OpenAI, criada em https://platform.openai.com/api-keys. O uso da API é cobrado pela OpenAI na conta de quem é dono da chave.
+
 **4. Abra o chat**
 
 ```bash
