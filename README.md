@@ -1,32 +1,103 @@
-# Pedro Infnet reconstruído
+# Pedro — assistente de compras
 
-Projeto independente em Python 3.13 para consultar peças fictícias, comparar ofertas e testar um agente com publicação verificada. O catálogo, os fornecedores, as compatibilidades, o estoque e os preços são sintéticos. O catálogo tem 18 categorias de eletrodomésticos, 4.320 peças e 12.960 ofertas de 12 fornecedores; as sete categorias PEC-12 a PEC-18 foram acrescentadas em 2026-11-11 sem mudar as peças PEC-01 a PEC-11. O gerador e a base sintética vieram do repositório de referência; o pacote da aplicação foi construído neste workspace. Código, interface e documentos estão em português do Brasil; os nomes seguem o [glossário da migração](docs/glossario_migracao.md).
+O Pedro é um assistente de compras de peças de eletrodomésticos. Ele compara fornecedores e recomenda o melhor. É um projeto do curso da Infnet e **todos os dados são fictícios**.
 
-## Reproduzir
+## Instalação em 4 passos
+
+**Você precisa de:** Git e o [uv](https://docs.astral.sh/uv/). O uv instala o Python 3.13 sozinho.
+
+Se ainda não tem o uv:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**1. Baixe o projeto**
+
+```bash
+git clone https://github.com/efraxpc/pedro_asistente_de_compras.git
+cd pedro_asistente_de_compras
+```
+
+**2. Instale as dependências**
 
 ```bash
 uv sync --python 3.13 --all-extras --locked
-uv run pytest -q
-uv run python scripts/gerar_catalogo_pecas.py
-uv run python scripts/criar_notebooks.py
-uv run python scripts/executar_notebooks.py
-uv run streamlit run app.py
 ```
 
-Para administrar o app em segundo plano:
+**3. Configure a chave**
+
+```bash
+cp .env.example .env
+```
+
+Abra o arquivo `.env` e preencha `OPENAI_API_KEY=` com a sua chave da OpenAI. As outras linhas são opcionais.
+
+**4. Abra o chat**
 
 ```bash
 ./project.sh start
-./project.sh status
-./project.sh restart
-./project.sh stop
 ```
 
-A porta padrão é 8501; use `PEDRO_PORT=8765 ./project.sh start` para iniciar em outra porta, ou `PEDRO_PORT=8765 ./project.sh restart` se ele já estiver ativo. O PID e o log ficam em `storage/run/`.
+Acesse http://localhost:8501. O selo no topo deve dizer «Agente ativo».
 
-O app inicia em http://localhost:8501. A interface é só o chat. Copie .env.example para .env para usar o agente OpenAI e o LangSmith. Sem chave funcionam, no chat, a listagem de peças, a comparação de fornecedores e o comando `/t24`. Com a OpenAI, o chat também consulta as políticas fictícias de demonstração por meio do agente; a resposta é rotulada como fictícia e passa por verificação de fonte e NLI local. No chat basta informar a peça e a quantidade; orçamento e prazo são filtros opcionais. Se falta a quantidade, o Pedro pergunta uma vez e guarda a resposta na sessão. Você pode dizer «agora 3 unidades» para recalcular com os limites informados antes, ou «sem orçamento e sem prazo» para tirá-los. As recomendações do agente passam por verificação exata e NLI local antes de aparecer.
+## Primeiro teste
 
-O primeiro acesso cria um cenário com dataset_id UUID, uma cópia de datasets/pecas_eletrodomesticos.sqlite3 e um manifesto com impressão digital SHA-256, data, semente e contagens. «Novo chat» mantém o cenário. Reabrir uma conversa restaura o dataset dela ou avisa se ele falta. Os arquivos de execução vão para storage/ e não são versionados.
+No chat, clique na sugestão «Compare 5 unidades de PEC-01-0001 com prazo de 7 dias». A resposta esperada é CentroPeças, R$ 7.279,83, entrega em 2 dias.
+
+A primeira resposta demora mais: o Pedro baixa dois modelos locais (verificação e busca). Depois fica rápido.
+
+## Sem chave da OpenAI
+
+O chat abre mesmo sem chave, com o selo «Modo local, sem modelo». Funcionam a listagem de peças, a comparação de fornecedores e o comando `/t24`. Políticas, CEP e perguntas abertas precisam da chave.
+
+## Comandos do dia a dia
+
+| Para | Comando |
+|---|---|
+| Abrir o chat | `./project.sh start` |
+| Ver se está ativo | `./project.sh status` |
+| Reiniciar (depois de mudar o código ou o `.env`) | `./project.sh restart` |
+| Parar | `./project.sh stop` |
+| Usar outra porta | `PEDRO_PORT=8765 ./project.sh start` |
+| Rodar os testes | `uv run pytest -q` |
+| Executar os 5 notebooks | `uv run python scripts/executar_notebooks.py` |
+
+## Variáveis do arquivo .env
+
+| Variável | Para que serve | Obrigatória |
+|---|---|---|
+| `OPENAI_API_KEY` | Liga o agente, as políticas e o CEP | Sim, para o agente |
+| `PEDRO_MODEL` | Modelo da OpenAI (padrão: `gpt-4.1-mini`) | Não |
+| `LANGSMITH_API_KEY` | Só para a avaliação com `evals/avaliar_fluxo.py` | Não |
+| `PEDRO_TRUST_POLICY_INDEX` | `true` usa o índice de políticas salvo em `knowledge/politicas/`; `false` usa o índice de demonstração em memória, com o mesmo conteúdo | Não |
+| `ELEVENLABS_API_KEY` | Só para narrar o vídeo do tour (`scripts/gerar_video_tour.py`) | Não |
+
+Nunca envie o arquivo `.env` para o repositório.
+
+## Se algo der errado
+
+- **O selo diz «Modo local, sem modelo»:** falta a `OPENAI_API_KEY` no `.env`. Preencha e rode `./project.sh restart`.
+- **Mudei o código e o chat mostra um erro de importação:** rode `./project.sh restart`. O Streamlit não recarrega sozinho os módulos de `src/pedro/`.
+- **A porta 8501 está ocupada:** use `PEDRO_PORT=8765 ./project.sh start`.
+- **O chat não abre:** veja o log em `storage/run/streamlit.log`.
+- **Quero começar do zero:** apague a pasta `storage/`. Ela guarda só dados de execução (conversas e cópias do catálogo) e não é versionada.
+
+## Como funciona, em resumo
+
+A interface é só o chat. Basta informar a peça e a quantidade; orçamento e prazo são filtros opcionais. Se falta a quantidade, o Pedro pergunta uma vez e guarda a resposta na sessão.
+
+O catálogo tem 18 categorias de eletrodomésticos, 4.320 peças e 12.960 ofertas de 12 fornecedores. O primeiro acesso cria um cenário: uma cópia do catálogo com um identificador próprio, na pasta `storage/`. «Novo chat» mantém o cenário, e reabrir uma conversa restaura o cenário dela.
+
+Para regenerar os dados e os notebooks:
+
+```bash
+uv run python scripts/gerar_catalogo_pecas.py
+uv run python scripts/criar_notebooks.py
+uv run python scripts/executar_notebooks.py
+```
+
+Para entender o projeto, comece por docs/guia_estudo.md (ou docs/guia_estudio_es.md, em espanhol).
 
 ## Componentes
 
