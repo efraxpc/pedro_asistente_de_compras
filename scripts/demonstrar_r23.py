@@ -11,6 +11,7 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -45,7 +46,7 @@ def main() -> None:
     rastro = Rastro()
     fluxo = criar_fluxo(cenario, memoria, llm=ChatOpenAI(model=modelo), classificador=ModeloNLI(),
                         indice=criar_indice_demo(), rastro=rastro)
-    turnos = []
+    turnos: list[dict[str, Any]] = []
     for pergunta in PERGUNTAS:
         desde = len(rastro.eventos)
         publicada = fluxo.invoke({"input": pergunta}, config={"configurable": {
