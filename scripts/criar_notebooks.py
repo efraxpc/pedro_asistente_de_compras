@@ -1,4 +1,8 @@
-"""Gera os cinco notebooks executáveis sem credenciais."""
+"""Gera os cinco notebooks. Todos rodam sem credenciais, com duplos de teste identificados.
+
+O primeiro tem também uma célula que roda a mesma cadeia com o modelo real quando há um modelo
+configurado no arquivo .env; sem ele, a célula avisa e não chama nada.
+"""
 from pathlib import Path
 
 import nbformat as nbf
@@ -16,7 +20,7 @@ def salvar(nome, secoes):
 
 
 salvar("01_chain_mvp.ipynb", [
-    ("md", "# Fase 1 · extração\nModelo duplo determinístico. LCEL, @chain, invoke, batch e stream."),
+    ("md", "# Fase 1 · extração\nLCEL, @chain, invoke, batch e stream. As células usam um **modelo duplo determinístico** e rodam sem credenciais. Uma célula, marcada como **execução real remota**, roda a mesma cadeia de ponta a ponta com o modelo real quando há chave no arquivo `.env`."),
     ("code", PRE),
     ("code", """from langchain_core.runnables import RunnableLambda
 from pedro.chains import criar_lcel, criar_chain
@@ -32,6 +36,27 @@ print([x.model_dump() for x in lcel.batch([entrada, entrada])])
 print(list(modelo.stream('etapa do modelo')))
 print(lcel.get_graph().draw_mermaid())"""),
     ("md", "LCEL expõe etapas declarativas. @chain envolve a mesma extração. Os faltantes são recalculados depois do parser."),
+    ("md", "## A mesma cadeia de ponta a ponta com o modelo real\n**Execução real remota** (OpenAI), só se houver um modelo configurado no arquivo `.env` (`OPENAI_API_KEY`, ou `PEDRO_BASE_URL` para um servidor local). O prompt estruturado, o modelo e o output parser de JSON rodam juntos, sem duplo, nos dois estilos de composição e com `invoke`, `batch` e `stream`. As solicitações são sintéticas. Sem modelo configurado, a célula avisa e não chama nada; a execução real salva está em `docs/rastros/fase1_chain_llm.json`."),
+    ("code", """from dotenv import load_dotenv
+from pedro.chains import criar_lcel_parcial
+from pedro.modelos import criar_llm, ha_modelo, nome_do_modelo
+load_dotenv()
+if ha_modelo():
+    real = criar_llm(temperature=0)
+    lcel_real, decorada_real = criar_lcel(real), criar_chain(real)
+    pedidos = [{'texto': 'Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias'},
+               {'texto': 'Preciso de um termostato para geladeira, sem pressa'},
+               {'texto': 'A que cidade corresponde o CEP 01001000?'}]
+    print('modelo real:', nome_do_modelo())
+    print('LCEL   invoke:', lcel_real.invoke(pedidos[0]).model_dump_json())
+    print('@chain invoke:', decorada_real.invoke(pedidos[0]).model_dump_json())
+    for pedido, saida in zip(pedidos, lcel_real.batch(pedidos)):
+        print('batch :', pedido['texto'], '->', saida.intencao, '| faltam:', saida.faltantes)
+    estados = list(criar_lcel_parcial(real).stream(pedidos[0]))
+    print('stream:', len(estados), 'estados parciais; o último:', estados[-1])
+else:
+    print('Sem modelo configurado: esta célula não chama nada.')
+    print('A execução real salva está em docs/rastros/fase1_chain_llm.json')"""),
     ("md", "## R03 · modelo de prompt reutilizável com variáveis do domínio\nExecução real local, sem modelo: o mesmo `ChatPromptTemplate` é preenchido com três solicitações diferentes e as mensagens resultantes são mostradas. O modelo de prompt fica em `pedro.chains.PROMPT` e é reutilizado pela cadeia LCEL e pela cadeia `@chain`. A execução com o modelo real está em `docs/rastros/fase1_chain_llm.json`."),
     ("code", """from pedro.chains import PROMPT
 print('classe:', type(PROMPT).__name__, '| variáveis:', sorted(PROMPT.input_variables))

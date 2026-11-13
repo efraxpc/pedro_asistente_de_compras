@@ -1,9 +1,14 @@
 """Converte o relatório Markdown em um PDF legível e reproduzível.
 
 Admite um subconjunto de Markdown: títulos (#, ##, ###), parágrafos, listas com hífen,
-tabelas com barras e **negrito**. Não executa nada: só diagrama docs/relatorio.md.
+tabelas com barras, **negrito** e imagens em um bloco próprio (![legenda](caminho), com o
+caminho relativo ao arquivo Markdown). Não executa nada: só diagrama docs/relatorio.md.
+
+Sem argumentos, grava também uma cópia com o nome de arquivo que o enunciado exige para a
+entrega (nome_sobrenome_ai-agents_langchain-agents.pdf).
 """
 import re
+import shutil
 import sys
 from html import escape
 from pathlib import Path
@@ -15,7 +20,8 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Image, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 ROOT = Path(__file__).resolve().parents[1]
 # Sem argumentos gera o relatório; com `<origem.md> <destino.pdf> [título] [largura da página
@@ -23,6 +29,8 @@ ROOT = Path(__file__).resolve().parents[1]
 ORIGEM = Path(sys.argv[1]).resolve() if len(sys.argv) > 2 else ROOT / "docs/relatorio.md"
 DESTINO = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else ROOT / "docs/relatorio.pdf"
 TITULO = sys.argv[3] if len(sys.argv) > 3 else "Relatório técnico — Pedro"
+# Cópia do relatório com o nome exigido pelo enunciado; só é gravada na execução sem argumentos.
+ENTREGA = ROOT / "docs/efrain_colmenares_ai-agents_langchain-agents.pdf" if len(sys.argv) <= 2 else None
 LARGURA_CM = float(sys.argv[4]) if len(sys.argv) > 4 else None
 ESCALA = float(sys.argv[5]) if len(sys.argv) > 5 else 1.0
 FONTE = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
@@ -53,6 +61,8 @@ estilos = {
     "celula": ParagraphStyle("celula", fontName=font, fontSize=7.6, leading=10.5),
     "cabecalho": ParagraphStyle("cabecalho", fontName=font_negrito, fontSize=7.6, leading=10.5,
                                textColor=colors.white),
+    "legenda": ParagraphStyle("legenda", fontName=font, fontSize=7.6, leading=10.5,
+                              textColor=colors.HexColor("#56627a"), spaceBefore=4, spaceAfter=10),
 }
 if ESCALA != 1.0:
     for estilo in estilos.values():
@@ -89,6 +99,19 @@ def tabela(linhas_texto: list[str]) -> Table:
     return objeto
 
 
+def figura(legenda: str, caminho: str) -> KeepTogether:
+    """Imagem ajustada à largura do texto, com a legenda embaixo, sem se separar dela."""
+    arquivo = (ORIGEM.parent / caminho).resolve()
+    largura_px, altura_px = ImageReader(str(arquivo)).getSize()
+    largura = LARGURA
+    altura = largura * altura_px / largura_px
+    limite = (PAGINA[1] - 2 * MARGEM) * 0.82
+    if altura > limite:
+        largura, altura = largura * limite / altura, limite
+    return KeepTogether([Image(str(arquivo), width=largura, height=altura),
+                         Paragraph(marcar(legenda), estilos["legenda"])])
+
+
 elementos = []
 for bloco in ORIGEM.read_text(encoding="utf-8").split("\n\n"):
     linhas = [linha for linha in bloco.strip().splitlines() if linha.strip()]
@@ -101,6 +124,8 @@ for bloco in ORIGEM.read_text(encoding="utf-8").split("\n\n"):
         elementos.append(Paragraph(marcar(primeira[3:]), estilos["secao"]))
     elif primeira.startswith("### "):
         elementos.append(Paragraph(marcar(primeira[4:]), estilos["subsecao"]))
+    elif len(linhas) == 1 and (imagem := re.fullmatch(r"!\[(.*?)\]\((.+?)\)", primeira.strip())):
+        elementos.append(figura(imagem[1], imagem[2]))
     elif all(linha.lstrip().startswith("|") for linha in linhas):
         elementos.append(tabela(linhas))
         elementos.append(Spacer(1, 7))
@@ -115,3 +140,6 @@ SimpleDocTemplate(str(DESTINO), pagesize=PAGINA, leftMargin=MARGEM, rightMargin=
                   topMargin=MARGEM, bottomMargin=MARGEM, title=TITULO,
                   author="Projeto Pedro (Infnet)").build(elementos)
 print(DESTINO)
+if ENTREGA:
+    shutil.copyfile(DESTINO, ENTREGA)
+    print(ENTREGA)
