@@ -21,7 +21,7 @@ O Pedro é um assistente de compras de peças de eletrodomésticos. Todos os dad
 | `src/pedro/` | Toda a lógica reutilizável |
 | `scripts/demonstrar_*.py` | Demonstrações com o modelo real; salvam um JSON em `docs/rastros/` |
 | `notebooks/` | Cinco notebooks didáticos, um por fase, com duplos de teste |
-| `tests/` | 158 testes automáticos |
+| `tests/` | 159 testes automáticos |
 | `evals/` | Casos de avaliação e o avaliador do LangSmith |
 | `knowledge/` | Corpus fictício de políticas e o índice FAISS salvo |
 | `datasets/` | Catálogo SQLite sintético: 18 categorias, 4.320 peças, 12.960 ofertas |

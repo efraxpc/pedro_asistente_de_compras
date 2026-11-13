@@ -10,7 +10,8 @@ from pedro.agent import Rastro, criar_fluxo, e_diagnostico_t24, partes_de
 from pedro.business import brl, descrever_motivos, variacao_percentual
 from pedro.catalog import abrir_cenario, criar_cenario
 from pedro.contracts import Alternativa, Oferta, RespostaCompra
-from pedro.memory import MODELO_LEMBRANCAS, Historico, nova_sessao, sessoes
+from pedro.memory import (MODELO_LEMBRANCAS, Historico, apagar_sessao, apagar_sessoes, nova_sessao,
+                          sessoes)
 from pedro.policy_demo import PERGUNTA_T24_ORIGINAL, criar_indice_demo, impressao_corpus
 from pedro.precos import aviso_de_preco
 from pedro.verification import melhor_sem_preferencia
@@ -56,6 +57,50 @@ def novo_cenario() -> None:
 
 def novo_chat() -> None:
     st.session_state.sessao = nova_sessao(MEMORIA, USUARIO, st.session_state.cenario.dataset_id)
+
+
+def esquecer_apagar() -> None:
+    """Fecha o pedido de apagar: ao cancelar, ao confirmar ou ao fechar o diálogo."""
+    st.session_state.apagar_pendente = None
+
+
+@st.dialog("Apagar conversa", icon=":material/delete:", on_dismiss=esquecer_apagar)
+def confirmar_apagar(session_id: str, titulo: str) -> None:
+    """Pede confirmação antes de apagar uma conversa: a ação não tem volta."""
+    st.markdown(f"Apagar a conversa «{titulo}»?")
+    st.caption("Saem as mensagens, o rascunho de compra e as lembranças dessa conversa. "
+               "As suas preferências salvas ficam.")
+    with st.container(horizontal=True):
+        if st.button("Apagar", type="primary", icon=":material/delete:", key="confirmar_apagar"):
+            esquecer_apagar()
+            apagar_sessao(MEMORIA, USUARIO, session_id)
+            st.session_state.passos = {chave: valor for chave, valor in st.session_state.passos.items()
+                                       if chave[0] != session_id}
+            if session_id == st.session_state.sessao:
+                novo_chat()
+            st.rerun()
+        if st.button("Cancelar", key="cancelar_apagar"):
+            esquecer_apagar()
+            st.rerun()
+
+
+@st.dialog("Apagar todas as conversas", icon=":material/delete_sweep:", on_dismiss=esquecer_apagar)
+def confirmar_apagar_todas(quantas: int) -> None:
+    """Pede confirmação antes de apagar todas as conversas do usuário."""
+    st.markdown(f"Apagar as {quantas} conversas?" if quantas != 1 else "Apagar a única conversa?")
+    st.caption("Saem as mensagens, os rascunhos de compra e as lembranças de todas as conversas. "
+               "As suas preferências salvas ficam.")
+    with st.container(horizontal=True):
+        if st.button("Apagar todas", type="primary", icon=":material/delete_sweep:",
+                     key="confirmar_apagar_todas"):
+            esquecer_apagar()
+            apagar_sessoes(MEMORIA, USUARIO)
+            st.session_state.passos = {}
+            novo_chat()
+            st.rerun()
+        if st.button("Cancelar", key="cancelar_apagar_todas"):
+            esquecer_apagar()
+            st.rerun()
 
 
 def reabrir(session_id: str, dataset_id: str) -> None:
@@ -300,6 +345,8 @@ if "cenario" not in st.session_state:
     novo_cenario()
 if "erro_cenario" not in st.session_state:
     st.session_state.erro_cenario = None
+if "apagar_pendente" not in st.session_state:
+    st.session_state.apagar_pendente = None
 if "passos" not in st.session_state:
     st.session_state.passos = {}  # (sessão, número da mensagem) -> passos do agente
 
@@ -308,7 +355,8 @@ with st.sidebar:
     st.caption("Assistente de compras · dados fictícios")
     st.button("Novo chat", on_click=novo_chat, icon=":material/edit_square:", width="stretch")
     st.subheader("Conversas")
-    for sessao in sessoes(MEMORIA, USUARIO)[:CONVERSAS_VISIVEIS]:
+    conversas = sessoes(MEMORIA, USUARIO)
+    for sessao in conversas[:CONVERSAS_VISIVEIS]:
         try:
             primeiro = next((m for m in Historico(MEMORIA, USUARIO, sessao["id"]).todos()
                              if m.type == "human"), None)
@@ -316,11 +364,28 @@ with st.sidebar:
             primeiro = None
         titulo = str(primeiro.content)[:34] if primeiro else "Conversa nova"
         atual = sessao["id"] == st.session_state.sessao
-        st.button(titulo, key=f"sessao_{sessao['id']}", on_click=reabrir,
-                  args=(sessao["id"], sessao["dataset_id"]), width="stretch",
-                  type="primary" if atual else "secondary",
-                  icon=":material/chat:" if atual else ":material/chat_bubble_outline:",
-                  help=f"Sessão {sessao['id'][:8]} · cenário {sessao['dataset_id'][:8]}")
+        coluna_titulo, coluna_apagar = st.columns([5, 1], vertical_alignment="center", gap="small")
+        coluna_titulo.button(titulo, key=f"sessao_{sessao['id']}", on_click=reabrir,
+                             args=(sessao["id"], sessao["dataset_id"]), width="stretch",
+                             type="primary" if atual else "secondary",
+                             icon=":material/chat:" if atual else ":material/chat_bubble_outline:",
+                             help=f"Sessão {sessao['id'][:8]} · cenário {sessao['dataset_id'][:8]}")
+        if coluna_apagar.button(":material/delete:", key=f"apagar_{sessao['id']}", type="tertiary",
+                                help=f"Apagar a conversa «{titulo}»"):
+            st.session_state.apagar_pendente = (sessao["id"], titulo)
+    if len(conversas) > 1:
+        if st.button("Apagar todas", key="apagar_todas", icon=":material/delete_sweep:",
+                     type="tertiary", width="stretch",
+                     help=f"Apaga as {len(conversas)} conversas, depois de confirmar"):
+            st.session_state.apagar_pendente = ("todas", "")
+
+# O pedido de apagar fica guardado até confirmar, cancelar ou fechar o diálogo.
+pendente = st.session_state.apagar_pendente
+if pendente is not None:
+    if pendente[0] == "todas":
+        confirmar_apagar_todas(len(conversas))
+    else:
+        confirmar_apagar(*pendente)
 
 cenario = st.session_state.cenario
 if cenario is None:

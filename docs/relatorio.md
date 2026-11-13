@@ -1,6 +1,6 @@
 # Relatório técnico — Pedro, assistente de compras
 
-**Curso:** Agentes Cognitivos com LangChain (Infnet). **Atualizado:** 2026-11-12. **Modelo:** gpt-4.1-mini. **Testes automáticos:** 158, todos passando.
+**Curso:** Agentes Cognitivos com LangChain (Infnet). **Atualizado:** 2026-11-12. **Modelo:** gpt-4.1-mini. **Testes automáticos:** 159, todos passando.
 
 Este relatório explica como o projeto responde às 29 rubricas do guia integrado (R01–R29). Cada rubrica tem aqui um resumo; a resposta completa, com suas tabelas e seus limites, está em docs/respostas_rubricas.md. As execuções com o modelo real estão salvas em docs/rastros/ e o registro do que foi executado, em docs/evidencias.md.
 

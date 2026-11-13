@@ -75,7 +75,7 @@ O diagrama [rubricas_projeto.mmd](rubricas_projeto.mmd) e a sua [vista SVG](rubr
 
 | Entregável | Estado |
 |---|---|
-| Código e notebooks reproduzíveis com duplos identificados | Local: 158/158 testes, 5/5 notebooks reexecutados |
+| Código e notebooks reproduzíveis com duplos identificados | Local: 159/159 testes, 5/5 notebooks reexecutados |
 | Relatório técnico em PDF | Local: docs/relatorio.md e docs/relatorio.pdf; atualizar depois de fechar as pendências |
 | Registro de avaliação no LangSmith | Real: nove experimentos; o vigente, sobre o conjunto pedro-infnet-casos-derivados-efff08ab (ver R29) |
 | Vídeo de demonstração + link do Drive institucional | Pendente: exige gravação e acesso do aluno |

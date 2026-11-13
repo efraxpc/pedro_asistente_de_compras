@@ -82,6 +82,30 @@ def sessoes(caminho: Path, user_id: str) -> list[dict]:
             "SELECT id,dataset_id FROM sessoes WHERE user_id=? ORDER BY criada DESC,id DESC", (user_id,))]
 
 
+def apagar_sessao(caminho: Path, user_id: str, session_id: str) -> None:
+    """Apaga uma conversa do usuário com tudo o que saiu dela.
+
+    Vão embora as mensagens, o rascunho de compra e os episódios (lembranças) dessa conversa.
+    As preferências são do usuário, não da conversa, e ficam.
+    """
+    preparar(caminho)
+    with sqlite3.connect(caminho) as db:
+        if db.execute("SELECT 1 FROM sessoes WHERE id=? AND user_id=?",
+                      (session_id, user_id)).fetchone() is None:
+            raise ValueError("sessão alheia ou inexistente")
+        for tabela in ("mensagens", "rascunhos", "episodios"):
+            db.execute(f"DELETE FROM {tabela} WHERE session_id=?", (session_id,))
+        db.execute("DELETE FROM sessoes WHERE id=? AND user_id=?", (session_id, user_id))
+
+
+def apagar_sessoes(caminho: Path, user_id: str) -> int:
+    """Apaga todas as conversas do usuário e devolve quantas eram. As preferências ficam."""
+    todas = sessoes(caminho, user_id)
+    for sessao in todas:
+        apagar_sessao(caminho, user_id, sessao["id"])
+    return len(todas)
+
+
 def dataset_sessao(caminho: Path, user_id: str, session_id: str) -> str:
     preparar(caminho)
     with sqlite3.connect(caminho) as db:

@@ -111,9 +111,9 @@
 
 **En pantalla:** la pestaña de LangSmith con el experimento `pedro-infnet-fluxo-gpt-4.1-mini-portugues-235aa9f1`. Después docs/relatorio.pdf.
 
-**Dices (portugués):** «Avaliei com casos porque ver o agente funcionar em alguns exemplos não prova que ele acerta. O agente foi avaliado no LangSmith com trinta casos. O vencedor ficou correto em 14 de 14 e o valor em 14 de 14. Em nove experimentos, nenhuma recomendação contrária à regra foi publicada. O projeto tem 158 testes automáticos e cinco notebooks, um por fase. As 29 rubricas estão respondidas no documento respostas_rubricas, com a evidência de cada uma. Obrigado.»
+**Dices (portugués):** «Avaliei com casos porque ver o agente funcionar em alguns exemplos não prova que ele acerta. O agente foi avaliado no LangSmith com trinta casos. O vencedor ficou correto em 14 de 14 e o valor em 14 de 14. Em nove experimentos, nenhuma recomendação contrária à regra foi publicada. O projeto tem 159 testes automáticos e cinco notebooks, um por fase. As 29 rubricas estão respondidas no documento respostas_rubricas, com a evidência de cada uma. Obrigado.»
 
-**Significa:** Evalué con casos porque ver al agente funcionar en algunos ejemplos no prueba que acierte. El agente se evaluó en LangSmith con treinta casos. El ganador fue correcto en 14 de 14 y el importe en 14 de 14. En nueve experimentos no se publicó ninguna recomendación contraria a la regla. El proyecto tiene 158 pruebas automáticas y cinco notebooks, uno por fase. Las 29 rúbricas están respondidas en el documento respostas_rubricas, con la evidencia de cada una. Gracias.
+**Significa:** Evalué con casos porque ver al agente funcionar en algunos ejemplos no prueba que acierte. El agente se evaluó en LangSmith con treinta casos. El ganador fue correcto en 14 de 14 y el importe en 14 de 14. En nueve experimentos no se publicó ninguna recomendación contraria a la regla. El proyecto tiene 159 pruebas automáticas y cinco notebooks, uno por fase. Las 29 rúbricas están respondidas en el documento respostas_rubricas, con la evidencia de cada una. Gracias.
 
 **La idea que transmites:** el agente está medido, no solo demostrado (R29).
 

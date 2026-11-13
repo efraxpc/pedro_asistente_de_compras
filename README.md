@@ -85,7 +85,7 @@ Nunca envie o arquivo `.env` para o repositório.
 
 ## Como funciona, em resumo
 
-A interface é só o chat. Basta informar a peça e a quantidade; orçamento e prazo são filtros opcionais. Se falta a quantidade, o Pedro pergunta uma vez e guarda a resposta na sessão.
+A interface é só o chat. Na barra lateral você abre um chat novo, reabre uma conversa ou a apaga (a lixeira ao lado de cada conversa, ou «Apagar todas»; as duas pedem confirmação). Basta informar a peça e a quantidade; orçamento e prazo são filtros opcionais. Se falta a quantidade, o Pedro pergunta uma vez e guarda a resposta na sessão.
 
 O catálogo tem 18 categorias de eletrodomésticos, 4.320 peças e 12.960 ofertas de 12 fornecedores. O primeiro acesso cria um cenário: uma cópia do catálogo com um identificador próprio, na pasta `storage/`. «Novo chat» mantém o cenário, e reabrir uma conversa restaura o cenário dela.
 

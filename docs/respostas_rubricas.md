@@ -301,7 +301,7 @@ Não se busca o nível 5 porque o problema — recomendar uma oferta verificada 
 |---|---|---|
 | Anatomia lida dos objetos reais do agente: modelo, executor, system message PTCF, seis ferramentas com seu papel e lógica, memória, base de conhecimento e porta de publicação | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomia do agente»; [anatomia.py](../src/pedro/anatomia.py) | Execução real local (sem modelo) |
 | Agente híbrido em ação: «lista peças» e «Compare PEC-01-0001» são resolvidas por regra, sem passar pelo agente (na segunda, o intérprete de turno lê a mensagem); a pergunta de CEP passa pelo agente, que recebe seis ferramentas e executa `consultar_cep` | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · agente híbrido» | Execução com **duplo de teste**: modelo roteirizado e ViaCEP simulado; o fluxo, o executor, a ferramenta e a verificação são os reais |
-| A anatomia descrita coincide com o agente construído | [tests/test_anatomia.py](../tests/test_anatomia.py) | Teste automático (158/158 testes na suíte) |
+| A anatomia descrita coincide com o agente construído | [tests/test_anatomia.py](../tests/test_anatomia.py) | Teste automático (159/159 testes na suíte) |
 | Explicação de componentes, classificação e maturidade | Esta seção; [arquitetura.mmd](arquitetura.mmd) | Documentação |
 
 ### Pendências e limitações
@@ -2152,6 +2152,10 @@ Na conversa de oito turnos (R18):
 | **Chat** | Conversa com o agente | `criar_fluxo`: agente, memória, verificação e NLI |
 
 Na barra lateral: novo chat (mesma base de dados, conversa nova) e a lista de conversas para reabrir, cada uma com o título da sua primeira pergunta.
+
+**Apagar conversas.** Cada conversa tem uma lixeira ao lado, e abaixo da lista há «Apagar todas». As duas ações pedem confirmação em um diálogo, porque não têm volta. Apagar uma conversa leva as mensagens, o rascunho de compra e as lembranças (episódios) dela; as preferências salvas são do usuário e ficam (`apagar_sessao` e `apagar_sessoes` em [memory.py](../src/pedro/memory.py)). Se a conversa apagada é a atual, abre-se uma nova.
+
+![Diálogo para apagar uma conversa](capturas/apagar_conversa.png)
 
 **O que se vê em uma resposta do chat.** A comparação de fornecedores é o núcleo, então a interface a desenha com dados, não só com texto:
 
