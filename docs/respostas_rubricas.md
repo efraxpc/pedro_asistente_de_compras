@@ -21,8 +21,8 @@ As 29 perguntas da rubrica foram conferidas com o enunciado original da atividad
 | Índice FAISS (R22) | Pede «um índice FAISS existente como ferramenta, sem reconstruir o pipeline de indexação, já coberto em outro bloco do curso» | Não entrega um índice. O índice próprio, salvo e só carregado pelo agente, atende |
 | Casos de avaliação (R29) | Pede comparar o que o agente fez «com o que seria esperado em cada caso de teste» | Não entrega casos. Os 30 casos derivados são os casos de teste do projeto |
 | Notebook da fase 1 | Pede «um notebook com a chain funcionando de ponta a ponta (prompt estruturado, modelo, output parser em JSON)» | O NB01 ganhou uma célula que roda a cadeia com o modelo real (ver «Notebook, relatório e testes») |
-| Uso de IA | Exige citar as ferramentas de IA usadas | Citadas no relatório, seção 15 |
-| Relatório | Pede evidência de execução (capturas, logs, saídas do LangSmith) e um nome de arquivo fixo | O relatório traz três capturas e é gravado também com o nome de entrega |
+| Uso de IA | Exige citar as ferramentas de IA usadas | Citadas no relatório, seção 13 |
+| Relatório | Pede evidência de execução (capturas, logs, saídas do LangSmith) e um nome de arquivo fixo | O relatório traz oito capturas e seis registros de execução (seção 8) e é gravado também com o nome de entrega |
 
 Continua como suposição a escala de maturidade de R01, que o enunciado cita sem definir.
 
@@ -103,7 +103,7 @@ Não foram refeitas as demonstrações da fase 1 (`fase1_chain_llm.json`) nem as
 ## Notebook, relatório e testes
 
 - **NB01 com o modelo real.** O primeiro notebook tem a célula «A mesma cadeia de ponta a ponta com o modelo real», marcada como execução real remota. Com a chave no arquivo `.env`, ela roda o prompt, o `gpt-4.1-mini` e o parser de JSON nos dois estilos de composição, com `invoke`, `batch` e `stream`; a saída está salva (LCEL e `@chain` devolvem o mesmo objeto; `batch` com três solicitações; `stream` com 20 estados parciais). Sem a chave, a célula avisa e não chama nada. As outras células continuam com duplos.
-- **Relatório.** [relatorio.md](relatorio.md) traz três capturas do chat em um navegador real, tiradas sobre uma cópia isolada dos dados ([capturas/](capturas/): `chat_comparacao.png`, `chat_politica.png` e `chat_guarda.png`). O script do PDF grava também a cópia com o nome que o enunciado exige.
+- **Relatório.** [relatorio.md](relatorio.md) foi reescrito no formato dos outros relatórios do curso: seções numeradas que seguem a lista do enunciado (problema, domínio, decisões fase a fase, resultados, evidência, limitações e melhorias), sem os códigos das rubricas. A seção 8 traz seis capturas do chat em um navegador real, tiradas sobre uma cópia isolada dos dados e com o índice de políticas salvo em disco, duas capturas da página pública do LangSmith e seis registros copiados dos rastros ([capturas/](capturas/)). O script do PDF grava também a cópia com o nome que o enunciado exige.
 - **Testes.** 188 testes, todos passando, em 2026-11-13.
 
 ---
@@ -1391,16 +1391,16 @@ A memória de buffer guarda a conversa completa e a insere inteira em cada promp
 
 | Turno | Usuário | Pedro | Memória |
 |---|---|---|---|
-| 1 | Olá, sou a Ana. Preciso de um termostato para a minha geladeira. | Olá, Ana! Para definir sua solicitação, por favor, informe a quantidade desejada, seu orçamento e o prazo para entrega; os preços e o estoque serão consultados no catálogo… | 313 caracteres |
-| 2 | Que sejam 2 unidades. | Anotado, Ana: 2 unidades de termostato para geladeira. Por favor, informe seu orçamento e o prazo desejado para entrega. | 472 |
-| 3 | Tenho até R$ 900 e preciso dele em 5 dias. | Perfeito, Ana: 2 termostatos para geladeira, orçamento de até R$ 900 e prazo de 5 dias para entrega; vou consultar preços e estoque no catálogo… | 717 |
-| 4 | Resuma a minha solicitação completa e diga como eu me chamo. | Ana, sua solicitação é para 2 termostatos para geladeira, com orçamento de até R$ 900 e prazo de entrega de 5 dias; vou consultar preços e estoque no catálogo. | 954 |
+| 1 | Olá, sou a Ana. Preciso de um termostato para a minha geladeira. | Olá, Ana! Para definir sua solicitação, por favor, informe a quantidade desejada, o orçamento disponível e o prazo para entrega; os preços e o estoque serão consultados no… | 322 caracteres |
+| 2 | Que sejam 2 unidades. | Anotado, Ana: 2 unidades de termostato para geladeira. Por favor, informe o orçamento disponível e o prazo para entrega para que eu possa completar sua solicitação. Você já… | 566 |
+| 3 | Tenho até R$ 900 e preciso dele em 5 dias. | Perfeito, Ana: 2 termostatos para geladeira, orçamento de até R$ 900 e prazo de 5 dias. Vou consultar o catálogo para verificar preços e disponibilidade. | 779 |
+| 4 | Resuma a minha solicitação completa e diga como eu me chamo. | Ana, sua solicitação é para 2 termostatos para geladeira, com orçamento de até R$ 900 e prazo de entrega de 5 dias; vou consultar o catálogo para preços e estoque. | 1020 |
 
 O turno 4 só pode ser respondido com memória: o nome foi dito no turno 1, a quantidade no 2 e o orçamento e o prazo no 3.
 
 ### 3. O que a última coluna mostra
 
-A memória cresce a cada turno: de 313 para 954 caracteres em quatro turnos. Com o buffer, **cada mensagem nova deixa o prompt seguinte mais longo e mais caro**, sem limite. Por isso o agente final não usa essa memória: usa uma janela de 12 mensagens mais recuperação de lembranças (R14).
+A memória cresce a cada turno: de 322 para 1020 caracteres em quatro turnos, no rastro de 2026-11-13. Com o buffer, **cada mensagem nova deixa o prompt seguinte mais longo e mais caro**, sem limite. Por isso o agente final não usa essa memória: usa uma janela de 12 mensagens mais recuperação de lembranças (R14).
 
 **Decisão técnica.** Este chatbot está isolado em `legacy.py` como demonstração. Ele é útil para ver a memória conversacional na sua forma mais simples, mas não serve para o produto por dois motivos: não tem limite de tamanho, e não tem ferramentas, então não pode consultar o catálogo. O prompt o proíbe de inventar preços e por isso ele responde «vou consultar preços e estoque no catálogo».
 
@@ -2322,7 +2322,7 @@ Sem `OPENAI_API_KEY` a interface não quebra: no chat, lista peças, mostra fich
 
 ### Pendências e limitações
 
-- `AppTest` confere o comportamento sem navegador; a aparência fica em duas capturas. **Falta o vídeo de demonstração**, que é um entregável à parte.
+- `AppTest` confere o comportamento sem navegador; a aparência fica nas capturas de [capturas/](capturas/), seis delas no relatório. **Falta o vídeo de demonstração**, que é um entregável à parte.
 - Os passos do agente são guardados só durante a sessão do navegador: ao reabrir uma conversa antiga voltam os cartões, não os passos.
 - A interface usa um único usuário fixo (`usuario-demo`); não há login.
 - Para o chat usar o índice de políticas salvo é preciso pôr `PEDRO_TRUST_POLICY_INDEX=true` no `.env`; sem isso ele usa o índice de demonstração em memória, com o mesmo conteúdo.
@@ -2477,7 +2477,7 @@ O script confere se o modelo responde antes de começar, cria o conjunto de caso
 - **Os 30 casos são derivados e sintéticos.** O enunciado original, conferido em 2026-11-13, não entrega casos de teste: pede comparar o que o agente fez com o esperado em cada caso.
 - **Os casos foram regenerados quando a regra de negócio mudou**, ao corrigir o pedido mínimo: a referência anterior estava incorreta. Depois foram regenerados em português na migração, sem mudar produtos, quantidades, limites, fornecedores esperados nem totais. Foram regenerados uma terceira vez depois da ampliação do catálogo, porque o avaliador confere a impressão digital da base: os 30 casos são idênticos e só mudou o `fonte_sha256`. Nunca foram alterados para melhorar um número.
 - **O experimento vigente rodou sobre o catálogo ampliado**, com os mesmos 30 casos. As peças desses casos (PEC-01 a PEC-11) não mudaram com a ampliação, e as categorias novas não têm casos.
-- **Só o experimento vigente tem link público** ([https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d](https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d)): o conjunto de casos, os 30 exemplos e as execuções abrem sem conta. Antes de compartilhar, os 718 runs do experimento foram revisados: não trazem nomes, caminhos locais, e-mails nem chaves. Os nove experimentos anteriores ficam na conta do autor; a cópia local de cada um está em rastros/.
+- **Só o experimento vigente tem link público** ([https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d](https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d)): o conjunto de casos, os 30 exemplos e as execuções abrem sem conta. Antes de compartilhar, os 718 runs do experimento foram revisados: não trazem nomes, caminhos locais, e-mails nem chaves. Os metadados de git do experimento, que essa revisão não cobriu, traziam o e-mail do autor do commit; ele foi retirado logo depois de compartilhar. Continuam visíveis ali o nome do autor, o ramo, o commit e o endereço do repositório. Os nove experimentos anteriores ficam na conta do autor; a cópia local de cada um está em rastros/.
 - A avaliação não cobre a preferência de origem: o usuário de avaliação não tem preferências salvas.
 - **A referência de trajetória ficou defasada** em relação ao agente final, que no experimento vigente usa um caminho mais curto em 15 dos 19 casos de compra. Seria preciso revisá-la; os casos estão congelados e não foram mudados para melhorar esse número.
 - **Uma execução por configuração.** O modelo não é determinístico. Antes das melhorias, a trajetória completa de `gpt-4.1-mini` foi de 25 e 24 de 30 nas duas execuções salvas comparáveis (primeiro experimento e memória nova); com a regra corrigida, foi de 16, 23, 26 e 15 de 30. As diferenças de um ou dois casos não são conclusivas.

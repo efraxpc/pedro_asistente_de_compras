@@ -47,7 +47,7 @@
 
 ## Parte 2 — Qué resuelve el agente (0:45 a 2:15)
 
-**En pantalla:** docs/relatorio.pdf, en las secciones 3 («O núcleo: comparar fornecedores») y 4 («Arquitetura»).
+**En pantalla:** docs/relatorio.pdf, en las secciones 5 («Caracterização do domínio escolhido») y 6 («Decisões técnicas e justificativas, fase a fase»).
 
 **Dices, qué resuelve (portugués):** «O Pedro resolve três coisas. Primeiro, compara: cada peça tem três ofertas, e ele descarta as que não têm estoque, não atingem o pedido mínimo, passam do prazo ou do orçamento. Segundo, orienta: busca nas políticas da loja com busca semântica e cita a fonte. Terceiro, lembra: guarda o pedido da conversa e as preferências do usuário.»
 
