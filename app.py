@@ -219,6 +219,11 @@ def descrever_passo(evento: dict) -> dict | None:
             return {"rotulo": "Redigi um conselho de preço e o verifiquei", "detalhe": ""}
         return {"rotulo": "Descartei o meu conselho de preço; uso o aviso fixo", "estado": "error",
                 "detalhe": "\n".join(f"- {e}" for e in evento.get("erros") or [])}
+    if tipo == "resposta_politica":
+        if evento.get("fonte") == "resposta verificada":
+            return {"rotulo": "Respondi à sua pergunta com a política e verifiquei a frase", "detalhe": ""}
+        return {"rotulo": "Descartei a minha frase; cito a regra literal", "estado": "error",
+                "detalhe": "\n".join(f"- {e}" for e in evento.get("erros") or [])}
     if tipo == "comparacao_reutilizada":
         return {"rotulo": "Refiz o cálculo da comparação em andamento, sem chamar o modelo", "detalhe": ""}
     if tipo == "resposta_direta":

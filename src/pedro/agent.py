@@ -26,7 +26,8 @@ from .policy_demo import (FRAGMENTO_T24_ESPERADO, ORIGEM as ORIGEM_DEMO,
                           reescrever_consulta_entrega)
 from .planner import planejar_turno
 from .precos import aconselhar, aviso_de_preco, criar_conselheiro
-from .resposta_direta import criar_respondedor, e_pergunta, responder
+from .resposta_direta import (criar_respondedor, criar_respondedor_politica, e_pergunta, responder,
+                              responder_politica)
 from .prompts import EXEMPLOS_ACOES, MODELO_AGENTE
 from .query import criar_gerador_sql, executar, planejar, responder_sql
 from .rag import consultar, diagnosticar_reescrita
@@ -267,8 +268,15 @@ def e_diagnostico_t24(pergunta: str) -> bool:
 
 def resumo_recuperacao_t24(diagnostico: dict | None) -> str:
     """Descreve um contraste observado pela ferramenta, sem inferência do LLM."""
-    if not diagnostico or not diagnostico.get("correcao_observada"):
+    if not diagnostico:
         return ""
+    if not diagnostico.get("correcao_observada"):
+        # Não houve falha a corrigir: diz-se o que foi observado, sem afirmar uma correção.
+        if diagnostico.get("posicao_antes") is None or diagnostico.get("posicao_depois") is None:
+            return ""
+        return (f"Recuperação: a pergunta inicial já trazia `{diagnostico['fonte_esperada']}` na "
+                f"posição {diagnostico['posicao_antes']} do top-{diagnostico['k']}; com a "
+                f"reformulação ficou na posição {diagnostico['posicao_depois']}.")
     return (
         f"Recuperação T24: a pergunta inicial deixou "
         f"`{diagnostico['fonte_esperada']}` fora do top-{diagnostico['k']}; "
@@ -284,8 +292,14 @@ _FRASES_ENTREGA_PARCIAL = (r"Uma entrega parcial[^.]*\.",
 
 def resolver_entrega_parcial(cenario: Cenario, memoria_db: Path, usuario: str,
                              pergunta: str, indice, classificador: Classificador | None,
-                             rastro: Rastro | None = None) -> str | None:
-    """Rota extrativa verificada para perguntas de envio dividido do corpus demo."""
+                             rastro: Rastro | None = None, llm=None) -> str | None:
+    """Rota verificada para perguntas de envio dividido do corpus demo.
+
+    A recuperação (com a reformulação) e a regra citada são fixas e verificadas. Com um modelo,
+    ele redige uma ou duas frases que respondem à pergunta feita e decide se a política
+    responde ao perguntado; a frase só é publicada se passar na porta. A regra literal e a
+    sua fonte são publicadas sempre.
+    """
     if indice is None or reescrever_consulta_entrega(pergunta) is None:
         return None
     referencia = indice.docstore.search(FRAGMENTO_T24_ESPERADO)
@@ -301,8 +315,8 @@ def resolver_entrega_parcial(cenario: Cenario, memoria_db: Path, usuario: str,
     except Exception:
         return "Não consegui consultar as políticas fictícias para esta pergunta."
     diagnostico = dado_tool.get("diagnostico")
-    if not diagnostico or not diagnostico.get("correcao_observada"):
-        return "Não consegui confirmar uma recuperação corrigida para esta pergunta."
+    if not diagnostico:
+        return "Não consegui confirmar a recuperação da política para esta pergunta."
     fragmento = next((f for f in dado_tool.get("fragmentos", [])
                       if f.get("fonte_id") == FRAGMENTO_T24_ESPERADO), None)
     if fragmento is None:
@@ -324,7 +338,33 @@ def resolver_entrega_parcial(cenario: Cenario, memoria_db: Path, usuario: str,
     if classificador is None or not verificar_nli(resposta, classificador):
         return ("Encontrei o fragmento de entrega parcial, mas não consegui verificar "
                 "a resposta com o NLI local; não confirmo a regra.")
-    return renderizar(resposta, indice=indice) + "\n\n" + resumo_recuperacao_t24(diagnostico)
+    regra = resposta.mensagem
+    direta: dict = {"texto": None, "responde": None, "fonte": "regra literal"}
+    if llm is not None:
+        try:
+            respondedor = criar_respondedor_politica(llm)
+        except Exception:
+            respondedor = None
+        direta = responder_politica(pergunta, fonte, respondedor, classificador)
+        if rastro and respondedor is not None:
+            rastro.eventos.append({"evento": "resposta_politica", **{
+                chave: direta.get(chave) for chave in
+                ("fonte", "responde", "texto", "rejeitada", "erros")}})
+    partes = ["Política fictícia de demonstração."]
+    # O aviso exige as duas coisas: que o modelo diga que a política não responde e que a pergunta
+    # peça um detalhe (quais, quanto, onde…). Numa pergunta de sim ou não a regra já é a resposta,
+    # e ali a decisão do modelo variava entre execuções.
+    pede_detalhe = re.search(r"\b(quais|qual|quanto|quantos|quantas|onde|quem)\b", pergunta, re.I)
+    if direta["responde"] is False and pede_detalhe:
+        partes.append("A política não responde exatamente ao que você perguntou. "
+                      "O que ela diz sobre envios divididos:")
+    if direta["texto"]:
+        partes.append(direta["texto"])
+        partes.append(f"\n\nRegra citada: «{regra}»")
+    else:
+        partes.append(regra)
+    texto = " ".join(partes) + f"\nFontes: {FRAGMENTO_T24_ESPERADO}"
+    return (texto + "\n\n" + resumo_recuperacao_t24(diagnostico)).rstrip()
 
 
 def renderizar_diagnostico_t24(indice) -> str:
@@ -471,7 +511,7 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
             return AIMessage(content=renderizar_diagnostico_t24(indice))
         if reescrever_consulta_entrega(pergunta) is not None:
             politica = resolver_entrega_parcial(cenario, memoria_db, usuario,
-                                                pergunta, indice, classificador, rastro)
+                                                pergunta, indice, classificador, rastro, llm)
             if politica is not None:
                 return AIMessage(content=politica)
         direta = consulta_direta(cenario, pergunta)

@@ -168,3 +168,62 @@ def responder(resposta: RespostaCompra, pergunta: str, respondedor,
     if erros:
         return {"texto": fixo, "fonte": "resumo fixo", "rejeitada": texto, "erros": erros}
     return {"texto": texto, "fonte": "resposta verificada"}
+
+
+# --- O mesmo padrão para uma regra de política já recuperada e verificada. ---
+
+class RespostaPolitica(BaseModel):
+    """Resposta à pergunta do usuário usando só o texto da política recuperada."""
+    responde_ao_perguntado: bool = Field(
+        description="True se o texto da política responde diretamente ao que foi perguntado; "
+                    "False se a política fala do assunto mas não diz o que o usuário quer saber")
+    resposta: str = Field(min_length=10, max_length=360,
+                          description="Uma ou duas frases só com o que o texto da política diz")
+
+
+def criar_respondedor_politica(modelo):
+    """Cadeia LCEL: texto da política e pergunta → prompt PTCF com few-shot → `RespostaPolitica`."""
+    from langchain_core.output_parsers import PydanticOutputParser
+
+    from .prompts import MODELO_RESPOSTA_POLITICA
+
+    parser = PydanticOutputParser(pydantic_object=RespostaPolitica)
+    # Temperatura zero: a decisão «responde ao perguntado» deve ser a mesma em cada execução.
+    estavel = modelo.bind(temperature=0) if hasattr(modelo, "bind") else modelo
+    return MODELO_RESPOSTA_POLITICA.partial(formato=parser.get_format_instructions()) | estavel | parser
+
+
+def verificar_resposta_politica(texto: str, fonte: str,
+                                classificador: Classificador | None) -> list[str]:
+    """Porta: nenhum número fora da fonte e NLI com a fonte como premissa."""
+    if _numeros(texto) - _numeros(fonte):
+        return ["a resposta contém números que não estão na política"]
+    if classificador is None:
+        return ["sem classificador NLI"]
+    try:
+        rotulo = classificador.classificar(fonte, texto)
+    except Exception as exc:
+        return [f"NLI indisponível ({type(exc).__name__})"]
+    return [] if rotulo == "entailment" else [f"NLI: {rotulo}"]
+
+
+def responder_politica(pergunta: str, fonte: str, respondedor,
+                       classificador: Classificador | None) -> dict:
+    """Devolve a frase do modelo se passar na porta, e o julgamento dele sobre a pergunta.
+
+    `responde` é a decisão do modelo: a política responde ao perguntado ou só fala do assunto.
+    `texto` é None quando não há frase verificada; então vale a regra literal da política.
+    """
+    if respondedor is None:
+        return {"texto": None, "responde": None, "fonte": "regra literal"}
+    try:
+        saida: RespostaPolitica = respondedor.invoke({"politica": fonte, "pergunta": pergunta})
+    except Exception as exc:
+        return {"texto": None, "responde": None, "fonte": "regra literal", "rejeitada": None,
+                "erros": [f"o modelo não devolveu uma resposta válida ({type(exc).__name__})"]}
+    erros = verificar_resposta_politica(saida.resposta, fonte, classificador)
+    if erros:
+        return {"texto": None, "responde": saida.responde_ao_perguntado, "fonte": "regra literal",
+                "rejeitada": saida.resposta, "erros": erros}
+    return {"texto": saida.resposta, "responde": saida.responde_ao_perguntado,
+            "fonte": "resposta verificada"}

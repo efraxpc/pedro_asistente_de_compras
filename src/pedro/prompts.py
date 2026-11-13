@@ -220,6 +220,32 @@ MODELO_RESPOSTA_DIRETA = ChatPromptTemplate.from_messages([
     ("human", "Fatos:\n{fatos}\n\nPergunta: {pergunta}"),
 ])
 
+# Resposta a uma pergunta sobre uma política já recuperada. Variáveis: politica, pergunta e formato.
+_POLITICA_DE_EXEMPLO = ("Uma troca só é aceita se a peça chega com a embalagem original e a nota "
+                        "fictícia. Sem a nota, o assistente deve indicar que a troca não pode ser registrada.")
+MODELO_RESPOSTA_POLITICA = ChatPromptTemplate.from_messages([
+    ("system", "Persona: Pedro, assistente de compras. Tarefa: responder em uma ou duas frases à "
+     "pergunta do usuário usando só o texto da política fictícia. Contexto: o texto já foi "
+     "recuperado e verificado e é a sua única fonte. Diga em responde_ao_perguntado se o texto "
+     "responde ao que foi perguntado: é true quando o texto diz se algo é possível ou não, mesmo "
+     "que seja com uma condição («só se…»), como nas perguntas de sim ou não («posso…?», "
+     "«pode…?»); é false quando ele fala do assunto mas não diz o que "
+     "o usuário quer saber (por exemplo, quais produtos, quanto custa ou em quantos dias). "
+     "Em resposta, escreva só o que o texto diz, com as palavras dele quando possível; não "
+     "acrescente exemplos, produtos, prazos nem condições que não estejam no texto. "
+     "Formato: {formato}"),
+    ("human", "Política:\n" + _POLITICA_DE_EXEMPLO + "\n\nPergunta: Posso trocar uma peça sem nota?"),
+    ("ai", '{{"responde_ao_perguntado": true, "resposta": "Não: uma troca só é aceita se a peça chega '
+           'com a embalagem original e a nota fictícia. Sem a nota, a troca não pode ser registrada."}}'),
+    ("human", "Política:\n" + _POLITICA_DE_EXEMPLO + "\n\nPergunta: Posso trocar uma peça?"),
+    ("ai", '{{"responde_ao_perguntado": true, "resposta": "Só se a peça chega com a embalagem original '
+           'e a nota fictícia."}}'),
+    ("human", "Política:\n" + _POLITICA_DE_EXEMPLO + "\n\nPergunta: Quais peças posso trocar?"),
+    ("ai", '{{"responde_ao_perguntado": false, "resposta": "Uma troca só é aceita se a peça chega com a '
+           'embalagem original e a nota fictícia."}}'),
+    ("human", "Política:\n{politica}\n\nPergunta: {pergunta}"),
+])
+
 # Planejador de turno: separa uma mensagem com várias intenções. Variáveis: mensagem e formato.
 MODELO_PLANO = ChatPromptTemplate.from_messages([
     ("system", "Persona: planejador do Pedro. Tarefa: dividir a mensagem do usuário em pedidos "

@@ -101,3 +101,53 @@ def test_no_fluxo_sem_modelo_a_pergunta_recebe_o_resumo_e_a_mesma_comparacao(tmp
     assert segunda.content.startswith("A mais barata que atende às suas restrições é a de CentroPeças")
     assert parte["comparacao"]["total_centavos"] == 5 * 143892 + 8523
     assert parte["comparacao"]["solicitacao"]["prazo_max_dias"] == 7  # a solicitação não muda
+
+
+# --- Resposta a perguntas sobre uma política já recuperada (rota de entrega parcial). ---
+
+POLITICA = ("Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica "
+            "as unidades, o fornecedor e os prazos de cada envio. Se não existe esse acordo, o assistente "
+            "deve indicar que a oferta não cobre a quantidade pedida.")
+
+
+class RespondedorPolitica:
+    """Duplo de teste do modelo: devolve sempre a mesma decisão e a mesma frase."""
+    def __init__(self, responde, texto):
+        self.responde, self.texto = responde, texto
+
+    def invoke(self, dado):
+        from pedro.resposta_direta import RespostaPolitica
+        return RespostaPolitica(responde_ao_perguntado=self.responde, resposta=self.texto)
+
+
+def test_a_frase_sobre_a_politica_so_e_publicada_se_passar_na_porta():
+    from pedro.resposta_direta import responder_politica
+
+    frase = "Só se há um acordo simulado explícito que identifica as unidades."
+    publicada = responder_politica("Posso receber em várias caixas?", POLITICA,
+                                   RespondedorPolitica(True, frase), NLI())
+    assert publicada == {"texto": frase, "responde": True, "fonte": "resposta verificada"}
+
+    inventada = responder_politica("Em quantos dias?", POLITICA,
+                                   RespondedorPolitica(False, "Chega em 3 dias em caixas separadas."), NLI())
+    assert inventada["texto"] is None and inventada["fonte"] == "regra literal"
+    assert inventada["responde"] is False  # a decisão do modelo é conservada
+    assert inventada["erros"] == ["a resposta contém números que não estão na política"]
+
+    sem_apoio = responder_politica("Posso?", POLITICA, RespondedorPolitica(True, frase), NLI("neutral"))
+    assert sem_apoio["texto"] is None and sem_apoio["erros"] == ["NLI: neutral"]
+
+    assert responder_politica("Posso?", POLITICA, None, None) == {
+        "texto": None, "responde": None, "fonte": "regra literal"}
+
+
+def test_o_resumo_da_recuperacao_nao_afirma_uma_correcao_que_nao_houve():
+    from pedro.agent import resumo_recuperacao_t24
+
+    corrigida = {"correcao_observada": True, "fonte_esperada": "FIC-ENT-01-S05-C01", "k": 4,
+                 "posicao_antes": None, "posicao_depois": 1}
+    assert "fora do top-4" in resumo_recuperacao_t24(corrigida)
+    sem_falha = {**corrigida, "correcao_observada": False, "posicao_antes": 2}
+    texto = resumo_recuperacao_t24(sem_falha)
+    assert "já trazia" in texto and "posição 2" in texto and "fora do top" not in texto
+    assert resumo_recuperacao_t24(None) == ""

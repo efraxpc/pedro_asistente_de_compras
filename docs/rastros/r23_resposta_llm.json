@@ -1,0 +1,98 @@
+{
+  "rubrica": "R23",
+  "modo": "real remoto: OpenAI; NLI real local; índice fictício de demonstração em memória",
+  "data_utc": "2026-11-13T02:18:34+00:00",
+  "modelo_llm": "gpt-4.1-mini",
+  "resumo": {
+    "perguntas": 5,
+    "resposta_verificada": 4,
+    "regra_literal": 1,
+    "citam_a_regra": 5,
+    "mostram_a_recuperacao_corrigida": 2,
+    "primeiras_linhas_diferentes": 5
+  },
+  "turnos": [
+    {
+      "pergunta": "Posso receber em várias caixas?",
+      "ferramentas": [
+        "consultar_politicas"
+      ],
+      "resposta_do_modelo": {
+        "fonte": "resposta verificada",
+        "responde": false,
+        "texto": "Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio.",
+        "rejeitada": null,
+        "erros": null
+      },
+      "cita_a_regra": true,
+      "mostra_a_recuperacao_corrigida": true,
+      "resposta_publicada": "Política fictícia de demonstração. Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio. \n\nRegra citada: «Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio. Se não existe esse acordo, o assistente deve indicar que a oferta não cobre a quantidade pedida.»\nFontes: FIC-ENT-01-S05-C01\n\nRecuperação T24: a pergunta inicial deixou `FIC-ENT-01-S05-C01` fora do top-4; a reformulação o colocou na posição 1 com o mesmo índice e top-k."
+    },
+    {
+      "pergunta": "Quais produtos posso receber em várias caixas?",
+      "ferramentas": [
+        "consultar_politicas"
+      ],
+      "resposta_do_modelo": {
+        "fonte": "resposta verificada",
+        "responde": false,
+        "texto": "Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio.",
+        "rejeitada": null,
+        "erros": null
+      },
+      "cita_a_regra": true,
+      "mostra_a_recuperacao_corrigida": true,
+      "resposta_publicada": "Política fictícia de demonstração. A política não responde exatamente ao que você perguntou. O que ela diz sobre envios divididos: Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio. \n\nRegra citada: «Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio. Se não existe esse acordo, o assistente deve indicar que a oferta não cobre a quantidade pedida.»\nFontes: FIC-ENT-01-S05-C01\n\nRecuperação T24: a pergunta inicial deixou `FIC-ENT-01-S05-C01` fora do top-4; a reformulação o colocou na posição 1 com o mesmo índice e top-k."
+    },
+    {
+      "pergunta": "Quanto custa receber o pedido em duas caixas?",
+      "ferramentas": [
+        "consultar_politicas"
+      ],
+      "resposta_do_modelo": {
+        "fonte": "resposta verificada",
+        "responde": false,
+        "texto": "O frete é conservado como dado da oferta correspondente; não se duplica nem se reparte por intuição.",
+        "rejeitada": null,
+        "erros": null
+      },
+      "cita_a_regra": true,
+      "mostra_a_recuperacao_corrigida": false,
+      "resposta_publicada": "Política fictícia de demonstração. A política não responde exatamente ao que você perguntou. O que ela diz sobre envios divididos: O frete é conservado como dado da oferta correspondente; não se duplica nem se reparte por intuição. \n\nRegra citada: «Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio. Se não existe esse acordo, o assistente deve indicar que a oferta não cobre a quantidade pedida.»\nFontes: FIC-ENT-01-S05-C01\n\nRecuperação: a pergunta inicial já trazia `FIC-ENT-01-S05-C01` na posição 2 do top-4; com a reformulação ficou na posição 1."
+    },
+    {
+      "pergunta": "Sem um acordo, o pedido pode chegar em caixas separadas?",
+      "ferramentas": [
+        "consultar_politicas"
+      ],
+      "resposta_do_modelo": {
+        "fonte": "regra literal",
+        "responde": true,
+        "texto": null,
+        "rejeitada": "Sem um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio, o assistente deve indicar que a oferta não cobre a quantidade pedida, ou seja, o pedido não pode chegar em caixas separadas.",
+        "erros": [
+          "NLI: neutral"
+        ]
+      },
+      "cita_a_regra": true,
+      "mostra_a_recuperacao_corrigida": false,
+      "resposta_publicada": "Política fictícia de demonstração. Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio. Se não existe esse acordo, o assistente deve indicar que a oferta não cobre a quantidade pedida.\nFontes: FIC-ENT-01-S05-C01\n\nRecuperação: a pergunta inicial já trazia `FIC-ENT-01-S05-C01` na posição 1 do top-4; com a reformulação ficou na posição 1."
+    },
+    {
+      "pergunta": "O pedido pode chegar em vários pacotes de fornecedores diferentes?",
+      "ferramentas": [
+        "consultar_politicas"
+      ],
+      "resposta_do_modelo": {
+        "fonte": "resposta verificada",
+        "responde": true,
+        "texto": "Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio; caso contrário, a oferta não cobre a quantidade pedida.",
+        "rejeitada": null,
+        "erros": null
+      },
+      "cita_a_regra": true,
+      "mostra_a_recuperacao_corrigida": false,
+      "resposta_publicada": "Política fictícia de demonstração. Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio; caso contrário, a oferta não cobre a quantidade pedida. \n\nRegra citada: «Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio. Se não existe esse acordo, o assistente deve indicar que a oferta não cobre a quantidade pedida.»\nFontes: FIC-ENT-01-S05-C01\n\nRecuperação: a pergunta inicial já trazia `FIC-ENT-01-S05-C01` na posição 1 do top-4; com a reformulação ficou na posição 1."
+    }
+  ]
+}
