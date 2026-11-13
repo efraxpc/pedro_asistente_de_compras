@@ -35,6 +35,11 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCUMENTO = len(sys.argv) <= 2  # o relatório de entrega usa o estilo de documento comum
 ORIGEM = Path(sys.argv[1]).resolve() if not DOCUMENTO else ROOT / "docs/relatorio.md"
 DESTINO = Path(sys.argv[2]).resolve() if not DOCUMENTO else ROOT / "docs/relatorio.pdf"
+if not ORIGEM.is_file():
+    # A fonte do relatório não está mais no repositório: o relatório entregue é o PDF já gerado.
+    sys.exit(f"Não encontrei {ORIGEM}. Uso: gerar_relatorio_pdf.py <origem.md> <destino.pdf> "
+             "[título] [largura em cm] [escala]. O relatório entregue está em "
+             "docs/efrain_colmenares_ai-agents_langchain-agents.pdf.")
 TITULO = sys.argv[3] if len(sys.argv) > 3 else "Relatório Agentes Cognitivos com LangChain"
 # Cópia do relatório com o nome exigido pelo enunciado; só é gravada na execução sem argumentos.
 ENTREGA = ROOT / "docs/efrain_colmenares_ai-agents_langchain-agents.pdf" if DOCUMENTO else None

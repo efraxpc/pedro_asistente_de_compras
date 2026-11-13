@@ -249,7 +249,7 @@ for pergunta in ('Busque o compressor com SKU GELA-COMP-0001 e me diga o ID dele
     print('  resposta:', saida['output'])
 print('memória de buffer:')
 print(buffer.load_memory_variables({})['chat_history'])"""),
-    ("md", "A chamada real ao ViaCEP é registrada separadamente em docs/evidencias.md."),
+    ("md", "A chamada real ao ViaCEP está registrada separadamente em docs/rastros/r10_viacep_llm.json."),
     ("md", "## R12 · registro de um turno com erro e recuperação\nOs quatro componentes de confiabilidade em um único turno do fluxo final. **Duplo de teste:** o modelo é um roteiro; o ViaCEP está simulado. A primeira proposta do roteiro é texto que não é JSON (erro do parser); a segunda é válida. O callback `Rastro` registra cada chamada de ferramenta e cada verificação, e `RunnableWithMessageHistory` salva na memória só a pergunta e a resposta publicada."),
     ("code", """import json
 from langchain_core.messages import AIMessage
@@ -271,7 +271,7 @@ for evento in rastro.eventos:
 print('publicado:', resposta.content)
 print('memória:', [(m.type, m.content[:60]) for m in Historico(memoria, 'aluna', sessao).todos()])"""),
     ("md", "Leitura: o registro mostra a ferramenta chamada duas vezes, a primeira tentativa rejeitada com `OutputParserException`, a segunda aceita e o CEP preenchido a partir da observação. A proposta rejeitada não chega à memória: só são salvas a pergunta e a resposta publicada."),
-    ("md", "## R07 · o que o orquestrador traz: inventário de peças do LangChain no Pedro\nSem modelo. O inventário é obtido lendo os imports do código (`pedro.anatomia.inventario_langchain`), não é escrito à mão. Serve para argumentar a escolha com fatos: cada linha é uma peça que o projeto não precisou construir. A comparação com outros orquestradores está em `docs/respostas_rubricas.md` §R07 e é conceitual: aqui só o LangChain foi executado."),
+    ("md", "## R07 · o que o orquestrador traz: inventário de peças do LangChain no Pedro\nSem modelo. O inventário é obtido lendo os imports do código (`pedro.anatomia.inventario_langchain`), não é escrito à mão. Serve para argumentar a escolha com fatos: cada linha é uma peça que o projeto não precisou construir. A comparação executada com o LangGraph está em docs/rastros/r07_orquestradores_llm.json; aqui só o LangChain foi executado."),
     ("code", """from pedro.anatomia import inventario_langchain
 inventario = inventario_langchain()
 for peca, dado in inventario.items():
