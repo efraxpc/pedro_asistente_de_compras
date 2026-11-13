@@ -621,6 +621,7 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
         erros = []
         extrativa = None
         cep_falho = None
+        cep_ok = None
         for tentativa in range(2):
             entrada = pergunta
             if solicitacao_atual is not None:
@@ -640,7 +641,8 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
                     config={"callbacks": [rastro] if rastro else [],
                             "metadata": {"dataset_id": cenario.dataset_id, "user_id": usuario,
                                          "session_id": sessao, "proposta": tentativa + 1}})
-                proposta = parser.parse(saida["output"])
+                # As observações são lidas antes de interpretar a resposta: se o modelo chamou a
+                # ferramenta mas não soube redigir o JSON, o dado da ferramenta não se perde.
                 observacoes = []
                 for acao, resultado_tool in saida.get("intermediate_steps", []):
                     try:
@@ -650,6 +652,9 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
                 cep_falho = next((dado_tool for nome, dado_tool in observacoes
                                   if nome == "consultar_cep" and dado_tool.get("estado") != "ok"),
                                  cep_falho)
+                cep_ok = next((dado_tool for nome, dado_tool in observacoes
+                               if nome == "consultar_cep" and dado_tool.get("estado") == "ok"), cep_ok)
+                proposta = parser.parse(saida["output"])
                 citacoes = ancorar_citacoes(proposta, observacoes)
                 cep = ancorar_cep(proposta, observacoes, cenario.dataset_id)
                 if rastro:
@@ -751,6 +756,20 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
                 return mensagem_publica(_com_direta(renderizar(proposta), direta), proposta, direta=direta)
         if extrativa is not None:
             return AIMessage(content=renderizar_citacoes(extrativa, indice=indice))
+        if cep_ok is not None and cep_ok.get("cep") and cep_ok["cep"] in re.sub(r"\D", "", pergunta):
+            # O agente consultou o CEP que o usuário escreveu, mas não redigiu uma resposta válida:
+            # o sistema publica o que o ViaCEP devolveu, verificado como as outras respostas.
+            resposta = RespostaCompra(estado="cep", dataset_id=cenario.dataset_id,
+                                      solicitacao=Solicitacao(cep=cep_ok["cep"]))
+            observacao = [("consultar_cep", cep_ok)]
+            ancorar_cep(resposta, observacao, cenario.dataset_id)
+            erros = verificar(resposta, cenario, observacoes=observacao)
+            if rastro:
+                rastro.eventos.append({"evento": "cep_do_sistema",
+                                       "motivo": "o agente não produziu uma resposta verificável"})
+                rastro.registrar_verificacao(3, "cep", erros)
+            if not erros:
+                return AIMessage(content=renderizar(resposta))
         if cep_falho is not None:
             # A API respondeu, mas sem cidade: diz-se o que aconteceu em vez de inventar um destino.
             motivos = {"nao_encontrado": f"O ViaCEP não tem registro do CEP {cep_falho.get('cep')}.",

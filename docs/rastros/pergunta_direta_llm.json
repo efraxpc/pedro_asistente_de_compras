@@ -1,12 +1,12 @@
 {
   "tema": "resposta direta a perguntas sobre a comparação",
   "modo": "real remoto: OpenAI; NLI real local",
-  "data_utc": "2026-11-12T01:26:38+00:00",
+  "data_utc": "2026-11-13T03:32:43+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "resumo": {
     "perguntas": 6,
-    "resposta_verificada": 6,
-    "resumo_fixo": 0
+    "resposta_verificada": 5,
+    "resumo_fixo": 1
   },
   "turnos": [
     {
@@ -24,65 +24,67 @@
       "ferramentas": [],
       "resposta_direta": {
         "fonte": "resposta verificada",
-        "texto": "A oferta de menor total é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por não ter estoque suficiente e por ter prazo de entrega maior que o máximo pedido. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83.",
+        "texto": "A oferta de menor total é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por falta de estoque e prazo de entrega maior que o máximo pedido. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83.",
         "rejeitada": null,
         "erros": null
       },
       "fornecedor_recomendado": "BR-06",
       "total_centavos": 727983,
-      "primeira_linha_publicada": "A oferta de menor total é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por não ter estoque suficiente e por ter prazo de entrega maior que o máximo pedido. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83."
+      "primeira_linha_publicada": "A oferta de menor total é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por falta de estoque e prazo de entrega maior que o máximo pedido. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83."
     },
     {
       "mensagem": "qual é a mais em conta?",
       "ferramentas": [],
       "resposta_direta": {
         "fonte": "resposta verificada",
-        "texto": "A oferta mais em conta entre todas é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por não ter estoque suficiente e por exceder o prazo máximo de entrega. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83.",
+        "texto": "A oferta mais em conta entre todas é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por falta de estoque e prazo de entrega acima do máximo. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83.",
         "rejeitada": null,
         "erros": null
       },
       "fornecedor_recomendado": "BR-06",
       "total_centavos": 727983,
-      "primeira_linha_publicada": "A oferta mais em conta entre todas é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por não ter estoque suficiente e por exceder o prazo máximo de entrega. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83."
+      "primeira_linha_publicada": "A oferta mais em conta entre todas é a de Litoral Parts, por R$ 1.930,40, mas foi descartada por falta de estoque e prazo de entrega acima do máximo. Entre as que atendem, a mais barata é a de CentroPeças, por R$ 7.279,83."
     },
     {
       "mensagem": "qual chega mais rápido?",
       "ferramentas": [],
       "resposta_direta": {
         "fonte": "resposta verificada",
-        "texto": "A oferta que chega mais rápido é a de CentroPeças, com entrega em 2 dias.",
+        "texto": "A entrega mais rápida entre todas é a da CentroPeças, que entrega em 2 dias e atende ao prazo máximo pedido de 7 dias.",
         "rejeitada": null,
         "erros": null
       },
       "fornecedor_recomendado": "BR-06",
       "total_centavos": 727983,
-      "primeira_linha_publicada": "A oferta que chega mais rápido é a de CentroPeças, com entrega em 2 dias."
+      "primeira_linha_publicada": "A entrega mais rápida entre todas é a da CentroPeças, que entrega em 2 dias e atende ao prazo máximo pedido de 7 dias."
     },
     {
       "mensagem": "por que não a Litoral Parts?",
       "ferramentas": [],
       "resposta_direta": {
-        "fonte": "resposta verificada",
-        "texto": "A oferta de Litoral Parts foi descartada porque não tem estoque suficiente e o prazo de entrega de 12 dias ultrapassa o máximo pedido de 7 dias; a oferta que atende é a de CentroPeças.",
-        "rejeitada": null,
-        "erros": null
+        "fonte": "resumo fixo",
+        "texto": "A mais barata que atende às suas restrições é a de CentroPeças, por R$ 7.279,83, com entrega em 2 dias. A de menor total é a de Litoral Parts, por R$ 1.930,40, mas foi descartada porque não tem estoque suficiente e porque o prazo de entrega passa do máximo pedido.",
+        "rejeitada": "A oferta da Litoral Parts foi descartada porque não tem estoque suficiente e o prazo de entrega de 12 dias passa do máximo pedido de 7 dias.",
+        "erros": [
+          "NLI: contradiction"
+        ]
       },
       "fornecedor_recomendado": "BR-06",
       "total_centavos": 727983,
-      "primeira_linha_publicada": "A oferta de Litoral Parts foi descartada porque não tem estoque suficiente e o prazo de entrega de 12 dias ultrapassa o máximo pedido de 7 dias; a oferta que atende é a de CentroPeças."
+      "primeira_linha_publicada": "A mais barata que atende às suas restrições é a de CentroPeças, por R$ 7.279,83, com entrega em 2 dias. A de menor total é a de Litoral Parts, por R$ 1.930,40, mas foi descartada porque não tem estoque suficiente e porque o prazo de entrega passa do máximo pedido."
     },
     {
       "mensagem": "e a Atlantic, quanto custa?",
       "ferramentas": [],
       "resposta_direta": {
         "fonte": "resposta verificada",
-        "texto": "A oferta da Atlantic Repair Parts custa R$ 7.344,92 no total, mas foi descartada porque o prazo de entrega de 35 dias passa do máximo pedido de 7 dias.",
+        "texto": "A oferta da Atlantic Repair Parts custa R$ 7.344,92 no total, mas foi descartada porque o prazo de entrega passa do máximo pedido de 7 dias.",
         "rejeitada": null,
         "erros": null
       },
       "fornecedor_recomendado": "BR-06",
       "total_centavos": 727983,
-      "primeira_linha_publicada": "A oferta da Atlantic Repair Parts custa R$ 7.344,92 no total, mas foi descartada porque o prazo de entrega de 35 dias passa do máximo pedido de 7 dias."
+      "primeira_linha_publicada": "A oferta da Atlantic Repair Parts custa R$ 7.344,92 no total, mas foi descartada porque o prazo de entrega passa do máximo pedido de 7 dias."
     },
     {
       "mensagem": "alguma é internacional?",

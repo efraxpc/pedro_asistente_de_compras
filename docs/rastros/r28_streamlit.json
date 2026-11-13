@@ -1,7 +1,7 @@
 {
   "rubrica": "R28",
   "modo": "app.py executado com streamlit.testing.v1.AppTest; agente real remoto (OpenAI, ViaCEP); NLI real local; índice de políticas carregado do disco",
-  "data_utc": "2026-11-13T02:19:01+00:00",
+  "data_utc": "2026-11-13T03:37:04+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "inicializacao": {
     "titulos": [

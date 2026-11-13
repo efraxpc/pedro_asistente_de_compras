@@ -279,6 +279,9 @@ def descrever_passo(evento: dict) -> dict | None:
             return {"rotulo": "Respondi à sua pergunta com a política e verifiquei a frase", "detalhe": ""}
         return {"rotulo": "Descartei a minha frase; cito a regra literal", "estado": "error",
                 "detalhe": "\n".join(f"- {e}" for e in evento.get("erros") or [])}
+    if tipo == "cep_do_sistema":
+        return {"rotulo": "O agente não chegou a uma resposta verificável; usei a resposta do ViaCEP",
+                "estado": "error", "detalhe": ""}
     if tipo == "comparacao_do_sistema":
         return {"rotulo": "O agente não chegou a uma resposta verificável; usei o cálculo do sistema",
                 "estado": "error", "detalhe": ""}

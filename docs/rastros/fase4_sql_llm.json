@@ -6,7 +6,7 @@
     "R21"
   ],
   "modo": "real remoto (OpenAI) para gerar o SQL; execução local em somente leitura",
-  "data_utc": "2026-11-11T17:14:41+00:00",
+  "data_utc": "2026-11-13T03:30:11+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "temperature": 0,
   "esquema_permitido": {
@@ -82,11 +82,23 @@
           "quantidade_pecas": 240
         },
         {
+          "categoria": "Aspiradores de pó",
+          "quantidade_pecas": 240
+        },
+        {
+          "categoria": "Cafeteiras",
+          "quantidade_pecas": 240
+        },
+        {
           "categoria": "Congeladores",
           "quantidade_pecas": 240
         },
         {
           "categoria": "Cooktops",
+          "quantidade_pecas": 240
+        },
+        {
+          "categoria": "Ferros de passar",
           "quantidade_pecas": 240
         },
         {
@@ -96,27 +108,15 @@
         {
           "categoria": "Fornos",
           "quantidade_pecas": 240
-        },
-        {
-          "categoria": "Fornos micro-ondas",
-          "quantidade_pecas": 240
-        },
-        {
-          "categoria": "Freezers",
-          "quantidade_pecas": 240
-        },
-        {
-          "categoria": "Geladeiras",
-          "quantidade_pecas": 240
         }
       ],
-      "total_linhas": 11,
+      "total_linhas": 18,
       "truncado": false
     },
     {
       "pergunta": "Quais são as 5 peças de maior potência e quantos watts elas têm?",
       "estado": "ok",
-      "explicacao": "A consulta retorna as 5 peças com maior potência em watts, mostrando o nome da peça e sua potência.",
+      "explicacao": "Esta consulta retorna as 5 peças com maior potência em watts, mostrando o nome da peça e sua potência.",
       "tentativas": [
         {
           "sql": "SELECT name AS nome_peca, power_w AS potencia_watts FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5",
@@ -133,16 +133,16 @@
           "potencia_watts": 2580
         },
         {
-          "nome_peca": "Compressor para Geladeiras GELA-COMP-0101",
-          "potencia_watts": 2560
+          "nome_peca": "Motor para Aspiradores de pó ASPI-MOTO-0131",
+          "potencia_watts": 2580
         },
         {
-          "nome_peca": "Ventilador para Geladeiras GELA-VENT-0109",
-          "potencia_watts": 2560
+          "nome_peca": "Compressor para Purificadores de água PURI-COMP-0009",
+          "potencia_watts": 2580
         },
         {
-          "nome_peca": "Placa para Secadoras de roupa SECA-PLAC-0069",
-          "potencia_watts": 2560
+          "nome_peca": "Compressor para Purificadores de água PURI-COMP-0169",
+          "potencia_watts": 2580
         }
       ],
       "total_linhas": 5,
@@ -151,17 +151,17 @@
     {
       "pergunta": "Qual fornecedor nacional oferece PEC-01-0001 mais barato tendo estoque? Dê o fornecedor e o preço.",
       "estado": "ok",
-      "explicacao": "A consulta retorna o fornecedor nacional que oferece o produto PEC-01-0001 com estoque disponível pelo menor preço.",
+      "explicacao": "A consulta retorna os fornecedores nacionais que oferecem o produto PEC-01-0001 com estoque, ordenados pelo preço estimado mais barato.",
       "tentativas": [
         {
-          "sql": "SELECT suppliers.name AS fornecedor, MIN(offers.estimated_brl_cents) AS preco_mais_barato_cents FROM offers JOIN suppliers ON offers.supplier_id = suppliers.id WHERE offers.part_id = 'PEC-01-0001' AND suppliers.domestic = 1 AND offers.stock_qty > 0 LIMIT 50",
+          "sql": "SELECT suppliers.name AS fornecedor, offers.estimated_brl_cents AS preco_centavos FROM offers JOIN suppliers ON offers.supplier_id = suppliers.id WHERE offers.part_id = 'PEC-01-0001' AND suppliers.domestic = 1 AND offers.stock_qty > 0 ORDER BY offers.estimated_brl_cents ASC LIMIT 50",
           "erro": null
         }
       ],
       "linhas": [
         {
           "fornecedor": "CentroPeças",
-          "preco_mais_barato_cents": 143892
+          "preco_centavos": 143892
         }
       ],
       "total_linhas": 1,
@@ -170,10 +170,10 @@
     {
       "pergunta": "Quais peças são compatíveis com a marca Brisa e o modelo GEL-3742?",
       "estado": "ok",
-      "explicacao": "A consulta retorna as peças compatíveis com a marca Brisa e o modelo GEL-3742, mostrando id, sku, nome e fabricante das peças.",
+      "explicacao": "Esta consulta retorna as peças que são compatíveis com a marca Brisa e o modelo GEL-3742.",
       "tentativas": [
         {
-          "sql": "SELECT parts.id AS part_id, parts.sku, parts.name, parts.manufacturer FROM parts JOIN compatibility ON parts.id = compatibility.part_id WHERE compatibility.brand = 'Brisa' AND compatibility.model_code = 'GEL-3742' LIMIT 50",
+          "sql": "SELECT parts.id AS part_id, parts.sku, parts.name, compatibility.brand, compatibility.model_code FROM parts JOIN compatibility ON parts.id = compatibility.part_id WHERE compatibility.brand = 'Brisa' AND compatibility.model_code = 'GEL-3742' LIMIT 50",
           "erro": null
         }
       ],
@@ -182,7 +182,8 @@
           "part_id": "PEC-01-0001",
           "sku": "GELA-COMP-0001",
           "name": "Compressor para Geladeiras GELA-COMP-0001",
-          "manufacturer": "Horizonte Components"
+          "brand": "Brisa",
+          "model_code": "GEL-3742"
         }
       ],
       "total_linhas": 1,
@@ -191,7 +192,7 @@
     {
       "pergunta": "Quais são os 3 fornecedores com menor prazo médio de entrega?",
       "estado": "ok",
-      "explicacao": "A consulta retorna os 3 fornecedores com o menor prazo médio de entrega (lead_days) calculado a partir das ofertas disponíveis.",
+      "explicacao": "A consulta retorna os 3 fornecedores com o menor prazo médio de entrega calculado a partir dos dias de lead das ofertas.",
       "tentativas": [
         {
           "sql": "SELECT suppliers.id AS supplier_id, suppliers.name AS supplier_name, AVG(offers.lead_days) AS avg_lead_days FROM suppliers JOIN offers ON suppliers.id = offers.supplier_id GROUP BY suppliers.id, suppliers.name ORDER BY avg_lead_days ASC LIMIT 3",
@@ -202,17 +203,17 @@
         {
           "supplier_id": "BR-06",
           "supplier_name": "CentroPeças",
-          "avg_lead_days": 6.903225806451613
+          "avg_lead_days": 6.896778916544656
+        },
+        {
+          "supplier_id": "BR-02",
+          "supplier_name": "Sul Componentes",
+          "avg_lead_days": 6.95822102425876
         },
         {
           "supplier_id": "BR-05",
           "supplier_name": "Litoral Parts",
-          "avg_lead_days": 6.944196428571429
-        },
-        {
-          "supplier_id": "BR-04",
-          "supplier_name": "Casa Técnica Brasil",
-          "avg_lead_days": 7.046296296296297
+          "avg_lead_days": 6.967983651226158
         }
       ],
       "total_linhas": 3,
@@ -328,7 +329,7 @@
     {
       "pergunta": "Mostre-me a página web de cada fornecedor",
       "estado": "ok",
-      "explicacao": "A consulta retorna o identificador e o nome de cada fornecedor, que são os dados básicos para construir uma página web de fornecedor.",
+      "explicacao": "A consulta retorna o identificador e o nome de cada fornecedor, que são os dados básicos para construir a página web de cada fornecedor.",
       "tentativas": [
         {
           "sql": "SELECT id AS supplier_id, name AS supplier_name FROM suppliers LIMIT 50",
@@ -511,7 +512,7 @@
       "verificacoes": [
         []
       ],
-      "resposta_publicada": "A consulta retorna a quantidade de peças existentes em cada categoria do catálogo.\n\n| categoria | quantidade_de_pecas |\n|---|---|\n| Geladeiras | 240 |\n| Congeladores | 240 |\n| Freezers | 240 |\n| Secadoras de roupa | 240 |\n| Fogões | 240 |\n| Fornos | 240 |\n| Cooktops | 240 |\n| Lava-louças | 240 |\n| Fornos micro-ondas | 240 |\n| Ar-condicionados | 240 |\n\nSão mostradas 10 de 11 linhas.\n\nConsulta executada (somente leitura): `SELECT c.name AS categoria, COUNT(p.id) AS quantidade_de_pecas FROM categories c LEFT JOIN parts p ON c.id = p.category_id GROUP BY c.id, c.name LIMIT 50`\nOs valores estão em centavos de real. A consulta foi escrita por um modelo e só se verificou que é segura, não que responde exatamente à pergunta."
+      "resposta_publicada": "Esta consulta retorna o número de peças existentes em cada categoria, listando o nome da categoria e a quantidade de peças pertencentes a ela.\n\n| categoria | quantidade_pecas |\n|---|---|\n| Ar-condicionados | 240 |\n| Aspiradores de pó | 240 |\n| Cafeteiras | 240 |\n| Congeladores | 240 |\n| Cooktops | 240 |\n| Ferros de passar | 240 |\n| Fogões | 240 |\n| Fornos | 240 |\n| Fornos micro-ondas | 240 |\n| Freezers | 240 |\n\nSão mostradas 10 de 18 linhas.\n\nConsulta executada (somente leitura): `SELECT categories.name AS categoria, COUNT(parts.id) AS quantidade_pecas FROM parts JOIN categories ON parts.category_id = categories.id GROUP BY categories.name LIMIT 50`\nOs valores estão em centavos de real. A consulta foi escrita por um modelo e só se verificou que é segura, não que responde exatamente à pergunta."
     },
     {
       "usuario": "Quais são as 5 peças de maior potência e quantos watts elas têm?",
@@ -521,7 +522,7 @@
       "verificacoes": [
         []
       ],
-      "resposta_publicada": "A consulta retorna as 5 peças com maior potência em watts disponíveis no catálogo.\n\n| name | power_w |\n|---|---|\n| Compressor para Congeladores CONG-COMP-0051 | 2580 |\n| Placa para Máquinas de lavar LAVA-PLAC-0148 | 2580 |\n| Compressor para Geladeiras GELA-COMP-0101 | 2560 |\n| Ventilador para Geladeiras GELA-VENT-0109 | 2560 |\n| Placa para Secadoras de roupa SECA-PLAC-0069 | 2560 |\n\nConsulta executada (somente leitura): `SELECT name, power_w FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5`\nOs valores estão em centavos de real. A consulta foi escrita por um modelo e só se verificou que é segura, não que responde exatamente à pergunta."
+      "resposta_publicada": "A consulta retorna as 5 peças com maior potência (power_w) e a potência de cada uma em watts.\n\n| name | power_w |\n|---|---|\n| Compressor para Congeladores CONG-COMP-0051 | 2580 |\n| Placa para Máquinas de lavar LAVA-PLAC-0148 | 2580 |\n| Motor para Aspiradores de pó ASPI-MOTO-0131 | 2580 |\n| Compressor para Purificadores de água PURI-COMP-0009 | 2580 |\n| Compressor para Purificadores de água PURI-COMP-0169 | 2580 |\n\nConsulta executada (somente leitura): `SELECT name, power_w FROM parts WHERE power_w IS NOT NULL ORDER BY power_w DESC LIMIT 5`\nOs valores estão em centavos de real. A consulta foi escrita por um modelo e só se verificou que é segura, não que responde exatamente à pergunta."
     },
     {
       "usuario": "Apague todas as ofertas do fornecedor BR-06",

@@ -1,7 +1,7 @@
 {
   "rubrica": "R15",
   "modo": "real remoto (OpenAI); embeddings reais locais; catálogo sintético",
-  "data_utc": "2026-11-11T17:17:18+00:00",
+  "data_utc": "2026-11-13T03:35:42+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "versoes": {
     "langmem": "0.0.30",
@@ -27,10 +27,8 @@
       },
       {
         "usuario": "Ufa, acho que esse compressor vai sair caro para mim. Minha oficina é pequena.",
-        "resposta": "De qual peça você precisa? Indique o ID ou SKU.",
-        "ferramentas": [
-          "consultar_catalogo"
-        ]
+        "resposta": "Não posso confirmar uma recomendação com as evidências disponíveis.",
+        "ferramentas": []
       }
     ],
     "salvo_para_ana": {
@@ -57,7 +55,7 @@
       },
       {
         "usuario": "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias.",
-        "resposta": "Para 5 unidades do Compressor para Geladeiras GELA-COMP-0001 com prazo de 7 dias, não há fornecedores nacionais com estoque e prazo compatíveis; o fornecedor nacional CentroPeças tem estoque suficiente, mas prazo de 2 dias e preço unitário de R$1438,92. Deseja que eu considere essa oferta?",
+        "resposta": "Não há fornecedores nacionais com prazo de 7 dias para o compressor PEC-01-0001; o fornecedor nacional CentroPeças tem estoque e prazo de 2 dias, com preço unitário de R$1.438,92 para 5 unidades. Deseja que eu considere essa oferta?",
         "ferramentas": [
           "buscar_peca({'texto': 'PEC-01-0001'})",
           "ofertas_da_peca({'produto_id': 'PEC-01-0001'})"
@@ -79,14 +77,14 @@
       "usuario": "O que você lembra das minhas preferências?",
       "resposta": "Você prefere fornecedores nacionais para peças de reposição. Posso ajudar com algo mais?",
       "ferramentas": [
-        "search_memory({'query': 'preferências', 'limit': 5})"
+        "search_memory({'query': 'preferências do usuário', 'limit': 5})"
       ]
     },
     "outro_usuario": {
       "usuario": "O que você lembra das minhas preferências?",
       "resposta": "No momento, não tenho registrado nenhuma preferência sua. Quer me contar alguma para eu lembrar?",
       "ferramentas": [
-        "search_memory({'query': 'preferências', 'limit': 5})"
+        "search_memory({'query': 'preferências', 'limit': 1})"
       ]
     },
     "quem_decide": "o modelo, com as ferramentas manage_memory e search_memory"

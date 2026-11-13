@@ -9,32 +9,32 @@
     "R18"
   ],
   "modo": "real remoto (OpenAI e ViaCEP); NLI e embeddings reais locais; dados sintéticos",
-  "data_utc": "2026-11-11T17:13:54+00:00",
+  "data_utc": "2026-11-13T03:29:01+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "r16_chatbot_conversation_buffer_memory": {
     "turnos": [
       {
         "usuario": "Olá, sou a Ana. Preciso de um termostato para a minha geladeira.",
-        "pedro": "Olá, Ana! Para definir sua solicitação, por favor, informe a quantidade desejada, seu orçamento e o prazo para entrega; os preços e o estoque serão consultados no catálogo. Você mencionou que precisa de um termostato para geladeira.",
-        "caracteres_na_memoria": 313
+        "pedro": "Olá, Ana! Para definir sua solicitação, por favor, informe a quantidade desejada, o orçamento disponível e o prazo para entrega; os preços e o estoque serão consultados no catálogo. Você mencionou que precisa de um termostato para geladeira.",
+        "caracteres_na_memoria": 322
       },
       {
         "usuario": "Que sejam 2 unidades.",
-        "pedro": "Anotado, Ana: 2 unidades de termostato para geladeira. Por favor, informe seu orçamento e o prazo desejado para entrega.",
-        "caracteres_na_memoria": 472
+        "pedro": "Anotado, Ana: 2 unidades de termostato para geladeira. Por favor, informe o orçamento disponível e o prazo para entrega para que eu possa completar sua solicitação. Você já mencionou a peça e a quantidade.",
+        "caracteres_na_memoria": 566
       },
       {
         "usuario": "Tenho até R$ 900 e preciso dele em 5 dias.",
-        "pedro": "Perfeito, Ana: 2 termostatos para geladeira, orçamento de até R$ 900 e prazo de 5 dias para entrega; vou consultar preços e estoque no catálogo. Você gostaria de mais alguma informação?",
-        "caracteres_na_memoria": 717
+        "pedro": "Perfeito, Ana: 2 termostatos para geladeira, orçamento de até R$ 900 e prazo de 5 dias. Vou consultar o catálogo para verificar preços e disponibilidade.",
+        "caracteres_na_memoria": 779
       },
       {
         "usuario": "Resuma a minha solicitação completa e diga como eu me chamo.",
-        "pedro": "Ana, sua solicitação é para 2 termostatos para geladeira, com orçamento de até R$ 900 e prazo de entrega de 5 dias; vou consultar preços e estoque no catálogo.",
-        "caracteres_na_memoria": 954
+        "pedro": "Ana, sua solicitação é para 2 termostatos para geladeira, com orçamento de até R$ 900 e prazo de entrega de 5 dias; vou consultar o catálogo para preços e estoque.",
+        "caracteres_na_memoria": 1020
       }
     ],
-    "memoria_final": "Usuário: Olá, sou a Ana. Preciso de um termostato para a minha geladeira.\nPedro: Olá, Ana! Para definir sua solicitação, por favor, informe a quantidade desejada, seu orçamento e o prazo para entrega; os preços e o estoque serão consultados no catálogo. Você mencionou que precisa de um termostato para geladeira.\nUsuário: Que sejam 2 unidades.\nPedro: Anotado, Ana: 2 unidades de termostato para geladeira. Por favor, informe seu orçamento e o prazo desejado para entrega.\nUsuário: Tenho até R$ 900 e preciso dele em 5 dias.\nPedro: Perfeito, Ana: 2 termostatos para geladeira, orçamento de até R$ 900 e prazo de 5 dias para entrega; vou consultar preços e estoque no catálogo. Você gostaria de mais alguma informação?\nUsuário: Resuma a minha solicitação completa e diga como eu me chamo.\nPedro: Ana, sua solicitação é para 2 termostatos para geladeira, com orçamento de até R$ 900 e prazo de entrega de 5 dias; vou consultar preços e estoque no catálogo."
+    "memoria_final": "Usuário: Olá, sou a Ana. Preciso de um termostato para a minha geladeira.\nPedro: Olá, Ana! Para definir sua solicitação, por favor, informe a quantidade desejada, o orçamento disponível e o prazo para entrega; os preços e o estoque serão consultados no catálogo. Você mencionou que precisa de um termostato para geladeira.\nUsuário: Que sejam 2 unidades.\nPedro: Anotado, Ana: 2 unidades de termostato para geladeira. Por favor, informe o orçamento disponível e o prazo para entrega para que eu possa completar sua solicitação. Você já mencionou a peça e a quantidade.\nUsuário: Tenho até R$ 900 e preciso dele em 5 dias.\nPedro: Perfeito, Ana: 2 termostatos para geladeira, orçamento de até R$ 900 e prazo de 5 dias. Vou consultar o catálogo para verificar preços e disponibilidade.\nUsuário: Resuma a minha solicitação completa e diga como eu me chamo.\nPedro: Ana, sua solicitação é para 2 termostatos para geladeira, com orçamento de até R$ 900 e prazo de entrega de 5 dias; vou consultar o catálogo para preços e estoque."
   },
   "r17_intencao_e_entidades": [
     {
@@ -166,7 +166,7 @@
     {
       "usuario": "Melhor sem limite de prazo, mas com orçamento de R$ 10.000",
       "ferramentas": [
-        "comparar_ofertas {'produto_id': 'PEC-01-0001', 'quantidade': 5, 'orcamento_centavos': 1000000}"
+        "comparar_ofertas {'produto_id': 'PEC-01-0001', 'quantidade': 5, 'orcamento_centavos': 1000000, 'prazo_max_dias': None}"
       ],
       "verificacoes": [
         []
@@ -181,9 +181,16 @@
     {
       "usuario": "Prefiro fornecedores nacionais, lembre-se disso",
       "ferramentas": [
-        "salvar_preferencia {'chave': 'fornecedor', 'valor': 'nacionais', 'citacao_usuario': 'Prefiro fornecedores nacionais, lembre-se disso'}"
+        "salvar_preferencia {'chave': 'fornecedor', 'valor': 'nacionais', 'citacao_usuario': 'Prefiro fornecedores nacionais, lembre-se disso'}",
+        "comparar_ofertas {'produto_id': 'PEC-01-0001', 'quantidade': 5, 'orcamento_centavos': 1000000}"
       ],
       "verificacoes": [
+        [
+          "ofertas incompletas",
+          "alternativa incoerente: PEC-01-0001-BR-06",
+          "evidência incompleta",
+          "vencedor ou total incorreto"
+        ],
         []
       ],
       "rascunho_apos_o_turno": {
@@ -191,7 +198,7 @@
         "quantidade": 5,
         "orcamento_centavos": 1000000
       },
-      "resposta_publicada": "Salvei a sua preferência: fornecedor = nacionais. Vou levá-la em conta, mas o seu pedido de cada momento é o que manda."
+      "resposta_publicada": "CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.\n- CentroPeças (nacional): R$ 7.279,83; atende [PEC-01-0001-BR-06]\n- Atlantic Repair Parts (internacional): R$ 7.344,92; atende [PEC-01-0001-INT-06]\n- Litoral Parts (nacional): R$ 1.930,40; descartada por estoque [PEC-01-0001-BR-05]\nHistórico de preços (informativo; não muda a recomendação):\n- CentroPeças: hoje R$ 1.438,92 por unidade; mês anterior R$ 1.189,87 (+21 %); média de 5 meses R$ 1.372,51 (+5 %).\n- Atlantic Repair Parts: hoje R$ 1.381,55 por unidade; mês anterior R$ 1.466,10 (-6 %); média de 5 meses R$ 1.454,84 (-5 %).\nFoi aplicada a sua preferência por fornecedores nacionais.\nFontes: PEC-01-0001-BR-06, PEC-01-0001-INT-06, PEC-01-0001-BR-05"
     },
     {
       "usuario": "A que cidade corresponde o CEP 01001000?",
@@ -221,7 +228,7 @@
         "quantidade": 5,
         "orcamento_centavos": 1000000
       },
-      "resposta_publicada": "Política fictícia de demonstração. A compatibilidade elétrica é verificada antes da instalação conferindo marca, modelo, voltagem e dimensões com a ficha técnica. Peças incompatíveis podem ser devolvidas em até 30 dias desde que não estejam instaladas ou modificadas.\nFontes: FIC-DEV-01-S06-C01"
+      "resposta_publicada": "Política fictícia de demonstração. Para verificar a compatibilidade elétrica antes de instalar uma peça, o usuário deve conferir marca, modelo, voltagem e dimensões com a ficha técnica. Uma peça incompatível, ainda sem instalar, pode ser devolvida dentro de 30 dias, desde que conserve condições originais. Peças usadas para teste ou modificadas não são consideradas sem uso. Um curto-circuito devido a voltagem distinta não é considerado defeito de fabricação, e deve-se examinar a causa para a garantia.\nFontes: FIC-DEV-01-S06-C01, FIC-GAR-01-S06-C01"
     },
     {
       "usuario": "Volte a comparar com o último que eu pedi",
@@ -241,7 +248,8 @@
     {
       "usuario": "Compare 2 unidades de PEC-11-0001",
       "ferramentas": [
-        "comparar_ofertas {'produto_id': 'PEC-11-0001', 'quantidade': 2}"
+        "consultar_catalogo {'pergunta': 'Ficha do produto PEC-11-0001'}",
+        "comparar_ofertas {'produto_id': 'PEC-11-0001', 'quantidade': 2, 'orcamento_centavos': None, 'prazo_max_dias': None}"
       ],
       "verificacoes": [
         []
@@ -250,7 +258,7 @@
         "produto_id": "PEC-11-0001",
         "quantidade": 2
       },
-      "resposta_publicada": "Casa Técnica Brasil: R$ 1.970,38 para 2 unidades; prazo de 9 dias.\n- Casa Técnica Brasil (nacional): R$ 1.970,38; atende [PEC-11-0001-BR-04]\n- Atlantic Repair Parts (internacional): R$ 619,38; atende [PEC-11-0001-INT-06]\n- CentroPeças (nacional): R$ 1.179,23; descartada por estoque [PEC-11-0001-BR-06]\nHistórico de preços (informativo; não muda a recomendação):\n- Casa Técnica Brasil: hoje R$ 976,71 por unidade; mês anterior R$ 1.262,04 (-23 %); média de 5 meses R$ 1.110,59 (-12 %); é o seu preço mais baixo do período.\n- Atlantic Repair Parts: hoje R$ 97,40 por unidade; mês anterior R$ 111,90 (-13 %); média de 5 meses R$ 103,63 (-6 %).\nConselho sobre o preço (redigido pelo modelo e verificado): O preço de Casa Técnica Brasil está 12 % abaixo da sua média de 5 meses e é o mais baixo do período. Atlantic Repair Parts custa R$ 1.351,00 a menos que a recomendada, entrega em 29 dias e seu preço está em linha com a média de 5 meses.\nFoi aplicada a sua preferência por fornecedores nacionais. Sem ela, a mais barata seria Atlantic Repair Parts por R$ 619,38.\nFontes: PEC-11-0001-BR-04, PEC-11-0001-INT-06, PEC-11-0001-BR-06"
+      "resposta_publicada": "Casa Técnica Brasil: R$ 1.970,38 para 2 unidades; prazo de 9 dias.\n- Casa Técnica Brasil (nacional): R$ 1.970,38; atende [PEC-11-0001-BR-04]\n- Atlantic Repair Parts (internacional): R$ 619,38; atende [PEC-11-0001-INT-06]\n- CentroPeças (nacional): R$ 1.179,23; descartada por estoque [PEC-11-0001-BR-06]\nHistórico de preços (informativo; não muda a recomendação):\n- Casa Técnica Brasil: hoje R$ 976,71 por unidade; mês anterior R$ 1.262,04 (-23 %); média de 5 meses R$ 1.110,59 (-12 %); é o seu preço mais baixo do período.\n- Atlantic Repair Parts: hoje R$ 97,40 por unidade; mês anterior R$ 111,90 (-13 %); média de 5 meses R$ 103,63 (-6 %).\nConselho sobre o preço (redigido pelo modelo e verificado): O preço de Casa Técnica Brasil está 12 % abaixo da sua média de 5 meses e é o mais baixo do período. Atlantic Repair Parts custa 69 % a menos que a recomendada e entrega em 29 dias.\nFoi aplicada a sua preferência por fornecedores nacionais. Sem ela, a mais barata seria Atlantic Repair Parts por R$ 619,38.\nFontes: PEC-11-0001-BR-04, PEC-11-0001-INT-06, PEC-11-0001-BR-06"
     }
   ],
   "r13_mapa_de_memorias": {
@@ -263,7 +271,7 @@
       "mensagens_salvas": 16
     },
     "episódica (longo prazo, por usuário)": {
-      "episodios": 5,
+      "episodios": 6,
       "sessoes_de_origem": 1,
       "recuperacao": "similaridade de cosseno, top 3, modelo sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     },
@@ -294,12 +302,12 @@
           "texto": "Preciso de 2 unidades de PEC-01-0001 com prazo máximo de 7 dias | Nenhuma oferta atende às restrições indicadas.\n- Litoral Parts (nacional): R$ 819,80; descarta"
         },
         {
-          "similaridade": 0.226,
-          "texto": "Melhor sem limite de prazo, mas com orçamento de R$ 10.000 | CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.\n- CentroPeças (nacional): R$ 7.279,83; a"
+          "similaridade": 0.266,
+          "texto": "Prefiro fornecedores nacionais, lembre-se disso | CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.\n- CentroPeças (nacional): R$ 7.279,83; atende [PEC-"
         },
         {
-          "similaridade": 0.217,
-          "texto": "Volte a comparar com o último que eu pedi | CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.\n- CentroPeças (nacional): R$ 7.279,83; atende [PEC-01-000"
+          "similaridade": 0.226,
+          "texto": "Melhor sem limite de prazo, mas com orçamento de R$ 10.000 | CentroPeças: R$ 7.279,83 para 5 unidades; prazo de 2 dias.\n- CentroPeças (nacional): R$ 7.279,83; a"
         }
       ]
     },

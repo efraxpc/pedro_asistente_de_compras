@@ -1,7 +1,7 @@
 {
   "rubrica": "R23",
   "modo": "real remoto: OpenAI; NLI real local; índice fictício de demonstração em memória",
-  "data_utc": "2026-11-13T02:18:34+00:00",
+  "data_utc": "2026-11-13T03:37:01+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "resumo": {
     "perguntas": 5,
@@ -19,7 +19,7 @@
       ],
       "resposta_do_modelo": {
         "fonte": "resposta verificada",
-        "responde": false,
+        "responde": true,
         "texto": "Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio.",
         "rejeitada": null,
         "erros": null
@@ -69,7 +69,7 @@
         "fonte": "regra literal",
         "responde": true,
         "texto": null,
-        "rejeitada": "Sem um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio, o assistente deve indicar que a oferta não cobre a quantidade pedida, ou seja, o pedido não pode chegar em caixas separadas.",
+        "rejeitada": "Sem um acordo simulado explícito, o assistente deve indicar que a oferta não cobre a quantidade pedida, portanto o pedido não pode chegar em caixas separadas.",
         "erros": [
           "NLI: neutral"
         ]

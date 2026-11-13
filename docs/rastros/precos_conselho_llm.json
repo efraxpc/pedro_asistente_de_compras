@@ -10,7 +10,7 @@
     "R24"
   ],
   "modo": "real remoto (OpenAI) para o conselho; NLI real local; catálogo sintético",
-  "data_utc": "2026-11-12T01:22:06+00:00",
+  "data_utc": "2026-11-13T03:31:36+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "temperature": 0,
   "modelo_nli": "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
@@ -25,12 +25,9 @@
   "conselhos": {
     "casos": 15,
     "publicado": {
-      "conselho verificado": 14,
-      "aviso fixo": 1
+      "conselho verificado": 15
     },
-    "motivos_de_rejeicao": {
-      "o conselho contém números que não estão nos fatos": 1
-    }
+    "motivos_de_rejeicao": {}
   },
   "nota": "Os primeiros quinze casos com aviso, em ordem de catálogo. Uma execução.",
   "casos": [
@@ -56,7 +53,7 @@
       ],
       "aviso_fixo": "O preço de Norte Reposição está 12 % acima da sua média de 5 meses e é o mais alto do período.",
       "fonte_publicada": "conselho verificado",
-      "texto_publicado": "O preço de Norte Reposição está 12 % acima da sua média de 5 meses e é o mais alto do período. TecnoParts Italia custa 844 % a mais que a recomendada e seu preço está 10 % acima da média de 5 meses.",
+      "texto_publicado": "O preço de Norte Reposição está 12 % acima da sua média de 5 meses e é o mais alto do período. TecnoParts Italia custa R$ 3.060,37 a mais que a recomendada, está 10 % acima da sua média de 5 meses e entrega em 42 dias.",
       "conselho_rejeitado": null,
       "erros": []
     },
@@ -86,7 +83,7 @@
       ],
       "aviso_fixo": "O preço de EuroSpare Components está 15 % abaixo da sua média de 5 meses e é o mais baixo do período.",
       "fonte_publicada": "conselho verificado",
-      "texto_publicado": "O preço de EuroSpare Components está 15 % abaixo da sua média de 5 meses e é o mais baixo do período. Norte Reposição está em linha com a sua média e custa 180 % a mais que a recomendada; Sul Componentes está 12 % abaixo da sua média e custa 596 % a mais que a recomendada.",
+      "texto_publicado": "O preço de EuroSpare Components está 15 % abaixo da sua média de 5 meses e é o mais baixo do período. Norte Reposição está em linha com sua média e custa 180 % a mais que a recomendada; Sul Componentes está 12 % abaixo da sua média e custa 596 % a mais que a recomendada.",
       "conselho_rejeitado": null,
       "erros": []
     },
@@ -125,12 +122,10 @@
         "A oferta de Litoral Parts também atende: custa R$ 2.804,79 a mais que a recomendada (233 % a mais) e entrega em 12 dias."
       ],
       "aviso_fixo": "O preço de Casa Técnica Brasil está 11 % acima da sua média de 5 meses e é o mais alto do período.",
-      "fonte_publicada": "aviso fixo",
-      "texto_publicado": "O preço de Casa Técnica Brasil está 11 % acima da sua média de 5 meses e é o mais alto do período.",
-      "conselho_rejeitado": "O preço de Casa Técnica Brasil está 11 % acima da sua média de 5 meses e é o mais alto do período. EuroSpare Components e Litoral Parts têm preços 12 % e 20 % abaixo da média, respectivamente, mas custam mais de 200 % a mais que a recomendada e têm prazos de entrega maiores.",
-      "erros": [
-        "o conselho contém números que não estão nos fatos"
-      ]
+      "fonte_publicada": "conselho verificado",
+      "texto_publicado": "O preço de Casa Técnica Brasil está 11 % acima da sua média de 5 meses e é o mais alto do período. EuroSpare Components e Litoral Parts têm preços 203 % e 233 % acima da recomendada, respectivamente, com entregas em 39 e 12 dias.",
+      "conselho_rejeitado": null,
+      "erros": []
     },
     {
       "produto_id": "PEC-01-0022",
@@ -198,7 +193,7 @@
       ],
       "aviso_fixo": "O preço de Litoral Parts está 16 % abaixo da sua média de 5 meses e é o mais baixo do período.",
       "fonte_publicada": "conselho verificado",
-      "texto_publicado": "O preço de Litoral Parts está 16 % abaixo da sua média de 5 meses e é o mais baixo do período. CentroPeças custa 22 % a mais que a recomendada e EuroSpare Components custa 43 % a mais que a recomendada.",
+      "texto_publicado": "O preço de Litoral Parts está 16 % abaixo da sua média de 5 meses e é o mais baixo do período. CentroPeças e EuroSpare Components têm preços em linha com suas médias, custando respectivamente 22 % e 43 % a mais que a recomendada.",
       "conselho_rejeitado": null,
       "erros": []
     },
@@ -247,12 +242,12 @@
   ],
   "no_chat": {
     "usuario": "Compare 5 unidades de PEC-02-0189",
-    "resposta_publicada": "CentroPeças: R$ 2.182,51 para 5 unidades; prazo de 2 dias.\n- CentroPeças (nacional): R$ 2.182,51; atende [PEC-02-0189-BR-06]\n- Atlantic Repair Parts (internacional): R$ 2.195,40; atende [PEC-02-0189-INT-06]\n- Norte Reposição (nacional): R$ 3.286,45; descartada por estoque [PEC-02-0189-BR-03]\nHistórico de preços (informativo; não muda a recomendação):\n- CentroPeças: hoje R$ 425,59 por unidade; mês anterior R$ 402,59 (+6 %); média de 5 meses R$ 384,95 (+11 %).\n- Atlantic Repair Parts: hoje R$ 363,35 por unidade; mês anterior R$ 375,20 (-3 %); média de 5 meses R$ 404,40 (-10 %); é o seu preço mais baixo do período.\nConselho sobre o preço (redigido pelo modelo e verificado): O preço de CentroPeças está 11 % acima da sua média de 5 meses. Atlantic Repair Parts custa 1 % a mais que CentroPeças, está 10 % abaixo da sua média de 5 meses e é o mais baixo do período.\nFontes: PEC-02-0189-BR-06, PEC-02-0189-INT-06, PEC-02-0189-BR-03",
+    "resposta_publicada": "CentroPeças: R$ 2.182,51 para 5 unidades; prazo de 2 dias.\n- CentroPeças (nacional): R$ 2.182,51; atende [PEC-02-0189-BR-06]\n- Atlantic Repair Parts (internacional): R$ 2.195,40; atende [PEC-02-0189-INT-06]\n- Norte Reposição (nacional): R$ 3.286,45; descartada por estoque [PEC-02-0189-BR-03]\nHistórico de preços (informativo; não muda a recomendação):\n- CentroPeças: hoje R$ 425,59 por unidade; mês anterior R$ 402,59 (+6 %); média de 5 meses R$ 384,95 (+11 %).\n- Atlantic Repair Parts: hoje R$ 363,35 por unidade; mês anterior R$ 375,20 (-3 %); média de 5 meses R$ 404,40 (-10 %); é o seu preço mais baixo do período.\nConselho sobre o preço (redigido pelo modelo e verificado): O preço de CentroPeças está 11 % acima da sua média de 5 meses. Atlantic Repair Parts custa 1 % a mais que a recomendada, está 10 % abaixo da sua média de 5 meses e é o mais baixo do período.\nFontes: PEC-02-0189-BR-06, PEC-02-0189-INT-06, PEC-02-0189-BR-03",
     "conselho_preco": [
       {
         "evento": "conselho_preco",
         "fonte": "conselho verificado",
-        "texto": "O preço de CentroPeças está 11 % acima da sua média de 5 meses. Atlantic Repair Parts custa 1 % a mais que CentroPeças, está 10 % abaixo da sua média de 5 meses e é o mais baixo do período.",
+        "texto": "O preço de CentroPeças está 11 % acima da sua média de 5 meses. Atlantic Repair Parts custa 1 % a mais que a recomendada, está 10 % abaixo da sua média de 5 meses e é o mais baixo do período.",
         "conselho_rejeitado": null,
         "erros": []
       }

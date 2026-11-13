@@ -170,3 +170,32 @@ def test_se_o_agente_nao_chega_a_uma_resposta_valida_o_sistema_publica_o_seu_cal
     pergunta = fluxo.invoke({"input": "a mais barata?"}, config=config)
     assert chamadas == []  # o sistema refaz o cálculo; o agente não é chamado
     assert pergunta.content.startswith("A mais barata que atende às suas restrições é a de CentroPeças")
+
+
+def test_se_o_agente_consultou_o_cep_mas_nao_redigiu_a_resposta_o_sistema_publica_o_dado(tmp_path, monkeypatch):
+    import pedro.agent as modulo
+
+    cenario = criar_cenario(tmp_path / "catalogos")
+    memoria = tmp_path / "memoria.sqlite3"
+    sessao = nova_sessao(memoria, "ana", cenario.dataset_id)
+    observacao = json.dumps({"estado": "ok", "cep": "01001000", "cidade": "São Paulo", "uf": "SP",
+                             "modo": "simulado", "fonte": "ViaCEP:01001000"})
+
+    class Acao:
+        tool = "consultar_cep"
+
+    class Executor:
+        def invoke(self, entrada, config):
+            return {"output": "isto não é o JSON pedido", "intermediate_steps": [(Acao(), observacao)]}
+
+    monkeypatch.setattr(modulo, "criar_agente", lambda *args, **kwargs: Executor())
+    rastro = Rastro()
+    fluxo = criar_fluxo(cenario, memoria, llm=object(), rastro=rastro)
+    config = {"configurable": {"user_id": "ana", "session_id": sessao}}
+
+    saida = fluxo.invoke({"input": "A que cidade corresponde o CEP 01001000?"}, config=config)
+    assert saida.content == "CEP 01001000: São Paulo/SP (ViaCEP, modo simulado)."
+    assert any(e["evento"] == "cep_do_sistema" for e in rastro.eventos)
+    # Se o CEP consultado não é o que o usuário escreveu, o sistema não publica.
+    outro = fluxo.invoke({"input": "A que cidade corresponde o CEP 20040020?"}, config=config)
+    assert "São Paulo" not in outro.content
