@@ -264,6 +264,15 @@ def descrever_passo(evento: dict) -> dict | None:
             return {"rotulo": "Redigi um conselho de preço e o verifiquei", "detalhe": ""}
         return {"rotulo": "Descartei o meu conselho de preço; uso o aviso fixo", "estado": "error",
                 "detalhe": "\n".join(f"- {e}" for e in evento.get("erros") or [])}
+    if tipo == "guarda":
+        if evento.get("segue"):
+            return {"rotulo": "Confirmei com o modelo que a mensagem é sobre compras", "detalhe": ""}
+        rotulos = {"injecao": "Recusei a mensagem: tenta mudar as minhas instruções",
+                   "fora_do_tema": "Recusei a mensagem: não é sobre compras de peças",
+                   "cumprimento": "Respondi sem chamar o agente",
+                   "longa": "Recusei a mensagem: longa demais", "vazia": "A mensagem veio vazia"}
+        return {"rotulo": rotulos.get(evento.get("motivo"), "Recusei a mensagem"),
+                "detalhe": f"Camada: {evento.get('camada')} · regra: {evento.get('regra')}"}
     if tipo == "resposta_politica":
         if evento.get("fonte") == "resposta verificada":
             return {"rotulo": "Respondi à sua pergunta com a política e verifiquei a frase", "detalhe": ""}

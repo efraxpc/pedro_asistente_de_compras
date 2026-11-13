@@ -16,6 +16,7 @@ from .catalog import Cenario, buscar, ficha, listar
 from .contracts import Evidencia, RespostaCompra, Solicitacao
 from .dialogue import (EstadoCompra, criar_interprete, interpretar_turno,
                        sobre_a_comparacao_em_andamento)
+from .guardrails import avaliar_entrada, criar_classificador_de_entrada, resposta_da_guarda
 from .integrations import consultar_cep
 from .memory import (FastEmbedder, Historico, dataset_sessao, ler_rascunho, preferencias,
                      recuperar, salvar_episodio, salvar_preferencia, salvar_rascunho,
@@ -485,6 +486,9 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
         """Um turno do chat: se a mensagem traz várias intenções, planeja-se e responde-se
         cada pedido separadamente, com a sua própria verificação."""
         mensagem = dado["input"]
+        recusa = guardar(mensagem, config)
+        if recusa is not None:
+            return recusa
         pedidos = planejar_turno(mensagem, llm)
         if pedidos is None:
             return resolver(dado, config, mensagem)
@@ -494,11 +498,38 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
         textos = [entrada]
         partes: list[dict] = [{"titulo": None, "texto": entrada, "comparacao": None, "conselho": None}]
         for numero, pedido in enumerate(pedidos, 1):
-            resposta = resolver({**dado, "input": pedido.pedido}, config, mensagem)
+            # Cada pedido do plano passa pela guarda: a mensagem inteira pode misturar temas.
+            resposta = (guardar(pedido.pedido, config)
+                        or resolver({**dado, "input": pedido.pedido}, config, mensagem))
             titulo = f"{numero}. {pedido.pedido}"
             textos.append(f"**{titulo}**\n{resposta.content}")
             partes.extend({**parte, "titulo": titulo} for parte in partes_de(resposta))
         return AIMessage(content="\n\n".join(textos), additional_kwargs={CHAVE_PARTES: partes})
+
+    def guardar(mensagem: str, config: RunnableConfig) -> AIMessage | None:
+        """Guarda de entrada: devolve a resposta fixa se a mensagem não deve entrar no agente."""
+        if e_diagnostico_t24(mensagem):
+            return None
+        usuario = config["configurable"]["user_id"]
+        sessao = config["configurable"]["session_id"]
+        try:
+            rascunho = ler_rascunho(memoria_db, usuario, sessao)
+        except Exception:
+            rascunho = None
+        estado = EstadoCompra.model_validate(rascunho) if rascunho is not None else None
+        porteiro = None
+        if llm is not None:
+            try:
+                porteiro = criar_classificador_de_entrada(llm)
+            except Exception:
+                porteiro = None
+        decisao = avaliar_entrada(
+            mensagem, cenario, porteiro,
+            em_andamento=estado is not None and estado.solicitacao.produto_id is not None,
+            esperando_resposta=estado is not None and estado.esperando is not None)
+        if rastro and (not decisao.segue or decisao.camada == "modelo"):
+            rastro.eventos.append({"evento": "guarda", **decisao.model_dump()})
+        return None if decisao.segue else AIMessage(content=resposta_da_guarda(decisao))
 
     def resolver(dado: dict, config: RunnableConfig, mensagem_usuario: str) -> AIMessage:
         """Resolve um pedido de uma única intenção."""
