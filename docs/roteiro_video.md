@@ -70,7 +70,7 @@
 
 | FAZER | Não mexer em nada. Continuar na mesma seção. |
 |---|---|
-| DIZER | **«Usei três modelos. O gpt-4.1-mini, da OpenAI, conversa e escolhe as ferramentas. Um modelo local de embeddings faz a busca semântica no FAISS. E um modelo local de NLI, o mDeBERTa, confere se a resposta é sustentada pelos dados. O modelo de conversa é configurável: pelo arquivo .env ele pode ser trocado por um modelo local no Ollama. Nesta demonstração uso o gpt-4.1-mini.»** |
+| DIZER | **«Usei três modelos. O gpt-4.1-mini, da OpenAI, conversa e escolhe as ferramentas. Um modelo local de embeddings faz a busca semântica no FAISS. E um modelo local de NLI, o mDeBERTa, confere se a resposta é sustentada pelos dados.»** |
 
 ### Passo 7 · o porquê
 
@@ -124,10 +124,6 @@
 | FAZER | Apontar guardrails.py. |
 |---|---|
 | DIZER | **«É a guarda de entrada. Antes de chamar o agente, recusa assuntos alheios e tentativas de mudar as instruções.»** |
-
-| FAZER | Apontar modelos.py. |
-|---|---|
-| DIZER | **«É a escolha do modelo de conversa: a OpenAI ou um servidor local, como o Ollama.»** |
 
 | FAZER | Apontar business.py. |
 |---|---|

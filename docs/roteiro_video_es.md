@@ -75,8 +75,8 @@
 
 | HAZ | No toques nada. Sigue en el mismo apartado. |
 |---|---|
-| DI | **«Usei três modelos. O gpt-4.1-mini, da OpenAI, conversa e escolhe as ferramentas. Um modelo local de embeddings faz a busca semântica no FAISS. E um modelo local de NLI, o mDeBERTa, confere se a resposta é sustentada pelos dados. O modelo de conversa é configurável: pelo arquivo .env ele pode ser trocado por um modelo local no Ollama. Nesta demonstração uso o gpt-4.1-mini.»** |
-| SIGNIFICA | Usé tres modelos. El gpt-4.1-mini, de OpenAI, conversa y elige las herramientas. Un modelo local de embeddings hace la búsqueda semántica en FAISS. Y un modelo local de NLI, el mDeBERTa, comprueba si la respuesta está respaldada por los datos. El modelo de conversación es configurable: con el archivo .env se puede cambiar por un modelo local en Ollama. En esta demostración uso el gpt-4.1-mini. |
+| DI | **«Usei três modelos. O gpt-4.1-mini, da OpenAI, conversa e escolhe as ferramentas. Um modelo local de embeddings faz a busca semântica no FAISS. E um modelo local de NLI, o mDeBERTa, confere se a resposta é sustentada pelos dados.»** |
+| SIGNIFICA | Usé tres modelos. El gpt-4.1-mini, de OpenAI, conversa y elige las herramientas. Un modelo local de embeddings hace la búsqueda semántica en FAISS. Y un modelo local de NLI, el mDeBERTa, comprueba si la respuesta está respaldada por los datos. |
 
 ### Paso 7 · el porqué
 
@@ -138,11 +138,6 @@
 |---|---|
 | DI | **«É a guarda de entrada. Antes de chamar o agente, recusa assuntos alheios e tentativas de mudar as instruções.»** |
 | SIGNIFICA | Es la guarda de entrada. Antes de llamar al agente, rechaza temas ajenos e intentos de cambiar las instrucciones. |
-
-| HAZ | Señala modelos.py. |
-|---|---|
-| DI | **«É a escolha do modelo de conversa: a OpenAI ou um servidor local, como o Ollama.»** |
-| SIGNIFICA | Es la elección del modelo de conversación: OpenAI o un servidor local, como Ollama. |
 
 | HAZ | Señala business.py. |
 |---|---|
