@@ -31,9 +31,14 @@ uv sync --python 3.13 --all-extras --locked
 cp .env.example .env
 ```
 
-Abra o arquivo `.env` e preencha `OPENAI_API_KEY=` com a sua chave da OpenAI. As outras linhas são opcionais.
+Abra o arquivo `.env` e preencha as duas chaves:
 
-**Importante:** o projeto não traz nenhuma chave. Quem for rodar o agente (por exemplo, o professor) precisa usar a sua própria chave da OpenAI, criada em https://platform.openai.com/api-keys. O uso da API é cobrado pela OpenAI na conta de quem é dono da chave.
+| Chave | Para que serve | Onde criar |
+|---|---|---|
+| `OPENAI_API_KEY` | Liga o agente. Sem ela o chat abre só em modo local | https://platform.openai.com/api-keys |
+| `LANGSMITH_API_KEY` | Permite repetir a avaliação do agente no LangSmith | https://smith.langchain.com (Settings, API Keys) |
+
+**Importante:** o projeto não traz nenhuma chave. Quem for rodar (por exemplo, o professor) precisa usar as suas próprias chaves da OpenAI e do LangSmith. O uso da API da OpenAI é cobrado na conta de quem é dono da chave. As outras linhas do `.env` são opcionais.
 
 **4. Abra o chat**
 
@@ -72,7 +77,7 @@ O chat abre mesmo sem chave, com o selo «Modo local, sem modelo». Funcionam a 
 | `OPENAI_API_KEY` | Liga o agente, as políticas e o CEP | Sim, para o agente |
 | `PEDRO_MODEL` | Modelo de conversa (padrão: `gpt-4.1-mini`) | Não |
 | `PEDRO_BASE_URL` | Usa um servidor compatível com a API da OpenAI no lugar da OpenAI; por exemplo, um modelo local no Ollama: `PEDRO_BASE_URL=http://localhost:11434/v1` e `PEDRO_MODEL=llama3.2`. Em CPU cada resposta pode levar minutos | Não |
-| `LANGSMITH_API_KEY` | Só para a avaliação com `evals/avaliar_fluxo.py` | Não |
+| `LANGSMITH_API_KEY` | Repetir a avaliação com `evals/avaliar_fluxo.py` | Sim, para a avaliação |
 | `PEDRO_TRUST_POLICY_INDEX` | `true` usa o índice de políticas salvo em `knowledge/politicas/`; `false` usa o índice de demonstração em memória, com o mesmo conteúdo | Não |
 
 Nunca envie o arquivo `.env` para o repositório.

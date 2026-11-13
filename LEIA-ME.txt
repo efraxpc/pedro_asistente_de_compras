@@ -62,9 +62,15 @@ Para rodar o chat na sua máquina, são quatro passos (precisa do Git e do uv):
    uv sync --python 3.13 --all-extras --locked
    cp .env.example .env
 
-Depois preencha OPENAI_API_KEY no arquivo .env com a SUA PRÓPRIA chave da OpenAI
-(o projeto não traz nenhuma chave; ela é criada em
-https://platform.openai.com/api-keys) e abra o chat:
+Depois preencha no arquivo .env as SUAS PRÓPRIAS chaves (o projeto não traz
+nenhuma):
+
+   OPENAI_API_KEY      liga o agente
+                       criada em https://platform.openai.com/api-keys
+   LANGSMITH_API_KEY   permite repetir a avaliação do agente
+                       criada em https://smith.langchain.com
+
+E abra o chat:
 
    ./project.sh start
 
