@@ -57,7 +57,7 @@ if ha_modelo():
 else:
     print('Sem modelo configurado: esta célula não chama nada.')
     print('A execução real salva está em docs/rastros/fase1_chain_llm.json')"""),
-    ("md", "## R03 · modelo de prompt reutilizável com variáveis do domínio\nExecução real local, sem modelo: o mesmo `ChatPromptTemplate` é preenchido com três solicitações diferentes e as mensagens resultantes são mostradas. O modelo de prompt fica em `pedro.chains.PROMPT` e é reutilizado pela cadeia LCEL e pela cadeia `@chain`. A execução com o modelo real está em `docs/rastros/fase1_chain_llm.json`."),
+    ("md", "## Modelo de prompt reutilizável com variáveis do domínio\nExecução real local, sem modelo: o mesmo `ChatPromptTemplate` é preenchido com três solicitações diferentes e as mensagens resultantes são mostradas. O modelo de prompt fica em `pedro.chains.PROMPT` e é reutilizado pela cadeia LCEL e pela cadeia `@chain`. A execução com o modelo real está em `docs/rastros/fase1_chain_llm.json`."),
     ("code", """from pedro.chains import PROMPT
 print('classe:', type(PROMPT).__name__, '| variáveis:', sorted(PROMPT.input_variables))
 print('mensagens:', [type(m).__name__ for m in PROMPT.messages])
@@ -70,14 +70,14 @@ for texto in ('Compare 2 unidades de PEC-01-0001 até R$ 5.000 em 7 dias',
     print(humano.type, '->', humano.content)
 print(sistema.type, '->', sistema.content)
 print('mesmo modelo de prompt na LCEL:', lcel.first.messages == PROMPT.messages)"""),
-    ("md", "## R04 · laboratório de saídas quebradas\nOito saídas típicas de um modelo passam pela cadeia com reparo (`criar_lcel_robusta`). Cada defeito é resolvido por uma camada diferente: o **parser** (tolera cercas e texto ao redor), o **reparo** (outra cadeia corrige com a solicitação, a saída inválida e o erro) ou uma **regra de domínio** (os faltantes são calculados pelo código). **Duplo de teste:** o gerador emite a saída quebrada e o reparador devolve sempre o JSON correto; o reparo com o modelo real está em `docs/rastros/fase1_chain_llm.json`."),
+    ("md", "## Laboratório de saídas quebradas\nOito saídas típicas de um modelo passam pela cadeia com reparo (`criar_lcel_robusta`). Cada defeito é resolvido por uma camada diferente: o **parser** (tolera cercas e texto ao redor), o **reparo** (outra cadeia corrige com a solicitação, a saída inválida e o erro) ou uma **regra de domínio** (os faltantes são calculados pelo código). **Duplo de teste:** o gerador emite a saída quebrada e o reparador devolve sempre o JSON correto; o reparo com o modelo real está em `docs/rastros/fase1_chain_llm.json`."),
     ("code", """from pedro.laboratorio import CORRETA, SAIDAS_QUEBRADAS, SOLICITACAO, ensaiar
 reparador_duplo = RunnableLambda(lambda prompt: json.dumps(CORRETA))
 print('solicitação:', SOLICITACAO)
 for caso in ensaiar(reparador_duplo):
     print(f"{caso['caso']:28} camada: {caso['camada_observada']:17} reparos: {caso['reparos']}"
           f" -> {caso['resultado']['solicitacao']} faltam {caso['resultado']['faltantes']}")"""),
-    ("md", "## R04 · um parser tolerante pode perder dados em silêncio\nAchado do laboratório. O parser do LangChain aceita JSON cortado. Com a cadeia simples, uma saída truncada vira um objeto válido ao qual falta o prazo, sem nenhum erro. A cadeia robusta confere que o JSON esteja inteiro e, se não estiver, manda reparar."),
+    ("md", "## Um parser tolerante pode perder dados em silêncio\nAchado do laboratório. O parser do LangChain aceita JSON cortado. Com a cadeia simples, uma saída truncada vira um objeto válido ao qual falta o prazo, sem nenhum erro. A cadeia robusta confere que o JSON esteja inteiro e, se não estiver, manda reparar."),
     ("code", """truncada = SAIDAS_QUEBRADAS['JSON truncado'][0]
 print('saída do modelo:', truncada)
 simples = criar_lcel(RunnableLambda(lambda _: truncada)).invoke({'texto': SOLICITACAO})
@@ -85,7 +85,7 @@ print('cadeia simples  -> prazo:', simples.solicitacao.prazo_max_dias, '(perdeu-
 from pedro.chains import criar_lcel_robusta
 robusta = criar_lcel_robusta(RunnableLambda(lambda _: truncada), reparador_duplo).invoke({'texto': SOLICITACAO})
 print('cadeia robusta -> prazo:', robusta.solicitacao.prazo_max_dias, '(detectado e reparado)')"""),
-    ("md", "## R05 · invoke, batch e stream sobre uma cadeia @chain\n**Duplo de teste:** o modelo é um gerador que entrega o JSON em pedaços de 12 caracteres, para que `stream()` tenha algo a transmitir. Os três métodos são executados sobre a cadeia imperativa. `stream()` só transmite se todos os passos permitirem: com o parser Pydantic chega um único fragmento; com o parser de JSON parcial o objeto chega à medida que se forma. As medições com o modelo real estão em `docs/rastros/fase1_chain_llm.json`."),
+    ("md", "## Invoke, batch e stream sobre uma cadeia @chain\n**Duplo de teste:** o modelo é um gerador que entrega o JSON em pedaços de 12 caracteres, para que `stream()` tenha algo a transmitir. Os três métodos são executados sobre a cadeia imperativa. `stream()` só transmite se todos os passos permitirem: com o parser Pydantic chega um único fragmento; com o parser de JSON parcial o objeto chega à medida que se forma. As medições com o modelo real estão em `docs/rastros/fase1_chain_llm.json`."),
     ("code", """from pedro.chains import criar_chain_robusta, criar_lcel_parcial
 texto_json = json.dumps(CORRETA)
 def modelo_em_pedacos(_):
@@ -101,12 +101,12 @@ estados = list(criar_lcel_parcial(duplo).stream(entrada))
 print('stream com JSON parcial:', len(estados), 'estados')
 for estado in estados[::3]:
     print('  ', estado)"""),
-    ("md", "## R05 · a cadeia com reparo, escrita com @chain\n`criar_chain_robusta` faz o mesmo que a versão declarativa de R04, mas o controle de erros é um `try/except` à vista. O mesmo laboratório passa pelas duas versões."),
+    ("md", "## A cadeia com reparo, escrita com @chain\n`criar_chain_robusta` faz o mesmo que a versão declarativa do laboratório anterior, mas o controle de erros é um `try/except` à vista. O mesmo laboratório passa pelas duas versões."),
     ("code", """import inspect
 print(inspect.getsource(criar_chain_robusta).split('    @chain\\n')[1].split('    return extrair_com_reparo')[0])
 print('imperativa = declarativa nos 8 casos:',
       ensaiar(reparador_duplo, criar_chain_robusta) == ensaiar(reparador_duplo))"""),
-    ("md", "## R06 · a mesma cadeia em LCEL e em @chain: o que cada uma deixa ver\nSem modelo (duplos). As duas versões da cadeia com reparo dão o mesmo resultado. Aqui se mede o que muda: os passos que o rastro registra, se o erro fica anotado e se o grafo mostra o reparo."),
+    ("md", "## A mesma cadeia em LCEL e em @chain: o que cada uma deixa ver\nSem modelo (duplos). As duas versões da cadeia com reparo dão o mesmo resultado. Aqui se mede o que muda: os passos que o rastro registra, se o erro fica anotado e se o grafo mostra o reparo."),
     ("code", """from pedro.laboratorio import comparar_estilos
 medidas = comparar_estilos()
 for estilo, dado in medidas.items():
@@ -117,19 +117,19 @@ for estilo, dado in medidas.items():
     print('   passos:', ' > '.join(dado['passos_com_reparo']))
 print(criar_lcel_robusta(RunnableLambda(lambda _: ''), reparador_duplo).get_graph().draw_mermaid())"""),
     ("md", "Leitura: na LCEL o rastro registra a falha do parser, o reparo e a validação de domínio como passos com nome, e o grafo mostra o `WithFallbacks`. Em `@chain` o resultado é idêntico, mas o `try/except` e a chamada a `_validar` são Python normal: o rastro não os vê."),
-    ("md", "## R01 · anatomia do agente\nA anatomia é lida dos objetos reais do agente final (`pedro.anatomia`), não é escrita à mão. Nenhum modelo é chamado: o executor é construído com um modelo de preenchimento que nunca é invocado."),
+    ("md", "## Anatomia do agente\nA anatomia é lida dos objetos reais do agente final (`pedro.anatomia`), não é escrita à mão. Nenhum modelo é chamado: o executor é construído com um modelo de preenchimento que nunca é invocado."),
     ("code", """import json
 from pedro.catalog import criar_cenario
 from pedro.anatomia import descrever_anatomia
 cenario = criar_cenario(Path('storage/notebooks/catalogos'))
-memoria = Path('storage/notebooks/r01.sqlite3')
+memoria = Path('storage/notebooks/agente_hibrido.sqlite3')
 anatomia = descrever_anatomia(cenario, memoria)
 for chave in ('motor_cognitivo', 'orquestrador', 'system_message', 'memoria',
               'base_conhecimento', 'porta_publicacao'):
     print(chave, json.dumps(anatomia[chave], ensure_ascii=False))
 for f in anatomia['ferramentas']:
     print('ferramenta', f['nome'], '|', f['papel'], '|', f['logica'], '|', f['argumentos'])"""),
-    ("md", "## R01 · agente híbrido: camada reativa e camada deliberativa\nTrês turnos sobre o mesmo fluxo final. **Duplo de teste:** o modelo é um roteiro determinístico (não é OpenAI) e o ViaCEP está simulado. O real é o fluxo: as regras, o `AgentExecutor`, a ferramenta executada e a verificação antes de publicar. Os dois primeiros turnos são resolvidos por uma regra sem passar pelo agente; no segundo, o intérprete de turno lê a mensagem e a regra pergunta a quantidade. O terceiro passa pelo agente, que recebe as seis ferramentas e solicita uma."),
+    ("md", "## Agente híbrido: camada reativa e camada deliberativa\nTrês turnos sobre o mesmo fluxo final. **Duplo de teste:** o modelo é um roteiro determinístico (não é OpenAI) e o ViaCEP está simulado. O real é o fluxo: as regras, o `AgentExecutor`, a ferramenta executada e a verificação antes de publicar. Os dois primeiros turnos são resolvidos por uma regra sem passar pelo agente; no segundo, o intérprete de turno lê a mensagem e a regra pergunta a quantidade. O terceiro passa pelo agente, que recebe as seis ferramentas e solicita uma."),
     ("code", """from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableLambda
 from pedro.agent import Rastro, criar_fluxo
@@ -166,8 +166,8 @@ for pergunta in ('lista peças', 'Compare PEC-01-0001',
 print('ferramentas oferecidas ao modelo:', chamadas[0])
 assert len(chamadas) == 2 and [e['ferramenta'] for e in rastro.eventos
                                if e['evento'] == 'tool_start'] == ['consultar_cep']"""),
-    ("md", "Leitura: «lista peças» e «Compare PEC-01-0001» são resolvidas por regra (0 chamadas ao agente); na segunda o intérprete confirma que é uma compra. A pergunta de CEP não tem regra: o modelo escolhe `consultar_cep` entre seis ferramentas e a resposta só é publicada depois de coincidir com a observação da ferramenta. Com um modelo real a escolha é feita pelo LLM; essa execução remota corresponde a R26."),
-    ("md", "## R02 · planejamento: uma solicitação complexa dividida em passos\nExecução real local, sem modelo. A solicitação é dividida em cinco subtarefas, cada uma com uma saída observável: extrair restrições, consultar ofertas, comparar, verificar e publicar."),
+    ("md", "Leitura: «lista peças» e «Compare PEC-01-0001» são resolvidas por regra (0 chamadas ao agente); na segunda o intérprete confirma que é uma compra. A pergunta de CEP não tem regra: o modelo escolhe `consultar_cep` entre seis ferramentas e a resposta só é publicada depois de coincidir com a observação da ferramenta. Com um modelo real a escolha é feita pelo LLM; essa execução remota está registrada em docs/rastros/fase3_memoria_llm.json."),
+    ("md", "## Planejamento: uma solicitação complexa dividida em passos\nExecução real local, sem modelo. A solicitação é dividida em cinco subtarefas, cada uma com uma saída observável: extrair restrições, consultar ofertas, comparar, verificar e publicar."),
     ("code", """from pedro.agent import renderizar
 from pedro.business import comparar
 from pedro.catalog import ofertas
@@ -184,7 +184,7 @@ print('3 comparar ', [(a.oferta.fornecedor_id, a.total_centavos, a.atende, a.mot
 proposta = resposta_local(cenario, estado.solicitacao)
 print('4 verificar', 'erros:', verificar(proposta, cenario))
 print('5 publicar ', renderizar(proposta).splitlines()[0])"""),
-    ("md", "## R02 · memória aumentada: o que vai para o curto e para o longo prazo\nExecução real local, sem modelo. Curto prazo: o rascunho de compra e a janela de 12 mensagens vivem na sessão. Longo prazo: a preferência vive no usuário e aparece em uma sessão nova; outro usuário não a vê. Os episódios vetoriais são demonstrados no notebook 03."),
+    ("md", "## Memória aumentada: o que vai para o curto e para o longo prazo\nExecução real local, sem modelo. Curto prazo: o rascunho de compra e a janela de 12 mensagens vivem na sessão. Longo prazo: a preferência vive no usuário e aparece em uma sessão nova; outro usuário não a vê. Os episódios vetoriais são demonstrados no notebook 03."),
     ("code", """from pedro.memory import Historico, salvar_preferencia, ler_rascunho, preferencias
 sessao_a = nova_sessao(memoria, 'aluna', cenario.dataset_id)
 local = criar_fluxo(cenario, memoria)
@@ -220,7 +220,7 @@ print(executar_rota(router, cenario, 'preço de PEC-01-0001'))
 print(executar_rota(router, cenario, 'PEC-01-0001'))
 print(composicao_paralela(cenario).invoke({'produto':'Compressor'}))
 print(consultar_cep('01001000', simulado=True))"""),
-    ("md", "## R09 · roteamento dinâmico e composição\nA primeira célula deste notebook executa `RouterCompras` (uma `RouterChain` com regras), `executar_rota` (cadeia sequencial: decidir a rota e executar a cadeia dela) e `composicao_paralela` (`RunnableParallel`). Aqui se acrescenta o router decidido por um modelo (`LLMRouterChain`). **Duplo de teste:** `FakeListLLM` devolve o destino já escrito; a comparação com o modelo real está em `docs/rastros/r09_router_llm.json`."),
+    ("md", "## Roteamento dinâmico e composição\nA primeira célula deste notebook executa `RouterCompras` (uma `RouterChain` com regras), `executar_rota` (cadeia sequencial: decidir a rota e executar a cadeia dela) e `composicao_paralela` (`RunnableParallel`). Aqui se acrescenta o router decidido por um modelo (`LLMRouterChain`). **Duplo de teste:** `FakeListLLM` devolve o destino já escrito; a comparação com o modelo real está em `docs/rastros/r09_router_llm.json`."),
     ("code", """from langchain_core.language_models.fake import FakeListLLM
 from pedro.legacy import DESTINOS, criar_router_llm
 print('destinos:', DESTINOS)
@@ -231,7 +231,7 @@ for pergunta, destino in (('Quanto custa o compressor PEC-01-0001?', 'comparacao
     saida = executar_rota(criar_router_llm(duplo), cenario, pergunta)
     print(pergunta, '->', saida['rota'], '|', str(saida['resultado'])[:110])
     print('   o router por regras teria escolhido:', executar_rota(router, cenario, pergunta)['rota'])"""),
-    ("md", "## R08 · agente ReAct com initialize_agent, ferramentas e memória\n**Duplo de teste:** `FakeListLLM` devolve um roteiro fixo de pensamentos e ações; não decide nada. O real é o agente (`initialize_agent` com `ZERO_SHOT_REACT_DESCRIPTION`), as duas ferramentas executadas sobre o catálogo e `ConversationBufferMemory`. A mesma conversa com o modelo real, em que o LLM de fato escolhe, está em `docs/rastros/r08_react_llm.json`."),
+    ("md", "## Agente ReAct com initialize_agent, ferramentas e memória\n**Duplo de teste:** `FakeListLLM` devolve um roteiro fixo de pensamentos e ações; não decide nada. O real é o agente (`initialize_agent` com `ZERO_SHOT_REACT_DESCRIPTION`), as duas ferramentas executadas sobre o catálogo e `ConversationBufferMemory`. A mesma conversa com o modelo real, em que o LLM de fato escolhe, está em `docs/rastros/r08_react_llm.json`."),
     ("code", """from langchain_core.language_models.fake import FakeListLLM
 from pedro.legacy import criar_react_textual
 llm = FakeListLLM(responses=[
@@ -250,13 +250,13 @@ for pergunta in ('Busque o compressor com SKU GELA-COMP-0001 e me diga o ID dele
 print('memória de buffer:')
 print(buffer.load_memory_variables({})['chat_history'])"""),
     ("md", "A chamada real ao ViaCEP está registrada separadamente em docs/rastros/r10_viacep_llm.json."),
-    ("md", "## R12 · registro de um turno com erro e recuperação\nOs quatro componentes de confiabilidade em um único turno do fluxo final. **Duplo de teste:** o modelo é um roteiro; o ViaCEP está simulado. A primeira proposta do roteiro é texto que não é JSON (erro do parser); a segunda é válida. O callback `Rastro` registra cada chamada de ferramenta e cada verificação, e `RunnableWithMessageHistory` salva na memória só a pergunta e a resposta publicada."),
+    ("md", "## Registro de um turno com erro e recuperação\nOs quatro componentes de confiabilidade em um único turno do fluxo final. **Duplo de teste:** o modelo é um roteiro; o ViaCEP está simulado. A primeira proposta do roteiro é texto que não é JSON (erro do parser); a segunda é válida. O callback `Rastro` registra cada chamada de ferramenta e cada verificação, e `RunnableWithMessageHistory` salva na memória só a pergunta e a resposta publicada."),
     ("code", """import json
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableLambda
 from pedro.agent import Rastro, criar_fluxo
 from pedro.memory import Historico, nova_sessao
-memoria = Path('storage/notebooks/r12.sqlite3')
+memoria = Path('storage/notebooks/registro_do_turno.sqlite3')
 sessao = nova_sessao(memoria, 'aluna', cenario.dataset_id)
 chamar = AIMessage(content='', tool_calls=[{'name': 'consultar_cep', 'args': {'cep': '01001000'}, 'id': 'c1'}])
 valida = json.dumps({'estado': 'cep', 'dataset_id': cenario.dataset_id, 'solicitacao': {'cep': '01001000'}})
@@ -271,7 +271,7 @@ for evento in rastro.eventos:
 print('publicado:', resposta.content)
 print('memória:', [(m.type, m.content[:60]) for m in Historico(memoria, 'aluna', sessao).todos()])"""),
     ("md", "Leitura: o registro mostra a ferramenta chamada duas vezes, a primeira tentativa rejeitada com `OutputParserException`, a segunda aceita e o CEP preenchido a partir da observação. A proposta rejeitada não chega à memória: só são salvas a pergunta e a resposta publicada."),
-    ("md", "## R07 · o que o orquestrador traz: inventário de peças do LangChain no Pedro\nSem modelo. O inventário é obtido lendo os imports do código (`pedro.anatomia.inventario_langchain`), não é escrito à mão. Serve para argumentar a escolha com fatos: cada linha é uma peça que o projeto não precisou construir. A comparação executada com o LangGraph está em docs/rastros/r07_orquestradores_llm.json; aqui só o LangChain foi executado."),
+    ("md", "## O que o orquestrador traz: inventário de peças do LangChain no Pedro\nSem modelo. O inventário é obtido lendo os imports do código (`pedro.anatomia.inventario_langchain`), não é escrito à mão. Serve para argumentar a escolha com fatos: cada linha é uma peça que o projeto não precisou construir. A comparação executada com o LangGraph está em docs/rastros/r07_orquestradores_llm.json; aqui só o LangChain foi executado."),
     ("code", """from pedro.anatomia import inventario_langchain
 inventario = inventario_langchain()
 for peca, dado in inventario.items():
@@ -299,13 +299,13 @@ print('antes', recuperar(caminho, 'aluna', 'fornecedor nacional', emb))
 atualizar_episodio(caminho, 'aluna', eid, 'corrigiu: aceita fornecedor internacional', emb)
 print('depois', recuperar(caminho, 'aluna', 'fornecedor internacional', emb))"""),
     ("md", "Preço e estoque guardados em episódios são históricos. O pedido atual prevalece."),
-    ("md", "## R13 · mapa de memórias (CoALA)\nExecução real local, sem modelo. Depois de dois turnos de compra e uma preferência, `mapa_memorias` mostra o que há em cada tipo de memória. A conversa equivalente com o modelo real está em `docs/rastros/fase3_memoria_llm.json`."),
+    ("md", "## Mapa de memórias (CoALA)\nExecução real local, sem modelo. Depois de dois turnos de compra e uma preferência, `mapa_memorias` mostra o que há em cada tipo de memória. A conversa equivalente com o modelo real está em `docs/rastros/fase3_memoria_llm.json`."),
     ("code", """import json
 from pedro.agent import criar_fluxo
 from pedro.catalog import criar_cenario
 from pedro.memory import mapa_memorias
 cenario = criar_cenario(Path('storage/notebooks/catalogos'))
-caminho13 = Path('storage/notebooks/r13.sqlite3')
+caminho13 = Path('storage/notebooks/mapa_de_memorias.sqlite3')
 sessao13 = nova_sessao(caminho13, 'aluna', cenario.dataset_id)
 local = criar_fluxo(cenario, caminho13)
 for texto in ('Preciso de 5 unidades de PEC-01-0001 com prazo 7 dias', 'Agora que sejam 6 e mantenha o prazo'):
@@ -315,7 +315,7 @@ salvar_preferencia(caminho13, 'aluna', 'fornecedor', 'nacionais', explicita=True
 salvar_episodio(caminho13, 'aluna', sessao13, 'pediu 6 unidades de PEC-01-0001 com prazo 7 dias', emb)
 for memoria_coala, conteudo in mapa_memorias(caminho13, 'aluna', sessao13).items():
     print(memoria_coala, '->', json.dumps(conteudo, ensure_ascii=False))"""),
-    ("md", "## R16 · chatbot com ConversationBufferMemory\n**Duplo de teste:** `FakeListLLM` devolve respostas fixas. O real é `ConversationChain` com `ConversationBufferMemory`: o prompt do último turno é impresso para ver que ele leva a conversa inteira. A conversa com o modelo real está em `docs/rastros/fase3_memoria_llm.json`."),
+    ("md", "## Chatbot com ConversationBufferMemory\n**Duplo de teste:** `FakeListLLM` devolve respostas fixas. O real é `ConversationChain` com `ConversationBufferMemory`: o prompt do último turno é impresso para ver que ele leva a conversa inteira. A conversa com o modelo real está em `docs/rastros/fase3_memoria_llm.json`."),
     ("code", """from langchain_core.language_models.fake import FakeListLLM
 from pedro.legacy import criar_chatbot_buffer
 chatbot, buffer = criar_chatbot_buffer(FakeListLLM(responses=[
@@ -331,7 +331,7 @@ print(buffer.load_memory_variables({})['history'])"""),
 ])
 
 salvar("04_rag_text_to_query.ipynb", [
-    ("md", "# Fase 4 · SQL e FAISS\nPlano Pydantic para SELECT parametrizado. T15 usa um corpus de políticas fictícias e FastEmbed local. T24 demonstra uma falha e uma reformulação com o mesmo índice e top-k, primeiro em memória e ao final sobre o índice salvo em disco (R22/R23)."),
+    ("md", "# Fase 4 · SQL e FAISS\nPlano Pydantic para SELECT parametrizado. A busca nas políticas usa um corpus fictício e FastEmbed local. Depois vem uma falha de busca e a sua correção por reformulação, com o mesmo índice e top-k: primeiro em memória e, no final, sobre o índice salvo em disco."),
     ("code", PRE),
     ("code", """from pedro.catalog import criar_cenario
 from pedro.query import planejar, executar
@@ -340,7 +340,7 @@ pergunta = 'ofertas PEC-01-0001'
 plano = planejar(pergunta)
 print(plano.model_dump())
 print(executar(cenario, pergunta, plano))"""),
-    ("md", "## R21 · text-to-SQL: o modelo escreve a consulta e o motor decide\nA célula anterior mostra a versão conservadora (um plano com dois modelos fixos de SQL), que é a que a ferramenta do agente usa. Aqui está a versão com modelo: gera um `SELECT`, a forma dele é validada, e o **autorizador do SQLite** só deixa ler as tabelas e colunas permitidas. **Duplo de teste:** o gerador devolve consultas escritas à mão, a primeira com um erro de propósito, para ver a correção. A execução com o modelo real está em `docs/rastros/fase4_sql_llm.json`."),
+    ("md", "## Text-to-SQL: o modelo escreve a consulta e o motor decide\nA célula anterior mostra a versão conservadora (um plano com dois modelos fixos de SQL), que é a que a ferramenta do agente usa. Aqui está a versão com modelo: gera um `SELECT`, a forma dele é validada, e o **autorizador do SQLite** só deixa ler as tabelas e colunas permitidas. **Duplo de teste:** o gerador devolve consultas escritas à mão, a primeira com um erro de propósito, para ver a correção. A execução com o modelo real está em `docs/rastros/fase4_sql_llm.json`."),
     ("code", """import json
 from langchain_core.runnables import RunnableLambda
 from pedro.query import ConsultaRejeitada, consultar_sql, criar_gerador_sql, descrever_esquema, responder_sql
@@ -360,7 +360,7 @@ for sql in ('DROP TABLE offers', 'SELECT 1; DELETE FROM offers', 'SELECT name FR
         print('EXECUTADA:', sql)
     except ConsultaRejeitada as erro:
         print('rejeitada:', sql, '->', erro)"""),
-    ("md", "## T15 · embeddings, FAISS e filtros\nAs três políticas são sintéticas e citam campos e exemplos da base gerada com a semente 20261107. Cada seção produz vários fragmentos com ID e metadados estáveis; o índice é construído em memória e nenhum pickle é carregado. Os exemplos datados não substituem os dados do cenário ativo."),
+    ("md", "## Embeddings, FAISS e filtros\nAs três políticas são sintéticas e citam campos e exemplos da base gerada com a semente 20261107. Cada seção produz vários fragmentos com ID e metadados estáveis; o índice é construído em memória e nenhum pickle é carregado. Os exemplos datados não substituem os dados do cenário ativo."),
     ("code", """from collections import Counter
 from pedro.policy_demo import fragmentos_demo, criar_indice_demo, impressao_corpus
 from pedro.rag import consultar
@@ -386,7 +386,7 @@ for texto, tema in perguntas:
     print('fragmento', filtrado['texto'][:180].replace('\\n', ' '))
 print('filtro_sem_coincidencias', consultar(indice_demo, perguntas[0][0],
       filtro={'tema': 'inexistente'}, fetch_k=indice_demo.index.ntotal))"""),
-    ("md", "## T24 · falha observada e reformulação\nSobre o mesmo índice sintético e com top-4, uma pergunta coloquial sobre várias caixas não recupera a regra de entregas parciais. A resposta existe em `entrega.md`, seção 5. A intenção é reformulada sem incluir a resposta. O filtro por tema é um segundo teste, separado da comparação antes/depois. A distância só é interpretada como L2 porque o índice informa essa métrica. Esta evidência local não substitui o índice preexistente exigido por R22."),
+    ("md", "## Falha observada e reformulação\nSobre o mesmo índice sintético e com top-4, uma pergunta coloquial sobre várias caixas não recupera a regra de entregas parciais. A resposta existe em `entrega.md`, seção 5. A intenção é reformulada sem incluir a resposta. O filtro por tema é um segundo teste, separado da comparação antes/depois. A distância só é interpretada como L2 porque o índice informa essa métrica. Esta demonstração usa um índice montado em memória; o índice salvo em disco aparece mais abaixo."),
     ("code", """from pedro.policy_demo import FRAGMENTO_T24_ESPERADO, PERGUNTA_T24_ORIGINAL, PERGUNTA_T24_REESCRITA
 from pedro.rag import diagnosticar_reescrita
 original, reescrita, esperado = PERGUNTA_T24_ORIGINAL, PERGUNTA_T24_REESCRITA, FRAGMENTO_T24_ESPERADO
@@ -408,7 +408,7 @@ com_filtro = consultar(indice_demo, original, k=4, filtro={'tema': 'entrega'},
 print('filtro_entrega', [(x['fonte_id'], round(x['score'], 3)) for x in com_filtro])
 assert relatorio['correcao_observada']
 assert any(x['fonte_id'] == esperado for x in com_filtro)"""),
-    ("md", "## R22 · índice FAISS existente: é carregado, não construído\nO índice de `knowledge/politicas/` foi criado uma vez com `scripts/construir_indice_politicas.py` e está salvo com o seu manifesto. Aqui ele só é **carregado** do disco: primeiro conferem-se o manifesto e as impressões digitais, e sem confiança explícita o docstore não é aberto. Depois repete-se T24 sobre o índice carregado. O corpus é fictício e próprio."),
+    ("md", "## Índice FAISS existente: é carregado, não construído\nO índice de `knowledge/politicas/` foi criado uma vez com `scripts/construir_indice_politicas.py` e está salvo com o seu manifesto. Aqui ele só é **carregado** do disco: primeiro conferem-se o manifesto e as impressões digitais, e sem confiança explícita o docstore não é aberto. Depois repete-se o diagnóstico da falha sobre o índice carregado. O corpus é fictício e próprio."),
     ("code", """from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from pedro.rag import carregar_indice, inspecionar_indice
 pasta = Path('knowledge/politicas')
