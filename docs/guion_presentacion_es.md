@@ -156,10 +156,11 @@ El curso tiene 29 rúbricas, agrupadas en cinco fases. Cada fase añade algo a l
 | **6** | Herramientas del agente |
 | **12** | Mensajes que el modelo ve a la vez |
 | **1** | Corrección permitida si la revisión falla |
-| **159** | Pruebas automáticas |
+| **188** | Pruebas automáticas |
 | **5** | Notebooks, uno por fase |
 | **30** | Casos del examen en LangSmith |
 | **14 de 14** | Ganador correcto, y también importe correcto |
+| **28 de 28** | Mensajes bien clasificados por la guarda de entrada |
 | **R$ 7.279,83** | El ejemplo principal: 5 unidades de PEC-01-0001 |
 
 ## 7. Cuatro resultados que demuestran que aprendiste
@@ -169,7 +170,7 @@ Son mediciones reales del proyecto. Sirven para responder «¿y eso por qué lo 
 - **Dar ejemplos al modelo funciona.** Sin ejemplos entendió bien 6 de 10 pedidos. Con ejemplos, 10 de 10.
 - **Reglas más modelo es mejor que solo reglas.** Con solo reglas entendía 8 de 14 mensajes. Con reglas y modelo, 14 de 14.
 - **Varias peticiones a la vez es más rápido.** Tres pedidos juntos tardaron unas tres veces menos que uno por uno.
-- **El consejo de precio se revisa.** De 15 consejos escritos por el modelo, 14 pasaron la revisión y 1 se cambió por un aviso fijo.
+- **El consejo de precio se revisa.** De 15 consejos escritos por el modelo, en la última ejecución pasaron la revisión los 15. En la anterior pasaron 14 y 1 se cambió por un aviso fijo.
 
 ## 8. Preguntas que te pueden hacer
 
@@ -189,26 +190,32 @@ Construí el mismo agente con LangChain y con LangGraph. Respondieron igual, per
 Buscar en las políticas de la tienda por significado y responder citando la fuente.
 
 **¿Cómo sabes que funciona?**
-Por tres cosas: 159 pruebas automáticas, demostraciones guardadas con el modelo real y el examen de 30 casos.
+Por tres cosas: 188 pruebas automáticas, demostraciones guardadas con el modelo real y el examen de 30 casos.
 
 **¿Qué memoria tiene?**
 Corta: el pedido en curso y los últimos 12 mensajes. Larga: tus preferencias y recuerdos de conversaciones pasadas.
+
+**¿Qué pasa si le preguntan algo fuera de tema o intentan cambiarle las instrucciones?**
+Hay una guarda de entrada antes del agente. Reglas fijas rechazan lo que está claro y el modelo clasifica lo dudoso. El mensaje rechazado recibe un texto fijo y no llega a las herramientas. Se midió con 28 mensajes y los 28 se clasificaron bien.
+
+**¿Funciona con un modelo local?**
+Sí, cambiando dos líneas del `.env` para usar Ollama. Con un modelo pequeño en CPU tarda minutos y no escribe bien la respuesta; entonces el sistema publica su propio cálculo, ya verificado. Por eso la demostración usa gpt-4.1-mini.
 
 **¿Los datos son reales?**
 No. Catálogo, proveedores, precios y políticas son inventados. Lo único real es la consulta de códigos postales.
 
 **¿Qué mejorarías?**
-Usar casos de evaluación oficiales, un índice de políticas dado por el curso y que Pedro sepa conversar de temas que no son compras.
+Que Pedro sepa conversar de temas que no son compras, revisar cómo se mide el camino del agente en el examen y calcular el envío según el destino.
 
 ## 9. Lo que no funciona perfecto, dicho por ti
 
 Decirlo tú primero da confianza. Son límites reales del proyecto:
 
-- **Los 30 casos de examen los generé yo.** No son los oficiales del curso.
-- **El examen se hizo antes de ampliar el catálogo.** Usó las mismas 30 preguntas, con 2.640 piezas.
+- **Los 30 casos de examen los generé yo.** El enunciado no entrega casos.
+- **En el último examen el agente tomó un atajo.** Acertó igual (14 de 14), pero en 15 de 30 casos no siguió todos los pasos que la referencia espera.
 - **El índice de políticas es propio.** Lo construí con el corpus inventado.
 - **Una respuesta de políticas varía.** A veces Pedro publica su resumen y a veces solo la cita literal, según pase o no la revisión.
-- **Pedro no charla.** Si le dices «hola, ¿qué tal?», no tiene una buena respuesta.
+- **Pedro no charla.** A un saludo o a un tema ajeno responde con un texto fijo que dice para qué sirve.
 - **La revisión de sentido se equivoca a veces.** Puede rechazar una frase que era correcta. Cuando pasa, se muestra un texto fijo.
 
 ## 10. Cómo estudiar esto en tres ratos cortos

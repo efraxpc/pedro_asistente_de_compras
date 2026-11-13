@@ -59,7 +59,7 @@ Para testar o **fluxo normal**, faça a pergunta inicial no chat. A rota de entr
 | A pergunta inicial deixou a regra fora do top-4 e a reformulação a recuperou | «Recuperação T24: a pergunta inicial deixou `FIC-ENT-01-S05-C01` fora do top-4; a reformulação o colocou na posição 1 com o mesmo índice e top-k.» |
 | A pergunta inicial já trazia a regra | «Recuperação: a pergunta inicial já trazia `FIC-ENT-01-S05-C01` na posição 2 do top-4; com a reformulação ficou na posição 1.» |
 
-**Execução com o modelo real** (`gpt-4.1-mini`, NLI real local, índice de demonstração em memória; 2026-11-13T02:18:34 UTC; `uv run python scripts/demonstrar_r23.py`; [rastros/r23_resposta_llm.json](rastros/r23_resposta_llm.json)):
+**Execução com o modelo real** (`gpt-4.1-mini`, NLI real local, índice de demonstração em memória; 2026-11-13T03:37:01 UTC, com a guarda de entrada ativa; `uv run python scripts/demonstrar_r23.py`; [rastros/r23_resposta_llm.json](rastros/r23_resposta_llm.json)):
 
 | Pergunta | Primeira frase publicada | Recuperação observada |
 |---|---|---|

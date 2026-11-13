@@ -68,7 +68,8 @@ O chat abre mesmo sem chave, com o selo «Modo local, sem modelo». Funcionam a 
 | Variável | Para que serve | Obrigatória |
 |---|---|---|
 | `OPENAI_API_KEY` | Liga o agente, as políticas e o CEP | Sim, para o agente |
-| `PEDRO_MODEL` | Modelo da OpenAI (padrão: `gpt-4.1-mini`) | Não |
+| `PEDRO_MODEL` | Modelo de conversa (padrão: `gpt-4.1-mini`) | Não |
+| `PEDRO_BASE_URL` | Usa um servidor compatível com a API da OpenAI no lugar da OpenAI; por exemplo, um modelo local no Ollama: `PEDRO_BASE_URL=http://localhost:11434/v1` e `PEDRO_MODEL=llama3.2`. Em CPU cada resposta pode levar minutos | Não |
 | `LANGSMITH_API_KEY` | Só para a avaliação com `evals/avaliar_fluxo.py` | Não |
 | `PEDRO_TRUST_POLICY_INDEX` | `true` usa o índice de políticas salvo em `knowledge/politicas/`; `false` usa o índice de demonstração em memória, com o mesmo conteúdo | Não |
 | `ELEVENLABS_API_KEY` | Só para narrar o vídeo do tour (`scripts/gerar_video_tour.py`) | Não |
@@ -109,11 +110,13 @@ Para entender o projeto, comece por docs/guia_estudo.md (ou docs/guia_estudio_es
 - src/pedro/dialogue.py: extração de restrições por turno e perguntas só para dados bloqueantes.
 - src/pedro/prompts.py: PTCF e exemplos com ações observáveis.
 - src/pedro/agent.py: seis ferramentas, um create_openai_tools_agent, uma correção interna e RunnableWithMessageHistory que salva só a resposta pública.
+- src/pedro/guardrails.py: guarda de entrada. Antes de chamar o agente, regras fixas e um classificador com o modelo recusam assuntos alheios e tentativas de mudar as instruções.
+- src/pedro/modelos.py: escolha do modelo de conversa pelo arquivo .env (OpenAI ou um servidor compatível, como o Ollama).
 - src/pedro/verification.py e nli.py: verificação exata e porta NLI triclasse.
 - src/pedro/rag.py: recuperação FAISS com filtro de metadados e inspeção do manifesto antes de permitir a desserialização.
 - src/pedro/policy_demo.py e knowledge/politicas_demo/: corpus fictício extenso e índice FAISS local construído em memória para o T15.
 - scripts/diagnosticar_t24.py: comparação reproduzível de uma falha de recuperação e da sua reformulação.
-- notebooks/01–05: práticas executáveis. Os duplos de teste são identificados explicitamente. As comparações didáticas estão em docs/comparacoes.md.
+- notebooks/01–05: práticas executáveis. Os duplos de teste são identificados explicitamente; o primeiro tem também uma célula que roda a cadeia com o modelo real, se houver chave. As comparações didáticas estão em docs/comparacoes.md.
 
 O notebook 04 demonstra o T15 sem credenciais: divide três políticas fictícias em fragmentos, cria embeddings FastEmbed, indexa com FAISS e compara buscas com e sem filtro por tema. As políticas incluem exemplos tirados da SQLite sintética (SKU, compatibilidade, garantia por peça e ofertas), datados pela semente `20261107`; pedidos e entregas continuam hipotéticos. O chat usa esse índice de demonstração quando não tem um autorizado. O índice salvo de R22/T24 fica em knowledge/politicas/ (index.faiss, index.pkl e manifest.json com origem, embedding_model, dimension, metrica, documentos e sha256 por arquivo); é um índice próprio, feito do corpus fictício com `uv run python scripts/construir_indice_politicas.py`. Revise a procedência dele antes de definir PEDRO_TRUST_POLICY_INDEX=true. O docstore pickle exige confiança explícita; o índice fictício em memória não usa essa variável.
 
@@ -121,6 +124,6 @@ O T24 tem uma falha e uma correção observadas nesse corpus fictício. **Para t
 
 ## Avaliação e entregáveis
 
-A matriz de evidências, conferida com as 29 rubricas do guia integrado em guide/ (rótulos R01–R29), está em docs/matriz.md e o seu mapa visual em [Mermaid](docs/rubricas_projeto.mmd) e [SVG](docs/rubricas_projeto.svg). O registro de verificações está em docs/evidencias.md e o relatório editável e em PDF em docs/relatorio.md e docs/relatorio.pdf. Há 30 casos derivados e congelados em evals/casos_derivados.json; não equivalem aos casos oficiais. Para avaliar o mesmo fluxo final com o LangSmith: uv run python evals/avaliar_fluxo.py. O script exige OPENAI_API_KEY e LANGSMITH_API_KEY; não publica métricas simuladas.
+A matriz de evidências, conferida com as 29 rubricas do enunciado original (rótulos R01–R29), está em docs/matriz.md e o seu mapa visual em [Mermaid](docs/rubricas_projeto.mmd) e [SVG](docs/rubricas_projeto.svg). O registro de verificações está em docs/evidencias.md e o relatório editável e em PDF em docs/relatorio.md e docs/relatorio.pdf (com uma cópia no nome de entrega, docs/efrain_colmenares_ai-agents_langchain-agents.pdf). Há 30 casos derivados e congelados em evals/casos_derivados.json; o enunciado não entrega casos de teste. Para avaliar o mesmo fluxo final com o LangSmith: uv run python evals/avaliar_fluxo.py. O script exige OPENAI_API_KEY e LANGSMITH_API_KEY; não publica métricas simuladas.
 
-O guia integrado de fases, temas e rubricas está em guide/Fases_Temas_Tareas_Rubricas_ComprasLab_Leyendas.pdf; o enunciado original em português ainda não está no workspace para a conferência de fechamento. O chat com o agente e a avaliação no LangSmith já foram executados com o modelo real e estão registrados em docs/evidencias.md, com os rastros em docs/rastros/. Falta confirmar com o professor se a atividade entrega um índice FAISS e casos oficiais. A gravação com webcam, o envio ao Drive institucional e a verificação do link exigem o acesso do aluno.
+O guia integrado de fases, temas e rubricas está em guide/Fases_Temas_Tareas_Rubricas_ComprasLab_Leyendas.pdf; em 2026-11-13 as rubricas foram conferidas com o enunciado original em português: as 29 perguntas coincidem com R01–R29, e o enunciado não entrega um índice FAISS nem casos de avaliação. O chat com o agente e a avaliação no LangSmith já foram executados com o modelo real e estão registrados em docs/evidencias.md, com os rastros em docs/rastros/. Faltam a gravação com webcam, o envio ao Google Drive de aluno e a verificação do link, que exigem o acesso do aluno, e dar ao professor acesso ao experimento do LangSmith.

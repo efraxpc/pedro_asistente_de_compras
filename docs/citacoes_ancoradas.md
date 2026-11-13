@@ -76,16 +76,17 @@ Na execução anterior (2026-11-12T02:00:54 UTC, só no histórico do git, commi
 > Política fictícia de demonstração. Não consegui verificar um resumo próprio, então cito o texto literal da fonte:
 > - «Antes de selecionar uma peça, o usuário deve conferir marca, modelo, voltagem e dimensões com a ficha técnica fictícia.» [FIC-DEV-01-S06-C01]
 
-O resultado desta pergunta variou nas quatro execuções em português do mesmo script. A recuperação foi a mesma nas quatro; o que mudou foi o que passou na verificação.
+O resultado desta pergunta variou nas cinco execuções em português do mesmo script. A recuperação foi a mesma nas cinco; o que mudou foi o que passou na verificação.
 
 | Execução (UTC) | Citações registradas | Publicado | Onde está |
 |---|---|---|---|
 | 2026-11-11T17:20:51 | 2 de `FIC-DEV-01-S06-C01` `literal` (1,0) e 1 de `FIC-DEV-01-S02-C01` `rejeitada` (cobertura 0,474) | Só a citação literal de `FIC-DEV-01-S06-C01` (duas frases) | Histórico do git, commit `c92ba32` |
 | 2026-11-11T17:47:57 | 4: `FIC-DEV-01-S06-C01` `literal` (1,0), `FIC-DEV-01-S02-C01` `rejeitada` (0,71), `FIC-DEV-01-S06-C01` `literal` (1,0) e `FIC-DEV-01-S02-C01` `literal` (1,0) | Resumo do modelo com as fontes `FIC-DEV-01-S06-C01` e `FIC-DEV-01-S02-C01` | Histórico do git, commit `9adb27e` |
 | 2026-11-12T02:00:54 | 2 de `FIC-DEV-01-S06-C01` `literal` (1,0); duas verificações com o erro `NLI sem entailment` | Só a citação literal de `FIC-DEV-01-S06-C01` (uma frase) | Histórico do git, commit `734e94f` |
-| 2026-11-13T02:18:59 | 4: `FIC-DEV-01-S06-C01` `literal` (1,0), `FIC-DEV-01-S02-C01` `rejeitada` (0,76), `FIC-DEV-01-S06-C01` `literal` (1,0) e `FIC-DEV-01-S02-C01` `reancorada` (1,0); primeira verificação com dois erros sobre `FIC-DEV-01-S02-C01`, segunda sem erros | Resumo do modelo com as fontes `FIC-DEV-01-S06-C01` e `FIC-DEV-01-S02-C01` | Rastro salvo hoje |
+| 2026-11-13T02:18:59 | 4: `FIC-DEV-01-S06-C01` `literal` (1,0), `FIC-DEV-01-S02-C01` `rejeitada` (0,76), `FIC-DEV-01-S06-C01` `literal` (1,0) e `FIC-DEV-01-S02-C01` `reancorada` (1,0); primeira verificação com dois erros sobre `FIC-DEV-01-S02-C01`, segunda sem erros | Resumo do modelo com as fontes `FIC-DEV-01-S06-C01` e `FIC-DEV-01-S02-C01` | Histórico do git, commit `98f467e` |
+| 2026-11-13T03:36:06 | 2: `FIC-DEV-01-S06-C01` `literal` (1,0) e `FIC-DEV-01-S02-C01` `literal` (1,0); uma verificação, sem erros | Resumo do modelo com as fontes `FIC-DEV-01-S06-C01` e `FIC-DEV-01-S02-C01` | Rastro salvo hoje |
 
-As duas primeiras execuções não registravam as verificações, e usaram um arquivo de memória fixo, que acumulava lembranças entre execuções do script. A terceira e a quarta usaram memória nova. A quarta foi feita depois da mudança na rota de entrega parcial (R23), que não toca nesta pergunta: ela passa pelo agente, não por essa rota.
+As duas primeiras execuções não registravam as verificações, e usaram um arquivo de memória fixo, que acumulava lembranças entre execuções do script. A terceira, a quarta e a quinta usaram memória nova. A quarta foi feita depois da mudança na rota de entrega parcial (R23), que não toca nesta pergunta: ela passa pelo agente, não por essa rota. A quinta foi feita com a guarda de entrada ativa.
 
 ## 5. Evidência
 
@@ -98,7 +99,7 @@ As duas primeiras execuções não registravam as verificações, e usaram um ar
 ## 6. Limitações
 
 - Uma execução antes e outra depois não medem uma taxa de sucesso; a medição corresponde a R29.
-- A degradação extrativa está testada com duplos. Com o modelo real foi observada em duas das quatro execuções de R22 em português: a primeira (commit `c92ba32`) e a terceira (commit `734e94f`), as duas só no histórico do git. Na segunda (commit `9adb27e`) e na do rastro salvo hoje o resumo do modelo foi publicado. Ou seja, a mesma pergunta, com a mesma recuperação, não dá sempre o mesmo tipo de resposta: depende de as citações e o resumo do modelo passarem na verificação. Quatro execuções não medem uma taxa. O estado `reancorada` foi observado com o modelo real na versão anterior, em espanhol, e uma vez em português, no rastro salvo hoje (uma citação de `FIC-DEV-01-S02-C01`); nas outras execuções em português todas as citações aceitas foram `literal`.
+- A degradação extrativa está testada com duplos. Com o modelo real foi observada em duas das cinco execuções de R22 em português: a primeira (commit `c92ba32`) e a terceira (commit `734e94f`), as duas só no histórico do git. Na segunda (commit `9adb27e`), na quarta (commit `98f467e`) e na do rastro salvo hoje o resumo do modelo foi publicado. Ou seja, a mesma pergunta, com a mesma recuperação, não dá sempre o mesmo tipo de resposta: depende de as citações e o resumo do modelo passarem na verificação. Cinco execuções não medem uma taxa. O estado `reancorada` foi observado com o modelo real na versão anterior, em espanhol, e uma vez em português, na quarta execução (uma citação de `FIC-DEV-01-S02-C01`); nas outras execuções em português todas as citações aceitas foram `literal`.
 - O limiar de 80 % foi fixado por critério, sem calibração com dados.
 - O modelo NLI aceita 512 tokens: com várias citações longas a premissa é truncada (observou-se um aviso de 539 tokens na execução em português de R02; na versão anterior, em espanhol, de 652 tokens).
 - Quando este diagnóstico foi escrito, uma solicitação mista em um só turno não era publicada; isso foi resolvido depois com o planejador de turno (R02).

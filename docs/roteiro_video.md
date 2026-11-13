@@ -78,7 +78,7 @@
 | `verification.py` e `nli.py` | «É a verificação: uma conferência exata e o modelo de NLI.» |
 | `orquestradores.py` | «É o mesmo agente feito com LangChain e com LangGraph, para comparar os dois.» |
 | `evals/avaliar_fluxo.py` | «É a avaliação no LangSmith.» |
-| `notebooks/` e `tests/` | «São cinco notebooks, um por fase, e 187 testes automáticos.» |
+| `notebooks/` e `tests/` | «São cinco notebooks, um por fase. O primeiro roda a chain de ponta a ponta com o modelo real. E há 188 testes automáticos.» |
 
 **Dizer o porquê:** «Separei a interface da lógica porque assim os testes rodam sem abrir o navegador.»
 
@@ -136,17 +136,17 @@
 
 ## Parte 7 — Avaliação no LangSmith (9:40 a 10:30)
 
-**Na tela:** a aba do LangSmith com o experimento `pedro-infnet-fluxo-gpt-4.1-mini-portugues-235aa9f1`.
+**Na tela:** a aba do LangSmith com o experimento `pedro-infnet-fluxo-gpt-4.1-mini-guardrails-2726b884`, de 2026-11-13.
 
-**Dizer:** «O agente foi avaliado no LangSmith com trinta casos. A avaliação mede a qualidade da resposta e a trajetória, ou seja, quais ferramentas o agente chamou. O vencedor ficou correto em 14 de 14 e o valor em 14 de 14. Em nove experimentos, nenhuma recomendação contrária à regra foi publicada.»
+**Dizer:** «O agente foi avaliado no LangSmith com trinta casos. A avaliação mede a qualidade da resposta e a trajetória, ou seja, quais ferramentas o agente chamou. O vencedor ficou correto em 14 de 14 e o valor em 14 de 14, e nenhuma proposta foi rejeitada pela verificação. A trajetória completa ficou em 15 de 30: o agente chega à mesma resposta chamando só a ferramenta de comparação, e a referência pedia também a consulta ao catálogo. Em dez experimentos, nenhuma recomendação contrária à regra foi publicada.»
 
-**Dizer o porquê:** «Avaliei com casos porque ver o agente funcionar em alguns exemplos não prova que ele acerta.»
+**Dizer o porquê:** «Avaliei com casos porque ver o agente funcionar em alguns exemplos não prova que ele acerta. E mostro a trajetória porque ela diz por onde o agente passou, não só se acertou.»
 
 ## Parte 8 — Limites desta versão (10:30 a 11:15)
 
 **Na tela:** docs/relatorio.pdf, na seção 11 («Limitações»).
 
-**Dizer:** «Esta versão tem cinco limites. Os trinta casos de avaliação fui eu que gerei; não são casos oficiais. A avaliação não foi refeita depois que ampliei o catálogo. O índice de políticas é meu, feito com um corpus fictício. O Pedro não conversa sobre outros assuntos. E o CEP depende de um serviço externo: se o ViaCEP estiver fora do ar, essa resposta falha.»
+**Dizer:** «Esta versão tem cinco limites. Os trinta casos de avaliação fui eu que defini, porque o enunciado não entrega casos. Na última avaliação o agente acertou tudo, mas em quinze casos tomou um caminho mais curto que o esperado; a referência precisa ser revista. O índice de políticas é meu, feito com um corpus fictício. O Pedro não conversa sobre outros assuntos: a guarda responde com um texto fixo. E o CEP depende de um serviço externo: se o ViaCEP estiver fora do ar, essa resposta falha.»
 
 **Dizer o porquê:** «Digo os limites porque uma avaliação honesta mostra também o que ainda não foi medido.»
 
@@ -167,7 +167,7 @@
 
 **Na tela:** webcam e o chat.
 
-**Dizer:** «O projeto cobre as 29 rubricas. Cada uma está respondida no documento respostas_rubricas, com a evidência. Sobre o uso de IA: usei o Claude Code, da Anthropic, como apoio para escrever código e documentação. As execuções com o modelo real estão salvas na pasta docs/rastros. É isso, professor. Obrigado. Qualquer dúvida, é só me chamar.»
+**Dizer:** «O projeto cobre as 29 rubricas. Cada uma está respondida no documento respostas_rubricas, com a evidência. Sobre o uso de IA: usei o Claude Code, da Anthropic, como apoio para escrever código e documentação; isso está citado no relatório. As execuções com o modelo real estão salvas na pasta docs/rastros. É isso, professor. Obrigado. Qualquer dúvida, é só me chamar.»
 
 **Atenção:** o enunciado exige citar toda ferramenta de IA usada. Se você usou outra além do Claude Code, diga o nome dela aqui.
 
@@ -177,10 +177,14 @@
 - Enviar o vídeo ao Google Drive de aluno Infnet.
 - Compartilhar como «qualquer pessoa com o link» pode visualizar.
 - Abrir o link em uma janela anônima, conferir que ele abre e enviar o link na atividade.
+- O experimento do LangSmith está na sua conta. Se a entrega pedir o registro, compartilhe o experimento ou anexe uma captura dele.
+- O relatório para enviar é docs/efrain_colmenares_ai-agents_langchain-agents.pdf, que já tem o nome que o enunciado exige.
 
 ## Se algo sair diferente durante a gravação
 
 - **O Pedro respondeu com outras palavras:** normal. Confira só os números: R$ 7.279,83, R$ 8.718,75 e R$ 1.970,38.
+- **Nos passos aparece o aviso amarelo «Revise a procedência do índice antes de habilitar o seu docstore.»:** é a porta de segurança do índice de políticas salvo em disco. Sem a linha `PEDRO_TRUST_POLICY_INDEX=true` no arquivo .env, o chat usa o índice de demonstração em memória, com o mesmo conteúdo. Se quiser que o chat use o índice salvo e o aviso suma, acrescente essa linha e rode `./project.sh restart`.
+- **Depois de «Prefiro fornecedores nacionais…» o Pedro mostrou de novo a comparação, em vez de «Salvei a sua preferência»:** normal. A preferência foi salva do mesmo jeito; siga com a comparação de PEC-11-0001.
 - **Na pergunta das caixas apareceu só a «Regra citada», sem a frase inicial:** normal. A frase do modelo não passou na verificação e o Pedro mostrou a regra literal. Diga isso no vídeo; é a verificação funcionando.
 - **Na pergunta fora do tema:** a resposta deve começar por «Só posso ajudar com compras de peças de eletrodomésticos». Na tentativa de mudar as instruções, por «Não posso mudar as minhas instruções».
 - **O selo diz «Modo local, sem modelo»:** falta a chave `OPENAI_API_KEY` no arquivo .env. Corrija e rode `./project.sh restart`.

@@ -102,7 +102,7 @@
 | `verification.py` y `nli.py` | «É a verificação: uma conferência exata e o modelo de NLI.» | Es la verificación: una comprobación exacta y el modelo de NLI. |
 | `orquestradores.py` | «É o mesmo agente feito com LangChain e com LangGraph, para comparar os dois.» | Es el mismo agente hecho con LangChain y con LangGraph, para comparar los dos. |
 | `evals/avaliar_fluxo.py` | «É a avaliação no LangSmith.» | Es la evaluación en LangSmith. |
-| `notebooks/` y `tests/` | «São cinco notebooks, um por fase, e 187 testes automáticos.» | Son cinco notebooks, uno por fase, y 187 pruebas automáticas. |
+| `notebooks/` y `tests/` | «São cinco notebooks, um por fase. O primeiro roda a chain de ponta a ponta com o modelo real. E há 188 testes automáticos.» | Son cinco notebooks, uno por fase. El primero ejecuta la chain de punta a punta con el modelo real. Y hay 188 pruebas automáticas. |
 
 **Dices el porqué (portugués):** «Separei a interface da lógica porque assim os testes rodam sem abrir o navegador.»
 
@@ -206,15 +206,15 @@
 
 ## Parte 7 — Evaluación en LangSmith (9:40 a 10:30)
 
-**En pantalla:** la pestaña de LangSmith con el experimento `pedro-infnet-fluxo-gpt-4.1-mini-portugues-235aa9f1`.
+**En pantalla:** la pestaña de LangSmith con el experimento `pedro-infnet-fluxo-gpt-4.1-mini-guardrails-2726b884`, del 13 de noviembre de 2026.
 
-**Dices (portugués):** «O agente foi avaliado no LangSmith com trinta casos. A avaliação mede a qualidade da resposta e a trajetória, ou seja, quais ferramentas o agente chamou. O vencedor ficou correto em 14 de 14 e o valor em 14 de 14. Em nove experimentos, nenhuma recomendação contrária à regra foi publicada.»
+**Dices (portugués):** «O agente foi avaliado no LangSmith com trinta casos. A avaliação mede a qualidade da resposta e a trajetória, ou seja, quais ferramentas o agente chamou. O vencedor ficou correto em 14 de 14 e o valor em 14 de 14, e nenhuma proposta foi rejeitada pela verificação. A trajetória completa ficou em 15 de 30: o agente chega à mesma resposta chamando só a ferramenta de comparação, e a referência pedia também a consulta ao catálogo. Em dez experimentos, nenhuma recomendação contrária à regra foi publicada.»
 
-**Significa:** El agente se evaluó en LangSmith con treinta casos. La evaluación mide la calidad de la respuesta y la trayectoria, es decir, qué herramientas llamó el agente. El ganador fue correcto en 14 de 14 y el importe en 14 de 14. En nueve experimentos no se publicó ninguna recomendación contraria a la regla.
+**Significa:** El agente se evaluó en LangSmith con treinta casos. La evaluación mide la calidad de la respuesta y la trayectoria, es decir, qué herramientas llamó el agente. El ganador fue correcto en 14 de 14 y el importe en 14 de 14, y la verificación no rechazó ninguna propuesta. La trayectoria completa quedó en 15 de 30: el agente llega a la misma respuesta llamando solo a la herramienta de comparación, y la referencia pedía también la consulta al catálogo. En diez experimentos no se publicó ninguna recomendación contraria a la regla.
 
-**Dices el porqué (portugués):** «Avaliei com casos porque ver o agente funcionar em alguns exemplos não prova que ele acerta.»
+**Dices el porqué (portugués):** «Avaliei com casos porque ver o agente funcionar em alguns exemplos não prova que ele acerta. E mostro a trajetória porque ela diz por onde o agente passou, não só se acertou.»
 
-**Significa:** Evalué con casos porque ver al agente funcionar en algunos ejemplos no prueba que acierte.
+**Significa:** Evalué con casos porque ver al agente funcionar en algunos ejemplos no prueba que acierte. Y muestro la trayectoria porque dice por dónde pasó el agente, no solo si acertó.
 
 **La idea que transmites:** el agente está medido, no solo demostrado (R29).
 
@@ -222,9 +222,9 @@
 
 **En pantalla:** docs/relatorio.pdf, en la sección 11 («Limitações»).
 
-**Dices (portugués):** «Esta versão tem cinco limites. Os trinta casos de avaliação fui eu que gerei; não são casos oficiais. A avaliação não foi refeita depois que ampliei o catálogo. O índice de políticas é meu, feito com um corpus fictício. O Pedro não conversa sobre outros assuntos. E o CEP depende de um serviço externo: se o ViaCEP estiver fora do ar, essa resposta falha.»
+**Dices (portugués):** «Esta versão tem cinco limites. Os trinta casos de avaliação fui eu que defini, porque o enunciado não entrega casos. Na última avaliação o agente acertou tudo, mas em quinze casos tomou um caminho mais curto que o esperado; a referência precisa ser revista. O índice de políticas é meu, feito com um corpus fictício. O Pedro não conversa sobre outros assuntos: a guarda responde com um texto fixo. E o CEP depende de um serviço externo: se o ViaCEP estiver fora do ar, essa resposta falha.»
 
-**Significa:** Esta versión tiene cinco límites. Los treinta casos de evaluación los generé yo; no son casos oficiales. La evaluación no se repitió después de ampliar el catálogo. El índice de políticas es mío, hecho con un corpus ficticio. Pedro no conversa sobre otros temas. Y el código postal depende de un servicio externo: si ViaCEP está caído, esa respuesta falla.
+**Significa:** Esta versión tiene cinco límites. Los treinta casos de evaluación los definí yo, porque el enunciado no entrega casos. En la última evaluación el agente acertó todo, pero en quince casos tomó un camino más corto que el esperado; la referencia se tiene que revisar. El índice de políticas es mío, hecho con un corpus ficticio. Pedro no conversa sobre otros temas: la guarda responde con un texto fijo. Y el código postal depende de un servicio externo: si ViaCEP está caído, esa respuesta falla.
 
 **Dices el porqué (portugués):** «Digo os limites porque uma avaliação honesta mostra também o que ainda não foi medido.»
 
@@ -253,9 +253,9 @@
 
 **En pantalla:** tu webcam y el chat.
 
-**Dices (portugués):** «O projeto cobre as 29 rubricas. Cada uma está respondida no documento respostas_rubricas, com a evidência. Sobre o uso de IA: usei o Claude Code, da Anthropic, como apoio para escrever código e documentação. As execuções com o modelo real estão salvas na pasta docs/rastros. É isso, professor. Obrigado. Qualquer dúvida, é só me chamar.»
+**Dices (portugués):** «O projeto cobre as 29 rubricas. Cada uma está respondida no documento respostas_rubricas, com a evidência. Sobre o uso de IA: usei o Claude Code, da Anthropic, como apoio para escrever código e documentação; isso está citado no relatório. As execuções com o modelo real estão salvas na pasta docs/rastros. É isso, professor. Obrigado. Qualquer dúvida, é só me chamar.»
 
-**Significa:** El proyecto cubre las 29 rúbricas. Cada una está respondida en el documento respostas_rubricas, con la evidencia. Sobre el uso de IA: usé Claude Code, de Anthropic, como apoyo para escribir código y documentación. Las ejecuciones con el modelo real están guardadas en la carpeta docs/rastros. Eso es todo, profesor. Gracias. Cualquier duda, solo tiene que llamarme.
+**Significa:** El proyecto cubre las 29 rúbricas. Cada una está respondida en el documento respostas_rubricas, con la evidencia. Sobre el uso de IA: usé Claude Code, de Anthropic, como apoyo para escribir código y documentación; eso está citado en el informe. Las ejecuciones con el modelo real están guardadas en la carpeta docs/rastros. Eso es todo, profesor. Gracias. Cualquier duda, solo tiene que llamarme.
 
 **Atención:** el enunciado exige citar toda herramienta de IA usada. Si usaste otra además de Claude Code, di su nombre aquí.
 
@@ -286,10 +286,14 @@
 - Sube el vídeo a tu Google Drive de alumno Infnet.
 - Compártelo como «qualquer pessoa com o link» puede ver.
 - Abre el enlace en una ventana de incógnito, comprueba que se abre y envía el enlace en la actividad.
+- El experimento de LangSmith está en tu cuenta. Si la entrega pide el registro, comparte el experimento o adjunta una captura.
+- El informe que hay que enviar es docs/efrain_colmenares_ai-agents_langchain-agents.pdf, que ya tiene el nombre que exige el enunciado.
 
 ## Si algo sale distinto durante la grabación
 
 - **Pedro respondió con otras palabras:** es normal. Mira solo las cifras: R$ 7.279,83, R$ 8.718,75 y R$ 1.970,38.
+- **En los pasos aparece el aviso amarillo «Revise a procedência do índice antes de habilitar o seu docstore.»:** es la puerta de seguridad del índice de políticas guardado en disco. Sin la línea `PEDRO_TRUST_POLICY_INDEX=true` en el archivo .env, el chat usa el índice de demostración en memoria, con el mismo contenido. Si quieres que el chat use el índice guardado y el aviso desaparezca, añade esa línea y ejecuta `./project.sh restart`.
+- **Después de «Prefiro fornecedores nacionais…» Pedro mostró otra vez la comparación, en lugar de «Salvei a sua preferência»:** es normal. La preferencia se guardó igual; sigue con la comparación de PEC-11-0001.
 - **En la pregunta de las cajas salió solo la «Regra citada», sin la frase inicial:** es normal. La frase del modelo no pasó la verificación y Pedro mostró la regla literal. Dilo en el vídeo; es la verificación funcionando.
 - **En la pregunta fuera de tema:** la respuesta debe empezar por «Só posso ajudar com compras de peças de eletrodomésticos». En el intento de cambiar las instrucciones, por «Não posso mudar as minhas instruções».
 - **El sello dice «Modo local, sem modelo»:** falta la clave `OPENAI_API_KEY` en el archivo .env. Corrígelo y ejecuta `./project.sh restart`.

@@ -2,7 +2,7 @@
 
 ## Structure
 
-`app.py` is the Streamlit entry point. Reusable logic lives in `src/pedro/`: `catalog.py` and `business.py` handle scenarios and exact comparisons; `agent.py`, `query.py`, `rag.py`, and `nli.py` handle the agent and verification; `memory.py` persists sessions and preferences. Add focused tests in `tests/test_*.py`. `datasets/` contains the synthetic SQLite catalog, `scripts/` its generator and artifact scripts, `notebooks/` the five teaching demos, `evals/` the derived cases and LangSmith runner, and `docs/` the report and evidence. Runtime files belong in ignored `storage/`. Code, docs, and UI text are in Brazilian Portuguese; follow the naming glossary in `docs/glossario_migracao.md`.
+`app.py` is the Streamlit entry point. Reusable logic lives in `src/pedro/`: `catalog.py` and `business.py` handle scenarios and exact comparisons; `guardrails.py` screens each message before the agent; `agent.py`, `query.py`, `rag.py`, and `nli.py` handle the agent and verification; `modelos.py` picks the chat model (OpenAI or an OpenAI-compatible server); `memory.py` persists sessions and preferences. Add focused tests in `tests/test_*.py`. `datasets/` contains the synthetic SQLite catalog, `scripts/` its generator and artifact scripts, `notebooks/` the five teaching demos, `evals/` the derived cases and LangSmith runner, and `docs/` the report and evidence. Runtime files belong in ignored `storage/`. Code, docs, and UI text are in Brazilian Portuguese; follow the naming glossary in `docs/glossario_migracao.md`.
 
 ## Commands
 

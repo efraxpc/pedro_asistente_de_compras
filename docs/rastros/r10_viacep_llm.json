@@ -1,7 +1,7 @@
 {
   "rubrica": "R10",
   "modo": "real remoto: OpenAI e ViaCEP (https://viacep.com.br)",
-  "data_utc": "2026-11-12T10:55:10+00:00",
+  "data_utc": "2026-11-13T03:43:16+00:00",
   "modelo_llm": "gpt-4.1-mini",
   "esquema_enviado_ao_modelo": {
     "type": "function",

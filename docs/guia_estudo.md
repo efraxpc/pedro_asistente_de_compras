@@ -20,8 +20,8 @@ O Pedro é um assistente de compras de peças de eletrodomésticos. Todos os dad
 | `app.py` | A interface Streamlit (só o chat) |
 | `src/pedro/` | Toda a lógica reutilizável |
 | `scripts/demonstrar_*.py` | Demonstrações com o modelo real; salvam um JSON em `docs/rastros/` |
-| `notebooks/` | Cinco notebooks didáticos, um por fase, com duplos de teste |
-| `tests/` | 159 testes automáticos |
+| `notebooks/` | Cinco notebooks didáticos, um por fase, com duplos de teste; o primeiro tem uma célula com o modelo real |
+| `tests/` | 188 testes automáticos |
 | `evals/` | Casos de avaliação e o avaliador do LangSmith |
 | `knowledge/` | Corpus fictício de políticas e o índice FAISS salvo |
 | `datasets/` | Catálogo SQLite sintético: 18 categorias, 4.320 peças, 12.960 ofertas |
@@ -58,7 +58,7 @@ O Pedro é um assistente de compras de peças de eletrodomésticos. Todos os dad
 ### R03 — Modelos de prompt reutilizáveis
 
 - **O conceito:** `PromptTemplate` e `ChatPromptTemplate` são prompts com variáveis, escritos uma vez e usados muitas vezes.
-- **No Pedro:** onze modelos com nome, por exemplo `MODELO_EXTRACAO` e `MODELO_AGENTE`.
+- **No Pedro:** doze modelos com nome, por exemplo `MODELO_EXTRACAO` e `MODELO_AGENTE`.
 - **Onde está:** `src/pedro/prompts.py`.
 - **Ver funcionando:** notebook 01, seção R03; `tests/test_prompts.py`.
 - **Para lembrar:** o prompt é código: tem nome, variáveis e teste.
@@ -237,7 +237,7 @@ O Pedro é um assistente de compras de peças de eletrodomésticos. Todos os dad
 - **No Pedro:** duas portas. A verificação exata confere vencedor, total, fontes e dataset. O NLI confere se o texto é sustentado. Antes disso, o sistema ancora os dados: troca os números pelo resultado da ferramenta e as citações pelo texto literal do fragmento.
 - **Onde está:** `src/pedro/verification.py` (`verificar`, `ancorar_recomendacao`, `ancorar_citacoes`, `ancorar_cep`, `ancorar_catalogo`) e `src/pedro/nli.py` (`verificar_nli`); texto em `docs/citacoes_ancoradas.md`.
 - **Ver funcionando:** `tests/test_core.py`, `tests/test_citacoes_ancoradas.py`; notebook 05.
-- **Para lembrar:** nenhuma recomendação contrária à regra foi publicada em nove experimentos.
+- **Para lembrar:** nenhuma recomendação contrária à regra foi publicada em dez experimentos.
 
 ### R25 — Um agente com duas ou mais categorias de ferramentas
 
@@ -277,7 +277,15 @@ O Pedro é um assistente de compras de peças de eletrodomésticos. Todos os dad
 - **No Pedro:** 30 casos derivados e seis avaliadores: vencedor, valor, conteúdo, trajetória, ferramenta decisiva e primeira proposta.
 - **Onde está:** `evals/avaliar_fluxo.py`; casos em `evals/casos_derivados.json`; gerador em `scripts/criar_casos_eval.py`.
 - **Ver funcionando:** rastro `docs/rastros/r29_langsmith_gpt-4.1-mini_portugues.json`; `tests/test_evals.py`.
-- **Para lembrar:** vencedor 14 de 14, valor 14 de 14, conteúdo 16 de 16; trajetória completa 26 de 30. Nunca simular métricas.
+- **Para lembrar:** vencedor 14 de 14, valor 14 de 14, conteúdo 16 de 16; trajetória completa 15 de 30 no experimento vigente (26 no anterior): o agente chega ao mesmo resultado por um caminho mais curto que o da referência. Nunca simular métricas.
+
+### Fora das rubricas — Guarda de entrada e modelo local
+
+- **O conceito:** uma guarda de entrada (guardrail) decide se uma mensagem pode entrar no agente. Um modelo local é um modelo de linguagem que roda na própria máquina.
+- **No Pedro:** regras fixas recusam o que é claro (tentativa de mudar as instruções, assunto alheio) e um classificador com o modelo decide o resto. A mensagem recusada recebe um texto fixo e não chega às ferramentas. O modelo de conversa é escolhido no `.env`: OpenAI ou um servidor local, como o Ollama. Se o agente não redige uma resposta válida, o sistema publica o seu próprio cálculo, verificado.
+- **Onde está:** `src/pedro/guardrails.py`, `src/pedro/modelos.py` e `resolver`, em `src/pedro/agent.py`.
+- **Ver funcionando:** `scripts/demonstrar_guardrails.py`, `scripts/demonstrar_modelo_local.py`; `tests/test_guardrails.py`; no chat, «Qual o melhor celular de 2026?».
+- **Para lembrar:** 28 de 28 mensagens classificadas corretamente (21 pelas regras, 7 pelo modelo). Com um modelo local em CPU, cada turno com ferramenta levou minutos.
 
 ## 9. Resumo de uma página
 
@@ -285,7 +293,7 @@ O Pedro é um assistente de compras de peças de eletrodomésticos. Todos os dad
 |---|---|---|
 | R01 | Agente híbrido: regras e modelo | `src/pedro/anatomia.py` |
 | R02 | Plano validado para mensagens com várias intenções | `src/pedro/planner.py` |
-| R03 | Onze modelos de prompt com nome | `src/pedro/prompts.py` |
+| R03 | Doze modelos de prompt com nome | `src/pedro/prompts.py` |
 | R04 | Parser Pydantic e checagem de JSON completo | `src/pedro/chains.py` |
 | R05 | invoke, batch, stream e @chain | `src/pedro/chains.py` |
 | R06 | A mesma cadeia em LCEL e em código imperativo | `src/pedro/laboratorio.py` |
