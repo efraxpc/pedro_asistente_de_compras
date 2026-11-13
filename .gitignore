@@ -10,3 +10,4 @@ __pycache__/
 .playwright-mcp/
 CLAUDE.md
 AGENTS.md
+*.zip

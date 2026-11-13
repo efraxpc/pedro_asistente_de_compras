@@ -22,7 +22,7 @@ a memória entre mensagens, a consulta a uma API externa e as políticas.
 
 Link do vídeo:
 
-[COLE AQUI O LINK DO VÍDEO NO GOOGLE DRIVE]
+https://www.youtube.com/watch?v=SpeCHaVVK58
 
 
 3. CÓDIGO (REPOSITÓRIO GITHUB)
