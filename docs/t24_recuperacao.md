@@ -21,7 +21,7 @@ O fragmento que contém a regra de entrega parcial ficou fora do top-4: está na
 
 **Como a pergunta foi escolhida.** A tradução literal da pergunta da versão em espanhol, «Pode mandar em várias caixas?», deixou de falhar no corpus em português: o fragmento esperado fica na posição 4 do top-4 (L2 = 15,354). Com o filtro `tema=entrega`, fica na posição 2. Por isso foram medidas oito formulações naturais e foi escolhida «Posso receber em várias caixas?», que falha de verdade.
 
-**Nota histórica (versão anterior, em espanhol).** Com o corpus em espanhol (SHA-256 `b9dec4509b36aa722e03bff45c14876339e52831e12f8b311de6287ed5bce6c3`), a pergunta «¿Se puede mandar en varias cajas?» deixava o fragmento esperado fora do top-4 (posição 1: `FIC-ENT-01-S04-C01`, L2 = 12,845). A reformulação em espanhol o colocava na posição 1 (L2 = 10,216). Essas medições não foram refeitas.
+**Nota histórica (versão anterior, em espanhol).** Com o corpus em espanhol (SHA-256 `b9dec4509b36aa722e03bff45c14876339e52831e12f8b311de6287ed5bce6c3`), a pergunta original, feita em espanhol (traduzida: «Pode mandar em várias caixas?»), deixava o fragmento esperado fora do top-4 (posição 1: `FIC-ENT-01-S04-C01`, L2 = 12,845). A reformulação em espanhol o colocava na posição 1 (L2 = 10,216). Essas medições não foram refeitas.
 
 ## Correção e contraste
 

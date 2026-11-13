@@ -197,7 +197,7 @@ Sem modelo, no lugar do conselho aparece o aviso fixo: «Aviso de preço: O pre�
 | Rejeitados pelo NLI | 10 (8 *neutral*, 2 *contradiction*) | 0 | 0 |
 | Rejeitados por números inventados | 0 | 1 | 0 |
 
-- **Por que o primeiro prompt falhou.** O modelo acrescentava avaliações (citações da execução histórica, em espanhol): «una buena oportunidad para comprar hoy», «conviene evaluar si la entrega en 8 días justifica este costo». Os fatos não dizem isso, e o NLI as marcou como *neutral*. O próprio exemplo few-shot terminava com «es un buen momento para esta compra»: o modelo imitava o exemplo.
+- **Por que o primeiro prompt falhou.** O modelo acrescentava avaliações (citações da execução histórica, traduzidas do espanhol): «uma boa oportunidade para comprar hoje», «convém avaliar se a entrega em 8 dias justifica este custo». Os fatos não dizem isso, e o NLI as marcou como *neutral*. O próprio exemplo few-shot terminava com «é um bom momento para esta compra»: o modelo imitava o exemplo.
 - **O que mudou.** Os exemplos foram reescritos para só enunciar e comparar fatos, e foi acrescentada a instrução de não avaliar.
 - **A verificação não é perfeita.** A única rejeição da primeira execução em português foi de um conselho verdadeiro (PEC-01-0020). Ele dizia que as alternativas «custam mais de 200 % a mais que a recomendada», e os fatos diziam 203 % e 233 % a mais. Quem rejeitou foi a verificação exata, não o NLI: o número 200 não está nos fatos. O erro foi para o lado seguro: foi publicado o aviso fixo. Na reexecução de 2026-11-13 os quinze conselhos passaram.
 
@@ -822,7 +822,7 @@ Por isso as APIs clássicas estão isoladas em [legacy.py](../src/pedro/legacy.p
 
 - A comparação com LlamaIndex, AutoGen, Semantic Kernel e Langflow é conceitual: não foram instalados nem executados.
 - A comparação executada usa um agente de duas ferramentas e uma conversa; não é o agente completo do Pedro.
-- O LangGraph é uma dependência opcional (extra `comparacion`); o produto não o usa.
+- O LangGraph é uma dependência opcional (extra `comparacao`); o produto não o usa.
 - As avaliações de autonomia, abstração e modularidade são qualitativas.
 
 ## R08 — Agente ReAct com initialize_agent, ferramentas e memória
@@ -993,7 +993,7 @@ Nos dois últimos o agente não inventa uma cidade: diz o que a API devolveu. A 
 
 ### 4. A falha encontrada e a correção
 
-A primeira execução real não publicou a cidade, embora a API tivesse respondido bem. Essa execução é da versão anterior do projeto, em espanhol, e não foi refeita. O rastro registra o motivo de cada rejeição, e dizia `dataset ajeno` (hoje `dataset alheio`): o modelo tinha de copiar na resposta um identificador de cenário de 36 caracteres e o escrevia errado. Na avaliação do LangSmith dessa mesma versão apareceu também `falta evidencia ViaCEP`: o modelo não montava a citação com o formato exato.
+A primeira execução real não publicou a cidade, embora a API tivesse respondido bem. Essa execução é da versão anterior do projeto, em espanhol, e não foi refeita. O rastro registra o motivo de cada rejeição, e dizia `dataset alheio` (no rastro em espanhol: `dataset ajeno`): o modelo tinha de copiar na resposta um identificador de cenário de 36 caracteres e o escrevia errado. Na avaliação do LangSmith dessa mesma versão apareceu também `falta evidência ViaCEP` (no rastro em espanhol: `falta evidencia ViaCEP`): o modelo não montava a citação com o formato exato.
 
 É o mesmo defeito das citações de política (R24): **pedia-se ao modelo uma tarefa mecânica e tudo era rejeitado se um caractere falhasse.** A correção segue o mesmo princípio:
 
@@ -1003,8 +1003,8 @@ A primeira execução real não publicou a cidade, embora a API tivesse respondi
 
 | | Antes (versão anterior, em espanhol) | Depois (execução em português) |
 |---|---|---|
-| CEP válido | Não é publicado (`dataset ajeno`, duas tentativas) | É publicado na primeira tentativa |
-| CEP inexistente ou inválido | «No puedo confirmar la respuesta con las fuentes disponibles.» | Mensagem com o motivo que a API deu |
+| CEP válido | Não é publicado (`dataset alheio`, duas tentativas) | É publicado na primeira tentativa |
+| CEP inexistente ou inválido | «Não posso confirmar a resposta com as fontes disponíveis.» (traduzido) | Mensagem com o motivo que a API deu |
 
 **Decisão técnica.** O ViaCEP foi escolhido porque é real, gratuito e próprio do domínio (uma compra precisa de um destino), e porque as respostas dele podem ser conferidas. Existe um modo simulado para os testes, sempre rotulado: a resposta publicada diz «modo real» ou «modo simulado».
 
@@ -1084,7 +1084,7 @@ O que se conclui:
 
 ### 5. Few-shot no aviso de preço: o exemplo manda
 
-O conselho de preço usa outro prompt PTCF com dois exemplos. A primeira versão dele ensinou algo sobre few-shot que a medição anterior não mostrava: **o modelo imita o estilo do exemplo, não só o formato.** Na versão anterior, em espanhol, um exemplo terminava com «es un buen momento para esta compra», e o modelo passou a fechar os conselhos com avaliações parecidas, que a verificação rejeitava: só 5 de 15 conselhos foram aceitos (execução histórica em espanhol, não refeita). Depois de reescrever os exemplos para que só enunciassem fatos, os conselhos aceitos são 14 de 15 na primeira execução em português e 15 de 15 na reexecução de 2026-11-13.
+O conselho de preço usa outro prompt PTCF com dois exemplos. A primeira versão dele ensinou algo sobre few-shot que a medição anterior não mostrava: **o modelo imita o estilo do exemplo, não só o formato.** Na versão anterior, em espanhol, um exemplo terminava com «é um bom momento para esta compra» (traduzido), e o modelo passou a fechar os conselhos com avaliações parecidas, que a verificação rejeitava: só 5 de 15 conselhos foram aceitos (execução histórica em espanhol, não refeita). Depois de reescrever os exemplos para que só enunciassem fatos, os conselhos aceitos são 14 de 15 na primeira execução em português e 15 de 15 na reexecução de 2026-11-13.
 
 ### 6. Por que o agente final não usa CoT em texto livre
 
@@ -1139,12 +1139,12 @@ Veem-se os quatro componentes: o parser detecta o erro, o fluxo pede uma segunda
 
 ### 3. O que os callbacks permitiram encontrar
 
-No começo o rastro só registrava as ferramentas. Quando uma resposta não era publicada, não se sabia por quê. Foi acrescentado o registro de **cada verificação com seus erros**, e isso trouxe à tona dois defeitos com o modelo real. Os textos de erro abaixo são os da versão anterior, em espanhol; hoje são `fragmento não corresponde`, `dataset alheio` e `falta evidência ViaCEP`.
+No começo o rastro só registrava as ferramentas. Quando uma resposta não era publicada, não se sabia por quê. Foi acrescentado o registro de **cada verificação com seus erros**, e isso trouxe à tona dois defeitos com o modelo real. Os textos de erro abaixo são os da versão anterior, em espanhol, e aparecem traduzidos (nos rastros em espanhol: `dataset ajeno` e `falta evidencia ViaCEP`).
 
 | Sintoma | O que o rastro mostrou | Correção |
 |---|---|---|
-| As perguntas de política não eram publicadas | `fragmento no corresponde`: o modelo citava o texto quase literal | Ancoragem das citações ao texto da fonte (R24) |
-| As respostas de CEP não eram publicadas | `dataset ajeno` e `falta evidencia ViaCEP`: o modelo copiava errado um identificador | Ancoragem do CEP à resposta da API (R10) |
+| As perguntas de política não eram publicadas | `fragmento não corresponde`: o modelo citava o texto quase literal | Ancoragem das citações ao texto da fonte (R24) |
+| As respostas de CEP não eram publicadas | `dataset alheio` e `falta evidência ViaCEP`: o modelo copiava errado um identificador | Ancoragem do CEP à resposta da API (R10) |
 
 Os dois tinham a mesma causa: pedia-se ao modelo que copiasse dados que o sistema já tinha. A regra que ficou é: **o modelo decide o que responder; os dados são postos pelo sistema.**
 
@@ -1365,7 +1365,7 @@ Executado com o modelo real: diante de «Prefiro fornecedores nacionais, lembre-
 ### Pendências e limitações
 
 - **Mem0 e Letta não foram instalados nem executados**: a comparação deles é conceitual. O LangMem foi executado, em uma conversa de três mensagens e uma única execução; o que o modelo decide salvar pode variar.
-- O LangMem é uma dependência opcional (extra `comparacion`); o produto não o usa.
+- O LangMem é uma dependência opcional (extra `comparacao`); o produto não o usa.
 - O Pedro não tem uma resposta para «o que você lembra de mim?» nem para um comentário sem pedido.
 - A implementação própria não deduplica episódios nem extrai fatos sozinha.
 
@@ -1491,7 +1491,7 @@ Medição com o modelo real sobre catorze mensagens difíceis, com o resultado c
 | … outras seis mensagens (duas delas sem solicitação em andamento) | ✔ | ✔ |
 | **Acertos** | **8 de 14** | **14 de 14** |
 
-**Decisão técnica.** No começo o chat usava só regras, para funcionar sem credenciais e dar sempre o mesmo resultado. Uma conversa real mostrou o custo (execução histórica da versão anterior do projeto, em espanhol): as regras falharam em três mensagens (não entenderam «que sean 3», tomaram «instalar una pieza» por uma compra de uma unidade e não souberam o que fazer com uma preferência). Esses três casos foram corrigidos, mas cada correção era um remendo: **as regras só cobrem o que alguém previu**. Por isso acrescentamos o modelo onde é preciso compreensão e deixamos as regras onde é preciso exatidão. É o mesmo princípio da verificação, ao contrário: lá o modelo decide e o sistema põe os dados; aqui a regra identifica e o modelo interpreta.
+**Decisão técnica.** No começo o chat usava só regras, para funcionar sem credenciais e dar sempre o mesmo resultado. Uma conversa real mostrou o custo (execução histórica da versão anterior do projeto, em espanhol): as regras falharam em três mensagens (citações traduzidas: não entenderam «que sejam 3», tomaram «instalar uma peça» por uma compra de uma unidade e não souberam o que fazer com uma preferência). Esses três casos foram corrigidos, mas cada correção era um remendo: **as regras só cobrem o que alguém previu**. Por isso acrescentamos o modelo onde é preciso compreensão e deixamos as regras onde é preciso exatidão. É o mesmo princípio da verificação, ao contrário: lá o modelo decide e o sistema põe os dados; aqui a regra identifica e o modelo interpreta.
 
 ### Evidência
 
@@ -1555,9 +1555,9 @@ Na primeira vez em que uma conversa como esta foi executada (na versão anterior
 
 | Turno | O que aconteceu | Causa | Correção |
 |---|---|---|---|
-| 2 | Nenhuma resposta foi publicada | A regra de quantidade não entendia «que sean 3» (em espanhol); o rascunho continuou em 2 e a proposta do modelo (3) não coincidia | Novos padrões de quantidade |
+| 2 | Nenhuma resposta foi publicada | A regra de quantidade não entendia «que sejam 3» (traduzido do espanhol); o rascunho continuou em 2 e a proposta do modelo (3) não coincidia | Novos padrões de quantidade |
 | 4 | Comparou ofertas em vez de salvar a preferência | Não existia uma resposta do tipo «preferência» | Novo estado `preferencia`, confirmado com o que a ferramenta salvou |
-| 6 | Não foi publicada, e o rascunho passou para 1 unidade | «Instalar **una pieza**» (em espanhol) foi lido como uma compra de 1 unidade | As perguntas sobre garantia, compatibilidade ou instalação já não são tratadas como compra |
+| 6 | Não foi publicada, e o rascunho passou para 1 unidade | «Instalar **uma peça**» foi lido como uma compra de 1 unidade | As perguntas sobre garantia, compatibilidade ou instalação já não são tratadas como compra |
 
 Os dois rastros foram conservados. Os testes automáticos já passavam antes: a falha só apareceu com uma conversa real e variada.
 
@@ -2444,9 +2444,9 @@ Duas leituras:
 
 **1. Mantém-se `gpt-4.1-mini`.** Ganha ou empata em todas as métricas: 14/14 contra 13/14 em vencedor e valor, e 22/23 contra 19/23 em propostas aceitas na primeira tentativa. `gpt-4o-mini` falhou quatro vezes no formato JSON (`OutputParserException`) e escolheu errado um vencedor. A comparação entre modelos é da versão em espanhol; em português só foi avaliado `gpt-4.1-mini`.
 
-**2. A verificação cumpre sua função.** Quando `gpt-4o-mini` propôs um vencedor errado, a verificação o rejeitou duas vezes e o agente respondeu, em espanhol, «No puedo confirmar…». Recomendações erradas publicadas: **0 nos dez experimentos**. Um modelo pior produz menos respostas, não respostas falsas.
+**2. A verificação cumpre sua função.** Quando `gpt-4o-mini` propôs um vencedor errado, a verificação o rejeitou duas vezes e o agente respondeu «Não posso confirmar…» (traduzido do espanhol). Recomendações erradas publicadas: **0 nos dez experimentos**. Um modelo pior produz menos respostas, não respostas falsas.
 
-**3. A avaliação encontrou um defeito do agente.** No primeiro experimento falhou um caso de CEP. O rastro de verificação deu o motivo (`dataset ajeno`, `falta evidencia ViaCEP`, mensagens da versão em espanhol): o modelo copiava errado dados que o sistema já tinha. Depois da correção (`ancorar_cep`, R10), conteúdo passou de 15/16 para **16/16** e os dois casos de CEP são aceitos na primeira tentativa (de 0/2 para 2/2). Nas duas execuções em português continuam 2/2.
+**3. A avaliação encontrou um defeito do agente.** No primeiro experimento falhou um caso de CEP. O rastro de verificação deu o motivo (`dataset alheio` e `falta evidência ViaCEP`; no rastro em espanhol: `dataset ajeno` e `falta evidencia ViaCEP`): o modelo copiava errado dados que o sistema já tinha. Depois da correção (`ancorar_cep`, R10), conteúdo passou de 15/16 para **16/16** e os dois casos de CEP são aceitos na primeira tentativa (de 0/2 para 2/2). Nas duas execuções em português continuam 2/2.
 
 **4. A avaliação encontrou um erro na forma de avaliar.** Todos os experimentos compartilhavam a mesma memória, então as lembranças de uma execução entravam no contexto da seguinte. Com 73 episódios acumulados, a trajetória de `gpt-4.1-mini` caiu de 25/30 para 15/30 — o agente deixava de consultar o catálogo — e `gpt-4o-mini` acertou só 10/14 vencedores. Com memória nova voltaram a 24/30 e 13/14. Agora cada experimento cria sua própria memória. A lição vale também para o produto: **a memória episódica muda o comportamento do agente** e é preciso vigiá-la.
 

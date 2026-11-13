@@ -6,15 +6,15 @@ Este documento registra uma falha real observada com o modelo remoto, o diagnós
 
 ## 1. Falha observada
 
-A falha foi observada na versão anterior, em espanhol. Essa execução não foi refeita; a pergunta e a resposta ficam em espanhol, como estão no rastro.
+A falha foi observada na versão anterior, em espanhol. Essa execução não foi refeita; a pergunta e a resposta abaixo foram traduzidas do espanhol; os textos originais estão no rastro.
 
-Pergunta: «¿Qué dice la política de devoluciones sobre piezas dañadas?»
+Pergunta: «O que a política de devoluções diz sobre peças danificadas?»
 
 | | Antes |
 |---|---|
 | Ferramenta chamada | `consultar_politicas` (duas propostas) |
-| Fragmentos recuperados | Corretos, de `devoluciones.md` (hoje `devolucoes.md`) |
-| Resposta publicada | «No pude verificar la respuesta sobre políticas…» |
+| Fragmentos recuperados | Corretos, de `devolucoes.md` (na versão em espanhol: `devoluciones.md`) |
+| Resposta publicada | «Não consegui verificar a resposta sobre políticas…» |
 | Rastro | [rastros/r02_planificacion_llm_antes.json](rastros/r02_planificacion_llm_antes.json) (versão anterior, em espanhol) |
 
 ## 2. Diagnóstico
@@ -50,7 +50,7 @@ A verificação exata e o NLI não foram afrouxados: continuam sendo a porta. A 
 
 | | Depois |
 |---|---|
-| Primeira proposta | 3 citações `reanclada` (hoje `reancorada`; cobertura 0,998); o resumo não passou no NLI |
+| Primeira proposta | 3 citações `reancorada` (no rastro em espanhol: `reanclada`; cobertura 0,998); o resumo não passou no NLI |
 | Segunda proposta | 2 citações `literal`; o resumo obteve *entailment* |
 | Resposta publicada | Resumo da política com as fontes `FIC-DEV-01-S05-C01` e `FIC-GAR-01-S05-C01` |
 | Rastro | [rastros/r02_planificacion_llm_sin_plan.json](rastros/r02_planificacion_llm_sin_plan.json) (versão anterior, em espanhol) |
