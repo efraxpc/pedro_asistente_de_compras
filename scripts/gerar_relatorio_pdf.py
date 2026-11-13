@@ -2,7 +2,8 @@
 
 Admite um subconjunto de Markdown: títulos (# a #####), parágrafos, listas com hífen, tabelas
 com barras, **negrito**, blocos de código entre cercas (```) e imagens em um bloco próprio
-(![legenda](caminho), com o caminho relativo ao arquivo Markdown). Não executa nada.
+(![legenda](caminho), com o caminho relativo ao arquivo Markdown). Uma linha sozinha com o
+comentário <!-- nova página --> começa uma página. Não executa nada.
 
 Há dois estilos:
 - sem argumentos, gera o relatório de entrega (docs/relatorio.md) com aparência de documento
@@ -27,7 +28,7 @@ from reportlab.lib.units import cm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (Image, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table,
+from reportlab.platypus import (Image, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table,
                                 TableStyle, XPreformatted)
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -113,9 +114,9 @@ else:
         "titulo": ParagraphStyle("titulo", fontName=font_negrito, fontSize=17, leading=22,
                                  textColor=AZUL, spaceAfter=10),
         "secao": ParagraphStyle("secao", fontName=font_negrito, fontSize=12.5, leading=17,
-                                textColor=AZUL, spaceBefore=14, spaceAfter=6),
+                                textColor=AZUL, spaceBefore=14, spaceAfter=6, keepWithNext=1),
         "subsecao": ParagraphStyle("subsecao", fontName=font_negrito, fontSize=10, leading=14,
-                                   textColor=AZUL, spaceBefore=8, spaceAfter=4),
+                                   textColor=AZUL, spaceBefore=8, spaceAfter=4, keepWithNext=1),
         "texto": ParagraphStyle("texto", fontName=font, fontSize=8.8, leading=13.5,
                                 alignment=TA_LEFT, spaceAfter=6),
         "lista": ParagraphStyle("lista", fontName=font, fontSize=8.8, leading=13.5,
@@ -176,6 +177,9 @@ def tabela(linhas_texto: list[str]) -> Table:
         ("LEFTPADDING", (0, 0), (-1, -1), lado), ("RIGHTPADDING", (0, 0), (-1, -1), lado),
         ("TOPPADDING", (0, 0), (-1, -1), alto), ("BOTTOMPADDING", (0, 0), (-1, -1), alto),
     ]))
+    # Uma tabela curta vai inteira para a página seguinte em vez de se partir em duas.
+    if objeto.wrap(LARGURA, PAGINA[1])[1] < (PAGINA[1] - 2 * MARGEM) * 0.6:
+        objeto.splitByRow = 0
     return objeto
 
 
@@ -216,6 +220,9 @@ def blocos(texto: str) -> list:
         if not linhas:
             continue
         primeira = linhas[0]
+        if primeira.strip() == "<!-- nova página -->":
+            elementos.append(PageBreak())
+            continue
         nivel = next((estilo for marca, estilo in TITULOS if primeira.startswith(marca)), None)
         era_rotulo, depois_de_rotulo = depois_de_rotulo, nivel == "rotulo"
         if nivel:
