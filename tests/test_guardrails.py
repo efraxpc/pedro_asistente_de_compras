@@ -132,3 +132,41 @@ def test_no_fluxo_a_mensagem_recusada_nao_chama_ferramentas_e_fica_no_rastro(tmp
     # Uma compra normal continua funcionando e não deixa evento de guarda.
     compra = fluxo.invoke({"input": "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias"}, config=config)
     assert "CentroPeças" in compra.content and len(guardas) == 3
+
+
+def test_se_o_agente_nao_chega_a_uma_resposta_valida_o_sistema_publica_o_seu_calculo(tmp_path, monkeypatch):
+    """Um modelo fraco pode chamar as ferramentas e não conseguir redigir a resposta no formato."""
+    import pedro.agent as modulo
+
+    cenario = criar_cenario(tmp_path / "catalogos")
+    memoria = tmp_path / "memoria.sqlite3"
+    sessao = nova_sessao(memoria, "ana", cenario.dataset_id)
+    chamadas = []
+
+    class Executor:
+        def invoke(self, entrada, config):
+            chamadas.append(entrada)
+            return {"output": "isto não é o JSON pedido"}
+
+    class NLI:
+        def classificar(self, premissa, hipotese):
+            return "entailment"
+
+    monkeypatch.setattr(modulo, "criar_agente", lambda *args, **kwargs: Executor())
+    rastro = Rastro()
+    fluxo = criar_fluxo(cenario, memoria, llm=object(), classificador=NLI(), rastro=rastro)
+    config = {"configurable": {"user_id": "ana", "session_id": sessao}}
+
+    saida = fluxo.invoke({"input": "Compare 5 unidades de PEC-01-0001 com prazo de 7 dias"}, config=config)
+    assert len(chamadas) == 2  # as duas tentativas do agente falharam
+    assert saida.content.startswith("CentroPeças: R$ 7.279,83 para 5 unidades")
+    assert [e["evento"] for e in rastro.eventos if e["evento"] == "comparacao_do_sistema"] == [
+        "comparacao_do_sistema"]
+    verificacoes = [(e["tentativa"], e["erros"]) for e in rastro.eventos if e["evento"] == "verificacao"]
+    assert verificacoes == [(1, ["OutputParserException"]), (2, ["OutputParserException"]), (3, [])]
+
+    # A pergunta seguinte sobre a comparação é reconhecida pela regra mesmo se o intérprete falha.
+    chamadas.clear()
+    pergunta = fluxo.invoke({"input": "a mais barata?"}, config=config)
+    assert chamadas == []  # o sistema refaz o cálculo; o agente não é chamado
+    assert pergunta.content.startswith("A mais barata que atende às suas restrições é a de CentroPeças")

@@ -10,6 +10,7 @@ from pedro.agent import Rastro, criar_fluxo, e_diagnostico_t24, partes_de
 from pedro.business import brl, descrever_motivos, variacao_percentual
 from pedro.catalog import abrir_cenario, criar_cenario
 from pedro.contracts import Alternativa, Oferta, RespostaCompra
+from pedro.modelos import base_local, criar_llm, ha_modelo, nome_do_modelo
 from pedro.memory import (MODELO_LEMBRANCAS, Historico, apagar_sessao, apagar_sessoes, nova_sessao,
                           sessoes)
 from pedro.policy_demo import PERGUNTA_T24_ORIGINAL, criar_indice_demo, impressao_corpus
@@ -278,6 +279,9 @@ def descrever_passo(evento: dict) -> dict | None:
             return {"rotulo": "Respondi à sua pergunta com a política e verifiquei a frase", "detalhe": ""}
         return {"rotulo": "Descartei a minha frase; cito a regra literal", "estado": "error",
                 "detalhe": "\n".join(f"- {e}" for e in evento.get("erros") or [])}
+    if tipo == "comparacao_do_sistema":
+        return {"rotulo": "O agente não chegou a uma resposta verificável; usei o cálculo do sistema",
+                "estado": "error", "detalhe": ""}
     if tipo == "comparacao_reutilizada":
         return {"rotulo": "Refiz o cálculo da comparação em andamento, sem chamar o modelo", "detalhe": ""}
     if tipo == "resposta_direta":
@@ -316,9 +320,8 @@ class PassosAoVivo(list):
 def preparar_agente(teste_t24: bool):
     """Carrega o modelo, o NLI e o índice de políticas disponíveis para este turno."""
     llm = classificador = indice = None
-    if os.getenv("OPENAI_API_KEY") and not teste_t24:
-        from langchain_openai import ChatOpenAI
-        llm = ChatOpenAI(model=os.getenv("PEDRO_MODEL", "gpt-4.1-mini"))
+    if ha_modelo() and not teste_t24:
+        llm = criar_llm()
         try:
             classificador = modelo_nli()
         except Exception:
@@ -400,13 +403,15 @@ cenario = st.session_state.cenario
 if cenario is None:
     st.warning(st.session_state.erro_cenario or "Cenário ausente")
     st.stop()
-com_agente = bool(os.getenv("OPENAI_API_KEY"))
+com_agente = ha_modelo()
 
 st.title("Chat")
 with st.container(horizontal=True):
     st.badge(f"Cenário {cenario.dataset_id[:8]}", icon=":material/database:", color="gray")
     if com_agente:
         st.badge("Agente ativo", icon=":material/smart_toy:", color="green")
+        if base_local():
+            st.badge(f"Modelo local: {nome_do_modelo()}", icon=":material/computer:", color="blue")
     else:
         st.badge("Modo local, sem modelo", icon=":material/offline_bolt:", color="orange")
     st.badge("Dados comerciais fictícios", icon=":material/science:", color="gray")

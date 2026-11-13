@@ -733,6 +733,22 @@ def criar_fluxo(cenario: Cenario, memoria_db: Path, *, llm=None,
                 erros = [type(exc).__name__]
                 if rastro:
                     rastro.registrar_verificacao(tentativa + 1, None, erros)
+        if solicitacao_atual is not None and not solicitacao_atual.faltantes():
+            # O agente não produziu uma resposta verificável, mas o pedido está completo e o
+            # sistema já tem o cálculo: publica-se a comparação determinista, verificada como as outras.
+            proposta = resposta_local(cenario, solicitacao_atual)
+            erros = verificar(proposta, cenario)
+            if not erros and proposta.estado == "recomendacao" and (
+                    classificador is None or not verificar_nli(proposta, classificador)):
+                erros = ["NLI sem entailment"]
+            if rastro:
+                rastro.eventos.append({"evento": "comparacao_do_sistema",
+                                       "motivo": "o agente não produziu uma resposta verificável",
+                                       "fontes": [a.oferta.id for a in proposta.alternativas]})
+                rastro.registrar_verificacao(3, proposta.estado, erros)
+            if not erros:
+                direta = responder(proposta, pergunta, None, None) if e_pergunta(pergunta) else None
+                return mensagem_publica(_com_direta(renderizar(proposta), direta), proposta, direta=direta)
         if extrativa is not None:
             return AIMessage(content=renderizar_citacoes(extrativa, indice=indice))
         if cep_falho is not None:

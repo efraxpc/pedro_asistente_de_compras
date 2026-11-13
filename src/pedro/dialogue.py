@@ -246,7 +246,11 @@ def interpretar_turno(cenario: Cenario, previo: EstadoCompra | None, mensagem: s
     try:
         mudanca: MudancaSolicitacao = interprete.invoke({"texto": mensagem, "contexto": contexto})
     except Exception as exc:
-        return regras, {"fonte": "regras", "modelo": f"sem resposta útil ({type(exc).__name__})"}
+        relatorio = {"fonte": "regras", "modelo": f"sem resposta útil ({type(exc).__name__})"}
+        if regras is None and sobre_a_comparacao and previo is not None:
+            # O modelo falhou, mas a regra reconhece a pergunta sobre a comparação em andamento.
+            return (previo, None), {**relatorio, "regras": "pergunta sobre a comparação em andamento"}
+        return regras, relatorio
     relatorio = {"fonte": "modelo", "modelo": mudanca.model_dump(exclude_none=True),
                  "regras": None if regras is None else regras[0].solicitacao.model_dump(exclude_none=True)}
     if not mudanca.e_compra:
