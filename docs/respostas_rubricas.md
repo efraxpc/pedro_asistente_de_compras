@@ -166,7 +166,7 @@ Limites:
 - **Uma única execução**, com seis perguntas sobre uma peça.
 - **As outras demonstrações não foram refeitas.** Depois desta mudança só foram executados este script e o de R17; depois do ajuste da regra e da ampliação do catálogo, só este script e o do aviso de preço. As demais demonstrações com o modelo real e a avaliação no LangSmith não foram reexecutadas: os rastros salvos delas são anteriores.
 
-Os testes estão em [tests/test_resposta_direta.py](../tests/test_resposta_direta.py) (13 testes, com duplos).
+Os testes estão em [tests/test_resposta_direta.py](../tests/test_resposta_direta.py) (15 testes, com duplos). Dois deles cobrem o mesmo padrão aplicado à regra de entrega parcial: a frase do modelo sobre a política e a linha de recuperação (ver R23, seção 4).
 
 ## A descoberta que mudou a comparação
 
@@ -301,7 +301,7 @@ Não se busca o nível 5 porque o problema — recomendar uma oferta verificada 
 |---|---|---|
 | Anatomia lida dos objetos reais do agente: modelo, executor, system message PTCF, seis ferramentas com seu papel e lógica, memória, base de conhecimento e porta de publicação | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · anatomia do agente»; [anatomia.py](../src/pedro/anatomia.py) | Execução real local (sem modelo) |
 | Agente híbrido em ação: «lista peças» e «Compare PEC-01-0001» são resolvidas por regra, sem passar pelo agente (na segunda, o intérprete de turno lê a mensagem); a pergunta de CEP passa pelo agente, que recebe seis ferramentas e executa `consultar_cep` | [notebooks/01_chain_mvp.ipynb](../notebooks/01_chain_mvp.ipynb) §«R01 · agente híbrido» | Execução com **duplo de teste**: modelo roteirizado e ViaCEP simulado; o fluxo, o executor, a ferramenta e a verificação são os reais |
-| A anatomia descrita coincide com o agente construído | [tests/test_anatomia.py](../tests/test_anatomia.py) | Teste automático (156/156 testes na suíte) |
+| A anatomia descrita coincide com o agente construído | [tests/test_anatomia.py](../tests/test_anatomia.py) | Teste automático (158/158 testes na suíte) |
 | Explicação de componentes, classificação e maturidade | Esta seção; [arquitetura.mmd](arquitetura.mmd) | Documentação |
 
 ### Pendências e limitações
@@ -390,7 +390,7 @@ Regras de planejamento:
 
 > O aluno construiu modelos de prompt reutilizáveis com PromptTemplate ou ChatPromptTemplate?
 
-**Resposta curta.** Sim. Há dez `ChatPromptTemplate` com nome próprio (`MODELO_*`) em [prompts.py](../src/pedro/prompts.py). Os dois principais são o que interpreta solicitações de compra e o do agente final. O primeiro é reutilizado em duas cadeias diferentes e foi executado com o modelo real sobre três solicitações do domínio.
+**Resposta curta.** Sim. Há onze `ChatPromptTemplate` com nome próprio (`MODELO_*`) em [prompts.py](../src/pedro/prompts.py). Os dois principais são o que interpreta solicitações de compra e o do agente final. O primeiro é reutilizado em duas cadeias diferentes e foi executado com o modelo real sobre três solicitações do domínio.
 
 ### 1. Os modelos de prompt
 
@@ -401,7 +401,7 @@ Regras de planejamento:
 
 Os dois têm a mesma forma: uma mensagem de sistema fixa com lacunas e uma mensagem humana com a solicitação. Os exemplos few-shot estão no mesmo arquivo e entram no modelo de prompt do agente como mais uma variável.
 
-Os outros oito seguem a mesma forma e estão no mesmo arquivo: `MODELO_EXTRACAO_FEWSHOT` e `MODELO_EXTRACAO_COT` (variantes da extração, R11), `MODELO_REPARO` (R04), `MODELO_SQL` (R21), `MODELO_MUDANCA` (intérprete de turno, R17), `MODELO_CONSELHO` (conselho de preço), `MODELO_PLANO` (planejador, R02) e `MODELO_RESPOSTA_DIRETA`. Este último é o mais novo: responde a uma pergunta sobre a comparação, com as variáveis `fatos`, `pergunta` e `formato` (ver «Perguntas sobre a comparação: a resposta direta»).
+Os outros nove seguem a mesma forma e estão no mesmo arquivo: `MODELO_EXTRACAO_FEWSHOT` e `MODELO_EXTRACAO_COT` (variantes da extração, R11), `MODELO_REPARO` (R04), `MODELO_SQL` (R21), `MODELO_MUDANCA` (intérprete de turno, R17), `MODELO_CONSELHO` (conselho de preço), `MODELO_PLANO` (planejador, R02), `MODELO_RESPOSTA_DIRETA` e `MODELO_RESPOSTA_POLITICA`. Os dois últimos são os mais novos. `MODELO_RESPOSTA_DIRETA` responde a uma pergunta sobre a comparação, com as variáveis `fatos`, `pergunta` e `formato` (ver «Perguntas sobre a comparação: a resposta direta»). `MODELO_RESPOSTA_POLITICA` responde a uma pergunta sobre a regra de entrega parcial já recuperada, com as variáveis `politica`, `pergunta` e `formato` (ver R23, seção 4).
 
 ### 2. O que os torna reutilizáveis
 
@@ -1739,12 +1739,12 @@ Depois de carregar, comparam-se de novo dimensão, contagem, métrica, identific
 
 | Pergunta | O que fez | Resposta publicada |
 |---|---|---|
-| «Como se verifica a compatibilidade elétrica antes de instalar uma peça?» | O LLM chamou `consultar_politicas` duas vezes. O rastro registra duas citações, as duas de `FIC-DEV-01-S06-C01` e literais (cobertura 1,0). As duas verificações (estado `politica`) deram o erro `NLI sem entailment`: o resumo do modelo não passou. Foi publicada só a citação literal | Citação literal com a fonte `FIC-DEV-01-S06-C01`: «Antes de selecionar uma peça, o usuário deve conferir marca, modelo, voltagem e dimensões com a ficha técnica fictícia.» |
-| «Posso receber em várias caixas?» | Rota de entrega: reformula a consulta e recupera `FIC-ENT-01-S05-C01` | Regra de entrega parcial com a fonte |
+| «Como se verifica a compatibilidade elétrica antes de instalar uma peça?» | O LLM chamou `consultar_politicas` duas vezes. O rastro registra quatro citações, nesta ordem: `FIC-DEV-01-S06-C01` `literal` (cobertura 1,0), `FIC-DEV-01-S02-C01` `rejeitada` (0,76), `FIC-DEV-01-S06-C01` `literal` (1,0) e `FIC-DEV-01-S02-C01` `reancorada` (1,0). A primeira verificação (estado `politica`) deu dois erros: `fragmento não corresponde: FIC-DEV-01-S02-C01` e `fonte não recuperada: FIC-DEV-01-S02-C01`. A segunda passou sem erros | Resumo do modelo com as fontes `FIC-DEV-01-S06-C01` e `FIC-DEV-01-S02-C01`: «Antes de instalar uma peça, deve-se conferir a marca, modelo, voltagem e dimensões com a ficha técnica, para assegurar a compatibilidade elétrica. Uma peça incompatível, ainda sem instalar, pode ser devolvida dentro de 30 dias se estiver em condições originais.» |
+| «Posso receber em várias caixas?» | Rota de entrega: uma chamada a `consultar_politicas`, que reformula a consulta e recupera `FIC-ENT-01-S05-C01`. O modelo redige uma frase sobre a pergunta e ela passa na porta (R23, seção 4) | A frase do modelo («Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio.»), depois «Regra citada: …» com as duas frases literais, a fonte `FIC-ENT-01-S05-C01` e a linha «Recuperação T24: … fora do top-4 … posição 1» |
 
 Na primeira pergunta, o top-4 da ferramenta foi `FIC-DEV-01-S02-C01`, `FIC-DEV-01-S06-C01`, `FIC-GAR-01-S06-C01` e `FIC-GAR-01-S05-C01`. A seção 3 de `garantia.md` («Compatibilidade antes da instalação») não entrou no top-4.
 
-O script usa uma memória nova a cada execução. Antes usava um arquivo fixo, e as lembranças acumuladas de execuções anteriores mudavam o resultado.
+A tabela descreve o rastro salvo, de 2026-11-13T02:18:59 UTC. O script usa uma memória nova a cada execução. Antes usava um arquivo fixo, e as lembranças acumuladas de execuções anteriores mudavam o resultado.
 
 **Decisão técnica.** Foi mantido o modelo de embeddings local (FastEmbed) em vez de um da OpenAI para que carregar e consultar o índice não dependa de credenciais nem de um serviço externo. O modelo fica escrito no manifesto e a carga é negada se o modelo usado para consultar for outro, porque os vetores não seriam comparáveis.
 
@@ -1762,13 +1762,13 @@ O script usa uma memória nova a cada execução. Antes usava um arquivo fixo, e
 - **O índice é próprio.** O guia fala do «índice FAISS preexistente exigido pela atividade», mas o enunciado original não está neste workspace e nenhum índice do curso foi recebido. Foi construído um a partir do corpus fictício e salvo como artefato. Se o professor entregar um índice, basta substituir a pasta: o carregador e os testes são os mesmos.
 - O app só usa este índice se `PEDRO_TRUST_POLICY_INDEX=true` estiver no `.env`. Sem essa variável, avisa e usa o índice de demonstração em memória, com o mesmo conteúdo.
 - O corpus são três políticas fictícias; não há políticas reais.
-- **A resposta à pergunta de compatibilidade elétrica variou.** Nas três execuções em português deste script, a recuperação foi a mesma. O que variou foi se o resumo do modelo passou no NLI: só a citação literal na primeira, resumo do modelo com duas fontes na segunda, e de novo só a citação literal no rastro salvo. As duas primeiras só estão no histórico do git (commits `c92ba32` e `9adb27e`). O detalhe está em [citacoes_ancoradas.md](citacoes_ancoradas.md), seção 4.
+- **A resposta à pergunta de compatibilidade elétrica variou.** Nas quatro execuções em português deste script, a recuperação foi a mesma. O que variou foi o que passou na verificação: só a citação literal na primeira, resumo do modelo com duas fontes na segunda, só a citação literal na terceira (o resumo não passou no NLI) e, no rastro salvo, de novo o resumo do modelo com duas fontes, publicado na segunda proposta depois de a primeira ser rejeitada pela verificação exata. As três primeiras só estão no histórico do git (commits `c92ba32`, `9adb27e` e `734e94f`). Quatro execuções não medem uma taxa. O detalhe está em [citacoes_ancoradas.md](citacoes_ancoradas.md), seção 4.
 
 ## R23 — Diagnóstico e correção de uma falha real de recuperação
 
 > O aluno documentou uma falha real de recuperação a partir dos documentos fonte retornados e justificou a técnica de correção aplicada?
 
-**Resposta curta.** Sim. Uma pergunta coloquial não recuperava a regra correta, embora ela estivesse no corpus. A falha foi diagnosticada com os fragmentos devolvidos e corrigida reformulando a consulta. O antes e o depois foram medidos sobre o índice salvo em disco.
+**Resposta curta.** Sim. Uma pergunta coloquial não recuperava a regra correta, embora ela estivesse no corpus. A falha foi diagnosticada com os fragmentos devolvidos e corrigida reformulando a consulta. O antes e o depois foram medidos sobre o índice salvo em disco. No chat, a resposta cita sempre a regra literal com a fonte e, com o modelo, começa por uma frase verificada que responde à pergunta feita.
 
 ### 1. A falha
 
@@ -1806,6 +1806,38 @@ O fragmento esperado foi de fora do top-4 para a posição 1.
 
 No agente, a ferramenta `consultar_politicas` aplica essa reformulação às perguntas sobre dividir um envio e devolve os fragmentos de antes e de depois, de modo que o diagnóstico fica no rastro de cada resposta.
 
+### 4. No chat: responder à pergunta que foi feita
+
+**O problema.** No chat, «Posso receber em várias caixas?» e «quais produtos posso receber em varias caixas?» recebiam exatamente o mesmo texto. A rota de entrega parcial era uma regra fixa: copiava sempre as mesmas duas frases da política.
+
+**O que mudou.** A recuperação corrigida e a regra citada continuam fixas e verificadas. Com o modelo, entra uma frase que responde à pergunta. A rota é `resolver_entrega_parcial`, em [agent.py](../src/pedro/agent.py).
+
+| Parte da resposta | Quem escreve | Quando é publicada |
+|---|---|---|
+| «Regra citada: …» e a fonte `FIC-ENT-01-S05-C01` | O sistema: duas frases literais do fragmento recuperado | Sempre, depois da verificação exata da fonte e do NLI |
+| Uma ou duas frases que respondem à pergunta | O modelo, só com o fragmento recuperado (`criar_respondedor_politica`, em [resposta_direta.py](../src/pedro/resposta_direta.py); prompt `MODELO_RESPOSTA_POLITICA`: PTCF com três exemplos few-shot, saída Pydantic `RespostaPolitica`, temperatura 0) | Só se passa na porta `verificar_resposta_politica`: nenhum número fora da fonte e NLI *entailment* com o fragmento como premissa. Se não passa, publica-se só a regra literal, como antes |
+| Aviso «A política não responde exatamente ao que você perguntou. O que ela diz sobre envios divididos:» | O sistema | Só se o modelo julga que a política não responde (`responde_ao_perguntado` falso) **e** a pergunta pede um detalhe (quais, qual, quanto, quantos, quantas, onde, quem) |
+| Linha de recuperação | O sistema, com o que a ferramenta observou (`resumo_recuperacao_t24`) | Sempre |
+
+**Por que o aviso exige as duas condições.** Em perguntas de sim ou não, o julgamento do modelo variou entre execuções: para «Posso receber em várias caixas?» foi medido 3 de 6, mesmo com temperatura 0. Em perguntas de detalhe foi estável: 6 de 6. Essa medição foi feita durante o desenvolvimento e não tem rastro salvo. No rastro salvo, o modelo disse que a política não responde a «Posso receber em várias caixas?», e o aviso não apareceu porque a pergunta não pede um detalhe.
+
+**Quando não há falha a corrigir.** Antes, a rota recusava («Não consegui confirmar uma recuperação corrigida…») sempre que a pergunta original já recuperava a regra. Agora responde do mesmo jeito, e a linha de recuperação diz só o que foi observado: «Recuperação: a pergunta inicial já trazia `FIC-ENT-01-S05-C01` na posição N do top-4; com a reformulação ficou na posição M.» A linha «Recuperação T24: … fora do top-4 …» só aparece quando a falha e a correção foram observadas nesse turno.
+
+**Medição com o modelo real** (`gpt-4.1-mini`) e o NLI real local, em 2026-11-13T02:18:34 UTC: cinco perguntas diferentes na mesma conversa ([rastros/r23_resposta_llm.json](rastros/r23_resposta_llm.json); [scripts/demonstrar_r23.py](../scripts/demonstrar_r23.py)). Em cada turno a rota chamou `consultar_politicas` uma vez. Todas as respostas começam por «Política fictícia de demonstração.».
+
+| Pergunta | O modelo disse que a política responde? | O que foi publicado antes da fonte | Frase | Linha de recuperação |
+|---|---|---|---|---|
+| Posso receber em várias caixas? | Não | «Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio.» e a regra citada | Resposta verificada | «Recuperação T24»: fora do top-4; com a reformulação, posição 1 |
+| Quais produtos posso receber em várias caixas? | Não | O aviso «A política não responde exatamente…», a mesma frase e a regra citada | Resposta verificada | «Recuperação T24»: fora do top-4; com a reformulação, posição 1 |
+| Quanto custa receber o pedido em duas caixas? | Não | O aviso, «O frete é conservado como dado da oferta correspondente; não se duplica nem se reparte por intuição.» e a regra citada | Resposta verificada | «Recuperação»: já estava na posição 2; com a reformulação, posição 1 |
+| Sem um acordo, o pedido pode chegar em caixas separadas? | Sim | Só a regra literal (as duas frases) | Regra literal: a frase do modelo foi rejeitada (`NLI: neutral`) | «Recuperação»: já estava na posição 1; ficou na posição 1 |
+| O pedido pode chegar em vários pacotes de fornecedores diferentes? | Sim | «Uma entrega parcial só pode ser descrita se há um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio; caso contrário, a oferta não cobre a quantidade pedida.» e a regra citada | Resposta verificada | «Recuperação»: já estava na posição 1; ficou na posição 1 |
+| **Total** | | **5 primeiras linhas diferentes; as 5 citam a regra** | **4 respostas verificadas, 1 regra literal** | **2 com a recuperação corrigida** |
+
+A frase rejeitada foi: «Sem um acordo simulado explícito que identifica as unidades, o fornecedor e os prazos de cada envio, o assistente deve indicar que a oferta não cobre a quantidade pedida, ou seja, o pedido não pode chegar em caixas separadas.» O rastro registra só o rótulo `NLI: neutral`. O final da frase («ou seja, o pedido não pode chegar em caixas separadas») é uma conclusão que o fragmento não escreve com essas palavras; essa é uma leitura, não uma medição.
+
+Na interface, o passo aparece como «Respondi à sua pergunta com a política e verifiquei a frase» ou «Descartei a minha frase; cito a regra literal» (evento `resposta_politica` do rastro; ver R28).
+
 ### Evidência
 
 | Evidência | Localização | Tipo |
@@ -1813,6 +1845,8 @@ No agente, a ferramenta `consultar_politicas` aplica essa reformulação às per
 | Antes e depois sobre o **índice salvo em disco**, com fonte, identificador e distância L2 | [rastros/r23_t24_indice_existente.json](rastros/r23_t24_indice_existente.json); [scripts/diagnosticar_t24.py](../scripts/diagnosticar_t24.py) | Execução real local |
 | O mesmo contraste reproduzível sem credenciais | [notebooks/04_rag_text_to_query.ipynb](../notebooks/04_rag_text_to_query.ipynb) §«T24» e §«R22» | Execução real local |
 | A pergunta coloquial respondida pelo agente com a regra correta | [rastros/r22_indice_existente.json](rastros/r22_indice_existente.json) | Execução real remota |
+| Cinco perguntas diferentes no chat: frase verificada ou regra literal, regra citada e linha de recuperação | [rastros/r23_resposta_llm.json](rastros/r23_resposta_llm.json); [scripts/demonstrar_r23.py](../scripts/demonstrar_r23.py) | **Execução real remota** (`gpt-4.1-mini`), NLI real local |
+| A porta da frase sobre a política e a linha de recuperação sem falha | [tests/test_resposta_direta.py](../tests/test_resposta_direta.py) | Testes com duplo |
 | Diagnóstico ampliado e testes | [t24_recuperacao.md](t24_recuperacao.md); [tests/test_rag_diagnostics.py](../tests/test_rag_diagnostics.py) | Documentação e testes |
 
 ### Pendências e limitações
@@ -1820,6 +1854,11 @@ No agente, a ferramenta `consultar_politicas` aplica essa reformulação às per
 - A falha foi localizada em um corpus fictício próprio; é real no sentido de que foi observada, não fabricada alterando resultados.
 - A reformulação está escrita como regra para as perguntas de envio dividido. Não é uma reescrita geral feita pelo LLM.
 - É um caso; não foi medido quantas perguntas do corpus falham do mesmo jeito.
+- **A rota do chat continua sendo ativada só por vocabulário.** A pergunta precisa falar de caixas, pacotes, volumes, envios ou remessas; de vários, dois, separados, diferentes ou parcial; e de mandar, enviar, receber, chegar, pedido ou entrega. Outras formas de perguntar vão para o agente.
+- **A frase usa só o fragmento da regra** (`FIC-ENT-01-S05-C01`). Uma pergunta que o corpus responde em outro lugar recebe o aviso «A política não responde exatamente…».
+- **O julgamento «responde ao perguntado» é do modelo e não é verificado.** Por isso o aviso só aparece em perguntas de detalhe.
+- No rastro salvo, uma das cinco frases do modelo foi rejeitada pelo NLI (*neutral*) e foi publicada a regra literal. É uma única execução, com cinco perguntas.
+- Depois desta mudança só foram refeitas as demonstrações de R22, R23 (chat) e R28. As demais demonstrações com o modelo real e a avaliação no LangSmith não foram reexecutadas.
 
 ---
 
@@ -1865,9 +1904,9 @@ Um modelo de inferência em linguagem natural classifica a relação entre a evi
 | Entrega em 5 dias | Entrega em 10 dias | *contradiction* |
 | Entrega em 5 dias | A peça é azul | *neutral* (não diz nada) |
 
-Só *entailment* permite publicar. O modelo é `mDeBERTa-v3-base-mnli-xnli`, local, com a revisão fixada. É aplicado em quatro lugares: nas recomendações (a evidência sustenta o estoque e o prazo do vencedor?), nas políticas (o fragmento sustenta o resumo?), no **conselho de preço** (os fatos sobre os preços sustentam o que o modelo aconselha?) e na **resposta direta** a uma pergunta sobre a comparação (os fatos da comparação sustentam a frase do modelo?).
+Só *entailment* permite publicar. O modelo é `mDeBERTa-v3-base-mnli-xnli`, local, com a revisão fixada. É aplicado em cinco lugares: nas recomendações (a evidência sustenta o estoque e o prazo do vencedor?), nas políticas (o fragmento sustenta o resumo?), no **conselho de preço** (os fatos sobre os preços sustentam o que o modelo aconselha?), na **resposta direta** a uma pergunta sobre a comparação (os fatos da comparação sustentam a frase do modelo?) e na **resposta sobre a entrega parcial** (o fragmento recuperado sustenta a frase do modelo?; ver R23, seção 4).
 
-Ele ajuda mais nos três últimos, porque ali se verifica texto livre. No conselho de preço isso foi medido. Com o primeiro prompt (execução da versão anterior, em espanhol), o NLI rejeitou 10 de 15 conselhos, quase todos por acrescentar avaliações que os fatos não diziam. Com o prompt ajustado, na execução em português, o NLI não rejeitou nenhum dos 15; um conselho foi barrado antes, pela checagem de números (ver «O aviso de preço»).
+Ele ajuda mais nos quatro últimos, porque ali se verifica texto livre. No conselho de preço isso foi medido. Com o primeiro prompt (execução da versão anterior, em espanhol), o NLI rejeitou 10 de 15 conselhos, quase todos por acrescentar avaliações que os fatos não diziam. Com o prompt ajustado, na execução em português, o NLI não rejeitou nenhum dos 15; um conselho foi barrado antes, pela checagem de números (ver «O aviso de preço»).
 
 ### 4. Ancoragem: o modelo decide, o sistema põe os dados
 
@@ -1888,7 +1927,7 @@ A ancoragem não afrouxa a verificação: só evita rejeitar o que já era verda
 ### 5. O que acontece quando falha
 
 1. **Uma correção.** O erro volta ao modelo e ele propõe outra resposta.
-2. **Degradação.** Nas políticas, se as citações são válidas mas o resumo não passa no NLI, publicam-se só as citações literais. No conselho de preço e na resposta direta, se a frase do modelo não passa, publica-se o texto fixo calculado pelo sistema (o aviso fixo ou o `resumo_fixo`).
+2. **Degradação.** Nas políticas, se as citações são válidas mas o resumo não passa no NLI, publicam-se só as citações literais. No conselho de preço e na resposta direta, se a frase do modelo não passa, publica-se o texto fixo calculado pelo sistema (o aviso fixo ou o `resumo_fixo`). Na resposta sobre a entrega parcial, se a frase do modelo não passa (números fora da fonte ou NLI sem *entailment*), publica-se só a regra literal com a sua fonte.
 3. **Não se publica.** Se nada passa, o usuário lê «Não posso confirmar…». Nunca uma resposta sem verificar.
 
 ### 6. Resultados medidos
@@ -1902,6 +1941,7 @@ A ancoragem não afrouxa a verificação: só evita rejeitar o que já era verda
 | Uma política cujo resumo não passou no NLI foi corrigida e a segunda proposta passou | [citacoes_ancoradas.md](citacoes_ancoradas.md) |
 | Com o primeiro prompt, o NLI rejeitou 10 de 15 conselhos de preço com avaliações sem respaldo (versão anterior, em espanhol). Com o prompt ajustado, em português: 14 de 15 publicados; o NLI não rejeitou nenhum e 1 caiu na checagem de números | [rastros/precios_consejo_llm_antes.json](rastros/precios_consejo_llm_antes.json) e [rastros/precos_conselho_llm.json](rastros/precos_conselho_llm.json) |
 | Resposta direta a seis perguntas sobre uma comparação: as 6 frases do modelo publicadas depois da checagem de números, de fornecedor e do NLI. Na execução anterior do mesmo script (só no histórico do git, commit 4e0f6db) foram 5, e 1 foi rejeitada pelo NLI (*contradiction*, sobre uma frase verdadeira), com o resumo fixo publicado no lugar | [rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json) |
+| Resposta a cinco perguntas sobre a entrega parcial: 4 frases do modelo publicadas depois da checagem de números e do NLI; 1 rejeitada pelo NLI (*neutral*), com a regra literal publicada no lugar. As 5 respostas citam a regra literal e a fonte | [rastros/r23_resposta_llm.json](rastros/r23_resposta_llm.json) |
 
 ### Evidência
 
@@ -1912,13 +1952,14 @@ A ancoragem não afrouxa a verificação: só evita rejeitar o que já era verda
 | Ancoragem de citações e de CEP, antes e depois | [citacoes_ancoradas.md](citacoes_ancoradas.md); [rastros/r10_viacep_llm_antes.json](rastros/r10_viacep_llm_antes.json) (versão anterior, em espanhol) | Execução real remota |
 | Três pares NLI com suas três classes | [evidencias.md](evidencias.md), linha R5.3 | Execução real local |
 | A porta da resposta direta: números, fornecedor, NLI e resumo fixo | [rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json); [tests/test_resposta_direta.py](../tests/test_resposta_direta.py) | **Execução real remota** (`gpt-4.1-mini`), NLI real local; testes automáticos |
+| A porta da resposta sobre a entrega parcial: números, NLI e regra literal | [rastros/r23_resposta_llm.json](rastros/r23_resposta_llm.json); [tests/test_resposta_direta.py](../tests/test_resposta_direta.py) | **Execução real remota** (`gpt-4.1-mini`), NLI real local; testes automáticos |
 | Cada checagem exata, as três classes NLI, as ancoragens e a degradação | [tests/test_core.py](../tests/test_core.py); [tests/test_memory_nli.py](../tests/test_memory_nli.py); [tests/test_policy_cep.py](../tests/test_policy_cep.py); [tests/test_citacoes_ancoradas.py](../tests/test_citacoes_ancoradas.py) | Testes automáticos |
 
 ### Pendências e limitações
 
 - **Verifica contra a regra de negócio, não a regra.** Enquanto a comparação ignorou o pedido mínimo, a verificação aprovou recomendações que um fornecedor não aceitaria.
-- **Verifica que a resposta seja verdadeira, não que seja pertinente.** Em um experimento com memória contaminada, uma pergunta de CEP recebeu uma resposta de compra verificada, mas fora do assunto.
-- O NLI não é exato. Na execução anterior do conselho de preço, em espanhol, ele rejeitou como *contradiction* um conselho que era verdadeiro (esse rastro foi substituído pelo novo; só está no histórico do git). Na execução em português o NLI não rejeitou nenhum conselho: o mesmo caso foi barrado antes, pela checagem de números, porque o modelo escreveu «mais de 200 %» e os fatos dizem 203 % e 233 %. Falha para o lado seguro, mas falha. Na resposta direta, o NLI aceitou as seis frases da execução atual ([rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json)); na execução anterior do mesmo script, que só está no histórico do git (commit 4e0f6db), ele rejeitou como *contradiction* uma de seis frases, e ela era verdadeira. Sua exatidão geral não foi medida.
+- **Verifica que a resposta seja verdadeira, não que seja pertinente.** Em um experimento com memória contaminada, uma pergunta de CEP recebeu uma resposta de compra verificada, mas fora do assunto. Na rota de entrega parcial, a porta confere se a frase é sustentada pelo fragmento; se a política responde ao que foi perguntado é um julgamento do modelo, que não é verificado.
+- O NLI não é exato. Na execução anterior do conselho de preço, em espanhol, ele rejeitou como *contradiction* um conselho que era verdadeiro (esse rastro foi substituído pelo novo; só está no histórico do git). Na execução em português o NLI não rejeitou nenhum conselho: o mesmo caso foi barrado antes, pela checagem de números, porque o modelo escreveu «mais de 200 %» e os fatos dizem 203 % e 233 %. Falha para o lado seguro, mas falha. Na resposta direta, o NLI aceitou as seis frases da execução atual ([rastros/pergunta_direta_llm.json](rastros/pergunta_direta_llm.json)); na execução anterior do mesmo script, que só está no histórico do git (commit 4e0f6db), ele rejeitou como *contradiction* uma de seis frases, e ela era verdadeira. Na resposta sobre a entrega parcial, rejeitou como *neutral* uma de cinco frases ([rastros/r23_resposta_llm.json](rastros/r23_resposta_llm.json)), e foi publicada a regra literal. Sua exatidão geral não foi medida.
 - O modelo NLI aceita 512 tokens: com várias citações longas a premissa é truncada.
 - O limiar de 80 % para ancorar citações foi fixado por critério, sem calibração.
 
@@ -2151,7 +2192,7 @@ O app foi executado com `AppTest`, a ferramenta de testes do Streamlit: roda `ap
 | Chat: «Preciso de 5 unidades de PEC-01-0001 com prazo máximo de 7 dias» | Cartões: CentroPeças, R$ 7.279,83, 2 dias, Nacional. 4 passos do agente |
 | Chat: «Agora que sejam 6 e mantenha o prazo» | Cartões: CentroPeças, R$ 8.718,75, 2 dias, Nacional. 4 passos |
 | Chat: «A que cidade corresponde o CEP 01001000?» | CEP 01001000: São Paulo/SP (ViaCEP, modo real). 4 passos: não é uma compra, consultei o ViaCEP, peguei a cidade da resposta do ViaCEP, verifiquei |
-| Chat: «Posso receber em várias caixas?» | Regra de entrega parcial, com sua fonte (`FIC-ENT-01-S05-C01`). 1 passo: busquei nas políticas |
+| Chat: «Posso receber em várias caixas?» | Uma frase do modelo verificada e a regra de entrega parcial citada, com sua fonte (`FIC-ENT-01-S05-C01`). 2 passos: busquei nas políticas; respondi à sua pergunta com a política e verifiquei a frase |
 | Botão «Novo chat» | Sessão diferente e tela vazia |
 | Reabrir a conversa anterior | Voltam suas 8 mensagens e os 8 cartões são redesenhados |
 

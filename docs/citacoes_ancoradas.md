@@ -55,31 +55,37 @@ A verificação exata e o NLI não foram afrouxados: continuam sendo a porta. A 
 | Resposta publicada | Resumo da política com as fontes `FIC-DEV-01-S05-C01` e `FIC-GAR-01-S05-C01` |
 | Rastro | [rastros/r02_planificacion_llm_sin_plan.json](rastros/r02_planificacion_llm_sin_plan.json) (versão anterior, em espanhol) |
 
-**Versão atual, em português** (2026-11-11, uma execução de cada). Nenhuma citação precisou ser reancorada nestas execuções: o modelo copiou os trechos de forma literal.
+**Versão atual, em português** (2026-11-11, uma execução de cada; a última linha é da reexecução de 2026-11-13T02:18:59 UTC). Nas execuções de 2026-11-11 nenhuma citação precisou ser reancorada: o modelo copiou os trechos de forma literal. Na reexecução da última linha uma citação foi reancorada.
 
 | Pergunta | Citações | Resposta publicada | Rastro |
 |---|---|---|---|
 | «O que a política de devoluções diz sobre peças danificadas?» | 2 `literal` (cobertura 1,0), uma só proposta, sem erros de verificação | Resumo da política com as fontes `FIC-DEV-01-S05-C01` e `FIC-DEV-01-S06-C01` | [rastros/r02_planejamento_llm.json](rastros/r02_planejamento_llm.json) |
 | A mesma pergunta dentro de uma mensagem com três pedidos | 1 `literal` (cobertura 1,0) | Resumo com a fonte `FIC-DEV-01-S05-C01` | [rastros/r02_planejamento_llm.json](rastros/r02_planejamento_llm.json) |
 | «Como se verifica a compatibilidade elétrica antes de instalar uma peça?» (índice em memória) | Uma proposta, sem erros de verificação | Resumo com a fonte `FIC-DEV-01-S06-C01` | [rastros/fase3_memoria_llm.json](rastros/fase3_memoria_llm.json) |
-| A mesma pergunta (índice salvo em disco) | Duas chamadas a `consultar_politicas`. Duas citações registradas, as duas de `FIC-DEV-01-S06-C01` e `literal` (cobertura 1,0). Duas verificações, estado `politica`, as duas com o erro `NLI sem entailment` | Degradação extrativa: só a citação literal de `FIC-DEV-01-S06-C01`, sem o resumo do modelo | [rastros/r22_indice_existente.json](rastros/r22_indice_existente.json) |
+| A mesma pergunta (índice salvo em disco) | Duas chamadas a `consultar_politicas`. Quatro citações registradas, nesta ordem: `FIC-DEV-01-S06-C01` `literal` (cobertura 1,0), `FIC-DEV-01-S02-C01` `rejeitada` (0,76), `FIC-DEV-01-S06-C01` `literal` (1,0) e `FIC-DEV-01-S02-C01` `reancorada` (1,0). Duas verificações, estado `politica`: a primeira com os erros `fragmento não corresponde: FIC-DEV-01-S02-C01` e `fonte não recuperada: FIC-DEV-01-S02-C01`; a segunda sem erros | Resumo do modelo com as fontes `FIC-DEV-01-S06-C01` e `FIC-DEV-01-S02-C01` | [rastros/r22_indice_existente.json](rastros/r22_indice_existente.json) |
 
-Resposta publicada na última linha (execução de 2026-11-12T02:00:54 UTC; citação literal, sem resumo do modelo):
+Resposta publicada na última linha (execução de 2026-11-13T02:18:59 UTC; resumo do modelo, publicado na segunda proposta):
+
+> Política fictícia de demonstração. Antes de instalar uma peça, deve-se conferir a marca, modelo, voltagem e dimensões com a ficha técnica, para assegurar a compatibilidade elétrica. Uma peça incompatível, ainda sem instalar, pode ser devolvida dentro de 30 dias se estiver em condições originais.
+> Fontes: FIC-DEV-01-S06-C01, FIC-DEV-01-S02-C01
+
+Neste rastro aparece o caminho de correção: a primeira proposta foi rejeitada pela verificação exata, por uma citação de `FIC-DEV-01-S02-C01` que não correspondia ao fragmento (cobertura 0,76, abaixo do limiar de 80 %); na segunda, essa citação foi reancorada (cobertura 1,0) e a resposta passou sem erros. O rastro registra as verificações de cada turno (tentativa, estado e erros).
+
+Na execução anterior (2026-11-12T02:00:54 UTC, só no histórico do git, commit `734e94f`) apareceu a degradação extrativa: as citações eram válidas, mas o resumo do modelo não obteve *entailment* no NLI nem na primeira proposta nem na correção. Foi publicado:
 
 > Política fictícia de demonstração. Não consegui verificar um resumo próprio, então cito o texto literal da fonte:
 > - «Antes de selecionar uma peça, o usuário deve conferir marca, modelo, voltagem e dimensões com a ficha técnica fictícia.» [FIC-DEV-01-S06-C01]
 
-A degradação extrativa aparece neste rastro: as citações eram válidas, mas o resumo do modelo não obteve *entailment* no NLI nem na primeira proposta nem na correção. O rastro agora registra também as verificações de cada turno (tentativa, estado e erros).
-
-O resultado desta pergunta variou nas três execuções em português do mesmo script. A recuperação foi a mesma nas três; o que mudou foi se o resumo do modelo passou no NLI.
+O resultado desta pergunta variou nas quatro execuções em português do mesmo script. A recuperação foi a mesma nas quatro; o que mudou foi o que passou na verificação.
 
 | Execução (UTC) | Citações registradas | Publicado | Onde está |
 |---|---|---|---|
 | 2026-11-11T17:20:51 | 2 de `FIC-DEV-01-S06-C01` `literal` (1,0) e 1 de `FIC-DEV-01-S02-C01` `rejeitada` (cobertura 0,474) | Só a citação literal de `FIC-DEV-01-S06-C01` (duas frases) | Histórico do git, commit `c92ba32` |
 | 2026-11-11T17:47:57 | 4: `FIC-DEV-01-S06-C01` `literal` (1,0), `FIC-DEV-01-S02-C01` `rejeitada` (0,71), `FIC-DEV-01-S06-C01` `literal` (1,0) e `FIC-DEV-01-S02-C01` `literal` (1,0) | Resumo do modelo com as fontes `FIC-DEV-01-S06-C01` e `FIC-DEV-01-S02-C01` | Histórico do git, commit `9adb27e` |
-| 2026-11-12T02:00:54 | 2 de `FIC-DEV-01-S06-C01` `literal` (1,0) | Só a citação literal de `FIC-DEV-01-S06-C01` (uma frase) | Rastro salvo hoje |
+| 2026-11-12T02:00:54 | 2 de `FIC-DEV-01-S06-C01` `literal` (1,0); duas verificações com o erro `NLI sem entailment` | Só a citação literal de `FIC-DEV-01-S06-C01` (uma frase) | Histórico do git, commit `734e94f` |
+| 2026-11-13T02:18:59 | 4: `FIC-DEV-01-S06-C01` `literal` (1,0), `FIC-DEV-01-S02-C01` `rejeitada` (0,76), `FIC-DEV-01-S06-C01` `literal` (1,0) e `FIC-DEV-01-S02-C01` `reancorada` (1,0); primeira verificação com dois erros sobre `FIC-DEV-01-S02-C01`, segunda sem erros | Resumo do modelo com as fontes `FIC-DEV-01-S06-C01` e `FIC-DEV-01-S02-C01` | Rastro salvo hoje |
 
-As duas primeiras execuções não registravam as verificações, e usaram um arquivo de memória fixo, que acumulava lembranças entre execuções do script. A terceira usou memória nova.
+As duas primeiras execuções não registravam as verificações, e usaram um arquivo de memória fixo, que acumulava lembranças entre execuções do script. A terceira e a quarta usaram memória nova. A quarta foi feita depois da mudança na rota de entrega parcial (R23), que não toca nesta pergunta: ela passa pelo agente, não por essa rota.
 
 ## 5. Evidência
 
@@ -92,7 +98,7 @@ As duas primeiras execuções não registravam as verificações, e usaram um ar
 ## 6. Limitações
 
 - Uma execução antes e outra depois não medem uma taxa de sucesso; a medição corresponde a R29.
-- A degradação extrativa está testada com duplos. Com o modelo real foi observada em duas das três execuções de R22 em português: a primeira (só no histórico do git, commit `c92ba32`) e a do rastro salvo hoje. Na segunda (commit `9adb27e`) o resumo do modelo foi publicado. Ou seja, a mesma pergunta, com a mesma recuperação, não dá sempre o mesmo tipo de resposta: depende de o resumo do modelo passar no NLI. Três execuções não medem uma taxa. O estado `reancorada` só foi observado com o modelo real na versão anterior, em espanhol; nas execuções em português todas as citações aceitas foram `literal`.
+- A degradação extrativa está testada com duplos. Com o modelo real foi observada em duas das quatro execuções de R22 em português: a primeira (commit `c92ba32`) e a terceira (commit `734e94f`), as duas só no histórico do git. Na segunda (commit `9adb27e`) e na do rastro salvo hoje o resumo do modelo foi publicado. Ou seja, a mesma pergunta, com a mesma recuperação, não dá sempre o mesmo tipo de resposta: depende de as citações e o resumo do modelo passarem na verificação. Quatro execuções não medem uma taxa. O estado `reancorada` foi observado com o modelo real na versão anterior, em espanhol, e uma vez em português, no rastro salvo hoje (uma citação de `FIC-DEV-01-S02-C01`); nas outras execuções em português todas as citações aceitas foram `literal`.
 - O limiar de 80 % foi fixado por critério, sem calibração com dados.
 - O modelo NLI aceita 512 tokens: com várias citações longas a premissa é truncada (observou-se um aviso de 539 tokens na execução em português de R02; na versão anterior, em espanhol, de 652 tokens).
 - Quando este diagnóstico foi escrito, uma solicitação mista em um só turno não era publicada; isso foi resolvido depois com o planejador de turno (R02).

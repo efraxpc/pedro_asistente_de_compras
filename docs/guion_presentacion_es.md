@@ -156,7 +156,7 @@ El curso tiene 29 rúbricas, agrupadas en cinco fases. Cada fase añade algo a l
 | **6** | Herramientas del agente |
 | **12** | Mensajes que el modelo ve a la vez |
 | **1** | Corrección permitida si la revisión falla |
-| **156** | Pruebas automáticas |
+| **158** | Pruebas automáticas |
 | **5** | Notebooks, uno por fase |
 | **30** | Casos del examen en LangSmith |
 | **14 de 14** | Ganador correcto, y también importe correcto |
@@ -189,7 +189,7 @@ Construí el mismo agente con LangChain y con LangGraph. Respondieron igual, per
 Buscar en las políticas de la tienda por significado y responder citando la fuente.
 
 **¿Cómo sabes que funciona?**
-Por tres cosas: 156 pruebas automáticas, demostraciones guardadas con el modelo real y el examen de 30 casos.
+Por tres cosas: 158 pruebas automáticas, demostraciones guardadas con el modelo real y el examen de 30 casos.
 
 **¿Qué memoria tiene?**
 Corta: el pedido en curso y los últimos 12 mensajes. Larga: tus preferencias y recuerdos de conversaciones pasadas.

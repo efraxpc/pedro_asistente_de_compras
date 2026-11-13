@@ -67,7 +67,7 @@
 
 **Na tela:** a aba do LangSmith com o experimento `pedro-infnet-fluxo-gpt-4.1-mini-portugues-235aa9f1`. Depois o arquivo docs/relatorio.pdf.
 
-**Dizer:** «Avaliei com casos porque ver o agente funcionar em alguns exemplos não prova que ele acerta. O agente foi avaliado no LangSmith com trinta casos. O vencedor ficou correto em 14 de 14 e o valor em 14 de 14. Em nove experimentos, nenhuma recomendação contrária à regra foi publicada. O projeto tem 156 testes automáticos e cinco notebooks, um por fase. As 29 rubricas estão respondidas no documento respostas_rubricas, com a evidência de cada uma. Obrigado.»
+**Dizer:** «Avaliei com casos porque ver o agente funcionar em alguns exemplos não prova que ele acerta. O agente foi avaliado no LangSmith com trinta casos. O vencedor ficou correto em 14 de 14 e o valor em 14 de 14. Em nove experimentos, nenhuma recomendação contrária à regra foi publicada. O projeto tem 158 testes automáticos e cinco notebooks, um por fase. As 29 rubricas estão respondidas no documento respostas_rubricas, com a evidência de cada uma. Obrigado.»
 
 ## Depois de gravar
 

@@ -38,7 +38,40 @@ A reformulação é feita pela regra `reescrever_consulta_entrega`, em [policy_d
 
 Como teste separado, aplicar `tema=entrega` à pergunta inicial coloca o fragmento esperado na posição 3 (L2 = 14,734); esse filtro **não** faz parte da comparação antes/depois. O [notebook 04](../notebooks/04_rag_text_to_query.ipynb) conserva a execução e `scripts/diagnosticar_t24.py --saida storage/evidencias/t24_demo.json` reproduz o relatório JSON do índice em memória. No chat do Streamlit, `/t24` mostra o mesmo contraste sem chamar um LLM.
 
-Para testar o **fluxo normal**, faça a pergunta inicial no chat. A rota de entrega do fluxo chama `consultar_politicas` de forma determinística para perguntas coloquiais sobre dividir pacotes e reformula a intenção como entrega parcial, sem acrescentar a regra. A resposta extrai duas frases do fragmento recuperado, verifica a procedência e usa o NLI local antes de publicá-las. O resumo de recuperação é gerado a partir dos resultados da ferramenta. Isso foi observado uma vez no fluxo com NLI real e índice salvo em disco ([rastros/r22_indice_existente.json](rastros/r22_indice_existente.json)) e uma vez no Streamlit ([rastros/r28_streamlit.json](rastros/r28_streamlit.json)). O teste `tests/test_policy_demo.py` repete a pergunta duas vezes na mesma sessão, com um rascunho de compra pendente e NLI de duplo de teste, e obtém a mesma resposta. A rota cobre essa intenção do corpus sintético; outras formulações precisam de testes próprios.
+Para testar o **fluxo normal**, faça a pergunta inicial no chat. A rota de entrega do fluxo chama `consultar_politicas` de forma determinística para perguntas coloquiais sobre dividir pacotes e reformula a intenção como entrega parcial, sem acrescentar a regra. A resposta extrai duas frases do fragmento recuperado, verifica a procedência e usa o NLI local antes de publicá-las. Com o modelo, a resposta começa por uma frase verificada que responde à pergunta feita (seção seguinte). O resumo de recuperação é gerado a partir dos resultados da ferramenta. Isso foi observado no fluxo com NLI real e índice salvo em disco ([rastros/r22_indice_existente.json](rastros/r22_indice_existente.json)), no Streamlit ([rastros/r28_streamlit.json](rastros/r28_streamlit.json)) e em cinco perguntas diferentes com o índice em memória ([rastros/r23_resposta_llm.json](rastros/r23_resposta_llm.json)). O teste `tests/test_policy_demo.py` repete a pergunta duas vezes na mesma sessão, com um rascunho de compra pendente, NLI de duplo de teste e um modelo de duplo que não redige nada, e obtém a mesma resposta (a regra literal). A rota cobre essa intenção do corpus sintético; outras formulações precisam de testes próprios.
+
+## O que o chat publica para perguntas diferentes
+
+**O problema.** «Posso receber em várias caixas?» e «quais produtos posso receber em varias caixas?» recebiam exatamente o mesmo texto: a rota copiava sempre as mesmas duas frases da política.
+
+**Agora.** A recuperação com a reformulação e a regra citada continuam fixas e verificadas. O que muda de uma pergunta para outra é a primeira frase.
+
+| Parte | Regra |
+|---|---|
+| Frase que responde à pergunta | O modelo a redige só com o fragmento recuperado (prompt `MODELO_RESPOSTA_POLITICA`, saída Pydantic, temperatura 0). Só é publicada se não traz números fora da fonte e se o NLI devolve *entailment* com o fragmento como premissa |
+| «Regra citada: …» e a fonte | As duas frases literais do fragmento. São publicadas sempre. Se a frase do modelo não passa, ou se não há modelo, a resposta é só a regra literal, como antes |
+| Aviso «A política não responde exatamente ao que você perguntou. O que ela diz sobre envios divididos:» | Só quando o modelo julga que a política não responde **e** a pergunta pede um detalhe (quais, qual, quanto, quantos, quantas, onde, quem). Em perguntas de sim ou não o julgamento do modelo variou entre execuções (3 de 6 para «Posso receber em várias caixas?», com temperatura 0; medição sem rastro salvo); em perguntas de detalhe foi estável (6 de 6) |
+
+**Quando não há falha a corrigir.** Algumas formulações já recuperam a regra sem a reformulação. Antes, a rota recusava nesses casos («Não consegui confirmar uma recuperação corrigida para esta pergunta.»). Agora responde, e a linha de recuperação diz só o que foi observado, sem afirmar uma correção:
+
+| Caso observado pela ferramenta | Linha publicada |
+|---|---|
+| A pergunta inicial deixou a regra fora do top-4 e a reformulação a recuperou | «Recuperação T24: a pergunta inicial deixou `FIC-ENT-01-S05-C01` fora do top-4; a reformulação o colocou na posição 1 com o mesmo índice e top-k.» |
+| A pergunta inicial já trazia a regra | «Recuperação: a pergunta inicial já trazia `FIC-ENT-01-S05-C01` na posição 2 do top-4; com a reformulação ficou na posição 1.» |
+
+**Execução com o modelo real** (`gpt-4.1-mini`, NLI real local, índice de demonstração em memória; 2026-11-13T02:18:34 UTC; `uv run python scripts/demonstrar_r23.py`; [rastros/r23_resposta_llm.json](rastros/r23_resposta_llm.json)):
+
+| Pergunta | Primeira frase publicada | Recuperação observada |
+|---|---|---|
+| Posso receber em várias caixas? | Frase do modelo verificada | Fora do top-4 → posição 1 |
+| Quais produtos posso receber em várias caixas? | Aviso «A política não responde exatamente…» e a frase do modelo verificada | Fora do top-4 → posição 1 |
+| Quanto custa receber o pedido em duas caixas? | Aviso e a frase do modelo verificada (sobre o frete) | Posição 2 → posição 1 |
+| Sem um acordo, o pedido pode chegar em caixas separadas? | Regra literal: a frase do modelo foi rejeitada (`NLI: neutral`) | Posição 1 → posição 1 |
+| O pedido pode chegar em vários pacotes de fornecedores diferentes? | Frase do modelo verificada | Posição 1 → posição 1 |
+
+Resumo do rastro: 5 perguntas, 4 respostas verificadas, 1 regra literal, 5 citam a regra, 2 mostram a recuperação corrigida, 5 primeiras linhas diferentes. As frases completas estão em [respostas_rubricas.md](respostas_rubricas.md), R23, seção 4.
+
+**Limites.** A rota continua sendo ativada só por vocabulário (caixas ou pacotes, vários ou parcial, e um verbo de envio). A frase usa só o fragmento `FIC-ENT-01-S05-C01`: o que o corpus responde em outro lugar recebe o aviso. O julgamento «responde ao perguntado» é do modelo e não é verificado. É uma única execução de cinco perguntas.
 
 ## Limite da evidência
 

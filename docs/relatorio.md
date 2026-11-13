@@ -1,6 +1,6 @@
 # Relatório técnico — Pedro, assistente de compras
 
-**Curso:** Agentes Cognitivos com LangChain (Infnet). **Atualizado:** 2026-11-11. **Modelo:** gpt-4.1-mini. **Testes automáticos:** 156, todos passando.
+**Curso:** Agentes Cognitivos com LangChain (Infnet). **Atualizado:** 2026-11-12. **Modelo:** gpt-4.1-mini. **Testes automáticos:** 158, todos passando.
 
 Este relatório explica como o projeto responde às 29 rubricas do guia integrado (R01–R29). Cada rubrica tem aqui um resumo; a resposta completa, com suas tabelas e seus limites, está em docs/respostas_rubricas.md. As execuções com o modelo real estão salvas em docs/rastros/ e o registro do que foi executado, em docs/evidencias.md.
 
@@ -81,7 +81,7 @@ A interface é Streamlit (app.py) e tem só o chat; toda a lógica fica em src/p
 |---|---|---|
 | R01 | Anatomia, tipo e maturidade do agente | Agente híbrido; maturidade nível 4 demonstrada |
 | R02 | Planejamento e memória aumentada | Cinco passos observáveis e planejador de turno |
-| R03 | Modelos de prompt reutilizáveis | Dez ChatPromptTemplate com nome próprio |
+| R03 | Modelos de prompt reutilizáveis | Onze ChatPromptTemplate com nome próprio |
 | R04 | Saída estruturada em JSON | Laboratório de oito saídas quebradas |
 | R05 | invoke, batch, stream e @chain | Os três medidos com o modelo real |
 | R06 | LCEL e justificativa | Os dois estilos comparados pelo que o rastro deixa ver |
@@ -96,7 +96,7 @@ Uma solicitação é dividida em cinco passos com saída observável: extrair, c
 
 ### R03 — Modelos de prompt reutilizáveis
 
-Os modelos de prompt estão reunidos em src/pedro/prompts.py, todos ChatPromptTemplate: extração (em três variantes), reparo, text-to-SQL, planejador, intérprete, conselho de preço, resposta direta e agente. São dez. O de extração é reutilizado na cadeia declarativa e na imperativa, e foi executado com o modelo real sobre três solicitações do domínio. Escolheu-se ChatPromptTemplate porque separa as regras (mensagem de sistema) do que o usuário escreve (mensagem humana).
+Os modelos de prompt estão reunidos em src/pedro/prompts.py, todos ChatPromptTemplate: extração (em três variantes), reparo, text-to-SQL, planejador, intérprete, conselho de preço, resposta direta, resposta sobre a política de entrega parcial e agente. São onze. O de extração é reutilizado na cadeia declarativa e na imperativa, e foi executado com o modelo real sobre três solicitações do domínio. Escolheu-se ChatPromptTemplate porque separa as regras (mensagem de sistema) do que o usuário escreve (mensagem humana).
 
 ### R04 — Saída estruturada em JSON
 
@@ -212,6 +212,8 @@ A pergunta «Posso receber em várias caixas?» não recuperava a regra correta,
 
 Esta pergunta foi medida de novo na migração. A tradução literal da pergunta espanhola, «Pode mandar em várias caixas?», deixou de falhar no corpus em português: o fragmento esperado ficou na posição 4 de 4. Foram medidas oito formulações naturais e escolhida uma que falha de verdade.
 
+No chat, perguntas diferentes sobre receber em várias caixas recebiam exatamente o mesmo texto, porque a rota copiava sempre as mesmas duas frases da política. Agora a regra literal e a sua fonte continuam fixas e são publicadas sempre, e o modelo redige uma ou duas frases que respondem à pergunta feita, só com o fragmento recuperado. A frase só é publicada se não traz números fora da fonte e se o NLI a sustenta; se não, fica só a regra literal. Se o modelo julga que a política não responde e a pergunta pede um detalhe («quais», «quanto»), a resposta avisa: «A política não responde exatamente ao que você perguntou.» A rota também deixou de recusar quando a pergunta original já recuperava a regra: responde e diz a posição observada, sem afirmar uma correção. Com o modelo real e cinco perguntas diferentes: 4 frases verificadas, 1 rejeitada pelo NLI (publicou-se a regra literal), as 5 respostas citam a regra, 2 mostram a recuperação corrigida e as 5 primeiras linhas são diferentes (docs/rastros/r23_resposta_llm.json). Limites: a rota é ativada só por vocabulário, a frase usa só o fragmento da regra e o julgamento «responde ao perguntado» é do modelo e não é verificado.
+
 ## 9. Fase 5 — Agente final verificado e avaliado (R24–R29)
 
 | Rubrica | O que foi feito | Resultado principal |
@@ -225,7 +227,7 @@ Esta pergunta foi medida de novo na migração. A tradução literal da pergunta
 
 ### R24 — Verificação
 
-Nenhuma resposta é mostrada sem passar por duas portas dentro do fluxo. A verificação exata recalcula a resposta com os dados do cenário: total, estoque, pedido mínimo, orçamento, prazo, vencedor, identificadores e procedência. O modelo NLI classifica a relação entre evidência e afirmação em três classes, e só entailment permite publicar. Um passo anterior de ancoragem preenche com dados das ferramentas as citações, o CEP, as preferências, os números da comparação e as tabelas do catálogo. Se a verificação falha há uma correção; se falha de novo, não se publica. O conselho de preço e a resposta direta a uma pergunta sobre a comparação passam por uma porta própria (números exatos, fornecedor e NLI); se falham, publica-se o texto fixo do sistema. Limite importante: a verificação confere contra a regra de negócio, não confere a regra; enquanto a comparação ignorou o pedido mínimo, aprovou recomendações que um fornecedor não aceitaria.
+Nenhuma resposta é mostrada sem passar por duas portas dentro do fluxo. A verificação exata recalcula a resposta com os dados do cenário: total, estoque, pedido mínimo, orçamento, prazo, vencedor, identificadores e procedência. O modelo NLI classifica a relação entre evidência e afirmação em três classes, e só entailment permite publicar. Um passo anterior de ancoragem preenche com dados das ferramentas as citações, o CEP, as preferências, os números da comparação e as tabelas do catálogo. Se a verificação falha há uma correção; se falha de novo, não se publica. O conselho de preço e a resposta direta a uma pergunta sobre a comparação passam por uma porta própria (números exatos, fornecedor e NLI); se falham, publica-se o texto fixo do sistema. A frase que responde a uma pergunta sobre a entrega parcial passa por uma porta parecida (números e NLI contra o fragmento recuperado); se falha, publica-se só a regra literal. Limite importante: a verificação confere contra a regra de negócio, não confere a regra; enquanto a comparação ignorou o pedido mínimo, aprovou recomendações que um fornecedor não aceitaria.
 
 ### R25 e R26 — Agente único e executor
 
@@ -285,11 +287,11 @@ Estas falhas só apareceram ao executar com o modelo real. Os testes automático
 - **Pedro não conversa.** Não responde «o que você lembra de mim?» nem sabe responder a um comentário sem pedido.
 - **A verificação confere se a resposta é verdadeira, não se ela vem ao caso**, e confere contra a regra de negócio, não confere a regra.
 - **O aviso de preço dispara muito** (em quatro de cada dez recomendações); os seus limiares não estão calibrados.
-- **O modelo NLI não é exato.** Na versão em espanhol rejeitou um conselho que era verdadeiro; falha para o lado seguro. Na execução em português o mesmo caso foi barrado antes, pela verificação exata dos números. O NLI admite 512 tokens.
+- **O modelo NLI não é exato.** Na versão em espanhol rejeitou um conselho que era verdadeiro; falha para o lado seguro. Na execução em português o mesmo caso foi barrado antes, pela verificação exata dos números. Na resposta sobre a entrega parcial rejeitou uma de cinco frases do modelo, e foi publicada a regra literal. O NLI admite 512 tokens.
 - **Comparações conceituais.** LlamaIndex, AutoGen, Semantic Kernel, Langflow, Mem0 e Letta não foram executados.
 - **Sem credenciais** o chat interpreta só com regras, que são frágeis diante de formas de falar não previstas.
 - **A comparação não divide um pedido entre fornecedores** nem calcula o frete conforme o destino.
-- **O catálogo ampliado quase não foi medido.** A avaliação no LangSmith e as demonstrações com o modelo real não foram refeitas depois da ampliação, salvo a do aviso de preço e a da resposta direta. As categorias novas usam os mesmos 12 fornecedores, e os nomes das peças saem de uma lista fixa de famílias.
+- **O catálogo ampliado quase não foi medido.** A avaliação no LangSmith e as demonstrações com o modelo real não foram refeitas depois da ampliação, salvo a do aviso de preço, a da resposta direta e, em 2026-11-12, as de R22, R23 (chat) e R28. As categorias novas usam os mesmos 12 fornecedores, e os nomes das peças saem de uma lista fixa de famílias.
 
 ## 12. Melhorias futuras
 
