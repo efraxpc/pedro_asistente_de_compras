@@ -267,7 +267,7 @@ O resultado vigente é o de 2026-11-13, com a guarda de entrada ativa (experimen
 
 **Análise comparativa das duas execuções.** Entre elas mudaram o catálogo (de 2.640 para 4.320 peças), a resposta direta, a rota de entrega parcial, a guarda de entrada e o prompt do agente. A qualidade não mudou: mesmos vencedores, mesmos valores e nenhuma proposta rejeitada. O que mudou foi a trajetória: em 15 dos 19 casos de compra o agente chamou só a ferramenta de comparação, sem consultar antes o catálogo; na execução anterior isso aconteceu em 4 de 19. A referência exige os dois passos, e por isso a métrica caiu de 26 para 15. A ferramenta decisiva foi chamada em todos os casos. Não se isolou qual das mudanças causou a diferença: é uma execução de cada.
 
-O experimento fica na conta do LangSmith do autor. A cópia versionável é o arquivo de registro, que traz o resumo e, para cada caso, a pergunta, a resposta, as ferramentas chamadas, as verificações e as notas.
+O conjunto de casos e o experimento vigente estão compartilhados publicamente no LangSmith e abrem sem conta: https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d (os experimentos ficam na aba «Experiments»). A cópia versionável é o arquivo de registro, que traz o resumo e, para cada caso, a pergunta, a resposta, as ferramentas chamadas, as verificações e as notas.
 
 Conclusões, cada uma com o seu dado. Os oito primeiros experimentos são da versão em espanhol do projeto e mantêm os seus números:
 
@@ -344,7 +344,6 @@ Em 2026-11-13 as rubricas foram conferidas com o enunciado original da atividade
 O que falta:
 
 - Gravar o vídeo de demonstração, enviá-lo ao Google Drive de aluno e compartilhar o link.
-- Dar ao professor acesso ao experimento do LangSmith, que está na conta do autor.
 - R01: trocar a escala de maturidade genérica pela da aula 1, se ela definir outra.
 
 ## 15. Uso de ferramentas de IA

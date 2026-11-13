@@ -136,7 +136,7 @@
 
 ## Parte 7 — Avaliação no LangSmith (9:40 a 10:30)
 
-**Na tela:** a aba do LangSmith com o experimento `pedro-infnet-fluxo-gpt-4.1-mini-guardrails-2726b884`, de 2026-11-13.
+**Na tela:** a aba do LangSmith com o experimento `pedro-infnet-fluxo-gpt-4.1-mini-guardrails-2726b884`, de 2026-11-13. Ele abre também pelo link público, sem login: https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d (aba «Experiments»).
 
 **Dizer:** «O agente foi avaliado no LangSmith com trinta casos. A avaliação mede a qualidade da resposta e a trajetória, ou seja, quais ferramentas o agente chamou. O vencedor ficou correto em 14 de 14 e o valor em 14 de 14, e nenhuma proposta foi rejeitada pela verificação. A trajetória completa ficou em 15 de 30: o agente chega à mesma resposta chamando só a ferramenta de comparação, e a referência pedia também a consulta ao catálogo. Em dez experimentos, nenhuma recomendação contrária à regra foi publicada.»
 
@@ -177,7 +177,7 @@
 - Enviar o vídeo ao Google Drive de aluno Infnet.
 - Compartilhar como «qualquer pessoa com o link» pode visualizar.
 - Abrir o link em uma janela anônima, conferir que ele abre e enviar o link na atividade.
-- O experimento do LangSmith está na sua conta. Se a entrega pedir o registro, compartilhe o experimento ou anexe uma captura dele.
+- O registro do LangSmith já tem link público: https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d. Envie esse link junto com o do vídeo, se a atividade pedir o registro.
 - O relatório para enviar é docs/efrain_colmenares_ai-agents_langchain-agents.pdf, que já tem o nome que o enunciado exige.
 
 ## Se algo sair diferente durante a gravação

@@ -2341,7 +2341,7 @@ O agente avaliado é o mesmo fluxo que a interface usa (`criar_fluxo`), com o mo
 - `pedro-infnet-casos-derivados-7610315f`: os seis primeiros experimentos (versão em espanhol).
 - `pedro-infnet-casos-derivados-9399546b`: os dois seguintes, com o pedido mínimo na regra de referência (versão em espanhol).
 - `pedro-infnet-casos-derivados-efff08ab`: o experimento em português. Os casos foram regenerados em português com os mesmos produtos, quantidades, limites, fornecedores esperados e totais; só mudaram o idioma e os nomes das chaves.
-- `pedro-infnet-casos-derivados-bd7b0c2b`: o experimento vigente, de 2026-11-13. Os 30 casos são idênticos aos anteriores; só mudou a impressão digital do catálogo (`fonte_sha256`), depois da ampliação.
+- `pedro-infnet-casos-derivados-bd7b0c2b`: o experimento vigente, de 2026-11-13. Os 30 casos são idênticos aos anteriores; só mudou a impressão digital do catálogo (`fonte_sha256`), depois da ampliação. Este conjunto e o seu experimento estão compartilhados publicamente: [https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d](https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d).
 
 | Grupo | Casos | O que se espera |
 |---|---|---|
@@ -2466,6 +2466,7 @@ O script confere se o modelo responde antes de começar, cria o conjunto de caso
 
 | Evidência | Localização | Tipo |
 |---|---|---|
+| O experimento vigente, aberto sem conta | [https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d](https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d) | **Execução real remota**, link público |
 | Dez experimentos com suas métricas e rastros | LangSmith, conjuntos `pedro-infnet-casos-derivados-7610315f`, `…-9399546b`, `…-efff08ab` e `…-bd7b0c2b` | **Execução real remota** (OpenAI, ViaCEP e LangSmith) |
 | Cópia local de cada experimento, caso por caso | [rastros/](rastros/): `r29_langsmith_*.json`. O experimento vigente é [r29_langsmith_gpt-4.1-mini_portugues_guardrails.json](rastros/r29_langsmith_gpt-4.1-mini_portugues_guardrails.json); o anterior em português é [r29_langsmith_gpt-4.1-mini_portugues.json](rastros/r29_langsmith_gpt-4.1-mini_portugues.json); os outros oito são da versão em espanhol | Registro de execução real |
 | Avaliadores e casos | [avaliar_fluxo.py](../evals/avaliar_fluxo.py); [casos_derivados.json](../evals/casos_derivados.json) | Código |
@@ -2476,7 +2477,7 @@ O script confere se o modelo responde antes de começar, cria o conjunto de caso
 - **Os 30 casos são derivados e sintéticos.** O enunciado original, conferido em 2026-11-13, não entrega casos de teste: pede comparar o que o agente fez com o esperado em cada caso.
 - **Os casos foram regenerados quando a regra de negócio mudou**, ao corrigir o pedido mínimo: a referência anterior estava incorreta. Depois foram regenerados em português na migração, sem mudar produtos, quantidades, limites, fornecedores esperados nem totais. Foram regenerados uma terceira vez depois da ampliação do catálogo, porque o avaliador confere a impressão digital da base: os 30 casos são idênticos e só mudou o `fonte_sha256`. Nunca foram alterados para melhorar um número.
 - **O experimento vigente rodou sobre o catálogo ampliado**, com os mesmos 30 casos. As peças desses casos (PEC-01 a PEC-11) não mudaram com a ampliação, e as categorias novas não têm casos.
-- **O experimento está na conta do LangSmith do autor.** Para o professor ver, é preciso compartilhar o link ou anexar uma captura; a cópia local traz os mesmos dados, caso por caso.
+- **Só o experimento vigente tem link público** ([https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d](https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d)): o conjunto de casos, os 30 exemplos e as execuções abrem sem conta. Antes de compartilhar, os 718 runs do experimento foram revisados: não trazem nomes, caminhos locais, e-mails nem chaves. Os nove experimentos anteriores ficam na conta do autor; a cópia local de cada um está em rastros/.
 - A avaliação não cobre a preferência de origem: o usuário de avaliação não tem preferências salvas.
 - **A referência de trajetória ficou defasada** em relação ao agente final, que no experimento vigente usa um caminho mais curto em 15 dos 19 casos de compra. Seria preciso revisá-la; os casos estão congelados e não foram mudados para melhorar esse número.
 - **Uma execução por configuração.** O modelo não é determinístico. Antes das melhorias, a trajetória completa de `gpt-4.1-mini` foi de 25 e 24 de 30 nas duas execuções salvas comparáveis (primeiro experimento e memória nova); com a regra corrigida, foi de 16, 23, 26 e 15 de 30. As diferenças de um ou dois casos não são conclusivas.

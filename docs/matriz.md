@@ -79,7 +79,7 @@ O diagrama [rubricas_projeto.mmd](rubricas_projeto.mmd) e a sua [vista SVG](rubr
 |---|---|
 | Código e notebooks reproduzíveis com duplos identificados | Local: 188/188 testes, 5/5 notebooks reexecutados em 2026-11-13; o NB01 tem uma célula com o modelo real, que só roda se houver chave |
 | Relatório técnico em PDF | Local: docs/relatorio.md, docs/relatorio.pdf e a cópia com o nome que o enunciado exige, docs/efrain_colmenares_ai-agents_langchain-agents.pdf; inclui capturas do chat e a citação do uso de IA |
-| Registro de avaliação no LangSmith | Real: dez experimentos; o vigente, pedro-infnet-fluxo-gpt-4.1-mini-guardrails-2726b884, sobre o conjunto pedro-infnet-casos-derivados-bd7b0c2b (ver R29). Está na conta do autor: falta dar acesso ao professor |
+| Registro de avaliação no LangSmith | Real: dez experimentos; o vigente, pedro-infnet-fluxo-gpt-4.1-mini-guardrails-2726b884, sobre o conjunto pedro-infnet-casos-derivados-bd7b0c2b (ver R29). Compartilhado publicamente, sem necessidade de conta: https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d |
 | Vídeo de demonstração + link do Google Drive de aluno | Pendente: exige gravação e acesso do aluno; o roteiro está em docs/roteiro_video.md |
 
 ## Pendências que bloqueiam o fechamento
@@ -87,13 +87,13 @@ O diagrama [rubricas_projeto.mmd](rubricas_projeto.mmd) e a sua [vista SVG](rubr
 As 29 rubricas têm resposta redigida e execução salva. O que falta não é código:
 
 1. **Vídeo de demonstração** e link do Google Drive de aluno: exigem gravação e acesso do aluno.
-2. **Acesso ao experimento do LangSmith**: ele está na conta do autor; falta compartilhar o link ou anexar uma captura.
-3. **R01**: trocar a escala genérica de maturidade pela da aula 1, se ela definir outra.
+2. **R01**: trocar a escala genérica de maturidade pela da aula 1, se ela definir outra.
 
 Resolvido em 2026-11-13, com a leitura do enunciado original:
 
 - **Conferência das rubricas**: as 29 perguntas coincidem com R01–R29.
 - **R22–R23, índice FAISS**: o enunciado não entrega um índice; pede usar um já construído, sem refazer a indexação. O índice salvo em knowledge/politicas/ atende.
+- **Acesso ao experimento do LangSmith**: o conjunto de casos e o experimento vigente têm link público (https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d).
 - **R29, casos de avaliação**: o enunciado não entrega casos; pede comparar o que o agente fez com o esperado em cada caso de teste. Os 30 casos derivados são os casos de teste do projeto.
 
 ## Comparação de fornecedores (núcleo do assistente)
