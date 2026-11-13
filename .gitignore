@@ -8,3 +8,5 @@ __pycache__/
 *.pyc
 *.vtt
 .playwright-mcp/
+CLAUDE.md
+AGENTS.md
