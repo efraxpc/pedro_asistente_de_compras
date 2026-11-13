@@ -72,7 +72,6 @@ O chat abre mesmo sem chave, com o selo «Modo local, sem modelo». Funcionam a 
 | `PEDRO_BASE_URL` | Usa um servidor compatível com a API da OpenAI no lugar da OpenAI; por exemplo, um modelo local no Ollama: `PEDRO_BASE_URL=http://localhost:11434/v1` e `PEDRO_MODEL=llama3.2`. Em CPU cada resposta pode levar minutos | Não |
 | `LANGSMITH_API_KEY` | Só para a avaliação com `evals/avaliar_fluxo.py` | Não |
 | `PEDRO_TRUST_POLICY_INDEX` | `true` usa o índice de políticas salvo em `knowledge/politicas/`; `false` usa o índice de demonstração em memória, com o mesmo conteúdo | Não |
-| `ELEVENLABS_API_KEY` | Só para narrar o vídeo do tour (`scripts/gerar_video_tour.py`) | Não |
 
 Nunca envie o arquivo `.env` para o repositório.
 
@@ -98,7 +97,7 @@ uv run python scripts/criar_notebooks.py
 uv run python scripts/executar_notebooks.py
 ```
 
-Para entender o projeto, comece por docs/guia_estudo.md (ou docs/guia_estudio_es.md, em espanhol).
+Para entender o projeto, comece por docs/relatorio.md; o detalhe de cada rubrica está em docs/respostas_rubricas.md.
 
 ## Componentes
 

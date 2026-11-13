@@ -2,7 +2,7 @@
 
 **Como ler.** Cada passo tem duas coisas: **FAZER**, o que se faz na tela, e **DIZER**, o que se fala. Primeiro a ação, depois a frase.
 
-**Versão para gravar.** A mesma informação está em uma página que avança passo a passo, em espanhol, para ter no celular ou em outra tela: docs/roteiro_video_pasos.html. A versão de estudo, com a tradução de cada fala, é docs/roteiro_video_es.md.
+**Versão para gravar.** A mesma informação está em uma página que avança passo a passo, em espanhol, para ter no celular ou em outra tela: docs/roteiro_video_pasos.html.
 
 **Duração:** cerca de 13 minutos, 10 partes e 44 passos. O enunciado não fixa duração. **Exige:** tela e webcam visíveis ao mesmo tempo (Loom ou OBS).
 
