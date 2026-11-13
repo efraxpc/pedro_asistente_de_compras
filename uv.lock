@@ -1901,7 +1901,7 @@ agent = [
     { name = "langchain-openai" },
     { name = "langchain-text-splitters" },
 ]
-comparacion = [
+comparacao = [
     { name = "langchain" },
     { name = "langgraph" },
     { name = "langmem" },
@@ -1934,14 +1934,14 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28,<1" },
     { name = "ipykernel", marker = "extra == 'notebooks'", specifier = ">=6,<8" },
     { name = "jupyterlab", marker = "extra == 'notebooks'", specifier = ">=4,<5" },
-    { name = "langchain", marker = "extra == 'comparacion'", specifier = ">=1,<2" },
+    { name = "langchain", marker = "extra == 'comparacao'", specifier = ">=1,<2" },
     { name = "langchain-classic", marker = "extra == 'agent'", specifier = ">=1,<2" },
     { name = "langchain-community", marker = "extra == 'agent'", specifier = ">=0.4,<1" },
     { name = "langchain-core", marker = "extra == 'agent'", specifier = ">=1,<2" },
     { name = "langchain-openai", marker = "extra == 'agent'", specifier = ">=1,<2" },
     { name = "langchain-text-splitters", marker = "extra == 'agent'", specifier = ">=1,<2" },
-    { name = "langgraph", marker = "extra == 'comparacion'", specifier = ">=1,<2" },
-    { name = "langmem", marker = "extra == 'comparacion'", specifier = ">=0.0.20" },
+    { name = "langgraph", marker = "extra == 'comparacao'", specifier = ">=1,<2" },
+    { name = "langmem", marker = "extra == 'comparacao'", specifier = ">=0.0.20" },
     { name = "langsmith", marker = "extra == 'evaluation'", specifier = ">=0.4,<1" },
     { name = "nbformat", marker = "extra == 'dev'", specifier = ">=5,<6" },
     { name = "nbformat", marker = "extra == 'notebooks'", specifier = ">=5,<6" },
@@ -1953,7 +1953,7 @@ requires-dist = [
     { name = "torch", marker = "extra == 'nli'", specifier = ">=2.6,<3" },
     { name = "transformers", marker = "extra == 'nli'", specifier = ">=4.50,<5" },
 ]
-provides-extras = ["ui", "agent", "nli", "evaluation", "notebooks", "dev", "comparacion"]
+provides-extras = ["ui", "agent", "nli", "evaluation", "notebooks", "dev", "comparacao"]
 
 [[package]]
 name = "pexpect"

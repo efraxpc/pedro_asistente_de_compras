@@ -1,6 +1,6 @@
 """R07: o mesmo agente em LangChain clássico e em LangGraph, com o modelo real.
 
-Requer OPENAI_API_KEY e o extra `comparacion` (uv sync --all-extras). Catálogo sintético.
+Requer OPENAI_API_KEY e o extra `comparacao` (uv sync --all-extras). Catálogo sintético.
 """
 import argparse
 import importlib.metadata as md

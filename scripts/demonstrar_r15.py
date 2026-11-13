@@ -1,6 +1,6 @@
 """R15: a mesma conversa com a memória própria do Pedro e com o LangMem.
 
-Requer OPENAI_API_KEY e o extra `comparacion`. Compara o que cada uma salva, quem decide
+Requer OPENAI_API_KEY e o extra `comparacao`. Compara o que cada uma salva, quem decide
 salvar e o que se recupera em outra sessão e para outro usuário. Catálogo sintético.
 """
 import argparse

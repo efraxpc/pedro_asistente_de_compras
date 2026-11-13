@@ -3,7 +3,7 @@
 Serve para comparar com uma execução, e não só em teoria, o que cada um exige e oferece.
 Os dois recebem o mesmo modelo, as mesmas duas ferramentas e o mesmo prompt de sistema, e
 expõem a mesma função `conversar(texto, fio)`. LangGraph é uma dependência opcional
-(extra `comparacion`) e é importado somente ao construir esse agente.
+(extra `comparacao`) e é importado somente ao construir esse agente.
 """
 from collections.abc import Callable
 
