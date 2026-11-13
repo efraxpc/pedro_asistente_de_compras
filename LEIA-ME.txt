@@ -1,0 +1,72 @@
+PEDRO - ASSISTENTE DE COMPRAS
+Projeto da disciplina Agentes Cognitivos com LangChain (Infnet)
+Aluno: Efrain Colmenares
+
+Este arquivo indica onde está cada parte da entrega.
+
+
+1. RELATÓRIO
+
+O relatório está neste .zip, em PDF:
+
+efrain_colmenares_ai-agents_langchain-agents.pdf
+
+Basta abrir o arquivo. Ele explica o problema, as decisões de cada fase,
+os resultados da avaliação, as limitações e como reproduzir.
+
+
+2. VÍDEO DE DEMONSTRAÇÃO
+
+O vídeo mostra o agente funcionando: uma comparação de fornecedores,
+a memória entre mensagens, a consulta a uma API externa e as políticas.
+
+Link do vídeo:
+
+[COLE AQUI O LINK DO VÍDEO NO GOOGLE DRIVE]
+
+
+3. CÓDIGO (REPOSITÓRIO GITHUB)
+
+Todo o código, os testes, os notebooks e as evidências estão no repositório:
+
+https://github.com/efraxpc/pedro_asistente_de_compras
+
+O repositório é público. Para conferir sem instalar nada, veja no navegador:
+
+- notebooks/       cinco notebooks já executados, um por fase
+- docs/rastros/    execuções salvas com o modelo real
+- docs/capturas/   capturas da interface
+- tests/           testes automáticos
+
+
+4. AVALIAÇÃO NO LANGSMITH
+
+O experimento de avaliação do agente tem link público:
+
+https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d
+
+
+5. COMO RODAR O PROJETO (OPCIONAL)
+
+Não é preciso rodar nada para avaliar: os resultados já estão no relatório,
+nos notebooks e nas evidências do repositório.
+
+Para rodar o chat na sua máquina, são quatro passos (precisa do Git e do uv):
+
+   git clone https://github.com/efraxpc/pedro_asistente_de_compras.git
+   cd pedro_asistente_de_compras
+   uv sync --python 3.13 --all-extras --locked
+   cp .env.example .env
+
+Depois preencha OPENAI_API_KEY no arquivo .env e abra o chat:
+
+   ./project.sh start
+
+O chat abre em http://localhost:8501
+
+Primeiro teste sugerido: clique em
+"Compare 5 unidades de PEC-01-0001 com prazo de 7 dias".
+A resposta esperada é CentroPeças, R$ 7.279,83, entrega em 2 dias.
+
+Todos os dados do projeto (catálogo, fornecedores, preços e políticas)
+são fictícios.
