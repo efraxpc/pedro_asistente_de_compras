@@ -51,7 +51,7 @@ A primeira resposta demora mais: o Pedro baixa dois modelos locais (verificaçã
 
 ## Sem chave da OpenAI
 
-O chat abre mesmo sem chave, com o selo «Modo local, sem modelo». Funcionam a listagem de peças, a comparação de fornecedores e o comando `/t24`. Políticas, CEP e perguntas abertas precisam da chave.
+O chat abre mesmo sem chave, com o selo «Modo local, sem modelo». Funcionam a listagem de peças e a comparação de fornecedores. Políticas, CEP e perguntas abertas precisam da chave.
 
 ## Comandos do dia a dia
 
@@ -85,13 +85,63 @@ Nunca envie o arquivo `.env` para o repositório.
 - **O chat não abre:** veja o log em `storage/run/streamlit.log`.
 - **Quero começar do zero:** apague a pasta `storage/`. Ela guarda só dados de execução (conversas e cópias do catálogo) e não é versionada.
 
-## Como funciona, em resumo
+## Como funciona
 
-A interface é só o chat. Na barra lateral você abre um chat novo, reabre uma conversa ou a apaga (a lixeira ao lado de cada conversa, ou «Apagar todas»; as duas pedem confirmação). Basta informar a peça e a quantidade; orçamento e prazo são filtros opcionais. Se falta a quantidade, o Pedro pergunta uma vez e guarda a resposta na sessão.
+A interface é um chat. Você informa a peça e a quantidade; orçamento e prazo são opcionais. Se falta a quantidade, o Pedro pergunta uma vez e guarda a resposta.
 
-O catálogo tem 18 categorias de eletrodomésticos, 4.320 peças e 12.960 ofertas de 12 fornecedores. O primeiro acesso cria um cenário: uma cópia do catálogo com um identificador próprio, na pasta `storage/`. «Novo chat» mantém o cenário, e reabrir uma conversa restaura o cenário dela.
+Para cada peça há três ofertas de fornecedores. O Pedro descarta as que não servem (sem estoque, abaixo do pedido mínimo, fora do prazo ou acima do orçamento) e recomenda a mais barata entre as que sobram. A resposta mostra todas as ofertas e o motivo de cada descarte.
 
-Para regenerar os dados e os notebooks:
+Na barra lateral você abre um chat novo, reabre uma conversa ou a apaga.
+
+## O que o Pedro faz
+
+- **Compara fornecedores.** O cálculo é feito em código, com valores em centavos. O modelo decide o que responder, mas os números quem coloca é o sistema.
+- **Lembra do pedido.** Se você diz «Agora que sejam 6», ele mantém a peça e o prazo e refaz a conta.
+- **Guarda preferências.** Se você diz que prefere fornecedores nacionais, ele leva isso em conta nas próximas comparações.
+- **Responde perguntas sobre a comparação.** Por exemplo: «a mais barata?» ou «qual chega antes?».
+- **Consulta o catálogo.** Para perguntas abertas, o modelo escreve uma consulta SQL de leitura, que só roda se passar por uma validação.
+- **Consulta as políticas da loja** (entrega, garantia e devolução) por busca semântica e cita a fonte.
+- **Consulta um CEP** na API pública do ViaCEP.
+- **Avisa sobre o preço** quando o valor de hoje se afasta da média dos últimos meses.
+- **Confere antes de publicar.** Cada resposta passa por uma verificação exata e por um segundo modelo, que confere se o texto bate com os dados. Se não passa, o Pedro não publica.
+- **Recusa o que não é do tema.** Pedidos alheios a compras de peças e tentativas de mudar as instruções são recusados antes de chegar ao agente.
+
+## Estrutura do projeto
+
+| Pasta ou arquivo | O que tem |
+|---|---|
+| `app.py` | A interface do chat (Streamlit) |
+| `src/pedro/` | A lógica do assistente |
+| `tests/` | Testes automáticos |
+| `notebooks/` | Cinco notebooks já executados, que mostram o projeto passo a passo |
+| `scripts/` | Geração dos dados e demonstrações com o modelo real |
+| `evals/` | Casos de avaliação e o avaliador do LangSmith |
+| `datasets/` | Catálogo de peças (SQLite) |
+| `knowledge/` | Textos das políticas da loja e o índice de busca |
+| `docs/` | Relatório, execuções salvas e capturas da interface |
+
+Os módulos principais de `src/pedro/`:
+
+| Módulo | O que faz |
+|---|---|
+| `business.py` | A comparação de fornecedores |
+| `agent.py` | O agente, as suas ferramentas e o fluxo de cada mensagem |
+| `guardrails.py` | A checagem da mensagem antes de chamar o agente |
+| `dialogue.py` | A leitura do pedido: peça, quantidade, orçamento e prazo |
+| `memory.py` | Conversas, preferências e lembranças, em SQLite |
+| `query.py` | As consultas ao catálogo |
+| `rag.py` | A busca nas políticas da loja |
+| `verification.py` e `nli.py` | A conferência de cada resposta antes de publicar |
+| `precos.py` | O aviso de preço |
+| `modelos.py` | A escolha do modelo pelo arquivo `.env` |
+
+## Dados
+
+O catálogo tem 18 categorias de eletrodomésticos, 4.320 peças e 12.960 ofertas de 12 fornecedores. Tudo é gerado por um script, com uma semente fixa.
+
+No primeiro acesso, o app cria uma cópia do catálogo na pasta `storage/`. Cada conversa usa a sua cópia.
+
+Para gerar de novo os dados e os notebooks:
 
 ```bash
 uv run python scripts/gerar_catalogo_pecas.py
@@ -99,32 +149,30 @@ uv run python scripts/criar_notebooks.py
 uv run python scripts/executar_notebooks.py
 ```
 
-Para entender o projeto, comece pelo relatório da entrega: docs/efrain_colmenares_ai-agents_langchain-agents.pdf.
+## Políticas da loja
 
-## Componentes
+Os textos das políticas estão em `knowledge/politicas_demo/`. O Pedro monta o índice de busca sozinho, em memória, na primeira vez que precisa. Não é preciso rodar nada.
 
-- src/pedro/catalog.py: cenário e consultas SQLite de somente leitura.
-- src/pedro/contracts.py e business.py: contratos e comparação de fornecedores em centavos. Uma oferta é descartada por estoque, pedido mínimo do fornecedor, prazo ou orçamento; as válidas são ordenadas pela preferência de origem salva do usuário (nacional ou internacional), total, prazo e fornecedor. Cada resposta mostra todas as ofertas com a origem e o motivo do descarte. Para as ofertas válidas entra o histórico de preços (mês anterior e média de cinco meses), que informa e não muda a ordem. Se o preço de hoje se afasta da média, entra um aviso de preço: um texto fixo ou, com o agente, um conselho redigido pelo modelo e verificado com NLI (src/pedro/precos.py).
-- src/pedro/resposta_direta.py: resposta direta a uma pergunta sobre a comparação em andamento («a mais barata?»). O sistema refaz a comparação, o modelo redige uma ou duas frases e elas só são publicadas se passam na verificação de números, fornecedor e NLI; se não, entra um resumo fixo calculado pelo sistema. Não muda a recomendação. A regra que reconhece a pergunta (src/pedro/dialogue.py) exige que ela fale de preço, prazo, estoque ou origem, ou nomeie um fornecedor comparado; perguntas sobre o catálogo inteiro vão para o agente. Evidência: `uv run python scripts/demonstrar_pergunta.py` (docs/rastros/pergunta_direta_llm.json). O mesmo arquivo tem a resposta a uma pergunta sobre a regra de entrega parcial: o modelo redige uma ou duas frases só com o fragmento recuperado, e elas só são publicadas se não trazem números fora da fonte e se o NLI as sustenta; se não, fica só a regra literal, que é citada sempre. Evidência: `uv run python scripts/demonstrar_r23.py` (docs/rastros/r23_resposta_llm.json).
-- src/pedro/query.py: plano Pydantic para SELECT parametrizado com rastro; text-to-SQL validado para perguntas abertas.
-- src/pedro/memory.py: mensagens completas, janela de 12, rascunhos de compra por sessão, preferências e episódios FastEmbed por usuário.
-- src/pedro/dialogue.py: extração de restrições por turno e perguntas só para dados bloqueantes.
-- src/pedro/prompts.py: PTCF e exemplos com ações observáveis.
-- src/pedro/agent.py: seis ferramentas, um create_openai_tools_agent, uma correção interna e RunnableWithMessageHistory que salva só a resposta pública.
-- src/pedro/guardrails.py: guarda de entrada. Antes de chamar o agente, regras fixas e um classificador com o modelo recusam assuntos alheios e tentativas de mudar as instruções.
-- src/pedro/modelos.py: escolha do modelo de conversa pelo arquivo .env (OpenAI ou um servidor compatível, como o Ollama).
-- src/pedro/verification.py e nli.py: verificação exata e porta NLI triclasse.
-- src/pedro/rag.py: recuperação FAISS com filtro de metadados e inspeção do manifesto antes de permitir a desserialização.
-- src/pedro/policy_demo.py e knowledge/politicas_demo/: corpus fictício extenso e índice FAISS local construído em memória para o T15.
-- scripts/diagnosticar_t24.py: comparação reproduzível de uma falha de recuperação e da sua reformulação.
-- notebooks/01–05: práticas executáveis. Os duplos de teste são identificados explicitamente; o primeiro tem também uma célula que roda a cadeia com o modelo real, se houver chave. As comparações didáticas estão em docs/comparacoes.md.
+O repositório também traz esse índice já salvo, em `knowledge/politicas/`. Para usá-lo, defina `PEDRO_TRUST_POLICY_INDEX=true` no `.env`. Faça isso só com um índice de origem conhecida: o arquivo salvo usa o formato pickle, e por isso o Pedro confere a origem e as impressões digitais antes de abrir.
 
-O notebook 04 demonstra o T15 sem credenciais: divide três políticas fictícias em fragmentos, cria embeddings FastEmbed, indexa com FAISS e compara buscas com e sem filtro por tema. As políticas incluem exemplos tirados da SQLite sintética (SKU, compatibilidade, garantia por peça e ofertas), datados pela semente `20261107`; pedidos e entregas continuam hipotéticos. O chat usa esse índice de demonstração quando não tem um autorizado. O índice salvo de R22/T24 fica em knowledge/politicas/ (index.faiss, index.pkl e manifest.json com origem, embedding_model, dimension, metrica, documentos e sha256 por arquivo); é um índice próprio, feito do corpus fictício com `uv run python scripts/construir_indice_politicas.py`. Revise a procedência dele antes de definir PEDRO_TRUST_POLICY_INDEX=true. O docstore pickle exige confiança explícita; o índice fictício em memória não usa essa variável.
+Para testar no chat, pergunte «Posso receber em várias caixas?». A resposta cita a regra de entrega parcial e a sua fonte.
 
-O T24 tem uma falha e uma correção observadas nesse corpus fictício. **Para testar o fluxo normal no Chat**, pergunte «Posso receber em várias caixas?»; você pode repetir a pergunta na mesma conversa. A rota de entrega do fluxo chama `consultar_politicas`, reformula a pergunta como «envio parcial», verifica o fragmento e publica uma regra citada só se o NLI a sustenta. Com o modelo, a resposta começa por uma frase verificada que responde à pergunta feita: «Quais produtos posso receber em várias caixas?» recebe outra primeira linha, com a mesma regra citada. A resposta mostra `FIC-ENT-01-S05-C01` e o contraste do top-4; se a pergunta original já recupera a regra, diz a posição observada, sem afirmar uma correção. A rota funciona com o índice fictício carregado no app (o salvo, se PEDRO_TRUST_POLICY_INDEX=true, ou o de demonstração em memória) e não depende de o LLM decidir usar uma ferramenta a cada repetição; a interface carrega o índice quando há `OPENAI_API_KEY`. `/t24` mostra o diagnóstico controlado sem OpenAI. Para repetir o teste no console e salvar o JSON: `uv run python scripts/diagnosticar_t24.py --saida storage/evidencias/t24_demo.json`. Para rodar sobre um índice salvo, use `--indice knowledge/politicas --confiar-indice --original '...' --reescrita '...' --fonte-esperada '...'` depois de revisar a procedência. O carregador e o app aceitam o modelo FastEmbed local conhecido ou um modelo OpenAI declarado no manifesto; para outro modelo, escolha o embedder compatível no script. R22 e R23 foram demonstradas sobre o índice próprio salvo; a atividade não entregou um índice oficial.
+## Avaliação
 
-## Avaliação e entregáveis
+O agente foi avaliado no LangSmith com 30 casos. Na última execução, o fornecedor recomendado ficou certo em 14 de 14 casos e o valor em 14 de 14. O experimento é público:
 
-O relatório da entrega está em docs/efrain_colmenares_ai-agents_langchain-agents.pdf. As execuções salvas com o modelo real estão em docs/rastros/ e as capturas da interface em docs/capturas/. Há 30 casos derivados e congelados em evals/casos_derivados.json; o enunciado não entrega casos de teste. Para avaliar o mesmo fluxo final com o LangSmith: uv run python evals/avaliar_fluxo.py. O script exige OPENAI_API_KEY e LANGSMITH_API_KEY; não publica métricas simuladas.
+https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d
 
-Em 2026-11-13 as rubricas foram conferidas com o enunciado original em português: as 29 perguntas coincidem com R01–R29, e o enunciado não entrega um índice FAISS nem casos de avaliação. O chat com o agente e a avaliação no LangSmith já foram executados com o modelo real; os rastros estão em docs/rastros/. Faltam a gravação com webcam, o envio ao Google Drive de aluno e a verificação do link, que exigem o acesso do aluno. O experimento vigente do LangSmith tem link público: https://smith.langchain.com/public/c2c2892d-f604-4764-b987-f53c2fd321e5/d
+Para repetir a avaliação (precisa de `OPENAI_API_KEY` e `LANGSMITH_API_KEY`):
+
+```bash
+uv run python evals/avaliar_fluxo.py
+```
+
+As execuções salvas com o modelo real estão em `docs/rastros/` e as capturas da interface em `docs/capturas/`.
+
+## Relatório e vídeo
+
+- **Relatório:** docs/efrain_colmenares_ai-agents_langchain-agents.pdf
+- **Vídeo de demonstração:** https://www.youtube.com/watch?v=SpeCHaVVK58
+- **Vídeo no Google Drive da Infnet**, caso o YouTube não abra: https://drive.google.com/file/d/1nt-cUSmVtYK_p4XGprDvhlTowE2eXwaw/view
