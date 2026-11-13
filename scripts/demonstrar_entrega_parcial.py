@@ -1,4 +1,4 @@
-"""R23 no chat: a falha de recuperação corrigida e uma resposta à pergunta que foi feita.
+"""No chat: a falha de recuperação corrigida e uma resposta à pergunta que foi feita.
 
 Requer OPENAI_API_KEY. Várias perguntas diferentes sobre receber um pedido em várias caixas.
 Todas passam pela mesma recuperação corrigida (a reformulação leva a regra à posição 1) e
@@ -40,9 +40,9 @@ def main() -> None:
 
     modelo = os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
     marca = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-    cenario = criar_cenario(ROOT / "storage/evidencias/r23_catalogos")
-    memoria = ROOT / f"storage/evidencias/r23_memoria-{marca}.sqlite3"
-    sessao = nova_sessao(memoria, "evidencia_r23", cenario.dataset_id)
+    cenario = criar_cenario(ROOT / "storage/evidencias/entrega_parcial_catalogos")
+    memoria = ROOT / f"storage/evidencias/entrega_parcial_memoria-{marca}.sqlite3"
+    sessao = nova_sessao(memoria, "evidencia_entrega_parcial", cenario.dataset_id)
     rastro = Rastro()
     fluxo = criar_fluxo(cenario, memoria, llm=ChatOpenAI(model=modelo), classificador=ModeloNLI(),
                         indice=criar_indice_demo(), rastro=rastro)
@@ -50,7 +50,7 @@ def main() -> None:
     for pergunta in PERGUNTAS:
         desde = len(rastro.eventos)
         publicada = fluxo.invoke({"input": pergunta}, config={"configurable": {
-            "user_id": "evidencia_r23", "session_id": sessao}}).content
+            "user_id": "evidencia_entrega_parcial", "session_id": sessao}}).content
         eventos = rastro.eventos[desde:]
         direta = next((e for e in eventos if e["evento"] == "resposta_politica"), {})
         turnos.append({
@@ -68,7 +68,7 @@ def main() -> None:
             print("   descartada:", direta.get("rejeitada"), "|", direta["erros"])
     primeiras = {t["resposta_publicada"].split("\n")[0] for t in turnos}
     relatorio = {
-        "rubrica": "R23",
+        "tema": "perguntas sobre entrega parcial",
         "modo": "real remoto: OpenAI; NLI real local; índice fictício de demonstração em memória",
         "data_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "modelo_llm": modelo,

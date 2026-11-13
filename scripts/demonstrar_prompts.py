@@ -1,4 +1,4 @@
-"""R11: mede três técnicas de prompt na mesma extração: zero-shot, few-shot e few-shot + CoT.
+"""Mede três técnicas de prompt na mesma extração: zero-shot, few-shot e few-shot + CoT.
 
 Requer OPENAI_API_KEY. Dez solicitações difíceis, com a resposta correta fixada à mão.
 """
@@ -64,7 +64,7 @@ def main() -> None:
             "solicitacoes_corretas": f"{sum(f[nome]['tudo_correto'] for f in detalhe)}/{len(CASOS)}",
             "campos_corretos": f"{sum(f[nome]['campos_corretos'] for f in detalhe)}/{len(CASOS) * len(CAMPOS)}"}
     relatorio = {
-        "rubrica": "R11", "modo": "real remoto (OpenAI); solicitações sintéticas",
+        "tema": "técnicas de prompt", "modo": "real remoto (OpenAI); solicitações sintéticas",
         "data_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "modelo_llm": modelo, "temperature": 0,
         "nota": "Dez casos escolhidos por serem difíceis e rotulados à mão: não são uma amostra representativa.",

@@ -1,4 +1,4 @@
-"""R17: compara as regras do chat com o intérprete com modelo em mensagens difíceis.
+"""Compara as regras do chat com o intérprete com modelo em mensagens difíceis.
 
 Requer OPENAI_API_KEY. Cada caso parte de uma solicitação em andamento (ou de nenhuma) e tem o
 resultado correto fixado à mão: se é uma compra e como a solicitação deve ficar.
@@ -54,7 +54,7 @@ def main() -> None:
     from langchain_openai import ChatOpenAI
 
     modelo = os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
-    cenario = criar_cenario(ROOT / "storage/evidencias/r17_catalogos")
+    cenario = criar_cenario(ROOT / "storage/evidencias/interprete_catalogos")
     interprete = criar_interprete(ChatOpenAI(model=modelo, temperature=0))
     linhas = []
     acertos = {"regras": 0, "regras_e_modelo": 0}
@@ -72,7 +72,7 @@ def main() -> None:
               f"{'✔' if regras == esperado else '✘'}  +modelo={str(com_modelo):22} "
               f"{'✔' if com_modelo == esperado else '✘'}")
     relatorio = {
-        "rubrica": "R17", "modo": "real remoto (OpenAI) para o intérprete; regras locais",
+        "tema": "intérprete de turno", "modo": "real remoto (OpenAI) para o intérprete; regras locais",
         "data_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "modelo_llm": modelo, "temperature": 0,
         "nota": "Catorze mensagens escolhidas por serem difíceis e rotuladas à mão. Cada resultado é "

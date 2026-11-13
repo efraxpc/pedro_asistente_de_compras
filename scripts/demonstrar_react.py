@@ -1,4 +1,4 @@
-"""R08: agente ReAct clássico (initialize_agent) com o modelo real, ferramentas e memória.
+"""Agente ReAct clássico (initialize_agent) com o modelo real, ferramentas e memória.
 
 Requer OPENAI_API_KEY. Executa a mesma conversa de dois turnos duas vezes: com o
 histórico dentro do prompt e sem ele. O catálogo é sintético.
@@ -29,7 +29,7 @@ def main() -> None:
     from langchain_openai import ChatOpenAI
 
     modelo = os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
-    cenario = criar_cenario(ROOT / "storage/evidencias/r08_catalogos")
+    cenario = criar_cenario(ROOT / "storage/evidencias/react_catalogos")
     conversas = {}
     for nome, com_memoria in (("com_historico_no_prompt", True),
                               ("sem_historico_no_prompt", False)):
@@ -51,7 +51,7 @@ def main() -> None:
             "turnos": turnos,
             "memoria_salva": memoria.load_memory_variables({})["chat_history"]}
     relatorio = {
-        "rubrica": "R08", "modo": "real remoto (OpenAI); catálogo sintético",
+        "tema": "agente ReAct clássico", "modo": "real remoto (OpenAI); catálogo sintético",
         "data_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "modelo_llm": modelo, "temperature": 0,
         "agente": "initialize_agent + AgentType.ZERO_SHOT_REACT_DESCRIPTION + ConversationBufferMemory",

@@ -1,4 +1,4 @@
-"""R15: a mesma conversa com a memória própria do Pedro e com o LangMem.
+"""A mesma conversa com a memória própria do Pedro e com o LangMem.
 
 Requer OPENAI_API_KEY e o extra `comparacao`. Compara o que cada uma salva, quem decide
 salvar e o que se recupera em outra sessão e para outro usuário. Catálogo sintético.
@@ -37,10 +37,10 @@ def main() -> None:
     from langchain_openai import ChatOpenAI
 
     modelo = os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
-    cenario = criar_cenario(ROOT / "storage/evidencias/r15_catalogos")
+    cenario = criar_cenario(ROOT / "storage/evidencias/memoria_langmem_catalogos")
 
     # --- Memória própria do Pedro ---
-    memoria = ROOT / f"storage/evidencias/r15_memoria-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}.sqlite3"
+    memoria = ROOT / f"storage/evidencias/memoria_langmem_memoria-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}.sqlite3"
     rastro = Rastro()
     fluxo = criar_fluxo(cenario, memoria, llm=ChatOpenAI(model=modelo), classificador=ModeloNLI(),
                         rastro=rastro)
@@ -88,7 +88,7 @@ def main() -> None:
     print("LangMem salvou:", langmem["salvo_para_ana"])
 
     relatorio = {
-        "rubrica": "R15", "modo": "real remoto (OpenAI); embeddings reais locais; catálogo sintético",
+        "tema": "memória própria e LangMem", "modo": "real remoto (OpenAI); embeddings reais locais; catálogo sintético",
         "data_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "modelo_llm": modelo,
         "versoes": {p: md.version(p) for p in ("langmem", "langgraph", "langchain")},

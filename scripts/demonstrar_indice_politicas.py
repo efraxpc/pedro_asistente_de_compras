@@ -1,4 +1,4 @@
-"""R22: agente de recuperação sobre o índice FAISS já salvo em knowledge/politicas/.
+"""Agente de recuperação sobre o índice FAISS já salvo em knowledge/politicas/.
 
 Não constrói o índice: carrega-o com `carregar_indice` após conferir o manifesto e as
 impressões digitais. Requer OPENAI_API_KEY para as perguntas ao agente; o corpus é fictício.
@@ -61,16 +61,16 @@ def main() -> None:
     indice, _ = carregar_indice(PASTA, embeddings, origem_confiavel=True)
     segundos_carga = time.perf_counter() - inicio
 
-    cenario = criar_cenario(ROOT / "storage/evidencias/r22_catalogos")
+    cenario = criar_cenario(ROOT / "storage/evidencias/indice_politicas_catalogos")
     # Memória nova a cada execução: as lembranças de execuções anteriores mudavam o resultado.
     marca = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-    memoria = ROOT / f"storage/evidencias/r22_memoria-{marca}.sqlite3"
-    ferramenta = next(f for f in ferramentas(cenario, memoria, "evidencia_r22", "", indice)
+    memoria = ROOT / f"storage/evidencias/indice_politicas_memoria-{marca}.sqlite3"
+    ferramenta = next(f for f in ferramentas(cenario, memoria, "evidencia_indice_politicas", "", indice)
                       if f.name == "consultar_politicas")
     direta = json.loads(ferramenta.invoke({"pergunta": PERGUNTAS[0]}))
 
     modelo = os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
-    sessao = nova_sessao(memoria, "evidencia_r22", cenario.dataset_id)
+    sessao = nova_sessao(memoria, "evidencia_indice_politicas", cenario.dataset_id)
     rastro = Rastro()
     fluxo = criar_fluxo(cenario, memoria, llm=ChatOpenAI(model=modelo), classificador=ModeloNLI(),
                         indice=indice, rastro=rastro)
@@ -78,7 +78,7 @@ def main() -> None:
     for pergunta in PERGUNTAS:
         desde = len(rastro.eventos)
         resposta = fluxo.invoke({"input": pergunta}, config={"configurable": {
-            "user_id": "evidencia_r22", "session_id": sessao}}).content
+            "user_id": "evidencia_indice_politicas", "session_id": sessao}}).content
         eventos = rastro.eventos[desde:]
         turnos.append({
             "pergunta": pergunta,
@@ -90,7 +90,7 @@ def main() -> None:
             "resposta_publicada": resposta})
 
     relatorio = {
-        "rubrica": "R22",
+        "tema": "busca no índice de políticas salvo",
         "modo": "índice carregado do disco; agente real remoto (OpenAI); NLI real local; corpus fictício",
         "data_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "indice": {"pasta": str(PASTA.relative_to(ROOT)), "origem": manifesto["origem"],

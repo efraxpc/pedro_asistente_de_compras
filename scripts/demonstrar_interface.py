@@ -1,4 +1,4 @@
-"""R28: a interface Streamlit conectada ao agente final, conduzida com AppTest.
+"""A interface Streamlit conectada ao agente final, conduzida com AppTest.
 
 Executa o app.py de verdade (sem navegador): escreve no chat e muda de conversa.
 Requer OPENAI_API_KEY. Usa uma pasta de dados própria para não tocar nas conversas do
@@ -50,7 +50,7 @@ def main() -> None:
     app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=300)
     app.run()
     relatorio: dict = {
-        "rubrica": "R28",
+        "tema": "interface Streamlit",
         "modo": "app.py executado com streamlit.testing.v1.AppTest; agente real remoto (OpenAI, ViaCEP); "
                 "NLI real local; índice de políticas carregado do disco",
         "data_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),

@@ -1,4 +1,4 @@
-"""R10: o agente chama uma API externa real (ViaCEP) por function calling.
+"""O agente chama uma API externa real (ViaCEP) por function calling.
 
 Requer OPENAI_API_KEY e acesso a viacep.com.br. Salva o esquema que o modelo recebe,
 os argumentos que o modelo envia, a resposta da API e o que é publicado.
@@ -33,12 +33,12 @@ def main() -> None:
     from langchain_openai import ChatOpenAI
 
     modelo = os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
-    cenario = criar_cenario(ROOT / "storage/evidencias/r10_catalogos")
+    cenario = criar_cenario(ROOT / "storage/evidencias/cep_catalogos")
     # Memória nova a cada execução: as lembranças de execuções anteriores mudam o resultado.
-    memoria = ROOT / f"storage/evidencias/r10_memoria-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}.sqlite3"
-    ferramenta = next(f for f in ferramentas(cenario, memoria, "evidencia_r10", "")
+    memoria = ROOT / f"storage/evidencias/cep_memoria-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}.sqlite3"
+    ferramenta = next(f for f in ferramentas(cenario, memoria, "evidencia_cep", "")
                       if f.name == "consultar_cep")
-    sessao = nova_sessao(memoria, "evidencia_r10", cenario.dataset_id)
+    sessao = nova_sessao(memoria, "evidencia_cep", cenario.dataset_id)
     rastro = Rastro()
     fluxo = criar_fluxo(cenario, memoria, llm=ChatOpenAI(model=modelo), classificador=ModeloNLI(),
                         rastro=rastro)
@@ -46,7 +46,7 @@ def main() -> None:
     for pergunta in PERGUNTAS:
         desde = len(rastro.eventos)
         resposta = fluxo.invoke({"input": pergunta}, config={"configurable": {
-            "user_id": "evidencia_r10", "session_id": sessao}}).content
+            "user_id": "evidencia_cep", "session_id": sessao}}).content
         eventos = rastro.eventos[desde:]
         chamadas = [{"ferramenta": inicio["ferramenta"], "argumentos_do_modelo": inicio["entrada"],
                      "resposta_da_api": fim["resultado"]}
@@ -59,7 +59,7 @@ def main() -> None:
         print(pergunta, "->", [(c["argumentos_do_modelo"], c["resposta_da_api"][:90])
                                for c in chamadas], "|", str(resposta)[:90])
     relatorio = {
-        "rubrica": "R10", "modo": "real remoto: OpenAI e ViaCEP (https://viacep.com.br)",
+        "tema": "API externa (ViaCEP)", "modo": "real remoto: OpenAI e ViaCEP (https://viacep.com.br)",
         "data_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "modelo_llm": modelo,
         "esquema_enviado_ao_modelo": convert_to_openai_tool(ferramenta),

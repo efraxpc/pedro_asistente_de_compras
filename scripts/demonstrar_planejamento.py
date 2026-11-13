@@ -1,4 +1,4 @@
-"""R02: planejamento com o modelo real. Salva a trajetória de ferramentas observada.
+"""Planejamento com o modelo real. Salva a trajetória de ferramentas observada.
 
 Requer OPENAI_API_KEY. Chama a OpenAI e o ViaCEP reais; o catálogo e as políticas são
 sintéticos. Não simula resultados: se faltar a chave, termina sem escrever nada.
@@ -37,13 +37,13 @@ def main() -> None:
     from langchain_openai import ChatOpenAI
 
     modelo = os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
-    cenario = criar_cenario(ROOT / "storage/evidencias/r02_catalogos")
+    cenario = criar_cenario(ROOT / "storage/evidencias/planejamento_catalogos")
     # Memória nova a cada execução: as lembranças de execuções anteriores mudam o resultado.
-    memoria = ROOT / f"storage/evidencias/r02_memoria-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}.sqlite3"
+    memoria = ROOT / f"storage/evidencias/planejamento_memoria-{datetime.now(timezone.utc):%Y%m%dT%H%M%S}.sqlite3"
     llm, nli, indice = ChatOpenAI(model=modelo), ModeloNLI(), criar_indice_demo()
 
     def conversar(turnos: list[str]) -> list[dict]:
-        sessao = nova_sessao(memoria, "evidencia_r02", cenario.dataset_id)
+        sessao = nova_sessao(memoria, "evidencia_planejamento", cenario.dataset_id)
         rastro = Rastro()
         fluxo = criar_fluxo(cenario, memoria, llm=llm, classificador=nli, indice=indice,
                             rastro=rastro)
@@ -51,7 +51,7 @@ def main() -> None:
         for pergunta in turnos:
             inicio = len(rastro.eventos)
             resposta = fluxo.invoke({"input": pergunta}, config={"configurable": {
-                "user_id": "evidencia_r02", "session_id": sessao}}).content
+                "user_id": "evidencia_planejamento", "session_id": sessao}}).content
             eventos = rastro.eventos[inicio:]
             registro.append({
                 "pergunta": pergunta,
@@ -67,7 +67,7 @@ def main() -> None:
         return registro
 
     relatorio = {
-        "rubrica": "R02",
+        "tema": "planejamento de turno",
         "modo": "real remoto (OpenAI e ViaCEP); NLI real local; dados sintéticos",
         "data_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "modelo_llm": modelo, "modelo_nli": MODELO, "revisao_nli": REVISAO,

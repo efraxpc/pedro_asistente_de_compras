@@ -1,4 +1,4 @@
-"""R07: o mesmo agente em LangChain clássico e em LangGraph, com o modelo real.
+"""O mesmo agente em LangChain clássico e em LangGraph, com o modelo real.
 
 Requer OPENAI_API_KEY e o extra `comparacao` (uv sync --all-extras). Catálogo sintético.
 """
@@ -33,7 +33,7 @@ def main() -> None:
     from langchain_openai import ChatOpenAI
 
     modelo = os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
-    cenario = criar_cenario(ROOT / "storage/evidencias/r07_catalogos")
+    cenario = criar_cenario(ROOT / "storage/evidencias/orquestradores_catalogos")
     resultados = {}
     for nome, construtor in (("LangChain clássico", orquestradores.agente_langchain),
                              ("LangGraph", orquestradores.agente_langgraph)):
@@ -56,7 +56,7 @@ def main() -> None:
             "segundos_tres_turnos": round(segundos, 1),
             "turnos": turnos, "outro_fio": {"usuario": OUTRO_FIO, **isolado}}
     relatorio = {
-        "rubrica": "R07", "modo": "real remoto (OpenAI); catálogo sintético",
+        "tema": "comparação de orquestradores", "modo": "real remoto (OpenAI); catálogo sintético",
         "data_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "modelo_llm": modelo, "temperature": 0,
         "versoes": {p: md.version(p) for p in ("langchain-core", "langchain-classic",

@@ -1,4 +1,4 @@
-"""R09: roteamento dinâmico com RouterChain. Compara o router por regras com o router LLM.
+"""Roteamento dinâmico com RouterChain. Compara o router por regras com o router LLM.
 
 Requer OPENAI_API_KEY. O catálogo é sintético e o ViaCEP é simulado.
 """
@@ -42,7 +42,7 @@ def main() -> None:
     from langchain_openai import ChatOpenAI
 
     modelo = os.getenv("PEDRO_MODEL", "gpt-4.1-mini")
-    cenario = criar_cenario(ROOT / "storage/evidencias/r09_catalogos")
+    cenario = criar_cenario(ROOT / "storage/evidencias/roteadores_catalogos")
     routers = {"regras": RouterCompras(),
                "llm": criar_router_llm(ChatOpenAI(model=modelo, temperature=0))}
     linhas = []
@@ -57,7 +57,7 @@ def main() -> None:
         linhas.append(linha)
         print(f"{pergunta:52} esperada={esperada:14} regras={linha['rota_regras']:14} llm={linha['rota_llm']}")
     relatorio = {
-        "rubrica": "R09", "modo": "router LLM real remoto (OpenAI); router por regras local; ViaCEP simulado",
+        "tema": "roteamento de perguntas", "modo": "router LLM real remoto (OpenAI); router por regras local; ViaCEP simulado",
         "data_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "modelo_llm": modelo, "temperature": 0, "destinos": DESTINOS,
         "nota": "As rotas esperadas foram fixadas por uma pessoa. Sete casos não são uma medida de exatidão.",
