@@ -13,6 +13,7 @@ Pedro é um assistente que ajuda a comprar peças de reposição de eletrodomés
 - **Como se trabalhou.** Cada rubrica tem uma execução salva. Várias execuções com o modelo real revelaram falhas que os testes não viam; elas foram diagnosticadas, corrigidas e medidas de novo, e o antes e o depois estão guardados.
 - **Migração para português.** Em 2026-11-11 o projeto inteiro foi migrado do espanhol para o português (o glossário de nomes está em docs/glossario_migracao.md). As regras de negócio e os preços do catálogo não mudaram. Todas as demonstrações e a avaliação no LangSmith foram reexecutadas em português, com os mesmos números de qualidade. Só a pergunta do diagnóstico de recuperação T24 precisou ser medida de novo (ver R23).
 - **O que fica em aberto.** O vídeo de demonstração e três suposições que o professor deve confirmar: o índice FAISS, os casos de avaliação e a escala de maturidade.
+- **Uso de IA.** O projeto foi feito com o apoio do Claude Code, da Anthropic. O que foi usado, e para quê, está na seção 15.
 
 ## 2. Problema e domínio
 
@@ -321,3 +322,17 @@ Os cinco notebooks foram executados; eles usam duplos de teste e dizem isso em c
 - Gravar o vídeo de demonstração e verificar o link do Drive.
 - Conferir as rubricas com o enunciado original em português.
 - Confirmar com o professor o índice FAISS, os casos de avaliação e a escala de maturidade.
+
+## 15. Uso de ferramentas de IA
+
+O enunciado incentiva o uso de ferramentas de IA e exige que elas sejam citadas. Esta seção diz o que foi usado e para quê.
+
+| Ferramenta | Para que foi usada |
+|---|---|
+| Claude Code, da Anthropic (modelo Claude Fable 5.2) | Apoio para escrever e revisar o código, os testes, os scripts de demonstração, a documentação e este relatório |
+| ElevenLabs (voz sintética) | Narração do vídeo de estudo docs/tour/tour_rubricas.mp4. Esse vídeo não é o vídeo de entrega |
+
+- **Como reconhecer no repositório.** Os commits feitos com esse apoio levam a linha Co-Authored-By: Claude no histórico do git; são a maioria dos commits. Para listá-los: git log --grep="Co-Authored-By".
+- **O que não é apoio de redação.** O gpt-4.1-mini (OpenAI), o modelo de NLI mDeBERTa e o modelo de embeddings MiniLM são componentes do próprio agente. Eles estão descritos nas seções 4 a 9.
+- **De onde vêm os números.** Os resultados citados neste relatório vêm de execuções salvas em docs/rastros/ e dos experimentos no LangSmith. Nenhuma métrica foi simulada. O comportamento do código é coberto pelos testes automáticos.
+- **Responsabilidade.** A responsabilidade pelo conteúdo entregue é do autor.
