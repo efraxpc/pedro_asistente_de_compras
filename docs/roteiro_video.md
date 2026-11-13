@@ -1,45 +1,106 @@
 # Roteiro do vídeo de entrega
 
-**Duração:** cerca de 6 minutos (o enunciado não fixa duração). **Exige:** tela e webcam visíveis ao mesmo tempo (Loom ou OBS) e a conta institucional do aluno.
+**Duração:** cerca de 13 minutos, em 10 partes (o enunciado não fixa duração). **Exige:** tela e webcam visíveis ao mesmo tempo (Loom ou OBS) e a conta institucional do aluno.
 
-**O que o enunciado pede no vídeo (guide/infnet_agentes.pdf, p. 5):** interação real com o agente em execução, não roteirizada em texto; uma consulta em que o agente raciocina e decide usar uma ferramenta (cena 2); uma chamada real de ferramenta, incluindo a API externa (cena 4); e memória entre turnos na mesma conversa (cenas 3 e 6).
+**O que o enunciado pede no vídeo (guide/infnet_agentes.pdf, p. 5):** interação real com o agente em execução, não roteirizada em texto; uma consulta em que o agente raciocina e decide usar uma ferramenta (parte 5.1); uma chamada real de ferramenta, incluindo a API externa (parte 5.3); e memória entre turnos na mesma conversa (partes 5.2 e 5.5).
 
-**O vídeo é uma defesa:** o enunciado avalia a capacidade de justificar escolhas. Cada cena termina com uma frase de «porque». Fale com as suas palavras; não leia o texto.
+**O vídeo é uma defesa:** o enunciado avalia a capacidade de justificar escolhas. Cada parte termina com uma frase de «porque». Fale com as suas palavras; não leia o texto.
+
+**A ordem** segue a de uma apresentação de referência de um colega: apresentar o projeto, preparar o ambiente, mostrar os arquivos, demonstrar no chat, testar uma pergunta fora do tema, mostrar o LangSmith, dizer os limites, mostrar o código e encerrar.
+
+| Parte | Tema | Tempo |
+|---|---|---|
+| 1 | Abertura | 0:00 a 0:45 |
+| 2 | O que o agente resolve | 0:45 a 2:15 |
+| 3 | Ambiente | 2:15 a 3:15 |
+| 4 | Estrutura do projeto | 3:15 a 5:00 |
+| 5 | Demonstração no chat | 5:00 a 9:00 |
+| 6 | Pergunta fora do tema | 9:00 a 9:40 |
+| 7 | Avaliação no LangSmith | 9:40 a 10:30 |
+| 8 | Limites desta versão | 10:30 a 11:15 |
+| 9 | Código | 11:15 a 12:30 |
+| 10 | Encerramento e uso de IA | 12:30 a 13:00 |
 
 ## Antes de gravar
 
 - Rodar `./project.sh restart` e abrir http://localhost:8501. O selo deve dizer «Agente ativo».
+- Fazer uma pergunta qualquer antes de gravar. A primeira resposta demora, porque o Pedro carrega dois modelos locais.
 - Clicar em «Novo chat» para começar com a tela limpa.
-- Deixar abertas, em outras abas: o experimento do LangSmith e o arquivo docs/relatorio.pdf.
+- Deixar abertos: o README, o arquivo docs/relatorio.pdf, o experimento do LangSmith, um terminal na pasta do projeto e o editor com a pasta `src/pedro`.
 - Ensaiar uma vez. As frases do Pedro podem variar um pouco; os números não variam.
 
-## Cena 1 — Abertura (0:00 a 0:40)
+## Parte 1 — Abertura (0:00 a 0:45)
 
 **Na tela:** webcam e o chat do Pedro aberto.
 
-**Dizer:** «Olá, eu sou o Efrain. Este é o Pedro, meu projeto da disciplina Agentes Cognitivos com LangChain. O Pedro é um assistente de compras de peças de eletrodomésticos. Todos os dados são fictícios. A função principal dele é comparar fornecedores e recomendar o melhor.»
+**Dizer:** «Olá, professor. Meu nome é Efrain Colmenares e esta é a apresentação do meu projeto da disciplina Agentes Cognitivos com LangChain. Dei ao projeto o nome de Pedro. O Pedro é um assistente de compras de peças de eletrodomésticos: ele compara fornecedores e recomenda o melhor. Todos os dados são fictícios. A API externa é o ViaCEP, uma API pública de CEP.»
 
-**Dizer o porquê:** «Escolhi este domínio porque comparar fornecedores depende de dados que mudam, como preço e estoque. Por isso ele precisa de um agente com ferramentas, e não só de uma chain.»
+**Dizer o porquê:** «Escolhi este domínio porque comparar fornecedores depende de dados que mudam, como preço e estoque. Por isso ele precisa de um agente com ferramentas, e não só de uma chain. E escolhi o ViaCEP porque é uma API aberta, que não pede chave.»
 
-## Cena 2 — Interação real: comparar fornecedores (0:40 a 2:00)
+## Parte 2 — O que o agente resolve (0:45 a 2:15)
+
+**Na tela:** docs/relatorio.pdf, nas seções 3 («O núcleo: comparar fornecedores») e 4 («Arquitetura»).
+
+**Dizer (o que resolve):** «O Pedro resolve três coisas. Primeiro, compara: cada peça tem três ofertas, e ele descarta as que não têm estoque, não atingem o pedido mínimo, passam do prazo ou do orçamento. Segundo, orienta: busca nas políticas da loja com busca semântica e cita a fonte. Terceiro, lembra: guarda o pedido da conversa e as preferências do usuário.»
+
+**Dizer (da pergunta à resposta verificada):** «Uma mensagem passa por cinco passos. O Pedro entende o pedido. O agente escolhe a ferramenta. A ferramenta calcula. O sistema coloca os números do cálculo na resposta. E a resposta é verificada antes de aparecer.»
+
+**Dizer (os modelos):** «Usei três modelos. O gpt-4.1-mini, da OpenAI, conversa e escolhe as ferramentas. Um modelo local de embeddings faz a busca semântica no FAISS. E um modelo local de NLI, o mDeBERTa, confere se a resposta é sustentada pelos dados.»
+
+**Dizer o porquê:** «Separei assim porque um modelo de linguagem pode errar contas. O modelo decide o que responder, mas os números quem coloca é o sistema. E usei SQLite porque não exige instalar um servidor de banco de dados; fica mais fácil para quem for avaliar.»
+
+## Parte 3 — Ambiente (2:15 a 3:15)
+
+**Na tela:** o README, na seção «Instalação em 4 passos». Depois o terminal: rodar `./project.sh status`.
+
+**Dizer:** «A instalação tem quatro passos e está no README: baixar o projeto, instalar as dependências com o uv, colocar a chave da OpenAI no arquivo .env e abrir o chat. Já deixei tudo instalado para o vídeo ficar mais curto. Este comando mostra que o chat está ativo. Sem a chave, o chat abre em modo local: lista peças e compara fornecedores, mas não usa o agente.»
+
+**Dizer o porquê:** «Fiz o modo local porque o enunciado pede uma alternativa que funcione sem credenciais, para a avaliação do professor.»
+
+## Parte 4 — Estrutura do projeto (3:15 a 5:00)
+
+**Na tela:** o editor com a lista de arquivos. Apontar cada arquivo ao falar dele; não é preciso abrir.
+
+**Dizer:** uma frase por arquivo, nesta ordem.
+
+| Arquivo | O que dizer |
+|---|---|
+| `app.py` | «É a interface em Streamlit. Ela só desenha; a lógica fica em src/pedro.» |
+| `chains.py` e `prompts.py` | «É a fase 1: os templates de prompt, o parser de JSON e a chain escrita de duas formas, com LCEL e com o decorador chain.» |
+| `agent.py` | «É o agente. Tem seis ferramentas, o executor criado com create_openai_tools_agent e o histórico com RunnableWithMessageHistory.» |
+| `business.py` | «É a regra de comparação de fornecedores. Todo valor é inteiro, em centavos.» |
+| `integrations.py` | «É a chamada à API externa, o ViaCEP.» |
+| `memory.py` e `dialogue.py` | «É a fase 3: a memória curta e a longa, em SQLite, e o reconhecimento de intenção e de entidades.» |
+| `query.py` | «É o text-to-query: a pergunta vira uma consulta SELECT, somente leitura.» |
+| `rag.py` e `policy_demo.py` | «É o RAG: o índice FAISS das políticas e a reescrita da consulta.» |
+| `verification.py` e `nli.py` | «É a verificação: uma conferência exata e o modelo de NLI.» |
+| `orquestradores.py` | «É o mesmo agente feito com LangChain e com LangGraph, para comparar os dois.» |
+| `evals/avaliar_fluxo.py` | «É a avaliação no LangSmith.» |
+| `notebooks/` e `tests/` | «São cinco notebooks, um por fase, e 159 testes automáticos.» |
+
+**Dizer o porquê:** «Separei a interface da lógica porque assim os testes rodam sem abrir o navegador.»
+
+## Parte 5 — Demonstração no chat (5:00 a 9:00)
+
+### 5.1 — O agente decide usar uma ferramenta
 
 **Na tela:** clicar na sugestão «Compare 5 unidades de PEC-01-0001 com prazo de 7 dias». Esperar os cartões. Abrir «Como cheguei a esta resposta».
 
-**Dizer:** «Peço cinco unidades de uma peça, com prazo de sete dias. O agente escolhe a ferramenta de comparação. Ela descarta as ofertas sem estoque, abaixo do pedido mínimo ou fora do prazo. A recomendação é a CentroPeças, por 7.279 reais e 83 centavos, com entrega em dois dias. Na tabela aparecem as outras duas ofertas e o motivo do descarte.»
+**Dizer:** «Peço cinco unidades de uma peça, com prazo de sete dias. O agente escolhe a ferramenta de comparação. Ela descarta as ofertas sem estoque, abaixo do pedido mínimo ou fora do prazo. A recomendação é a CentroPeças, por 7.279 reais e 83 centavos, com entrega em dois dias. Na tabela aparecem as outras duas ofertas e o motivo do descarte. A mais barata não ganhou, porque não tem estoque.»
 
-**Dizer (com os passos abertos):** «Aqui estão os passos do agente: leu a mensagem, comparou as ofertas, pegou os números do cálculo e verificou a resposta. O modelo decide o que responder, mas os números quem coloca é o sistema.»
+**Dizer (com os passos abertos):** «Aqui estão os passos do agente: leu a mensagem, comparou as ofertas, pegou os números do cálculo e verificou a resposta.»
 
-**Dizer o porquê:** «Fiz assim porque um modelo de linguagem pode errar contas. O cálculo fica no código, em centavos inteiros, e a resposta só é publicada depois de verificada.»
+**Dizer o porquê:** «Mostro os passos porque quero que cada resposta possa ser conferida, e não só lida.»
 
-## Cena 3 — Memória entre turnos (2:00 a 2:45)
+### 5.2 — Memória entre turnos
 
-**Na tela:** digitar «Agora que sejam 6 e mantenha o prazo».
+**Na tela:** digitar «Agora que sejam 6 e mantenha o prazo». Depois digitar «a mais barata?».
 
-**Dizer:** «Agora mudo só a quantidade. Não repito a peça nem o prazo. O Pedro lembra da solicitação anterior e recalcula: 8.718 reais e 75 centavos para seis unidades. Isso é memória de curto prazo: o rascunho da compra fica guardado na sessão.»
+**Dizer:** «Agora mudo só a quantidade. Não repito a peça nem o prazo. O Pedro lembra da solicitação anterior e recalcula: 8.718 reais e 75 centavos para seis unidades. Depois faço uma pergunta curta sobre a mesma comparação. Ele responde em uma frase, na caixa verde, e não chama a ferramenta de novo.»
 
-**Dizer o porquê:** «Guardei o rascunho porque, em uma compra, a pessoa ajusta um dado por vez. Sem isso, ela teria de repetir tudo a cada mensagem.»
+**Dizer o porquê:** «Guardei o rascunho da compra porque, em uma compra, a pessoa ajusta um dado por vez. Sem isso, ela teria de repetir tudo a cada mensagem.»
 
-## Cena 4 — API externa (2:45 a 3:25)
+### 5.3 — API externa
 
 **Na tela:** clicar na sugestão «A que cidade corresponde o CEP 01001000?». Abrir os passos.
 
@@ -47,15 +108,15 @@
 
 **Dizer o porquê:** «Usei uma API porque o modelo não tem como saber um CEP com certeza. Esse dado tem de vir de uma fonte externa.»
 
-## Cena 5 — Políticas com RAG (3:25 a 4:10)
+### 5.4 — Políticas com RAG
 
-**Na tela:** clicar na sugestão «Posso receber em várias caixas?». Mostrar a fonte `FIC-ENT-01-S05-C01`.
+**Na tela:** clicar na sugestão «Posso receber em várias caixas?». Mostrar a frase inicial, a «Regra citada», a fonte `FIC-ENT-01-S05-C01` e a linha «Recuperação T24».
 
-**Dizer:** «Aqui o agente busca em um corpus de políticas, com um índice FAISS. A pergunta fala em caixas e o documento fala em entrega parcial. Sem ajuda, a busca não encontrava a regra. O sistema reescreve a pergunta e a regra aparece em primeiro lugar. A resposta cita a fonte.»
+**Dizer:** «Aqui o agente busca em um corpus de políticas, com um índice FAISS. A pergunta fala em caixas e o documento fala em entrega parcial. Sem ajuda, a busca não encontrava a regra. O sistema reescreve a pergunta e a regra aparece em primeiro lugar. A resposta começa com uma frase escrita pelo modelo, que só aparece se passa na verificação. Embaixo vem sempre a regra literal, com a fonte.»
 
 **Dizer o porquê:** «Escolhi reescrever a pergunta porque o problema era de vocabulário, não do índice. Assim não precisei indexar nada de novo.»
 
-## Cena 6 — Memória de longo prazo: preferência (4:10 a 5:05)
+### 5.5 — Memória de longo prazo
 
 **Na tela:** digitar «Prefiro fornecedores nacionais, lembre-se disso». Depois digitar «Compare 2 unidades de PEC-11-0001».
 
@@ -63,11 +124,49 @@
 
 **Dizer o porquê:** «Só salvo preferência explícita porque o agente não deve guardar o que a pessoa não pediu. E quem aplica a preferência é o sistema, não o modelo, porque assim a ordem das ofertas é sempre a mesma.»
 
-## Cena 7 — Evidências e encerramento (5:05 a 6:00)
+## Parte 6 — Pergunta fora do tema (9:00 a 9:40)
 
-**Na tela:** a aba do LangSmith com o experimento `pedro-infnet-fluxo-gpt-4.1-mini-portugues-235aa9f1`. Depois o arquivo docs/relatorio.pdf.
+**Na tela:** digitar «Qual o melhor celular de 2026?». Se quiser, digitar também «Me dê uma receita de bolo».
 
-**Dizer:** «Avaliei com casos porque ver o agente funcionar em alguns exemplos não prova que ele acerta. O agente foi avaliado no LangSmith com trinta casos. O vencedor ficou correto em 14 de 14 e o valor em 14 de 14. Em nove experimentos, nenhuma recomendação contrária à regra foi publicada. O projeto tem 159 testes automáticos e cinco notebooks, um por fase. As 29 rubricas estão respondidas no documento respostas_rubricas, com a evidência de cada uma. Obrigado.»
+**Dizer:** «Agora uma pergunta fora do tema. O Pedro não inventa uma resposta: diz que não pode confirmar com as fontes disponíveis.»
+
+**Dizer o porquê:** «Prefiro que ele não responda porque toda resposta passa pela verificação, e sem fonte não há o que verificar.»
+
+## Parte 7 — Avaliação no LangSmith (9:40 a 10:30)
+
+**Na tela:** a aba do LangSmith com o experimento `pedro-infnet-fluxo-gpt-4.1-mini-portugues-235aa9f1`.
+
+**Dizer:** «O agente foi avaliado no LangSmith com trinta casos. A avaliação mede a qualidade da resposta e a trajetória, ou seja, quais ferramentas o agente chamou. O vencedor ficou correto em 14 de 14 e o valor em 14 de 14. Em nove experimentos, nenhuma recomendação contrária à regra foi publicada.»
+
+**Dizer o porquê:** «Avaliei com casos porque ver o agente funcionar em alguns exemplos não prova que ele acerta.»
+
+## Parte 8 — Limites desta versão (10:30 a 11:15)
+
+**Na tela:** docs/relatorio.pdf, na seção 11 («Limitações»).
+
+**Dizer:** «Esta versão tem cinco limites. Os trinta casos de avaliação fui eu que gerei; não são casos oficiais. A avaliação não foi refeita depois que ampliei o catálogo. O índice de políticas é meu, feito com um corpus fictício. O Pedro não conversa sobre outros assuntos. E o CEP depende de um serviço externo: se o ViaCEP estiver fora do ar, essa resposta falha.»
+
+**Dizer o porquê:** «Digo os limites porque uma avaliação honesta mostra também o que ainda não foi medido.»
+
+## Parte 9 — Código (11:15 a 12:30)
+
+**Na tela:** abrir três arquivos no editor, nesta ordem.
+
+| Arquivo | Onde parar | O que dizer |
+|---|---|---|
+| `src/pedro/business.py` | Função `comparar` | «Esta é a regra principal. Primeiro descarta as ofertas que não atendem; depois ordena as que sobram.» |
+| `src/pedro/agent.py` | Lista das seis ferramentas | «Estas são as seis ferramentas: buscar produtos, consultar o catálogo, comparar ofertas, consultar políticas, consultar o CEP e salvar a preferência.» |
+| `src/pedro/verification.py` | Função `verificar` | «Esta função confere a resposta com os dados antes de publicar. Se falha, o agente tem uma única chance de corrigir.» |
+
+**Dizer o porquê:** «A regra fica em código comum, com testes, porque é a parte que não pode errar.»
+
+## Parte 10 — Encerramento e uso de IA (12:30 a 13:00)
+
+**Na tela:** webcam e o chat.
+
+**Dizer:** «O projeto cobre as 29 rubricas. Cada uma está respondida no documento respostas_rubricas, com a evidência. Sobre o uso de IA: usei o Claude Code, da Anthropic, como apoio para escrever código e documentação. As execuções com o modelo real estão salvas na pasta docs/rastros. É isso, professor. Obrigado. Qualquer dúvida, é só me chamar.»
+
+**Atenção:** o enunciado exige citar toda ferramenta de IA usada. Se você usou outra além do Claude Code, diga o nome dela aqui.
 
 ## Depois de gravar
 
@@ -79,5 +178,7 @@
 ## Se algo sair diferente durante a gravação
 
 - **O Pedro respondeu com outras palavras:** normal. Confira só os números: R$ 7.279,83, R$ 8.718,75 e R$ 1.970,38.
+- **Na pergunta das caixas apareceu só a «Regra citada», sem a frase inicial:** normal. A frase do modelo não passou na verificação e o Pedro mostrou a regra literal. Diga isso no vídeo; é a verificação funcionando.
+- **Na pergunta fora do tema o Pedro perguntou «De qual peça você precisa?»:** também serve. Ele não inventou uma resposta.
 - **O selo diz «Modo local, sem modelo»:** falta a chave `OPENAI_API_KEY` no arquivo .env. Corrija e rode `./project.sh restart`.
 - **O CEP demorou ou falhou:** o ViaCEP é um serviço externo. Espere alguns segundos e repita a pergunta.

@@ -310,11 +310,11 @@ return (PERGUNTA_T24_REESCRITA
         if pacotes and divisao and entrega else None)`,
     explica: "Si la pregunta habla de varias cajas y de recibir un envío, se cambia por la pregunta sobre «envío parcial».",
     entra: "«Posso receber em várias caixas?»",
-    sale: "Antes: la regla FIC-ENT-01-S05-C01 no está entre los 4 primeros resultados. Después de reescribir: posición 1.",
-    dato: "El índice guardado solo se abre tras comprobar su manifiesto y sus huellas SHA-256 (rag.py).",
+    sale: "Antes: la regla FIC-ENT-01-S05-C01 no está entre los 4 primeros resultados. Después de reescribir: posición 1. La respuesta empieza con una frase del modelo, ya verificada, y debajo cita la regla literal.",
+    dato: "Cinco preguntas distintas sobre cajas: 4 frases del modelo pasaron la revisión y 1 se cambió por la regla literal. El índice solo se abre tras comprobar su manifiesto (rag.py).",
     voz: ["Parada nueve: políticas con RAG. Las políticas se buscan por significado, en un índice que ya está guardado en disco. Pero a veces la búsqueda falla. El usuario habla de cajas, y el documento habla de entrega parcial.",
           "Esta función corrige ese fallo. Si la pregunta habla de varias cajas y de recibir un envío, la cambia por una pregunta sobre envío parcial, que usa las palabras del documento.",
-          "Ejemplo real. Con la pregunta original, puedo recibir en varias cajas, la regla correcta no aparece entre los cuatro primeros resultados. Después de reescribirla, la regla sube a la primera posición. Esa es la rúbrica veintitrés: un fallo real, medido y corregido."] },
+          "Ejemplo real. Con la pregunta original, puedo recibir en varias cajas, la regla correcta no aparece entre los cuatro primeros resultados. Después de reescribirla, la regla sube a la primera posición. Esa es la rúbrica veintitrés: un fallo real, medido y corregido. Además, la respuesta empieza con una frase que contesta a tu pregunta. La escribe el modelo, y solo se publica si pasa la verificación. Debajo va siempre la regla literal, con su fuente."] },
   { fase: 5, corto: "Verificar y medir", titulo: "Verificar, mostrar y medir", rubricas: ["R24", "R25", "R26", "R27", "R28", "R29"],
     idea: "Antes de publicar, el sistema pone las cifras reales y verifica la respuesta. Después se muestra en el chat y se mide con 30 casos.",
     analogia: "Un editor que comprueba cada cifra antes de imprimir.",
@@ -328,10 +328,10 @@ return (PERGUNTA_T24_REESCRITA
     explica: "Anclar: las cifras del modelo se cambian por las que calculó la herramienta. Verificar: comprobación exacta y NLI.",
     entra: "30 casos de evaluación en LangSmith",
     sale: "Ganador correcto: 14 de 14. Importe correcto: 14 de 14. Contenido: 16 de 16.",
-    dato: "Ninguna recomendación contraria a la regla en 9 experimentos. El consejo de precio y la respuesta a tus preguntas pasan la misma verificación.",
+    dato: "Ninguna recomendación contraria a la regla en 9 experimentos. El consejo de precio y la respuesta a tus preguntas pasan la misma verificación. En el chat puedes borrar una conversación: tus preferencias se quedan.",
     voz: ["Parada diez, la última: verificar, mostrar y medir. Antes de publicar una respuesta, el sistema pone las cifras reales y la verifica. Como un editor que comprueba cada cifra antes de imprimir.",
           "En el código es un bucle de dos intentos. El agente propone una respuesta. El sistema ancla los datos: cambia las cifras del modelo por las que calculó la herramienta. Después verifica. Si hay errores, el agente tiene una sola oportunidad de corregir.",
-          "Ejemplo real. Con treinta casos de evaluación en LangSmith, el ganador fue correcto en catorce de catorce, y el importe en catorce de catorce. En nueve experimentos no se publicó ninguna recomendación contraria a la regla. Y la interfaz solo dibuja datos ya verificados. Fin del recorrido."] }
+          "Ejemplo real. Con treinta casos de evaluación en LangSmith, el ganador fue correcto en catorce de catorce, y el importe en catorce de catorce. En nueve experimentos no se publicó ninguna recomendación contraria a la regla. Y la interfaz solo dibuja datos ya verificados. En el chat también puedes borrar una conversación: se borran sus mensajes y su borrador, y tus preferencias se quedan. Fin del recorrido."] }
 ];
 const NOMBRE_FASE = ["", "Fase 1 · Chain y arquitectura", "Fase 2 · Agente con herramientas", "Fase 3 · Chatbot con memoria",
   "Fase 4 · SQL, APIs y RAG", "Fase 5 · Agente final"];
