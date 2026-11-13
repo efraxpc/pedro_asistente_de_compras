@@ -10,7 +10,7 @@
         "id": "FIC-DEV-01-S00-C00",
         "origem": "ficticio_demo",
         "tema": "devolucoes",
-        "secao": "Política fictícia de devoluções · DEMONSTRAÇÃO T15",
+        "secao": "Política fictícia de devoluções · DEMONSTRAÇÃO",
         "fonte": "devolucoes.md",
         "versao": "1.1"
       }
@@ -285,7 +285,7 @@
         "id": "FIC-GAR-01-S00-C00",
         "origem": "ficticio_demo",
         "tema": "garantia",
-        "secao": "Política fictícia de garantia e compatibilidade · DEMONSTRAÇÃO T15",
+        "secao": "Política fictícia de garantia e compatibilidade · DEMONSTRAÇÃO",
         "fonte": "garantia.md",
         "versao": "1.1"
       }
@@ -560,7 +560,7 @@
         "id": "FIC-ENT-01-S00-C00",
         "origem": "ficticio_demo",
         "tema": "entrega",
-        "secao": "Política fictícia de entrega e recebimento · DEMONSTRAÇÃO T15",
+        "secao": "Política fictícia de entrega e recebimento · DEMONSTRAÇÃO",
         "fonte": "entrega.md",
         "versao": "1.1"
       }
@@ -831,13 +831,13 @@
     }
   ],
   "sha256": {
-    "index.faiss": "3d487d71036337d8eef82a03b41cf6cb9acf0880151dfbc9e4505cb838150925",
-    "index.pkl": "bd8828cfe283db25615f64ef2f48a6a53ced2dd17b25249c042bbce52f4f85ca"
+    "index.faiss": "312382c7da2567cc9af8eddbd18dd95f57d0ad0a6d597414cf91a2b866363f1e",
+    "index.pkl": "82e8187688506605720ec7abbf102892b11b6c8a3a067730155a3a9a6fb05253"
   },
-  "corpus_sha256": "e5c71773d122aeb24ef010ed35e562999892b26fa0a5c282f5574f9a879b1142",
+  "corpus_sha256": "3380ac33dfb0ffda9500d0833124123e4d7035ef0dfcc8c253e125a429c58617",
   "fragmentacao": {
     "tamanho": 700,
     "sobreposicao": 100
   },
-  "criado_utc": "2026-11-12T01:57:55+00:00"
+  "criado_utc": "2026-11-13T20:28:55+00:00"
 }

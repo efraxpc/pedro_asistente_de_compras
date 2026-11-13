@@ -1,4 +1,4 @@
-# Política fictícia de entrega e recebimento · DEMONSTRAÇÃO T15
+# Política fictícia de entrega e recebimento · DEMONSTRAÇÃO
 
 **Identificador:** FIC-ENT-01  
 **Versão:** 1.1  

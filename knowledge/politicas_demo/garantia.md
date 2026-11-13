@@ -1,4 +1,4 @@
-# Política fictícia de garantia e compatibilidade · DEMONSTRAÇÃO T15
+# Política fictícia de garantia e compatibilidade · DEMONSTRAÇÃO
 
 **Identificador:** FIC-GAR-01  
 **Versão:** 1.1  

@@ -143,8 +143,8 @@
     "origem": "ficticio_demo: corpus próprio em knowledge/politicas_demo, indexado por scripts/construir_indice_politicas.py",
     "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "sha256": {
-      "index.faiss": "3d487d71036337d8eef82a03b41cf6cb9acf0880151dfbc9e4505cb838150925",
-      "index.pkl": "bd8828cfe283db25615f64ef2f48a6a53ced2dd17b25249c042bbce52f4f85ca"
+      "index.faiss": "312382c7da2567cc9af8eddbd18dd95f57d0ad0a6d597414cf91a2b866363f1e",
+      "index.pkl": "82e8187688506605720ec7abbf102892b11b6c8a3a067730155a3a9a6fb05253"
     }
   }
 }

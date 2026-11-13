@@ -1,20 +1,20 @@
 {
-  "rubrica": "R22",
+  "tema": "busca no índice de políticas salvo",
   "modo": "índice carregado do disco; agente real remoto (OpenAI); NLI real local; corpus fictício",
-  "data_utc": "2026-11-13T03:36:06+00:00",
+  "data_utc": "2026-11-13T20:29:49+00:00",
   "indice": {
     "pasta": "knowledge/politicas",
     "origem": "ficticio_demo: corpus próprio em knowledge/politicas_demo, indexado por scripts/construir_indice_politicas.py",
-    "criado_utc": "2026-11-12T01:57:55+00:00",
+    "criado_utc": "2026-11-13T20:28:55+00:00",
     "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "dimension": 384,
     "metrica": "L2",
     "fragmentos": 75,
     "sha256": {
-      "index.faiss": "3d487d71036337d8eef82a03b41cf6cb9acf0880151dfbc9e4505cb838150925",
-      "index.pkl": "bd8828cfe283db25615f64ef2f48a6a53ced2dd17b25249c042bbce52f4f85ca"
+      "index.faiss": "312382c7da2567cc9af8eddbd18dd95f57d0ad0a6d597414cf91a2b866363f1e",
+      "index.pkl": "82e8187688506605720ec7abbf102892b11b6c8a3a067730155a3a9a6fb05253"
     },
-    "segundos_de_carga": 0.09
+    "segundos_de_carga": 0.02
   },
   "porta_de_seguranca": {
     "sem_confianca_explicita": "PermissionError: é necessária confiança explícita para desserializar index.pkl",
@@ -55,6 +55,7 @@
       {
         "pergunta": "Como se verifica a compatibilidade elétrica antes de instalar uma peça?",
         "ferramentas": [
+          "consultar_politicas",
           "consultar_politicas"
         ],
         "citacoes_ancoradas": [
@@ -64,7 +65,7 @@
             "cobertura": 1.0
           },
           {
-            "fonte_id": "FIC-DEV-01-S02-C01",
+            "fonte_id": "FIC-DEV-01-S06-C01",
             "estado": "literal",
             "cobertura": 1.0
           }
@@ -73,10 +74,19 @@
           {
             "tentativa": 1,
             "estado": "politica",
-            "erros": []
+            "erros": [
+              "NLI sem entailment"
+            ]
+          },
+          {
+            "tentativa": 2,
+            "estado": "politica",
+            "erros": [
+              "NLI sem entailment"
+            ]
           }
         ],
-        "resposta_publicada": "Política fictícia de demonstração. Antes de instalar uma peça, deve-se conferir marca, modelo, voltagem e dimensões com a ficha técnica. A peça não deve apresentar modificações, conexões usadas ou marcas de montagem para que possa ser considerada sem uso para devolução dentro do prazo.\nFontes: FIC-DEV-01-S06-C01, FIC-DEV-01-S02-C01"
+        "resposta_publicada": "Política fictícia de demonstração. Não consegui verificar um resumo próprio, então cito o texto literal da fonte:\n- «Antes de selecionar uma peça, o usuário deve conferir marca, modelo, voltagem e dimensões com a ficha técnica fictícia.» [FIC-DEV-01-S06-C01]"
       },
       {
         "pergunta": "Posso receber em várias caixas?",

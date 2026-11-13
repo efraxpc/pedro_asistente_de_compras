@@ -30,7 +30,7 @@ def _corpus_teste(pasta: Path) -> None:
     for nome, palavra in (("devolucoes", "devolucao"),
                           ("garantia", "garantia"), ("entrega", "entrega")):
         (pasta / f"{nome}.md").write_text(
-            f"# DEMONSTRAÇÃO T15\n\n**Versão:** 1.1\n\ncorpus sintético\n\n## Regra\n{palavra} "
+            f"# DEMONSTRAÇÃO\n\n**Versão:** 1.1\n\ncorpus sintético\n\n## Regra\n{palavra} "
             f"{palavra} exclusiva para {nome}.\n", encoding="utf-8")
 
 

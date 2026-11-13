@@ -1,4 +1,4 @@
-"""Corpus fictício de T15: fragmentos rastreáveis e índice FAISS em memória."""
+"""Corpus fictício de políticas: fragmentos rastreáveis e índice FAISS em memória."""
 from __future__ import annotations
 
 import hashlib
@@ -63,7 +63,7 @@ def fragmentos_demo(pasta: Path = CORPUS) -> list[Document]:
     documentos = []
     for tema, (nome, identificador) in POLITICAS.items():
         texto = (pasta / nome).read_text(encoding="utf-8")
-        if "DEMONSTRAÇÃO T15" not in texto or "corpus sintético" not in texto:
+        if "DEMONSTRAÇÃO" not in texto or "corpus sintético" not in texto:
             raise ValueError(f"falta o rótulo fictício em {nome}")
         coincidencia_versao = re.search(r"^\*\*Versão:\*\*\s*([^\s]+)", texto, flags=re.M)
         if coincidencia_versao is None:

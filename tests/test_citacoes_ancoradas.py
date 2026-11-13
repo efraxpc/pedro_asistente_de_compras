@@ -50,11 +50,11 @@ def _chat(tmp_path, monkeypatch, citacao, rotulo_nli):
     import pedro.agent as modulo
 
     (tmp_path / "devolucoes.md").write_text(
-        "# DEMONSTRAÇÃO T15\n\n**Versão:** 1.1\n\ncorpus sintético\n\n## Regra\n" + FRAGMENTO + "\n",
+        "# DEMONSTRAÇÃO\n\n**Versão:** 1.1\n\ncorpus sintético\n\n## Regra\n" + FRAGMENTO + "\n",
         encoding="utf-8")
     for nome in ("garantia", "entrega"):
         (tmp_path / f"{nome}.md").write_text(
-            f"# DEMONSTRAÇÃO T15\n\n**Versão:** 1.1\n\ncorpus sintético\n\n## Regra\n{nome} {nome}.\n",
+            f"# DEMONSTRAÇÃO\n\n**Versão:** 1.1\n\ncorpus sintético\n\n## Regra\n{nome} {nome}.\n",
             encoding="utf-8")
     indice = criar_indice_demo(tmp_path, EmbeddingsTeste())
     cenario = criar_cenario(tmp_path / "catalogos")
